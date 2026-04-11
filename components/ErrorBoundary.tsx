@@ -1,7 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SPACING, FONT_SIZES } from '@/constants';
+import { SPACING, FONT_SIZES, BORDER_RADIUS } from '@/constants';
+import { PALETTES } from '@/constants/theme';
 
 interface Props {
   /** The subtree to render normally when no error has occurred. */
@@ -44,25 +45,13 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      const c = PALETTES.default;
       return (
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.container}>
-            <Text style={styles.title}>Something went wrong</Text>
-            <Text style={styles.message}>
-              {__DEV__ && this.state.error
-                ? this.state.error.message
-                : 'An unexpected error occurred. Please try again.'}
-            </Text>
-            <Pressable
-              style={styles.button}
-              onPress={this.handleReset}
-              accessibilityRole="button"
-              accessibilityLabel="Try again"
-            >
-              <Text style={styles.buttonText}>Try Again</Text>
-            </Pressable>
-          </View>
-        </SafeAreaView>
+        <ErrorFallback
+          palette={c}
+          error={this.state.error}
+          onReset={this.handleReset}
+        />
       );
     }
 
@@ -73,7 +62,6 @@ export class ErrorBoundary extends Component<Props, State> {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   container: {
     flex: 1,
@@ -85,24 +73,63 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xxl,
     fontWeight: 'bold',
     marginBottom: SPACING.sm,
-    color: COLORS.text,
     textAlign: 'center',
   },
   message: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.lg,
   },
   button: {
-    backgroundColor: COLORS.primary,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.md,
   },
   buttonText: {
-    color: COLORS.background,
     fontSize: FONT_SIZES.md,
     fontWeight: '600',
   },
 });
+
+function ErrorFallback({
+  palette,
+  error,
+  onReset,
+}: {
+  palette: typeof PALETTES.default;
+  error: Error | null;
+  onReset: () => void;
+}) {
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
+      <View style={styles.container}>
+        <Text
+          style={[
+            styles.title,
+            { color: palette.textOnBackground },
+          ]}
+        >
+          Something went wrong
+        </Text>
+        <Text
+          style={[
+            styles.message,
+            { color: palette.textSecondaryOnBackground },
+          ]}
+        >
+          {__DEV__ && error
+            ? error.message
+            : 'An unexpected error occurred. Please try again.'}
+        </Text>
+        <Pressable
+          style={[styles.button, { backgroundColor: palette.primary }]}
+          onPress={onReset}
+          accessibilityRole="button"
+          accessibilityLabel="Try again"
+        >
+          <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>Try Again</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}

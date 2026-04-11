@@ -1,0 +1,41 @@
+import { withEnglishFallback } from './catalog';
+
+const zhHans = withEnglishFallback({
+  'common.back': '返回',
+  'common.close': '关闭',
+  'common.language': '语言',
+  'common.languages': '语言',
+  'common.theme': '主题',
+  'common.profile': '个人资料',
+  'common.home': '主页',
+  'common.store': '商店',
+  'common.signOut': '退出登录',
+  'tabs.home': '主页',
+  'tabs.store': '商店',
+  'tabs.profile': '个人资料',
+  'modal.appLanguage': '应用语言',
+  'modal.triviaLanguages': '答题语言',
+  'settings.appLanguageTitle': '应用语言',
+  'settings.appLanguageDescription': '选择菜单、标签和导航所使用的语言。',
+  'settings.triviaLanguagesTitle': '答题语言',
+  'settings.triviaLanguagesDescription': '最多选择 3 种偏好的答题语言。英语始终作为回退语言。',
+  'settings.noneSelected': '未选择额外语言。题库内容将保持英文。',
+  'auth.signIn.heroTitle': '欢迎回来',
+  'auth.signUp.heroTitle': '立即开始',
+  'auth.forgot.title': '忘记密码',
+  'home.tagline': '现代知识问答之夜',
+  'profile.changeTheme': '更改主题',
+  'store.purchaseTitle': '购买代币包',
+  'play.hubTitle': '开始玩 Double Down',
+  'play.startNewGame': '开始新游戏',
+  'play.resumeCurrentMatch': '继续当前对局',
+  'play.chooseModeTitle': '选择模式',
+  'play.teamSetupTitle': '设置队伍',
+  'play.pickTopicsTitle': '选择主题',
+  'play.questionBoardTitle': '题板',
+  'play.resolveTurnTitle': '结算本轮',
+  'play.matchComplete': '对局完成',
+});
+
+export default zhHans;
+

@@ -1,0 +1,41 @@
+import { withEnglishFallback } from './catalog';
+
+const bn = withEnglishFallback({
+  'common.back': 'ফিরে যান',
+  'common.close': 'বন্ধ করুন',
+  'common.language': 'ভাষা',
+  'common.languages': 'ভাষাসমূহ',
+  'common.theme': 'থিম',
+  'common.profile': 'প্রোফাইল',
+  'common.home': 'হোম',
+  'common.store': 'স্টোর',
+  'common.signOut': 'সাইন আউট',
+  'tabs.home': 'হোম',
+  'tabs.store': 'স্টোর',
+  'tabs.profile': 'প্রোফাইল',
+  'modal.appLanguage': 'অ্যাপ ভাষা',
+  'modal.triviaLanguages': 'ট্রিভিয়া ভাষা',
+  'settings.appLanguageTitle': 'অ্যাপ ভাষা',
+  'settings.appLanguageDescription': 'মেনু, লেবেল এবং নেভিগেশনের ভাষা নির্বাচন করুন।',
+  'settings.triviaLanguagesTitle': 'ট্রিভিয়া ভাষা',
+  'settings.triviaLanguagesDescription': 'সর্বোচ্চ ৩টি পছন্দের ট্রিভিয়া ভাষা বেছে নিন। ইংরেজি সবসময় ফলব্যাক থাকবে।',
+  'settings.noneSelected': 'কোনও অতিরিক্ত ভাষা নির্বাচিত হয়নি। কনটেন্ট ইংরেজিতেই থাকবে।',
+  'auth.signIn.heroTitle': 'আবার স্বাগতম',
+  'auth.signUp.heroTitle': 'শুরু করুন',
+  'auth.forgot.title': 'পাসওয়ার্ড ভুলে গেছেন',
+  'home.tagline': 'আধুনিক ট্রিভিয়া নাইট',
+  'profile.changeTheme': 'থিম পরিবর্তন করুন',
+  'store.purchaseTitle': 'টোকেন প্যাক কিনুন',
+  'play.hubTitle': 'Double Down খেলুন',
+  'play.startNewGame': 'নতুন গেম শুরু করুন',
+  'play.resumeCurrentMatch': 'বর্তমান ম্যাচ চালিয়ে যান',
+  'play.chooseModeTitle': 'একটি মোড বেছে নিন',
+  'play.teamSetupTitle': 'টিম সেট করুন',
+  'play.pickTopicsTitle': 'বিষয় বেছে নিন',
+  'play.questionBoardTitle': 'প্রশ্ন বোর্ড',
+  'play.resolveTurnTitle': 'টার্ন নির্ধারণ করুন',
+  'play.matchComplete': 'ম্যাচ সম্পন্ন',
+});
+
+export default bn;
+

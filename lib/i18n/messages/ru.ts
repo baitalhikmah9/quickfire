@@ -1,0 +1,41 @@
+import { withEnglishFallback } from './catalog';
+
+const ru = withEnglishFallback({
+  'common.back': 'Назад',
+  'common.close': 'Закрыть',
+  'common.language': 'Язык',
+  'common.languages': 'Языки',
+  'common.theme': 'Тема',
+  'common.profile': 'Профиль',
+  'common.home': 'Главная',
+  'common.store': 'Магазин',
+  'common.signOut': 'Выйти',
+  'tabs.home': 'Главная',
+  'tabs.store': 'Магазин',
+  'tabs.profile': 'Профиль',
+  'modal.appLanguage': 'Язык приложения',
+  'modal.triviaLanguages': 'Языки викторины',
+  'settings.appLanguageTitle': 'Язык приложения',
+  'settings.appLanguageDescription': 'Выберите язык меню, меток и навигации.',
+  'settings.triviaLanguagesTitle': 'Языки викторины',
+  'settings.triviaLanguagesDescription': 'Выберите до 3 предпочтительных языков викторины. Английский всегда остаётся запасным.',
+  'settings.noneSelected': 'Дополнительные языки не выбраны. Контент останется на английском.',
+  'auth.signIn.heroTitle': 'С возвращением',
+  'auth.signUp.heroTitle': 'Начать',
+  'auth.forgot.title': 'Забыли пароль',
+  'home.tagline': 'Современная викторина',
+  'profile.changeTheme': 'Сменить тему',
+  'store.purchaseTitle': 'Купить наборы токенов',
+  'play.hubTitle': 'Играть в Double Down',
+  'play.startNewGame': 'Начать новую игру',
+  'play.resumeCurrentMatch': 'Продолжить матч',
+  'play.chooseModeTitle': 'Выберите режим',
+  'play.teamSetupTitle': 'Настройка команд',
+  'play.pickTopicsTitle': 'Выберите темы',
+  'play.questionBoardTitle': 'Доска вопросов',
+  'play.resolveTurnTitle': 'Разрешить ход',
+  'play.matchComplete': 'Матч завершён',
+});
+
+export default ru;
+

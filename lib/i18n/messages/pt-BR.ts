@@ -1,0 +1,41 @@
+import { withEnglishFallback } from './catalog';
+
+const ptBr = withEnglishFallback({
+  'common.back': 'Voltar',
+  'common.close': 'Fechar',
+  'common.language': 'Idioma',
+  'common.languages': 'Idiomas',
+  'common.theme': 'Tema',
+  'common.profile': 'Perfil',
+  'common.home': 'Início',
+  'common.store': 'Loja',
+  'common.signOut': 'Sair',
+  'tabs.home': 'Início',
+  'tabs.store': 'Loja',
+  'tabs.profile': 'Perfil',
+  'modal.appLanguage': 'Idioma do app',
+  'modal.triviaLanguages': 'Idiomas da trivia',
+  'settings.appLanguageTitle': 'Idioma do app',
+  'settings.appLanguageDescription': 'Escolha o idioma usado em menus, rótulos e navegação.',
+  'settings.triviaLanguagesTitle': 'Idiomas da trivia',
+  'settings.triviaLanguagesDescription': 'Escolha até 3 idiomas preferidos para a trivia. O inglês sempre será o fallback.',
+  'settings.noneSelected': 'Nenhum idioma extra selecionado. O conteúdo ficará em inglês.',
+  'auth.signIn.heroTitle': 'Bem-vindo de volta',
+  'auth.signUp.heroTitle': 'Começar',
+  'auth.forgot.title': 'Esqueceu a senha',
+  'home.tagline': 'Noite moderna de trivia',
+  'profile.changeTheme': 'Mudar tema',
+  'store.purchaseTitle': 'Comprar pacotes de tokens',
+  'play.hubTitle': 'Jogar Double Down',
+  'play.startNewGame': 'Iniciar novo jogo',
+  'play.resumeCurrentMatch': 'Retomar partida atual',
+  'play.chooseModeTitle': 'Escolha um modo',
+  'play.teamSetupTitle': 'Configurar times',
+  'play.pickTopicsTitle': 'Escolher tópicos',
+  'play.questionBoardTitle': 'Quadro de perguntas',
+  'play.resolveTurnTitle': 'Resolver rodada',
+  'play.matchComplete': 'Partida concluída',
+});
+
+export default ptBr;
+

@@ -1,0 +1,41 @@
+import { withEnglishFallback } from './catalog';
+
+const id = withEnglishFallback({
+  'common.back': 'Kembali',
+  'common.close': 'Tutup',
+  'common.language': 'Bahasa',
+  'common.languages': 'Bahasa',
+  'common.theme': 'Tema',
+  'common.profile': 'Profil',
+  'common.home': 'Beranda',
+  'common.store': 'Toko',
+  'common.signOut': 'Keluar',
+  'tabs.home': 'Beranda',
+  'tabs.store': 'Toko',
+  'tabs.profile': 'Profil',
+  'modal.appLanguage': 'Bahasa aplikasi',
+  'modal.triviaLanguages': 'Bahasa trivia',
+  'settings.appLanguageTitle': 'Bahasa aplikasi',
+  'settings.appLanguageDescription': 'Pilih bahasa untuk menu, label, dan navigasi.',
+  'settings.triviaLanguagesTitle': 'Bahasa trivia',
+  'settings.triviaLanguagesDescription': 'Pilih hingga 3 bahasa trivia pilihan. Bahasa Inggris selalu menjadi cadangan.',
+  'settings.noneSelected': 'Belum ada bahasa tambahan yang dipilih. Konten akan tetap berbahasa Inggris.',
+  'auth.signIn.heroTitle': 'Selamat datang kembali',
+  'auth.signUp.heroTitle': 'Mulai',
+  'auth.forgot.title': 'Lupa kata sandi',
+  'home.tagline': 'Malam trivia modern',
+  'profile.changeTheme': 'Ubah tema',
+  'store.purchaseTitle': 'Beli paket token',
+  'play.hubTitle': 'Mainkan Double Down',
+  'play.startNewGame': 'Mulai game baru',
+  'play.resumeCurrentMatch': 'Lanjutkan pertandingan',
+  'play.chooseModeTitle': 'Pilih mode',
+  'play.teamSetupTitle': 'Atur tim',
+  'play.pickTopicsTitle': 'Pilih topik',
+  'play.questionBoardTitle': 'Papan pertanyaan',
+  'play.resolveTurnTitle': 'Selesaikan giliran',
+  'play.matchComplete': 'Pertandingan selesai',
+});
+
+export default id;
+

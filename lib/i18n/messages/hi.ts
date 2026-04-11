@@ -1,0 +1,41 @@
+import { withEnglishFallback } from './catalog';
+
+const hi = withEnglishFallback({
+  'common.back': 'वापस',
+  'common.close': 'बंद करें',
+  'common.language': 'भाषा',
+  'common.languages': 'भाषाएँ',
+  'common.theme': 'थीम',
+  'common.profile': 'प्रोफ़ाइल',
+  'common.home': 'होम',
+  'common.store': 'स्टोर',
+  'common.signOut': 'साइन आउट',
+  'tabs.home': 'होम',
+  'tabs.store': 'स्टोर',
+  'tabs.profile': 'प्रोफ़ाइल',
+  'modal.appLanguage': 'ऐप भाषा',
+  'modal.triviaLanguages': 'ट्रिविया भाषाएँ',
+  'settings.appLanguageTitle': 'ऐप भाषा',
+  'settings.appLanguageDescription': 'मेन्यू, लेबल और नेविगेशन के लिए भाषा चुनें।',
+  'settings.triviaLanguagesTitle': 'ट्रिविया भाषाएँ',
+  'settings.triviaLanguagesDescription': 'अधिकतम 3 पसंदीदा ट्रिविया भाषाएँ चुनें। अंग्रेज़ी हमेशा फॉलबैक रहेगी।',
+  'settings.noneSelected': 'कोई अतिरिक्त भाषा चयनित नहीं है। सामग्री अंग्रेज़ी में रहेगी।',
+  'auth.signIn.heroTitle': 'वापसी पर स्वागत है',
+  'auth.signUp.heroTitle': 'शुरू करें',
+  'auth.forgot.title': 'पासवर्ड भूल गए',
+  'home.tagline': 'आधुनिक ट्रिविया नाइट',
+  'profile.changeTheme': 'थीम बदलें',
+  'store.purchaseTitle': 'टोकन पैक खरीदें',
+  'play.hubTitle': 'Double Down खेलें',
+  'play.startNewGame': 'नया गेम शुरू करें',
+  'play.resumeCurrentMatch': 'वर्तमान मैच जारी रखें',
+  'play.chooseModeTitle': 'मोड चुनें',
+  'play.teamSetupTitle': 'टीम सेट करें',
+  'play.pickTopicsTitle': 'विषय चुनें',
+  'play.questionBoardTitle': 'प्रश्न बोर्ड',
+  'play.resolveTurnTitle': 'टर्न तय करें',
+  'play.matchComplete': 'मैच पूरा',
+});
+
+export default hi;
+
