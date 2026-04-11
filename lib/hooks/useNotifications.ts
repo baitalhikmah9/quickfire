@@ -3,7 +3,8 @@ import * as Notifications from 'expo-notifications';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: false,
     shouldSetBadge: false,
   }),
@@ -42,7 +43,10 @@ export function useNotifications(): UseNotificationsReturn {
   const scheduleNotification = async (title: string, body: string, seconds = 1) => {
     await Notifications.scheduleNotificationAsync({
       content: { title, body },
-      trigger: { seconds },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+      },
     });
   };
 

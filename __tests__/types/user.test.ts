@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { UserSchema } from '@/types/user';
 
 describe('UserSchema', () => {

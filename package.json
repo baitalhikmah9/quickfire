@@ -27,6 +27,9 @@
     "url": "https://github.com/mwijanarko1/Expo-RN-Template"
   },
   "packageManager": "bun@1.3.10",
+  "patchedDependencies": {
+    "expo-modules-core@55.0.18": "patches/expo-modules-core@55.0.18.patch"
+  },
   "license": "MIT",
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.30",

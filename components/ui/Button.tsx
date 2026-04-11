@@ -1,4 +1,6 @@
 import { Pressable, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { COLORS, TYPE_SCALE, BORDER_RADIUS, SHADOWS, SPACING, FONTS } from '@/constants/theme';
+import { useI18n } from '@/lib/i18n/useI18n';
 
 interface ButtonProps {
   /** The label text displayed inside the button. */
@@ -6,7 +8,7 @@ interface ButtonProps {
   /** Callback fired when the button is pressed. */
   onPress: () => void;
   /** Visual style variant of the button. Defaults to 'primary'. */
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: 'primary' | 'secondary' | 'accent' | 'destructive' | 'outline';
   /** When true, the button is non-interactive and visually dimmed. */
   disabled?: boolean;
   /** Additional styles applied to the button container. */
@@ -16,10 +18,8 @@ interface ButtonProps {
 }
 
 /**
- * Reusable button component with primary, secondary, and outline variants.
- *
- * @param props - {@link ButtonProps}
- * @returns A pressable button element.
+ * Primary = Electric Blue fill (main challenge CTA).
+ * Secondary = Lively Orange outline. Accent = Vivid Purple (utility emphasis).
  */
 export function Button({
   title,
@@ -29,71 +29,111 @@ export function Button({
   style,
   textStyle,
 }: ButtonProps) {
-  const buttonStyle = [
-    styles.button,
-    styles[variant],
-    disabled ? styles.disabled : null,
-    style,
-  ];
+  const { getTextStyle } = useI18n();
 
-  const buttonTextStyle = [
-    styles.buttonText,
-    styles[`${variant}Text` as const],
-    disabled ? styles.disabledText : null,
-    textStyle,
-  ];
+  const getVariantStyles = (pressed: boolean) => {
+    let backgroundColor = COLORS.primary;
+    let textColor = COLORS.surface;
+    let borderColor = 'transparent';
+    let borderWidth = 0;
+
+    switch (variant) {
+      case 'secondary':
+        backgroundColor = 'transparent';
+        textColor = COLORS.secondary;
+        borderColor = COLORS.secondary;
+        borderWidth = 3;
+        break;
+      case 'accent':
+        backgroundColor = COLORS.tertiary;
+        textColor = COLORS.text;
+        break;
+      case 'destructive':
+        backgroundColor = COLORS.error;
+        textColor = COLORS.surface;
+        break;
+      case 'outline':
+        backgroundColor = 'transparent';
+        textColor = COLORS.primary;
+        borderColor = COLORS.border;
+        borderWidth = 2;
+        break;
+      case 'primary':
+      default:
+        backgroundColor = COLORS.primary;
+        textColor = COLORS.surface;
+        break;
+    }
+
+    return {
+      container: {
+        backgroundColor: pressed ? backgroundColor + 'CC' : backgroundColor,
+        borderColor,
+        borderWidth,
+      },
+      text: {
+        color: textColor,
+      },
+    };
+  };
 
   return (
     <Pressable
-      style={buttonStyle}
+      style={({ pressed }) => [
+        styles.button,
+        getVariantStyles(pressed).container,
+        !disabled && variant === 'primary' && styles.shadow,
+        !disabled && pressed && styles.pressedBounce,
+        disabled && styles.disabled,
+        style,
+      ]}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled }}
     >
-      <Text style={buttonTextStyle}>{title}</Text>
+      {({ pressed }) => (
+        <Text
+          style={[
+            styles.buttonText,
+            getVariantStyles(pressed).text,
+            disabled ? styles.disabledText : null,
+            getTextStyle(undefined, 'bodySemibold', 'center'),
+            textStyle,
+          ]}
+        >
+          {title}
+        </Text>
+      )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: SPACING.xl + 4,
+    minHeight: 56,
+    borderRadius: BORDER_RADIUS.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 100,
+    minWidth: 120,
   },
-  primary: {
-    backgroundColor: '#007AFF',
+  shadow: {
+    ...SHADOWS.card,
   },
-  secondary: {
-    backgroundColor: '#6B7280',
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#007AFF',
+  pressedBounce: {
+    transform: [{ scale: 0.97 }],
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  primaryText: {
-    color: '#FFFFFF',
-  },
-  secondaryText: {
-    color: '#FFFFFF',
-  },
-  outlineText: {
-    color: '#007AFF',
+    ...TYPE_SCALE.button,
+    fontFamily: FONTS.uiSemibold,
+    textTransform: 'none',
   },
   disabledText: {
-    opacity: 0.5,
+    color: COLORS.mutedText,
   },
 });
