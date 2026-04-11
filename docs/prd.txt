@@ -1,0 +1,152 @@
+# Product Requirements Document: Double Down
+
+This Product Requirements Document (PRD) summarizes the features, mechanics, and design goals for the mobile trivia application "Double Down" (formerly known as "Trivianite"), as described in the provided video walkthrough.
+
+---
+
+## 1. Project Overview
+
+Double Down is a competitive, multiplayer trivia mobile application inspired by the Arabic trivia game Seen Jeem. It allows teams and individual players to compete in various trivia modes using a strategic betting system ("Wagers") and specific player challenges ("Hot Seat").
+
+---
+
+## 2. Target Audience
+
+- Trivia enthusiasts
+- Groups/parties looking for competitive social games
+
+---
+
+## 3. Game Modes
+
+The app features four distinct game modes to cater to different group sizes and playstyles:
+
+| Mode      | Players        | Description                                                                 |
+|-----------|----------------|-----------------------------------------------------------------------------|
+| Classic   | 2 Teams        | Standard competitive play with full topic selection and wagers              |
+| Quick Play| 2 Teams        | Condensed version of Classic with fewer topics for a faster game           |
+| Random    | 2 Teams        | Standard play; every question chosen via randomized animation. Wagers off  |
+| Rumble    | 3+ Teams/Indiv.| Multi-team mode. 30s deliberation, 15s primary answer, 15s steal            |
+
+---
+
+## 4. Core Gameplay Mechanics
+
+### 4.1. The Wager System
+
+Available in Classic and Quick Play. Before a question is revealed for the opposing team, the current team can initiate a "Wager."
+
+**Process:** The app selects a random question and assigns a multiplier.
+
+**Multipliers & Scoring:**
+
+| Multiplier | Correct        | Incorrect      |
+|------------|----------------|----------------|
+| 0.5x       | +0.5 points     | -0.5 points    |
+| 1.5x       | +1.5 points    | -1.0 points    |
+| 2x         | +2.0 points    | -1.5 points    |
+
+**Animation:** A rapid, yellow "bouncing" selection animation indicates the question is being chosen randomly. When the selection lands, the chosen item turns green. This same animation pattern applies to the Wager, any randomised feature, and Random game mode.
+
+### 4.2. Hot Seat
+
+A mechanic designed to test individual knowledge without team help.
+
+- **Function:** Forces one specific player from each team to answer the next question solo
+- **Requirements:** Teams must enter player names during setup if Hot Seat is enabled
+- **Timer:** 15 seconds for the Hot Seat opponent (instead of 60) to account for lack of team discussion
+
+### 4.3. Overtime Surge
+
+One of the questions in the game may have a hidden multiplier. If the losing team answers that question correctly and takes the lead, the old winning team must pick from one of the remaining 3 topics to answer and get it right to reclaim victory.
+
+### 4.4. Lifelines
+
+Optional help options inspired by Seen Jeem. Each team receives 3 lifelines per game (configurable per mode).
+
+| Lifeline       | Description                                                                 |
+|----------------|-----------------------------------------------------------------------------|
+| Call a Friend  | Consult someone outside the game (e.g., phone call, pass device) before answering |
+| Discard        | Skip the current question without penalty. No points awarded or lost       |
+| Answer Rewards | Reveals a hint or partial answer. May reduce points awarded if used        |
+
+**Availability:** Can be enabled or disabled per game mode. Not available during Hot Seat or Wager turns (configurable).
+
+---
+
+## 5. App Economy & Monetization
+
+### 5.1. Token Store
+
+- **Currency:** Tokens required to start games (e.g., 10 for standard game)
+- **Bundles:** Packs of 10, 20, 30, 50, and 100 tokens
+
+### 5.2. Token Administration Portal
+
+- **Terminal/Portal:** An online admin interface to create, generate, and limit tokens
+- **Use Cases:** Promotional campaigns, affiliate rewards, usage caps, and balance adjustments
+
+### 5.3. Code System
+
+A text-entry field for promotional and affiliate use.
+
+- **Free Tokens:** Codes that grant a set amount of currency
+- **Discount Codes:** Reduced pricing for token bundles in the store
+- **Affiliate Tracking:** Hard-coded or backend-linked codes to track referrals
+
+---
+
+## 6. UI/UX Requirements
+
+### 6.1. Visual Style
+
+- **Layout:** Landscape is required for mobile. Everything must fit on screen with a layout similar to Seen Jeem. Landscape preferred for tablet/desktop; responsive and clean for mobile
+- **Themes:** Dark mode plus 4 light palette options. Ensure all text remains legible in every theme:
+  - Blue: main #4d79ff, background #b3c3ff
+  - Orange: main #ff9933, background #ffd9b3
+  - Green: main #00b300, background #b3ffb3
+  - Red: main #e63900, background #ffc6b3
+  - Dark mode
+
+### 6.2. Interactive Elements
+
+- **Navigation:** Toggle-style menus for "How to Play" rules and settings
+- **Score Controls:** Manual +/− buttons to the left and right of the score at the bottom to add or subtract 50 points
+- **Timers:** Count-up timer (not count-down) to track deliberation time
+- **Question States:**
+  - Gray: Unanswered
+  - Green: Currently selected/active
+  - Disabled: Once selected via Wager or Random mode, other questions unclickable until turn ends
+
+---
+
+## 7. User Accounts & Authentication
+
+- **Account Creation:** Sign-up flow for new users (email or phone)
+- **Login:** Sign-in for returning users; support for "Forgot password" flow
+- **Account Required to Play:** An account is required to play the game. Without this, users could claim free tokens on download, delete the app, and repeat. Considerations:
+  - **Device-bound tokens:** If tokens can be hard-coded to the device (e.g., via device ID), deleting the app would not reset free-token eligibility. This may reduce abuse.
+  - **Pre-sign-in tokens:** Granting free tokens regardless of sign-in activity could improve onboarding but must be reconciled with device-binding to prevent abuse.
+  - **Sign-in APIs:** Cost and integration effort for Google/Apple Sign-In should be evaluated for v1.
+
+---
+
+## 8. Content & Data
+
+- **Categories:** History, Pop Culture, Games, Sports, General Knowledge
+- **Structure:** Questions tagged by category and point value (e.g., 200, 400, 600)
+- **Question Count:**
+  - Classic and Quick Play: Fixed grid (36 questions across categories)
+  - Random and Rumble: 36 questions each
+- **Setup:** Users can manually add or remove teams and players during the pre-game lobby. Team member names must be entered separately (one name per player)
+- **Content Updates:** Plan for regular expansion; new categories and questions over time
+
+---
+
+## 9. Technical Notes
+
+- **Platform:** Built using Expo (React Native) for cross-platform mobile compatibility
+- **State Management:** Must track used questions to prevent repetition:
+  - **Same session:** Strictly no repetitions within a single game session
+  - **Cross-session:** Questions must be randomly selected from whatever has not been asked on the device yet. Repetition is prevented even outside the session
+- **Randomization:** Robust "randomizer" engine for Wager and Random modes to ensure fairness
