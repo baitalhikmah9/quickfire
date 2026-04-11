@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
@@ -31,6 +31,7 @@ export default function TeamSetupScreen() {
   const [slideIndex, setSlideIndex] = useState(0);
 
   const session = usePlayStore((state) => state.session);
+  const ensureDraft = usePlayStore((state) => state.ensureDraft);
   const updateTeamName = usePlayStore((state) => state.updateTeamName);
   const addTeamMember = usePlayStore((state) => state.addTeamMember);
   const removeTeamMember = usePlayStore((state) => state.removeTeamMember);
@@ -71,6 +72,11 @@ export default function TeamSetupScreen() {
       setSlideIndex(Math.max(0, steps.length - 1));
     }
   }, [slideIndex, steps.length]);
+
+  /** Deep links and stack restores can open this screen before any play session exists. */
+  useLayoutEffect(() => {
+    ensureDraft();
+  }, [ensureDraft]);
 
   const headerTitle = useMemo(() => {
     switch (currentStep) {
@@ -255,7 +261,6 @@ export default function TeamSetupScreen() {
   return (
     <PlayScaffold
       title={headerTitle}
-      subtitle={t('play.teamSetupStepOf', { current: slideIndex + 1, total: steps.length })}
       bodyScrollEnabled={false}
       footer={
         <View style={styles.footerActions}>
@@ -312,13 +317,14 @@ export default function TeamSetupScreen() {
 const styles = StyleSheet.create({
   slideHost: {
     width: '100%',
+    flexGrow: 0,
+    alignSelf: 'stretch',
   },
   slidePage: {
-    borderWidth: 1,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
+    padding: SPACING.sm,
     gap: SPACING.md,
     width: '100%',
+    flexGrow: 0,
   },
   sectionTitle: {
     fontSize: FONT_SIZES.lg,
@@ -401,7 +407,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: SPACING.sm,
-    marginBottom: SPACING.md,
   },
   dot: {
     width: 8,

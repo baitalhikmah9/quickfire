@@ -164,12 +164,13 @@ export const usePlayStore = create<PlayStore>((set, get) => ({
 
   setQuickPlayTopicCount: (count) =>
     set((state) => {
-      if (!state.session) return state;
+      const base = state.session ?? createDraftSession();
       const session: GameSessionState = {
-        ...state.session,
-        step: 'team-setup' as const,
+        ...base,
+        mode: 'quickPlay',
+        step: 'team-setup',
         config: {
-          ...state.session.config,
+          ...base.config,
           quickPlayTopicCount: count,
         },
       };

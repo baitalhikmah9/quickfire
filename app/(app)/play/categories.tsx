@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, LayoutChangeEvent, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
-import { BORDER_RADIUS, FONT_SIZES, SPACING } from '@/constants';
+import { BORDER_RADIUS, COLORS, FONT_SIZES, SPACING } from '@/constants';
 import { getCategoryPictureSource } from '@/constants/categoryPictures';
 import { getModeCategoryCount } from '@/features/play/data';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
@@ -27,8 +27,13 @@ export default function CategorySelectionScreen() {
   const [gridWidth, setGridWidth] = useState(0);
   const { getTextStyle, t } = useI18n();
   const session = usePlayStore((state) => state.session);
+  const ensureDraft = usePlayStore((state) => state.ensureDraft);
   const toggleCategory = usePlayStore((state) => state.toggleCategory);
   const startBoard = usePlayStore((state) => state.startBoard);
+
+  useLayoutEffect(() => {
+    ensureDraft();
+  }, [ensureDraft]);
 
   const required = useMemo(() => {
     if (!session) return 0;
@@ -85,7 +90,7 @@ export default function CategorySelectionScreen() {
         {session.availableCategories.map((category) => {
           const selected = session.selectedCategoryIds.includes(category.slug);
           const disabled = !selected && session.selectedCategoryIds.length >= required;
-          const imageSource = getCategoryPictureSource(category.slug);
+          const imageSource = getCategoryPictureSource(category.id);
           return (
             <Pressable
               key={category.slug}
@@ -113,21 +118,14 @@ export default function CategorySelectionScreen() {
                   </View>
                 )}
 
-                <View
-                  style={[
-                    styles.imageOverlay,
-                    { backgroundColor: selected ? 'rgba(15, 23, 42, 0.26)' : 'rgba(15, 23, 42, 0.52)' },
-                  ]}
-                />
-
-                <View style={styles.tileFooter}>
+                <View style={[styles.tileFooter, { backgroundColor: COLORS.secondary }]}>
                   <Text
-                    style={[styles.categoryTitle, { color: '#FFFFFF' }, getTextStyle(category.resolvedLocale, 'bodyBold', 'start')]}
+                    style={[styles.categoryTitle, getTextStyle(category.resolvedLocale, 'bodyBold', 'start')]}
                     numberOfLines={2}
                   >
                     {category.title}
                   </Text>
-                  <Text style={[styles.categoryMeta, { color: '#E2E8F0' }, getTextStyle(category.resolvedLocale)]}>
+                  <Text style={[styles.categoryMeta, getTextStyle(category.resolvedLocale)]}>
                     {t('common.questions', { count: category.questionCount })}
                   </Text>
                 </View>
@@ -188,24 +186,22 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: '800',
   },
-  imageOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
   tileFooter: {
-    paddingHorizontal: SPACING.sm,
-    paddingBottom: SPACING.sm,
+    width: '100%',
     gap: 2,
+    paddingHorizontal: SPACING.sm,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.sm,
   },
   categoryTitle: {
     fontSize: FONT_SIZES.sm,
     lineHeight: 17,
     fontWeight: '700',
-    textShadowColor: 'rgba(0, 0, 0, 0.35)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
+    color: COLORS.text,
   },
   categoryMeta: {
     fontSize: FONT_SIZES.xs,
+    color: COLORS.mutedText,
   },
   selectedPill: {
     position: 'absolute',
