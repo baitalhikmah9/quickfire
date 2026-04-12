@@ -120,7 +120,7 @@ export default function PlayModeScreen() {
               hubPills.compactCards && styles.carouselContentCompact,
               styles.carouselContentFillCross,
             ]}
-            style={styles.carousel}
+            style={[styles.carousel, { maxHeight: hubPills.maxHubPillHeight }]}
             keyboardShouldPersistTaps="handled"
           >
             {modes.map((mode) => (
@@ -159,11 +159,12 @@ const styles = StyleSheet.create({
   headerInset: {
     paddingHorizontal: LAYOUT.screenGutter,
   },
-  /** Same flex contract as home `deckCardInset` → `cardRow`: strip grows so pills match hub height. */
+  /** Same flex contract as home `deckCardInset` → `cardRow`; vertical center when pills are height-capped. */
   carouselVertical: {
     flex: 1,
     minHeight: 0,
     minWidth: 0,
+    justifyContent: 'center',
   },
   carousel: {
     flex: 1,

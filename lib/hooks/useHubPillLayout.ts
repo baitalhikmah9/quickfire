@@ -28,12 +28,20 @@ export function useHubPillLayout(omitScreenGutter = false) {
     /** Min height for a horizontal pill row (hub deck or play mode carousel) below chrome. */
     const pillStripMinHeight = Math.max(260, height - insets.top - insets.bottom - 100);
 
+    const usableHeight = height - insets.top - insets.bottom;
+    /** Cap pill3d stretch on tall layouts (large phones, tablets, web) so tiles stay card-sized. */
+    const maxHubPillHeight = Math.min(
+      320,
+      Math.max(200, Math.round(usableHeight * 0.42))
+    );
+
     return {
       contentWidth,
       cardW,
       betweenCards,
       compactCards: height < 520,
       pillStripMinHeight,
+      maxHubPillHeight,
     };
   }, [width, height, insets.left, insets.right, insets.top, insets.bottom, omitScreenGutter]);
 }

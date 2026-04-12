@@ -1,3 +1,21 @@
+diff --git a/tsconfig.json b/tsconfig.json
+--- a/tsconfig.json
++++ b/tsconfig.json
+@@ -1,7 +1,13 @@
+ {
+-  "extends": "expo-module-scripts/tsconfig.base",
+   "compilerOptions": {
++    "target": "ESNext",
++    "module": "preserve",
++    "moduleResolution": "bundler",
++    "jsx": "react-native",
++    "strict": true,
++    "skipLibCheck": true,
+     "outDir": "./build",
++    "declaration": true,
+     "emitDeclarationOnly": true
+   },
+   "include": ["./src"],
 diff --git a/src/sweet/setUpJsLogger.fx.ts b/src/sweet/setUpJsLogger.fx.ts
 index bda34408ec9f4a26141209dc2d3025c3db597259..a153923f4d66ac34897f8767836d2cebe4998107 100644
 --- a/src/sweet/setUpJsLogger.fx.ts

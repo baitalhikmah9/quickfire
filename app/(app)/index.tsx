@@ -167,13 +167,14 @@ export default function AppHubScreen() {
         <View style={styles.mainDeck}>
           <View style={[styles.deckColumn, styles.deckColumnGrow]}>
             {canResume ? (
-              <View style={[styles.deckTopInset, hubHorizontalInset]}>
+              <View style={styles.deckTopInset}>
                 <Pressable
                   onPress={() => router.push(getResumePath(session?.step))}
                   style={({ pressed }) => [
                     styles.resumeBar,
                     SHADOWS.card,
                     {
+                      alignSelf: 'stretch',
                       backgroundColor: colors.primary,
                       shadowColor: colors.primary,
                       opacity: pressed ? 0.92 : 1,
@@ -212,7 +213,10 @@ export default function AppHubScreen() {
               <View
                 style={[
                   styles.cardRow,
-                  { flexDirection: getRowDirection(direction) },
+                  {
+                    flexDirection: getRowDirection(direction),
+                    maxHeight: hubPills.maxHubPillHeight,
+                  },
                 ]}
               >
               <HubActionCard
@@ -273,12 +277,23 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   headerInset: {},
-  deckTopInset: {},
+  /**
+   * Symmetric gutter so the resume CTA sits centered; hub pills below still use `hubHorizontalInset`
+   * (extra trailing inset). `alignItems` + `alignSelf: 'stretch'` on the bar keeps full inner width.
+   */
+  deckTopInset: {
+    width: '100%',
+    minWidth: 0,
+    paddingHorizontal: LAYOUT.screenGutter,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   /** Vertical flex + width; horizontal inset from `hubHorizontalInset` (+ extra right). */
   deckCardInset: {
     flex: 1,
     minHeight: 0,
     minWidth: 0,
+    justifyContent: 'center',
   },
   topBar: {
     position: 'relative',
