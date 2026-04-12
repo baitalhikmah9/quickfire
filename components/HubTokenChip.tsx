@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Pressable, type FlexStyle } from 'react-native';
+import { View, Text, StyleSheet, type FlexStyle } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, BORDER_RADIUS, FONTS, COLORS } from '@/constants';
 

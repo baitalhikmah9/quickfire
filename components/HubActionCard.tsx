@@ -1,5 +1,6 @@
 import { memo } from 'react';
-import { View, Text, StyleSheet, Pressable, type TextStyle, type ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, BORDER_RADIUS, SHADOWS, TYPE_SCALE, FONTS, COLORS } from '@/constants';
 import type { ThemePalette } from '@/lib/hooks/useTheme';

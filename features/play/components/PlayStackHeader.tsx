@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, type ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, type ViewStyle } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SPACING, BORDER_RADIUS, FONTS } from '@/constants';

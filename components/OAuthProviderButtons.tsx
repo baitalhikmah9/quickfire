@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Pressable, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, Platform } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, BORDER_RADIUS } from '@/constants';
 import { TYPE_SCALE, SHADOWS } from '@/constants/theme';
 

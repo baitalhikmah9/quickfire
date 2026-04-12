@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';

@@ -2,6 +2,7 @@
 last_mapped: 2026-04-11T00:00:00Z
 total_files: 168
 total_tokens: ~350000
+upgraded: 2026-04-11
 ---
 
 # Codebase Map — Double Down
@@ -420,16 +421,19 @@ overtimeCheck -> completed
 | File | Purpose | Tokens |
 |------|---------|--------|
 | `auth.ts` | Auth store | ~100 |
+| `play.ts` | Primary play/session store | ~250 |
 | `game.ts` | Game session store | ~120 |
 | `theme.ts` | Theme preference store | ~100 |
 
 **Exports**:
 - `useAuthStore` - User, isAuthenticated, isLoading, login/logout
+- `usePlayStore` - Tokens, session, persistence hydrate, gameplay actions
 - `useGameStore` - Session, dispatch, initSession, resetSession
 - `useThemeStore` - paletteId, setPalette, hydrate
 
 **Dependencies**:
 - `zustand` - Store library
+- `@react-native-async-storage/async-storage` - Play and legacy game persistence
 - `expo-secure-store` - Theme persistence
 - `@/types/user` - User types
 - `@/features/shared` - Game types
@@ -438,6 +442,7 @@ overtimeCheck -> completed
 **Patterns**:
 - Zod validation in auth store (`UserSchema.safeParse`)
 - Reducer pattern for game state
+- AsyncStorage persistence for play and legacy game state
 - Async hydration for theme persistence
 - Dev-only logging with `__DEV__`
 
@@ -446,7 +451,6 @@ overtimeCheck -> completed
 - Game dispatch no-ops if session is null
 - Theme requires explicit `hydrate()` call on mount
 - Uses SecureStore for theme (overkill, AsyncStorage sufficient)
-- Auth and game stores don't persist - cleared on restart
 
 ---
 

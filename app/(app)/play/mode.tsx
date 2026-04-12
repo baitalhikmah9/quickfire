@@ -32,6 +32,26 @@ export default function PlayModeScreen() {
   const hubPills = useHubPillLayout(true);
   const snapInterval = hubPills.cardW + hubPills.betweenCards;
 
+  // #region agent log
+  fetch('http://127.0.0.1:7814/ingest/224abf79-359e-4b9a-836f-1b018a6a309d', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '92ac8d' },
+    body: JSON.stringify({
+      sessionId: '92ac8d',
+      location: 'app/(app)/play/mode.tsx:PlayModeScreen',
+      message: 'PlayModeScreen render after hubPills',
+      data: {
+        hypothesisId: 'H1-orphan-hook',
+        cardW: hubPills.cardW,
+        compactCards: hubPills.compactCards,
+        noUseWindowDimensionsCall: true,
+      },
+      timestamp: Date.now(),
+      runId: 'verify-post-fix',
+    }),
+  }).catch(() => {});
+  // #endregion
+
   const modes: ModeDef[] = useMemo(
     () => [
       {
@@ -87,13 +107,7 @@ export default function PlayModeScreen() {
         <View style={styles.headerInset}>
           <PlayStackHeader title={t('play.chooseModeTitle')} />
         </View>
-        <ScrollView
-          style={styles.carouselVertical}
-          contentContainerStyle={styles.carouselVerticalContent}
-          showsVerticalScrollIndicator
-          nestedScrollEnabled
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={styles.carouselVertical}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator
@@ -101,8 +115,13 @@ export default function PlayModeScreen() {
             snapToInterval={snapInterval}
             snapToAlignment="start"
             disableIntervalMomentum
-            contentContainerStyle={styles.carouselContent}
-            style={[styles.carousel, { minHeight: hubPills.pillStripMinHeight }]}
+            contentContainerStyle={[
+              styles.carouselContent,
+              hubPills.compactCards && styles.carouselContentCompact,
+              styles.carouselContentFillCross,
+            ]}
+            style={styles.carousel}
+            keyboardShouldPersistTaps="handled"
           >
             {modes.map((mode) => (
               <HubActionCard
@@ -122,7 +141,7 @@ export default function PlayModeScreen() {
               />
             ))}
           </ScrollView>
-        </ScrollView>
+        </View>
       </ScreenContent>
     </SafeAreaView>
   );
@@ -140,25 +159,31 @@ const styles = StyleSheet.create({
   headerInset: {
     paddingHorizontal: LAYOUT.screenGutter,
   },
+  /** Same flex contract as home `deckCardInset` → `cardRow`: strip grows so pills match hub height. */
   carouselVertical: {
     flex: 1,
     minHeight: 0,
     minWidth: 0,
   },
-  carouselVerticalContent: {
-    flexGrow: 1,
-    paddingBottom: SPACING.lg,
-  },
   carousel: {
-    flexGrow: 1,
-    flexShrink: 0,
+    flex: 1,
+    minHeight: 0,
     minWidth: 0,
   },
   carouselContent: {
     flexDirection: 'row',
     alignItems: 'stretch',
+    flexGrow: 1,
     gap: SPACING.md,
-    paddingBottom: SPACING.lg,
+    paddingVertical: SPACING.sm,
     paddingHorizontal: LAYOUT.screenGutter,
+  },
+  carouselContentCompact: {
+    gap: SPACING.sm,
+    paddingVertical: SPACING.xs,
+  },
+  /** Match home hub row height: stretch pills to the ScrollView’s vertical space. */
+  carouselContentFillCross: {
+    minHeight: '100%',
   },
 });

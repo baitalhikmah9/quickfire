@@ -28,6 +28,7 @@ For colors, typefaces, and UI usage rules, see [docs/BRAND_GUIDELINES.md](docs/B
 - Auth required for all game modes (no guest play)
 - Game screen forces landscape on mobile
 - Must call `hydrate()` before first render for theme
+- **Responsive play UI:** Avoid clipping on any screen size—use `flex: 1` / `minHeight: 0`, `ScrollView` when content can overflow, density from `useWindowDimensions` (width and height), and alternate layouts (e.g. stacked controls) when width is tight.
 
 ### Environment Variables
 ```

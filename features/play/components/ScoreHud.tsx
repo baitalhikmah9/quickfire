@@ -1,112 +1,170 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { Fragment } from 'react';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { SPACING, BORDER_RADIUS, FONT_SIZES } from '@/constants';
-import { COLORS, FONTS, TYPE_SCALE } from '@/constants/theme';
+import { COLORS, FONTS } from '@/constants/theme';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import type { GameSessionState } from '@/features/shared';
 
+/** Below this width, use the compact strip typography and chrome. */
+const NARROW_SCORE_BREAKPOINT = 560;
+
 interface ScoreHudProps {
   session: GameSessionState;
   compact?: boolean;
+  /** Tighter chrome for board / landscape — stacks under compact. */
+  dense?: boolean;
 }
 
-function formatPhase(
-  phase: GameSessionState['phase'],
-  t: ReturnType<typeof useI18n>['t']
-) {
-  switch (phase) {
-    case 'wagerDecision':
-      return t('play.phase.board');
-    case 'questionReveal':
-      return t('play.phase.question');
-    case 'answerLock':
-    case 'scoring':
-      return t('play.phase.answer');
-    case 'completed':
-      return t('play.phase.finished');
-    default:
-      return t('play.phase.play');
-  }
-}
-
-export function ScoreHud({ session, compact }: ScoreHudProps) {
+export function ScoreHud({ session, compact, dense }: ScoreHudProps) {
   const colors = useTheme();
+  const { width } = useWindowDimensions();
   const { direction, getTextStyle, t } = useI18n();
   const showWagerMeta = session.config.wagerEnabled;
+  const useStripLayout = dense || width < NARROW_SCORE_BREAKPOINT;
+  const compactSegment = useStripLayout || dense;
+
+  const showMetaExtras =
+    (session.wager && showWagerMeta) || session.bonus.active;
+
+  const metaRowEl = showMetaExtras ? (
+    <View
+      style={[
+        styles.metaRow,
+        dense && styles.metaRowDense,
+        useStripLayout && styles.metaRowNarrow,
+        { flexDirection: getRowDirection(direction) },
+      ]}
+    >
+      {session.wager && showWagerMeta ? (
+        <Text
+          style={[
+            styles.metaText,
+            compact && styles.metaTextCompact,
+            dense && styles.metaTextDense,
+            useStripLayout && styles.metaTextNarrow,
+            { color: COLORS.secondary },
+            getTextStyle(),
+          ]}
+        >
+          Wager x{session.wager.multiplier}
+        </Text>
+      ) : null}
+      {session.bonus.active ? (
+        <Text
+          style={[
+            styles.metaText,
+            compact && styles.metaTextCompact,
+            dense && styles.metaTextDense,
+            useStripLayout && styles.metaTextNarrow,
+            { color: colors.warning },
+            getTextStyle(),
+          ]}
+        >
+          Bonus x{session.bonus.multiplier}
+        </Text>
+      ) : null}
+    </View>
+  ) : null;
 
   return (
     <View
       style={[
-        styles.container,
-        compact && styles.containerCompact,
-        {
-          backgroundColor: colors.cardBackground,
-          borderColor: colors.border,
-        },
+        styles.hudOuter,
+        compact && styles.hudOuterCompact,
+        dense && styles.hudOuterDense,
+        useStripLayout && styles.hudOuterStrip,
       ]}
     >
-      <View style={[styles.metaRow, { flexDirection: getRowDirection(direction) }]}>
-        <Text style={[styles.phasePill, compact && styles.phasePillCompact, { backgroundColor: colors.primary }]}>
-          {formatPhase(session.phase, t).toUpperCase()}
-        </Text>
-        {session.wager && showWagerMeta ? (
-          <Text style={[styles.metaText, compact && styles.metaTextCompact, { color: COLORS.secondary }, getTextStyle()]}>
-            Wager x{session.wager.multiplier}
-          </Text>
-        ) : null}
-        {session.bonus.active ? (
-          <Text style={[styles.metaText, compact && styles.metaTextCompact, { color: colors.warning }, getTextStyle()]}>
-            Bonus x{session.bonus.multiplier}
-          </Text>
-        ) : null}
-      </View>
-
-      <View style={[styles.scoreRow, { flexDirection: getRowDirection(direction) }]}>
-        {session.teams.map((team) => {
+      {metaRowEl}
+      <View
+        style={[
+          styles.mergedScoreBar,
+          compactSegment && styles.mergedScoreBarCompact,
+          {
+            borderColor: colors.border,
+            backgroundColor: colors.cardBackground,
+            flexDirection: getRowDirection(direction),
+          },
+        ]}
+        accessibilityRole="summary"
+      >
+        {session.teams.map((team, index) => {
           const isActive = team.id === session.currentTeamId;
+          const wagerLabel = showWagerMeta
+            ? t('play.wagersUsed', {
+                used: team.wagersUsed,
+                total: session.wagersPerTeam,
+              })
+            : '';
           return (
-            <View
-              key={team.id}
-              style={[
-                styles.teamCard,
-                compact && styles.teamCardCompact,
-                {
-                  borderColor: isActive ? colors.primary : colors.border,
-                  backgroundColor: isActive ? `${colors.primary}12` : colors.background,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.teamName,
-                  compact && styles.teamNameCompact,
-                  { color: colors.text },
-                  getTextStyle(undefined, 'bodyBold', 'start'),
-                ]}
-                numberOfLines={1}
-              >
-                {team.name}
-              </Text>
-              <Text
-                style={[
-                  styles.teamScore,
-                  compact && styles.teamScoreCompact,
-                  { color: colors.text },
-                  getTextStyle(undefined, 'displayBold', 'start'),
-                ]}
-              >
-                {team.score}
-              </Text>
-              {showWagerMeta ? (
-                <Text style={[styles.teamMeta, compact && styles.teamMetaCompact, { color: colors.textSecondary }, getTextStyle()]}>
-                  {t('play.wagersUsed', {
-                    used: team.wagersUsed,
-                    total: session.wagersPerTeam,
-                  })}
-                </Text>
+            <Fragment key={team.id}>
+              {index > 0 ? (
+                <View
+                  style={[styles.segmentDivider, { backgroundColor: colors.border }]}
+                  importantForAccessibility="no-hide-descendants"
+                />
               ) : null}
-            </View>
+              <View
+                style={[
+                  styles.teamSegment,
+                  compactSegment ? styles.teamSegmentCompact : styles.teamSegmentRelaxed,
+                  { backgroundColor: isActive ? `${colors.primary}12` : 'transparent' },
+                ]}
+                accessibilityLabel={`${team.name}, ${t('common.points', { count: team.score })}${showWagerMeta ? `, ${wagerLabel}` : ''}`}
+              >
+                <View
+                  style={[
+                    styles.teamSegmentStack,
+                    compactSegment && styles.teamSegmentStackCompact,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.segmentTeamLabel,
+                      compactSegment ? styles.segmentTeamLabelCompact : styles.segmentTeamLabelRelaxed,
+                      { color: colors.textSecondary },
+                      getTextStyle(undefined, 'bodySemibold', 'center'),
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {team.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.segmentScoreValue,
+                      compactSegment ? styles.segmentScoreValueCompact : styles.segmentScoreValueRelaxed,
+                      { color: colors.text },
+                      getTextStyle(undefined, 'displayBold', 'center'),
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.85}
+                  >
+                    {team.score}
+                  </Text>
+                  {showWagerMeta ? (
+                    <Text
+                      style={[
+                        styles.segmentWagerLine,
+                        compactSegment && styles.segmentWagerLineCompact,
+                        { color: colors.textSecondary },
+                        getTextStyle(undefined, 'body', 'center'),
+                      ]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.8}
+                    >
+                      {t('play.wagersUsed', {
+                        used: team.wagersUsed,
+                        total: session.wagersPerTeam,
+                      })}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            </Fragment>
           );
         })}
       </View>
@@ -115,17 +173,100 @@ export function ScoreHud({ session, compact }: ScoreHudProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  hudOuter: {
     marginBottom: SPACING.lg,
-    borderWidth: 2,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
     gap: SPACING.md,
   },
-  containerCompact: {
+  hudOuterCompact: {
     marginBottom: SPACING.sm,
-    padding: SPACING.sm,
     gap: SPACING.sm,
+  },
+  hudOuterDense: {
+    marginBottom: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  hudOuterStrip: {
+    marginBottom: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  mergedScoreBar: {
+    borderWidth: 2,
+    borderRadius: BORDER_RADIUS.lg,
+    overflow: 'hidden',
+    alignItems: 'stretch',
+  },
+  mergedScoreBarCompact: {
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  segmentDivider: {
+    width: StyleSheet.hairlineWidth * 2,
+    minWidth: 1,
+    alignSelf: 'stretch',
+  },
+  teamSegment: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  teamSegmentCompact: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    minHeight: 52,
+  },
+  teamSegmentRelaxed: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    minHeight: 68,
+  },
+  teamSegmentStack: {
+    flex: 1,
+    width: '100%',
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+  },
+  teamSegmentStackCompact: {
+    gap: 2,
+  },
+  segmentTeamLabel: {
+    width: '100%',
+    fontFamily: FONTS.uiSemibold,
+    letterSpacing: 0.2,
+  },
+  segmentTeamLabelCompact: {
+    fontSize: 10,
+    lineHeight: 12,
+  },
+  segmentTeamLabelRelaxed: {
+    fontSize: FONT_SIZES.sm,
+    lineHeight: 18,
+  },
+  segmentScoreValue: {
+    fontFamily: FONTS.displayBold,
+    fontVariant: 'tabular-nums',
+    letterSpacing: -0.5,
+  },
+  segmentScoreValueCompact: {
+    fontSize: 22,
+    lineHeight: 26,
+  },
+  segmentScoreValueRelaxed: {
+    fontSize: FONT_SIZES.xxxl,
+    lineHeight: 40,
+  },
+  segmentWagerLine: {
+    width: '100%',
+    fontFamily: FONTS.uiMedium,
+    fontVariant: 'tabular-nums',
+    fontSize: FONT_SIZES.xs,
+    lineHeight: 14,
+    opacity: 0.92,
+  },
+  segmentWagerLineCompact: {
+    fontSize: 10,
+    lineHeight: 12,
   },
   metaRow: {
     flexDirection: 'row',
@@ -133,19 +274,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
   },
-  phasePill: {
-    ...TYPE_SCALE.labelCap,
-    fontFamily: FONTS.uiBold,
-    color: '#FFFFFF',
-    overflow: 'hidden',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.pill,
+  metaRowDense: {
+    paddingBottom: 2,
   },
-  phasePillCompact: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    fontSize: 10,
+  metaRowNarrow: {
+    gap: SPACING.xs,
+    flexWrap: 'wrap',
   },
   metaText: {
     fontSize: FONT_SIZES.sm,
@@ -154,44 +288,11 @@ const styles = StyleSheet.create({
   metaTextCompact: {
     fontSize: FONT_SIZES.xs,
   },
-  scoreRow: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  teamCard: {
-    flex: 1,
-    borderWidth: 2,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.sm,
-    minHeight: 88,
-  },
-  teamCardCompact: {
-    minHeight: 56,
-    padding: SPACING.xs,
-  },
-  teamName: {
-    fontSize: FONT_SIZES.sm,
-    fontFamily: FONTS.uiBold,
-    marginBottom: 4,
-  },
-  teamNameCompact: {
-    fontSize: FONT_SIZES.xs,
-    marginBottom: 2,
-  },
-  teamScore: {
-    fontSize: FONT_SIZES.xxl,
-    fontFamily: FONTS.displayBold,
-    marginBottom: 4,
-  },
-  teamScoreCompact: {
-    fontSize: FONT_SIZES.lg,
-    marginBottom: 0,
-  },
-  teamMeta: {
-    fontSize: FONT_SIZES.xs,
-    fontFamily: FONTS.ui,
-  },
-  teamMetaCompact: {
+  metaTextDense: {
     fontSize: 10,
+  },
+  metaTextNarrow: {
+    fontSize: 10,
+    lineHeight: 14,
   },
 });

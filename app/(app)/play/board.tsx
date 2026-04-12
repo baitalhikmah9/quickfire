@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import { Alert, View, Text, StyleSheet, Pressable, ScrollView, useWindowDimensions } from 'react-native';
+import { Alert, View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { BORDER_RADIUS, FONT_SIZES, SPACING } from '@/constants';
@@ -7,6 +8,7 @@ import { getCategoryBoardAccent, getCategoryPictureSource } from '@/constants/ca
 import { getRandomRemainingQuestion } from '@/features/play/data';
 import type { QuestionCard } from '@/features/shared';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
+import { HorizontalPlayEdgeBlurs } from '@/features/play/components/HorizontalPlayEdgeBlurs';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
@@ -17,7 +19,7 @@ interface BoardRow {
   right: QuestionCard;
 }
 
-function getBoardColumnWidth(screenWidth: number): number {
+function getBoardColumnWidth(screenWidth: number, screenHeight: number): number {
   const visibleColumns =
     screenWidth >= 1560 ? 7
       : screenWidth >= 1320 ? 6
@@ -26,10 +28,113 @@ function getBoardColumnWidth(screenWidth: number): number {
             : 3;
 
   const boardGutter = screenWidth >= 1100 ? SPACING.md : SPACING.sm;
-  const horizontalChrome = screenWidth >= 1100 ? 84 : 60;
-  const available = Math.max(320, screenWidth - horizontalChrome);
+  const horizontalChrome =
+    screenHeight < 480 ? 44 : screenWidth >= 1100 ? 80 : 52;
+  const available = Math.max(280, screenWidth - horizontalChrome);
   const raw = Math.floor((available - boardGutter * (visibleColumns - 1)) / visibleColumns);
-  return Math.max(152, Math.min(232, raw));
+  const minW = screenHeight < 450 ? 120 : 140;
+  const maxW = screenHeight < 520 ? 252 : 292;
+  return Math.max(minW, Math.min(maxW, raw));
+}
+
+type BoardDensity = {
+  headerPaddingV: number;
+  headerPaddingH: number;
+  pictureInset: number;
+  rowMinHeight: number;
+  tileMinHeight: number;
+  rowsGap: number;
+  rowsPadding: number;
+  titleFontSize: number;
+  titleLineHeight: number;
+  tileFontSize: number;
+  bannerPaddingV: number;
+  bannerPaddingH: number;
+  cardBorderWidth: number;
+  randomButtonMinH: number;
+  randomTitleSize: number;
+  fallbackLetterSize: number;
+};
+
+function getBoardDensity(screenHeight: number): BoardDensity {
+  if (screenHeight < 400) {
+    return {
+      headerPaddingV: 4,
+      headerPaddingH: SPACING.xs,
+      pictureInset: 2,
+      rowMinHeight: 22,
+      tileMinHeight: 22,
+      rowsGap: 2,
+      rowsPadding: 2,
+      titleFontSize: 10,
+      titleLineHeight: 13,
+      tileFontSize: 10,
+      bannerPaddingV: SPACING.xs,
+      bannerPaddingH: SPACING.sm,
+      cardBorderWidth: 1,
+      randomButtonMinH: 44,
+      randomTitleSize: FONT_SIZES.md,
+      fallbackLetterSize: 22,
+    };
+  }
+  if (screenHeight < 520) {
+    return {
+      headerPaddingV: 6,
+      headerPaddingH: SPACING.sm,
+      pictureInset: 2,
+      rowMinHeight: 26,
+      tileMinHeight: 24,
+      rowsGap: 3,
+      rowsPadding: 4,
+      titleFontSize: 11,
+      titleLineHeight: 14,
+      tileFontSize: 11,
+      bannerPaddingV: SPACING.sm,
+      bannerPaddingH: SPACING.md,
+      cardBorderWidth: 1,
+      randomButtonMinH: 48,
+      randomTitleSize: FONT_SIZES.lg,
+      fallbackLetterSize: 26,
+    };
+  }
+  if (screenHeight < 640) {
+    return {
+      headerPaddingV: 8,
+      headerPaddingH: SPACING.sm,
+      pictureInset: 3,
+      rowMinHeight: 30,
+      tileMinHeight: 28,
+      rowsGap: SPACING.xs,
+      rowsPadding: SPACING.xs,
+      titleFontSize: FONT_SIZES.xs,
+      titleLineHeight: 15,
+      tileFontSize: FONT_SIZES.xs,
+      bannerPaddingV: SPACING.sm,
+      bannerPaddingH: SPACING.md,
+      cardBorderWidth: 2,
+      randomButtonMinH: 52,
+      randomTitleSize: FONT_SIZES.lg,
+      fallbackLetterSize: 28,
+    };
+  }
+  return {
+    headerPaddingV: 10,
+    headerPaddingH: SPACING.sm,
+    pictureInset: 3,
+    rowMinHeight: 34,
+    tileMinHeight: 32,
+    rowsGap: SPACING.xs,
+    rowsPadding: SPACING.xs,
+    titleFontSize: FONT_SIZES.xs,
+    titleLineHeight: 15,
+    tileFontSize: FONT_SIZES.xs,
+    bannerPaddingV: SPACING.md,
+    bannerPaddingH: SPACING.md,
+    cardBorderWidth: 2,
+    randomButtonMinH: 56,
+    randomTitleSize: FONT_SIZES.lg,
+    fallbackLetterSize: 30,
+  };
 }
 
 function groupBoardTrivia(session: NonNullable<ReturnType<typeof usePlayStore.getState>['session']>): {
@@ -75,12 +180,14 @@ function groupBoardTrivia(session: NonNullable<ReturnType<typeof usePlayStore.ge
 
 export default function PlayBoardScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const colors = useTheme();
   const { getTextStyle, t } = useI18n();
   const session = usePlayStore((state) => state.session);
   const selectQuestion = usePlayStore((state) => state.selectQuestion);
   const confirmRandomWagerQuestion = usePlayStore((state) => state.confirmRandomWagerQuestion);
+
+  const density = useMemo(() => getBoardDensity(height), [height]);
 
   useEffect(() => {
     if (session?.step === 'question') {
@@ -97,7 +204,17 @@ export default function PlayBoardScreen() {
   }, [confirmRandomWagerQuestion, session?.wager]);
 
   const grouped = useMemo(() => (session ? groupBoardTrivia(session) : []), [session]);
-  const columnWidth = useMemo(() => getBoardColumnWidth(width), [width]);
+  const columnWidth = useMemo(() => getBoardColumnWidth(width, height), [width, height]);
+  const edgeBlurWidth = useMemo(
+    () => Math.round(Math.min(56, Math.max(28, width * 0.042))),
+    [width]
+  );
+  const boardGap = width >= 1100 ? SPACING.md : SPACING.sm;
+  const boardContentWidth = useMemo(() => {
+    if (grouped.length === 0) return 0;
+    return grouped.length * columnWidth + Math.max(0, grouped.length - 1) * boardGap;
+  }, [grouped.length, columnWidth, boardGap]);
+  const centerBoardInViewport = boardContentWidth > 0 && boardContentWidth < width - 4;
 
   if (!session) {
     return <PlayScaffold title={t('common.loading')}><Text>{t('common.loading')}</Text></PlayScaffold>;
@@ -113,6 +230,8 @@ export default function PlayBoardScreen() {
         style={({ pressed }) => [
           styles.tile,
           {
+            minHeight: density.tileMinHeight,
+            borderRadius: BORDER_RADIUS.sm,
             backgroundColor: used ? colors.boardCellUsed : colors.primary,
             opacity: used ? 0.52 : pressed ? 0.84 : 1,
           },
@@ -127,7 +246,19 @@ export default function PlayBoardScreen() {
         accessibilityState={{ disabled: used }}
         accessibilityLabel={`${question.pointValue} points`}
       >
-        <Text style={[styles.tileText, getTextStyle(question.locale, 'bodyBold', 'center')]}> 
+        <Text
+          style={[
+            styles.tileText,
+            getTextStyle(question.locale, 'bodyBold', 'center'),
+            {
+              fontSize: density.tileFontSize,
+              lineHeight: density.tileFontSize + 4,
+            },
+          ]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+        >
           {used ? 'USED' : question.pointValue}
         </Text>
       </Pressable>
@@ -137,11 +268,6 @@ export default function PlayBoardScreen() {
   return (
     <PlayScaffold
       title={t('play.questionBoardTitle')}
-      subtitle={
-        session.mode === 'random'
-          ? t('play.randomBoardSubtitle')
-          : t('play.questionBoardSubtitle')
-      }
       onBack={() =>
         Alert.alert(t('play.leaveMatchTitle'), t('play.leaveMatchBody'), [
           { text: t('common.stay'), style: 'cancel' },
@@ -156,14 +282,29 @@ export default function PlayBoardScreen() {
         ])
       }
       showHud
+      scoreHudDense
       session={session}
+      bodyScrollEnabled={false}
+      bodyFrame={false}
+      bodyEdgeToEdge
     >
       {wager ? (
-        <View style={[styles.banner, { backgroundColor: `${colors.secondary}15`, borderColor: `${colors.secondary}40` }]}> 
-          <Text style={[styles.bannerTitle, { color: colors.text }, getTextStyle(undefined, 'bodyBold', 'start')]}> 
+        <View
+          style={[
+            styles.banner,
+            {
+              backgroundColor: `${colors.secondary}15`,
+              borderColor: `${colors.secondary}40`,
+              paddingVertical: density.bannerPaddingV,
+              paddingHorizontal: density.bannerPaddingH,
+              borderWidth: density.cardBorderWidth,
+            },
+          ]}
+        >
+          <Text style={[styles.bannerTitle, { color: colors.text }, getTextStyle(undefined, 'bodyBold', 'start')]}>
             {t('play.wagerModeTitle')}
           </Text>
-          <Text style={[styles.bannerCopy, { color: colors.textSecondary }, getTextStyle()]}> 
+          <Text style={[styles.bannerCopy, { color: colors.textSecondary }, getTextStyle()]}>
             {t('play.wagerModeBody', {
               wageringTeam:
                 session.teams.find((team) => team.id === wager.wageringTeamId)?.name ??
@@ -177,37 +318,55 @@ export default function PlayBoardScreen() {
       ) : null}
 
       {session.mode === 'random' ? (
-        <View style={styles.randomWrap}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.randomButton,
-              { backgroundColor: colors.primary },
-              pressed && styles.pressed,
-            ]}
-            onPress={() => {
-              const randomQuestion = getRandomRemainingQuestion(session.board, session.usedQuestionIds);
-              if (!randomQuestion) return;
-              selectQuestion(randomQuestion);
-              router.replace('/(app)/play/question');
-            }}
-            disabled={!remaining.length}
-          >
-            <Text style={[styles.randomButtonText, getTextStyle(undefined, 'bodyBold', 'center')]}> 
-              {remaining.length ? t('play.drawRandomQuestion') : t('play.noQuestionsLeft')}
-            </Text>
-          </Pressable>
+        <View style={styles.boardBleed}>
+          <View style={styles.randomWrap}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.randomButton,
+                {
+                  backgroundColor: colors.primary,
+                  minHeight: density.randomButtonMinH,
+                  paddingHorizontal: density.bannerPaddingH,
+                },
+                pressed && styles.pressed,
+              ]}
+              onPress={() => {
+                const randomQuestion = getRandomRemainingQuestion(session.board, session.usedQuestionIds);
+                if (!randomQuestion) return;
+                selectQuestion(randomQuestion);
+                router.replace('/(app)/play/question');
+              }}
+              disabled={!remaining.length}
+            >
+              <Text
+                style={[
+                  styles.randomButtonText,
+                  getTextStyle(undefined, 'bodyBold', 'center'),
+                  { fontSize: density.randomTitleSize },
+                ]}
+              >
+                {remaining.length ? t('play.drawRandomQuestion') : t('play.noQuestionsLeft')}
+              </Text>
+            </Pressable>
+          </View>
+          <HorizontalPlayEdgeBlurs stripWidth={edgeBlurWidth} />
         </View>
       ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.boardScroll}
-          contentContainerStyle={[
-            styles.boardScrollContent,
-            { gap: width >= 1100 ? SPACING.md : SPACING.sm },
-          ]}
-        >
-          {grouped.map((column) => {
+        <View style={styles.boardBleed}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.boardScroll}
+            contentContainerStyle={[
+              styles.boardScrollContent,
+              {
+                gap: boardGap,
+                minHeight: '100%',
+                justifyContent: centerBoardInViewport ? 'center' : 'flex-start',
+              },
+            ]}
+          >
+            {grouped.map((column) => {
             const accent = getCategoryBoardAccent(column.categoryId);
             const picture = getCategoryPictureSource(column.categoryId);
             return (
@@ -217,46 +376,108 @@ export default function PlayBoardScreen() {
                   styles.categoryCard,
                   {
                     width: columnWidth,
+                    alignSelf: 'stretch',
                     backgroundColor: colors.cardBackground,
-                    borderColor: colors.border,
+                    borderColor: colors.primary,
+                    borderWidth: density.cardBorderWidth,
                   },
                 ]}
               >
-                <View style={styles.categoryHero}>
-                  {picture ? (
-                    <Image source={picture} style={styles.categoryImage} contentFit="cover" transition={120} />
-                  ) : (
-                    <View style={[styles.categoryFallback, { backgroundColor: `${accent}20` }]}> 
-                      <Text style={[styles.categoryFallbackText, { color: accent }]}> 
-                        {column.categoryName.charAt(0)}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={styles.heroScrim} />
-                  <View style={[styles.heroAccent, { backgroundColor: accent }]} />
-
+                <View
+                  style={[
+                    styles.categoryHeader,
+                    {
+                      paddingVertical: density.headerPaddingV,
+                      paddingHorizontal: density.headerPaddingH,
+                    },
+                  ]}
+                >
                   <Text
-                    style={[styles.columnTitle, getTextStyle(column.rows[0]?.left.locale ?? 'en', 'bodyBold', 'center')]}
+                    style={[
+                      styles.columnTitle,
+                      getTextStyle(column.rows[0]?.left.locale ?? 'en', 'bodyBold', 'center'),
+                      {
+                        color: colors.text,
+                        fontSize: density.titleFontSize,
+                        lineHeight: density.titleLineHeight,
+                      },
+                    ]}
                     numberOfLines={2}
                   >
                     {column.categoryName}
                   </Text>
                 </View>
 
-                <View style={styles.rowsWrap}>
-                  {column.rows.map((row) => (
-                    <View key={row.pointValue} style={[styles.pointsRow, { borderColor: `${colors.border}AA` }]}> 
-                      <View style={styles.tileSlot}>{renderTile(row.left)}</View>
-                      <View style={[styles.rowDivider, { backgroundColor: `${colors.border}D9` }]} />
-                      <View style={styles.tileSlot}>{renderTile(row.right)}</View>
-                    </View>
-                  ))}
+                <View
+                  style={[
+                    styles.categoryTriplet,
+                    {
+                      flex: 1,
+                      minHeight: 0,
+                      gap: density.rowsGap,
+                      padding: density.rowsPadding,
+                    },
+                  ]}
+                >
+                  <View style={[styles.tileColumn, { gap: density.rowsGap }]}>
+                    {column.rows.map((row) => (
+                      <View
+                        key={`L-${row.pointValue}`}
+                        style={[styles.tileColumnSlot, { minHeight: density.rowMinHeight }]}
+                      >
+                        {renderTile(row.left)}
+                      </View>
+                    ))}
+                  </View>
+
+                  <View
+                    style={[
+                      styles.pictureFrame,
+                      {
+                        padding: density.pictureInset,
+                        backgroundColor: colors.primary,
+                        borderRadius: BORDER_RADIUS.md,
+                      },
+                    ]}
+                  >
+                    {picture ? (
+                      <Image
+                        source={picture}
+                        style={styles.pictureFrameImage}
+                        contentFit="cover"
+                        transition={120}
+                      />
+                    ) : (
+                      <View style={[styles.pictureFallback, { backgroundColor: `${accent}28` }]}>
+                        <Text
+                          style={[
+                            styles.pictureFallbackText,
+                            { color: accent, fontSize: density.fallbackLetterSize },
+                          ]}
+                        >
+                          {column.categoryName.charAt(0)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={[styles.tileColumn, { gap: density.rowsGap }]}>
+                    {column.rows.map((row) => (
+                      <View
+                        key={`R-${row.pointValue}`}
+                        style={[styles.tileColumnSlot, { minHeight: density.rowMinHeight }]}
+                      >
+                        {renderTile(row.right)}
+                      </View>
+                    ))}
+                  </View>
                 </View>
               </View>
             );
           })}
-        </ScrollView>
+          </ScrollView>
+          <HorizontalPlayEdgeBlurs stripWidth={edgeBlurWidth} />
+        </View>
       )}
     </PlayScaffold>
   );
@@ -264,9 +485,7 @@ export default function PlayBoardScreen() {
 
 const styles = StyleSheet.create({
   banner: {
-    borderWidth: 2,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
     flexShrink: 0,
   },
   bannerTitle: {
@@ -278,21 +497,25 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     lineHeight: 20,
   },
+  boardBleed: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+    position: 'relative',
+    overflow: 'hidden',
+  },
   randomWrap: {
     flex: 1,
     minHeight: 0,
     justifyContent: 'center',
   },
   randomButton: {
-    minHeight: 56,
     borderRadius: BORDER_RADIUS.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: SPACING.lg,
   },
   randomButtonText: {
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.lg,
     fontWeight: '700',
   },
   boardScroll: {
@@ -302,86 +525,73 @@ const styles = StyleSheet.create({
   boardScrollContent: {
     flexDirection: 'row',
     alignItems: 'stretch',
+    flexGrow: 1,
     paddingVertical: 2,
+    paddingHorizontal: SPACING.lg,
   },
   categoryCard: {
     flexShrink: 0,
-    alignSelf: 'stretch',
-    borderWidth: 2,
     borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
   },
-  categoryHero: {
-    position: 'relative',
-    height: 86,
-    justifyContent: 'flex-end',
-    paddingHorizontal: SPACING.sm,
-    paddingBottom: SPACING.sm,
-    overflow: 'hidden',
-  },
-  categoryImage: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  categoryFallback: {
-    ...StyleSheet.absoluteFillObject,
+  categoryHeader: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryFallbackText: {
-    fontSize: 30,
-    fontWeight: '800',
-  },
-  heroScrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-  },
-  heroAccent: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 4,
-  },
-  columnTitle: {
-    color: '#FFFFFF',
-    fontSize: FONT_SIZES.xs,
-    lineHeight: 15,
-    fontWeight: '800',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  rowsWrap: {
-    flex: 1,
-    padding: SPACING.xs,
-    gap: SPACING.xs,
-  },
-  pointsRow: {
-    flex: 1,
-    minHeight: 40,
-    borderWidth: 1,
-    borderRadius: BORDER_RADIUS.md,
-    overflow: 'hidden',
+  categoryTriplet: {
     flexDirection: 'row',
     alignItems: 'stretch',
   },
-  tileSlot: {
+  tileColumn: {
     flex: 1,
+    minWidth: 0,
   },
-  rowDivider: {
-    width: 1,
+  tileColumnSlot: {
+    flex: 1,
+    minHeight: 0,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xs,
+  },
+  pictureFrame: {
+    flex: 1.25,
+    minWidth: 0,
+    minHeight: 0,
+    overflow: 'hidden',
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+  },
+  pictureFrameImage: {
+    flex: 1,
+    width: '100%',
+    minHeight: 0,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  pictureFallback: {
+    flex: 1,
+    width: '100%',
+    minHeight: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  pictureFallbackText: {
+    fontWeight: '800',
+  },
+  columnTitle: {
+    fontWeight: '800',
+    textAlign: 'center',
   },
   tile: {
     flex: 1,
-    minHeight: 38,
+    minWidth: 0,
+    minHeight: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 2,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xs,
   },
   tileText: {
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.xs,
     fontWeight: '800',
     letterSpacing: 0.2,
   },

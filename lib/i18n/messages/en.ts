@@ -305,7 +305,6 @@ const enBase = {
   'play.showAnswer': 'Show Answer',
   'play.questionLanguage': 'Question language',
   'play.resolveTurnTitle': 'Resolve the Turn',
-  'play.resolveTurnSubtitle': 'Keep the same reveal-then-award rhythm as TriviaApp.',
   'play.resolveBonusSubtitle': 'Bonus round is active for this question.',
   'play.correctAnswer': 'Correct Answer',
   'play.pointsAwarded': 'Points awarded.',

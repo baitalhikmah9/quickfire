@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { LIFELINES, LIFELINES_PER_TEAM, type LifelineId } from './lifelines';
 import { SPACING, FONT_SIZES, BORDER_RADIUS } from '@/constants';
 import { useTheme } from '@/lib/hooks/useTheme';

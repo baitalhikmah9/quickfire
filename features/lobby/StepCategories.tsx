@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, FONT_SIZES, BORDER_RADIUS, FONTS } from '@/constants';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { CategoryCard } from './CategoryCard';

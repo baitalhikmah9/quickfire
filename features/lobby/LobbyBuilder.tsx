@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { useState } from 'react';
 import type { GameConfig, TeamConfig } from '@/features/shared';
 import { SPACING, FONT_SIZES, BORDER_RADIUS } from '@/constants';

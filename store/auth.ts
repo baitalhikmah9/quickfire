@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   login: (user: User) => {
     const parsed = UserSchema.safeParse(user);
     if (!parsed.success) {
-      if (__DEV__) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.error('Invalid user object passed to login:', parsed.error.flatten());
       }
       return;

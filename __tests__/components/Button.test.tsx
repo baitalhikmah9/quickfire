@@ -1,6 +1,13 @@
 import React from 'react';
 import { describe, expect, it, jest } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react-native';
+
+jest.mock('@/lib/i18n/useI18n', () => ({
+  useI18n: () => ({
+    getTextStyle: () => ({}),
+  }),
+}));
+
 import { Button } from '@/components/ui/Button';
 
 describe('Button', () => {

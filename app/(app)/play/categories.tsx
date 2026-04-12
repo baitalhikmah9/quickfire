@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, LayoutChangeEvent, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, LayoutChangeEvent, useWindowDimensions } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
@@ -11,19 +12,13 @@ import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
 
-function getTopicColumns(width: number): number {
-  if (width >= 1520) return 7;
-  if (width >= 1280) return 6;
-  if (width >= 1040) return 5;
-  if (width >= 840) return 4;
-  if (width >= 620) return 3;
-  return 2;
-}
+const TOPIC_COLUMNS_PER_ROW = 4;
 
 export default function CategorySelectionScreen() {
   const router = useRouter();
   const colors = useTheme();
-  const { width } = useWindowDimensions();
+  const { width, height: windowHeight } = useWindowDimensions();
+  const compact = windowHeight < 720;
   const [gridWidth, setGridWidth] = useState(0);
   const { getTextStyle, t } = useI18n();
   const session = usePlayStore((state) => state.session);
@@ -44,7 +39,7 @@ export default function CategorySelectionScreen() {
   }, [session]);
 
   const layoutWidth = gridWidth || width - SPACING.xl;
-  const columns = getTopicColumns(layoutWidth);
+  const columns = TOPIC_COLUMNS_PER_ROW;
   const gridGap = SPACING.sm;
   const categoryCardWidth =
     layoutWidth > 0
@@ -63,6 +58,7 @@ export default function CategorySelectionScreen() {
     <PlayScaffold
       title={t('play.pickTopicsTitle')}
       subtitle={t('play.pickTopicsSubtitle', { count: required })}
+      bodyFrame={false}
       footer={
         <Button
           title={t('play.startBoard')}
@@ -96,8 +92,9 @@ export default function CategorySelectionScreen() {
               key={category.slug}
               style={({ pressed }) => [
                 styles.categoryCard,
+                compact && styles.categoryCardCompact,
                 {
-                  width: categoryCardWidth ?? '31%',
+                  width: categoryCardWidth ?? '24%',
                   opacity: disabled ? 0.45 : pressed ? 0.84 : 1,
                   borderColor: selected ? colors.primary : colors.border,
                 },
@@ -107,7 +104,7 @@ export default function CategorySelectionScreen() {
               accessibilityRole="button"
               accessibilityState={{ selected, disabled }}
             >
-              <View style={styles.imageWrap}>
+              <View style={[styles.imageWrap, compact && styles.imageWrapCompact]}>
                 {imageSource ? (
                   <Image source={imageSource} style={styles.imageFill} contentFit="cover" transition={120} />
                 ) : (
@@ -118,7 +115,7 @@ export default function CategorySelectionScreen() {
                   </View>
                 )}
 
-                <View style={[styles.tileFooter, { backgroundColor: COLORS.secondary }]}>
+                <View style={[styles.tileFooter, compact && styles.tileFooterCompact, { backgroundColor: COLORS.secondary }]}>
                   <Text
                     style={[styles.categoryTitle, getTextStyle(category.resolvedLocale, 'bodyBold', 'start')]}
                     numberOfLines={2}
@@ -169,10 +166,17 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.md,
     overflow: 'hidden',
   },
+  categoryCardCompact: {
+    borderWidth: 1,
+  },
   imageWrap: {
     minHeight: 110,
     aspectRatio: 1.26,
     justifyContent: 'flex-end',
+  },
+  imageWrapCompact: {
+    minHeight: 82,
+    aspectRatio: 1.2,
   },
   imageFill: {
     ...StyleSheet.absoluteFillObject,
@@ -188,10 +192,16 @@ const styles = StyleSheet.create({
   },
   tileFooter: {
     width: '100%',
-    gap: 2,
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.md,
+  },
+  tileFooterCompact: {
     paddingHorizontal: SPACING.sm,
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.sm,
+    gap: 2,
   },
   categoryTitle: {
     fontSize: FONT_SIZES.sm,
@@ -201,12 +211,13 @@ const styles = StyleSheet.create({
   },
   categoryMeta: {
     fontSize: FONT_SIZES.xs,
+    lineHeight: 16,
     color: COLORS.mutedText,
   },
   selectedPill: {
     position: 'absolute',
-    top: SPACING.xs,
-    right: SPACING.xs,
+    top: SPACING.sm,
+    right: SPACING.sm,
     borderRadius: BORDER_RADIUS.pill,
     paddingHorizontal: SPACING.sm,
     paddingVertical: 3,

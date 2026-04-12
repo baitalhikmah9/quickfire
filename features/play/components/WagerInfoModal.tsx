@@ -1,4 +1,5 @@
-import { Modal, View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { Modal, View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { BORDER_RADIUS, COLORS, FONT_SIZES, SPACING, FONTS } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
@@ -128,6 +129,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
     marginBottom: SPACING.md,
     overflow: 'hidden',
+    paddingHorizontal: SPACING.sm,
   },
   tableRow: {
     flexDirection: 'row',
@@ -139,8 +141,9 @@ const styles = StyleSheet.create({
   },
   cell: {
     flex: 1,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.xs,
+    minWidth: 0,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
     fontSize: FONT_SIZES.sm,
     textAlign: 'center',
   },

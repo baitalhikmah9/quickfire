@@ -1,22 +1,95 @@
-import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
-import { BORDER_RADIUS, FONT_SIZES, SPACING, FONTS } from '@/constants';
-import { getCategoryTopicIcon } from '@/features/play/categoryTopicIcon';
+import { BORDER_RADIUS, FONT_SIZES, SPACING, FONTS, SHADOWS } from '@/constants';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
+import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
 
+function getQuestionLayoutDensity(screenWidth: number, screenHeight: number) {
+  const shortSide = Math.min(screenWidth, screenHeight);
+  /** Ultra-compact phones / split-screen */
+  if (shortSide < 340) {
+    return {
+      borderWidth: 1,
+      metaIconSize: 15,
+      timerDigitsSize: 14,
+      pointsValueSize: 15,
+      questionFontSize: FONT_SIZES.sm,
+      questionLineHeight: 18,
+      railPadV: SPACING.xs,
+      segmentPadH: SPACING.xs,
+      promptPadV: SPACING.sm,
+      promptPadH: SPACING.sm,
+    };
+  }
+  if (screenHeight < 400) {
+    return {
+      borderWidth: 1,
+      metaIconSize: Math.min(18, screenWidth < 380 ? 16 : 18),
+      timerDigitsSize: 16,
+      pointsValueSize: 17,
+      questionFontSize: FONT_SIZES.md,
+      questionLineHeight: 22,
+      railPadV: SPACING.sm,
+      segmentPadH: screenWidth < 400 ? SPACING.sm : SPACING.md,
+      promptPadV: SPACING.md,
+      promptPadH: SPACING.md,
+    };
+  }
+  if (screenHeight < 520) {
+    return {
+      borderWidth: 1,
+      metaIconSize: Math.min(20, screenWidth < 400 ? 18 : 20),
+      timerDigitsSize: 18,
+      pointsValueSize: 20,
+      questionFontSize: FONT_SIZES.lg,
+      questionLineHeight: 26,
+      railPadV: SPACING.md,
+      segmentPadH: screenWidth < 400 ? SPACING.sm : SPACING.md,
+      promptPadV: SPACING.lg,
+      promptPadH: SPACING.lg,
+    };
+  }
+  return {
+    borderWidth: 2,
+    metaIconSize: 22,
+    timerDigitsSize: 21,
+    pointsValueSize: 23,
+    questionFontSize: FONT_SIZES.xl,
+    questionLineHeight: 30,
+    railPadV: SPACING.md,
+    segmentPadH: SPACING.md,
+    promptPadV: SPACING.lg,
+    promptPadH: SPACING.lg,
+  };
+}
+
 export default function PlayQuestionScreen() {
   const router = useRouter();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const colors = useTheme();
-  const { getLocaleName, getTextStyle, t } = useI18n();
+  const { direction, getLocaleName, getTextStyle, t } = useI18n();
   const session = usePlayStore((state) => state.session);
   const revealAnswer = usePlayStore((state) => state.revealAnswer);
+  const resetSession = usePlayStore((state) => state.resetSession);
   const [seconds, setSeconds] = useState(0);
+
+  const density = useMemo(
+    () => getQuestionLayoutDensity(windowWidth, windowHeight),
+    [windowWidth, windowHeight]
+  );
+  const chromeGap =
+    Math.min(windowWidth, windowHeight) < 420 ? SPACING.sm : SPACING.lg;
+  const rowDir = getRowDirection(direction);
+  const metaPillDir = getRowDirection(direction);
+  const questionScrollBottomInset = 56 + SPACING.md * 2 + Math.max(insets.bottom, SPACING.sm);
 
   useEffect(() => {
     if (!session?.timerStartedAt) return;
@@ -38,83 +111,206 @@ export default function PlayQuestionScreen() {
     return <PlayScaffold title={t('common.loading')}><Text>{t('common.loading')}</Text></PlayScaffold>;
   }
 
-  const topicIcon = getCategoryTopicIcon(session.currentQuestion.categoryId);
+  const q = session.currentQuestion;
+  const showLanguageBadge =
+    q.resolvedFromFallback || q.locale !== session.contentLocaleChain[0];
+
+  const timeStr = `${Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 
   return (
     <PlayScaffold
-      title={session.currentQuestion.categoryName}
-      subtitle={t('common.points', { count: session.currentQuestion.pointValue })}
-      showHud
-      session={session}
-      footer={
-        <Button
-          title={t('play.showAnswer')}
-          onPress={() => {
-            revealAnswer();
-            router.replace('/(app)/play/answer');
-          }}
-        />
+      title={q.categoryName}
+      bodyScrollEnabled={false}
+      bodyFrame={false}
+      bodyEdgeToEdge
+      onBack={() =>
+        Alert.alert(t('play.leaveMatchTitle'), t('play.leaveMatchBody'), [
+          { text: t('common.stay'), style: 'cancel' },
+          {
+            text: t('common.leave'),
+            style: 'destructive',
+            onPress: () => {
+              resetSession();
+              router.replace('/(app)/');
+            },
+          },
+        ])
       }
     >
-      <View style={styles.questionRow}>
-        <View style={styles.sideColumn}>
+      <View style={styles.bleed}>
+        <View style={styles.shell}>
           <View
             style={[
-              styles.timerCard,
+              styles.shellInner,
               {
-                backgroundColor: `${colors.primary}12`,
-                borderColor: `${colors.primary}30`,
+                paddingLeft: Math.max(SPACING.md, insets.left),
+                paddingRight: Math.max(SPACING.md, insets.right),
               },
             ]}
           >
-            <Text style={[styles.timerLabel, { color: colors.textSecondary }, getTextStyle()]}>
-              {t('play.questionTimer')}
-            </Text>
-            <Text style={[styles.timerValue, { color: colors.text }, getTextStyle(undefined, 'displayBold', 'center')]}>
-              {Math.floor(seconds / 60)
-                .toString()
-                .padStart(2, '0')}
-              :
-              {(seconds % 60).toString().padStart(2, '0')}
-            </Text>
-          </View>
-          {(session.currentQuestion.resolvedFromFallback ||
-            session.currentQuestion.locale !== session.contentLocaleChain[0]) ? (
-            <View style={[styles.languageBadge, { backgroundColor: `${colors.secondary}15`, borderColor: `${colors.secondary}25` }]}>
-              <Text style={[styles.languageBadgeLabel, { color: colors.textSecondary }, getTextStyle()]}>
-                {t('play.questionLanguage')}
-              </Text>
-              <Text
-                style={[styles.languageBadgeValue, { color: colors.text }, getTextStyle(session.currentQuestion.locale, 'bodySemibold', 'center')]}
-                numberOfLines={1}
+          <ScrollView
+            style={styles.mainScroll}
+            contentContainerStyle={[
+              styles.mainScrollContent,
+              {
+                paddingBottom: questionScrollBottomInset,
+                gap: chromeGap,
+              },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
+          >
+            <View style={styles.topZone}>
+            <View
+              style={[
+                styles.statusRail,
+                {
+                  flexDirection: rowDir,
+                  borderColor: colors.border,
+                  borderWidth: density.borderWidth,
+                  backgroundColor: colors.cardBackground,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.statusSegment,
+                  {
+                    flexDirection: metaPillDir,
+                    paddingVertical: density.railPadV,
+                    paddingHorizontal: density.segmentPadH,
+                  },
+                ]}
               >
-                {getLocaleName(session.currentQuestion.locale, 'english')}
+                <Ionicons name="time-outline" size={density.metaIconSize} color={colors.primary} />
+                <View style={styles.statusTextBlock}>
+                  <Text
+                    style={[styles.statusEyebrow, { color: colors.textSecondary }, getTextStyle()]}
+                    numberOfLines={1}
+                  >
+                    {t('play.questionTimer')}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.timerDigits,
+                      {
+                        color: colors.text,
+                        fontSize: density.timerDigitsSize,
+                        lineHeight: density.timerDigitsSize + 4,
+                      },
+                      getTextStyle(undefined, 'displayBold', 'start'),
+                    ]}
+                  >
+                    {timeStr}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[styles.statusDivider, { backgroundColor: colors.border }]} />
+
+              <View
+                style={[
+                  styles.statusSegment,
+                  {
+                    flexDirection: metaPillDir,
+                    paddingVertical: density.railPadV,
+                    paddingHorizontal: density.segmentPadH,
+                    backgroundColor: colors.primary,
+                  },
+                ]}
+              >
+                <Ionicons name="ribbon-outline" size={density.metaIconSize} color="#FFFFFF" />
+                <Text
+                  style={[
+                    styles.pointsValue,
+                    {
+                      fontSize: density.pointsValueSize,
+                      lineHeight: density.pointsValueSize + 4,
+                    },
+                    getTextStyle(undefined, 'displayBold', 'start'),
+                  ]}
+                  accessibilityLabel={t('common.points', { count: q.pointValue })}
+                >
+                  {q.pointValue}
+                </Text>
+              </View>
+            </View>
+
+            {showLanguageBadge ? (
+              <View
+                style={[
+                  styles.languageChip,
+                  {
+                    flexDirection: metaPillDir,
+                    borderColor: `${colors.secondary}55`,
+                    backgroundColor: `${colors.secondary}10`,
+                    borderWidth: density.borderWidth,
+                  },
+                ]}
+              >
+                <Ionicons name="language-outline" size={15} color={colors.secondary} />
+                <Text style={[styles.languageChipText, { color: colors.textSecondary }, getTextStyle()]} numberOfLines={1}>
+                  {t('play.questionLanguage')}:{' '}
+                  <Text style={[styles.languageChipLocale, { color: colors.text }, getTextStyle(q.locale, 'bodySemibold')]}>
+                    {getLocaleName(q.locale, 'english')}
+                  </Text>
+                </Text>
+              </View>
+            ) : null}
+            </View>
+
+            <View
+              style={[
+                styles.promptCard,
+                {
+                  backgroundColor: colors.cardBackground,
+                  borderColor: colors.border,
+                  borderWidth: density.borderWidth,
+                  shadowColor: colors.primary,
+                  paddingVertical: density.promptPadV,
+                  paddingHorizontal: density.promptPadH,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.questionText,
+                  {
+                    color: colors.text,
+                    fontSize: density.questionFontSize,
+                    lineHeight: density.questionLineHeight,
+                  },
+                  getTextStyle(q.locale, 'bodySemibold', 'center'),
+                ]}
+                maxFontSizeMultiplier={1.25}
+              >
+                {q.prompt}
               </Text>
             </View>
-          ) : null}
-        </View>
-
-        <View style={styles.iconColumn}>
-          <View style={[styles.topicIconRing, { borderColor: colors.primary, backgroundColor: `${colors.primary}10` }]}>
-            <Ionicons name={topicIcon} size={40} color={colors.primary} />
+          </ScrollView>
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.answerOverlay,
+              {
+                paddingBottom: Math.max(insets.bottom, SPACING.sm),
+                backgroundColor: colors.background,
+              },
+            ]}
+          >
+            <Button
+              title={t('play.showAnswer')}
+              style={styles.answerOverlayButton}
+              onPress={() => {
+                revealAnswer();
+                router.replace('/(app)/play/answer');
+              }}
+            />
           </View>
-          <Text style={[styles.iconCaption, { color: colors.textSecondary }, getTextStyle()]} numberOfLines={2}>
-            {session.currentQuestion.categoryName}
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.questionCard,
-            {
-              backgroundColor: colors.cardBackground,
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          <Text style={[styles.questionText, { color: colors.text }, getTextStyle(session.currentQuestion.locale, 'bodySemibold', 'center')]}>
-            {session.currentQuestion.prompt}
-          </Text>
+          </View>
         </View>
       </View>
     </PlayScaffold>
@@ -122,81 +318,121 @@ export default function PlayQuestionScreen() {
 }
 
 const styles = StyleSheet.create({
-  questionRow: {
+  bleed: {
     flex: 1,
     minHeight: 0,
-    flexDirection: 'row',
-    alignItems: 'stretch',
+    minWidth: 0,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  shell: {
+    flex: 1,
+    minHeight: 0,
+    position: 'relative',
+    paddingTop: SPACING.sm,
+    paddingBottom: 0,
+  },
+  /** Padded column so ScrollView and bottom overlay share the same width as `promptCard`. */
+  shellInner: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+    position: 'relative',
+  },
+  mainScroll: {
+    flex: 1,
+    minHeight: 0,
+  },
+  mainScrollContent: {
+    flexGrow: 1,
+    paddingTop: SPACING.xs,
+  },
+  topZone: {
+    alignSelf: 'stretch',
     gap: SPACING.sm,
   },
-  sideColumn: {
+  statusRail: {
+    width: '100%',
+    borderRadius: BORDER_RADIUS.lg,
+    overflow: 'hidden',
+    alignItems: 'stretch',
+  },
+  statusSegment: {
     flex: 1,
     minWidth: 0,
-    justifyContent: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: SPACING.sm,
   },
-  iconColumn: {
-    width: 96,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.xs,
+  statusDivider: {
+    width: StyleSheet.hairlineWidth * 2,
+    minWidth: 1,
+    alignSelf: 'stretch',
   },
-  topicIconRing: {
-    width: 80,
-    height: 80,
-    borderRadius: BORDER_RADIUS.pill,
-    borderWidth: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
+  statusTextBlock: {
+    minWidth: 0,
+    flexShrink: 1,
   },
-  iconCaption: {
-    fontSize: 10,
-    lineHeight: 12,
-    textAlign: 'center',
-  },
-  timerCard: {
-    borderWidth: 2,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.sm,
-    alignItems: 'center',
-  },
-  timerLabel: {
-    fontSize: FONT_SIZES.xs,
+  statusEyebrow: {
+    fontSize: 9,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
     marginBottom: 2,
   },
-  timerValue: {
-    fontSize: 22,
-    lineHeight: 26,
+  timerDigits: {
     fontFamily: FONTS.displayBold,
     fontWeight: '800',
+    fontVariant: 'tabular-nums',
   },
-  questionCard: {
-    flex: 1.35,
+  pointsValue: {
+    color: '#FFFFFF',
+    fontFamily: FONTS.displayBold,
+    fontWeight: '800',
+    fontVariant: 'tabular-nums',
+    flexShrink: 0,
+  },
+  languageChip: {
+    alignSelf: 'center',
+    maxWidth: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.pill,
+  },
+  languageChipText: {
+    flex: 1,
     minWidth: 0,
-    borderWidth: 2,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    justifyContent: 'center',
+    fontSize: FONT_SIZES.xs,
+    lineHeight: 18,
+  },
+  languageChipLocale: {
+    fontSize: FONT_SIZES.xs,
+  },
+  promptCard: {
+    borderRadius: BORDER_RADIUS.xl,
+    alignSelf: 'stretch',
+    ...SHADOWS.card,
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
   questionText: {
-    fontSize: FONT_SIZES.md,
-    lineHeight: 22,
     fontWeight: '600',
     textAlign: 'center',
   },
-  languageBadge: {
-    borderWidth: 2,
-    borderRadius: BORDER_RADIUS.lg,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    alignItems: 'center',
-    gap: 2,
+  answerOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingTop: SPACING.md,
+    alignItems: 'stretch',
   },
-  languageBadgeLabel: {
-    fontSize: 9,
-  },
-  languageBadgeValue: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '700',
+  answerOverlayButton: {
+    alignSelf: 'stretch',
+    width: '100%',
   },
 });

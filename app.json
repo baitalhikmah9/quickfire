@@ -25,12 +25,19 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/general-knowledge.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      ["expo-screen-orientation", { "initialOrientation": "LANDSCAPE" }]
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "LANDSCAPE"
+        }
+      ],
+      "expo-web-browser"
     ]
   }
 }

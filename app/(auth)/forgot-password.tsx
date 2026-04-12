@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SPACING, FONT_SIZES, BORDER_RADIUS } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';

@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { SPACING, BORDER_RADIUS, FONT_SIZES, LAYOUT } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -16,13 +16,23 @@ interface PlayScaffoldProps {
   /** Custom back behavior (e.g. match end → home). Default: stack back or play hub. */
   onBack?: () => void;
   showHud?: boolean;
+  /** Tighter score strip (e.g. question board). */
+  scoreHudDense?: boolean;
   session?: GameSessionState | null;
   footer?: ReactNode;
   /**
-   * When false, children live in a bordered card inside a bounded ScrollView: short content keeps a tight card;
-   * tall content or small viewports scroll inside the middle region without overflowing the screen.
+   * When false, the body is a flex region with no outer scroll — children should size to fit (or use nested scroll).
    */
   bodyScrollEnabled?: boolean;
+  /**
+   * Wrap body in the bordered card (default). Set false for edge-to-edge content (e.g. topic grid, question board).
+   * Applies with both scroll and non-scroll body modes.
+   */
+  bodyFrame?: boolean;
+  /**
+   * Header / HUD stay inset; body fills full width under horizontal safe areas (landscape bezels).
+   */
+  bodyEdgeToEdge?: boolean;
 }
 
 export function PlayScaffold({
@@ -31,15 +41,27 @@ export function PlayScaffold({
   children,
   onBack,
   showHud = false,
+  scoreHudDense = false,
   session,
   footer,
   bodyScrollEnabled = true,
+  bodyFrame = true,
+  bodyEdgeToEdge = false,
 }: PlayScaffoldProps) {
   const colors = useTheme();
   const { getTextStyle } = useI18n();
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const subtitleTight = windowHeight < 700;
+  const padLeft = Math.max(insets.left, LAYOUT.screenGutter);
+  const padRight = Math.max(insets.right, LAYOUT.screenGutter);
 
   const contentStyles = [styles.content, styles.contentFit];
-  const subtitleStyles = [styles.subtitle, styles.subtitleFit];
+  const subtitleStyles = [
+    styles.subtitle,
+    styles.subtitleFit,
+    ...(subtitleTight ? [styles.subtitleTighter] : []),
+  ];
   const bodyFillStyles = [
     styles.bodyCard,
     styles.bodyCardFit,
@@ -56,7 +78,7 @@ export function PlayScaffold({
     },
   ];
 
-  const main = (
+  const chrome = (
     <>
       <PlayStackHeader title={title} onBackPress={onBack} />
 
@@ -72,41 +94,63 @@ export function PlayScaffold({
         </Text>
       ) : null}
 
-      {showHud && session ? <ScoreHud session={session} compact /> : null}
+      {showHud && session ? (
+        <ScoreHud session={session} compact dense={scoreHudDense} />
+      ) : null}
+    </>
+  );
 
-      {bodyScrollEnabled ? (
-        <View style={bodyFillStyles}>
-          <ScrollView
-            style={styles.bodyScroll}
-            contentContainerStyle={styles.bodyScrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator
-            nestedScrollEnabled
-          >
-            {children}
-          </ScrollView>
-        </View>
-      ) : (
-        <View style={styles.bodyShellNatural}>
-          <ScrollView
-            style={styles.bodyScrollNatural}
-            contentContainerStyle={styles.bodyScrollNaturalContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator
-            nestedScrollEnabled
-          >
-            <View style={bodyNaturalCardStyles}>{children}</View>
-          </ScrollView>
-        </View>
-      )}
+  const bodySection = bodyScrollEnabled ? (
+    <View style={bodyFrame ? bodyFillStyles : styles.bodyScrollShellFlush}>
+      <ScrollView
+        style={styles.bodyScroll}
+        contentContainerStyle={styles.bodyScrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator
+        nestedScrollEnabled
+      >
+        {children}
+      </ScrollView>
+    </View>
+  ) : bodyFrame ? (
+    <View style={styles.bodyShellNatural}>
+      <View style={[bodyNaturalCardStyles, styles.bodyNaturalCardNoScroll]}>
+        {children}
+      </View>
+    </View>
+  ) : (
+    <View style={[styles.bodyShellNatural, styles.bodyShellFlush]}>{children}</View>
+  );
+
+  const paddedColumnStyles = bodyEdgeToEdge
+    ? [
+        styles.content,
+        styles.chromeColumn,
+        {
+          paddingLeft: padLeft,
+          paddingRight: padRight,
+        },
+      ]
+    : contentStyles;
+
+  const main = (
+    <>
+      {chrome}
+      {!bodyEdgeToEdge ? bodySection : null}
     </>
   );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background }]}
+      edges={bodyEdgeToEdge ? ['top', 'bottom'] : undefined}
+    >
       <ScreenContent fullWidth style={styles.screenInner}>
         <View style={styles.fitRoot}>
-          <View style={contentStyles}>{main}</View>
+          <View style={paddedColumnStyles}>{main}</View>
+          {bodyEdgeToEdge ? (
+            <View style={styles.edgeBodySlot}>{bodySection}</View>
+          ) : null}
         </View>
       </ScreenContent>
 
@@ -152,6 +196,19 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.sm,
     minHeight: 0,
   },
+  /** Top chrome only — body is a sibling (`edgeBodySlot`) for full horizontal bleed. */
+  chromeColumn: {
+    flexGrow: 0,
+    flexShrink: 0,
+    paddingTop: 0,
+    paddingBottom: SPACING.sm,
+    minHeight: 0,
+  },
+  edgeBodySlot: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+  },
   subtitle: {
     fontSize: FONT_SIZES.md,
     lineHeight: 22,
@@ -164,15 +221,30 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: SPACING.sm,
   },
+  subtitleTighter: {
+    fontSize: FONT_SIZES.xs,
+    lineHeight: 16,
+    marginBottom: SPACING.xs,
+  },
   bodyCard: {
     borderWidth: 2,
     borderRadius: BORDER_RADIUS.xl,
+    borderStyle: 'solid',
+    overflow: 'hidden',
     padding: SPACING.lg,
   },
   bodyCardFit: {
     flex: 1,
     minHeight: 0,
     padding: SPACING.sm,
+  },
+  /** Scroll body without bordered card — same flex contract as `bodyCard` + `bodyCardFit`. */
+  bodyScrollShellFlush: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+    width: '100%',
+    overflow: 'hidden',
   },
   /** Fills space under header/subtitle; ScrollView inside clips and scrolls. */
   bodyShellNatural: {
@@ -181,21 +253,21 @@ const styles = StyleSheet.create({
     minWidth: 0,
     width: '100%',
   },
-  bodyScrollNatural: {
+  /** No-scroll body without inner card — children sit on shell background. */
+  bodyShellFlush: {
+    overflow: 'hidden',
+  },
+  /** Fills middle region; children use flex to distribute space (no body scroll). */
+  bodyNaturalCardNoScroll: {
     flex: 1,
     minHeight: 0,
     minWidth: 0,
   },
-  /** flexGrow keeps the scroll area at least viewport-tall so short cards sit at the top without forcing stretch. */
-  bodyScrollNaturalContent: {
-    flexGrow: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'stretch',
-    paddingBottom: SPACING.sm,
-  },
   bodyNaturalCard: {
     borderWidth: 2,
     borderRadius: BORDER_RADIUS.xl,
+    borderStyle: 'solid',
+    overflow: 'hidden',
     padding: SPACING.sm,
     width: '100%',
     gap: SPACING.sm,

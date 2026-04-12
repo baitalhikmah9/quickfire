@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
-import { BORDER_RADIUS, FONT_SIZES, SPACING, FONTS } from '@/constants';
+import { BORDER_RADIUS, FONT_SIZES, SPACING } from '@/constants';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -26,6 +27,8 @@ function isTeamConfigured(team: GameSessionState['teams'][number]): boolean {
 export default function TeamSetupScreen() {
   const router = useRouter();
   const colors = useTheme();
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  const compact = windowHeight < 720 || windowWidth < 360;
   const { getTextStyle, t } = useI18n();
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -99,6 +102,14 @@ export default function TeamSetupScreen() {
     );
   }
 
+  const inputMinH = compact ? 38 : 46;
+  const inputFontSize = compact ? FONT_SIZES.sm : FONT_SIZES.md;
+  const pageGap = compact ? SPACING.sm : SPACING.md;
+  const pagePad = compact ? SPACING.xs : SPACING.sm;
+  const memberBtnSize = compact ? 36 : 44;
+  const stepperBtnSize = compact ? 40 : 48;
+  const stepperValueSize = compact ? 22 : 28;
+
   const renderTeamSlide = (team: GameSessionState['teams'][number]) => {
     const memberCount = team.playerNames?.length ?? 0;
     return (
@@ -108,12 +119,11 @@ export default function TeamSetupScreen() {
           {
             backgroundColor: colors.cardBackground,
             borderColor: colors.border,
+            padding: pagePad,
+            gap: pageGap,
           },
         ]}
       >
-        <Text style={[styles.sectionTitle, { color: colors.text }, getTextStyle(undefined, 'display', 'start')]}>
-          {team.id === 'team_1' ? t('common.teamOne') : t('common.teamTwo')}
-        </Text>
         <TextInput
           value={team.name}
           onChangeText={(value) => updateTeamName(team.id, value)}
@@ -123,6 +133,8 @@ export default function TeamSetupScreen() {
               backgroundColor: colors.cardBackground,
               borderColor: colors.border,
               color: colors.text,
+              minHeight: inputMinH,
+              fontSize: inputFontSize,
             },
           ]}
           placeholder={t('play.teamNamePlaceholder')}
@@ -131,14 +143,26 @@ export default function TeamSetupScreen() {
         />
 
         <View style={styles.membersHeader}>
-          <Text style={[styles.membersLabel, { color: colors.textSecondary }, getTextStyle()]}>
+          <Text
+            style={[
+              styles.membersLabel,
+              compact && styles.membersLabelCompact,
+              { color: colors.textSecondary },
+              getTextStyle(),
+            ]}
+          >
             {t('play.teamMembersCount', { count: memberCount })}
           </Text>
           <View style={styles.memberActions}>
             <Pressable
               style={({ pressed }) => [
                 styles.memberActionButton,
-                { borderColor: colors.border, backgroundColor: colors.cardBackground },
+                {
+                  width: memberBtnSize,
+                  height: memberBtnSize,
+                  borderColor: colors.border,
+                  backgroundColor: colors.cardBackground,
+                },
                 {
                   opacity: memberCount <= 1 ? 0.45 : pressed ? 0.85 : 1,
                 },
@@ -154,7 +178,12 @@ export default function TeamSetupScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.memberActionButton,
-                { borderColor: colors.border, backgroundColor: colors.cardBackground },
+                {
+                  width: memberBtnSize,
+                  height: memberBtnSize,
+                  borderColor: colors.border,
+                  backgroundColor: colors.cardBackground,
+                },
                 { opacity: pressed ? 0.85 : 1 },
               ]}
               onPress={() => addTeamMember(team.id)}
@@ -166,7 +195,12 @@ export default function TeamSetupScreen() {
           </View>
         </View>
 
-        <View style={styles.memberList}>
+        <ScrollView
+          style={styles.memberListScroll}
+          contentContainerStyle={[styles.memberList, { gap: compact ? SPACING.xs : SPACING.sm }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           {(team.playerNames ?? []).map((player, index) => (
             <TextInput
               key={`${team.id}-${index}`}
@@ -178,6 +212,8 @@ export default function TeamSetupScreen() {
                   backgroundColor: colors.cardBackground,
                   borderColor: colors.border,
                   color: colors.text,
+                  minHeight: inputMinH,
+                  fontSize: inputFontSize,
                 },
               ]}
               placeholder={t('play.playerPlaceholder', { count: index + 1 })}
@@ -185,7 +221,7 @@ export default function TeamSetupScreen() {
               accessibilityLabel={`${team.id} ${t('play.playerPlaceholder', { count: index + 1 })}`}
             />
           ))}
-        </View>
+        </ScrollView>
       </View>
     );
   };
@@ -194,20 +230,25 @@ export default function TeamSetupScreen() {
     <View
       style={[
         styles.slidePage,
+        styles.wagerSlide,
         {
           backgroundColor: colors.cardBackground,
           borderColor: colors.border,
+          padding: pagePad,
+          gap: pageGap,
         },
       ]}
     >
-      <Text style={[styles.sectionTitle, { color: colors.text }, getTextStyle(undefined, 'display', 'start')]}>
-        {t('play.wagersPerTeam')}
-      </Text>
       <View style={styles.stepperRow}>
         <Pressable
           style={({ pressed }) => [
             styles.stepperButton,
-            { backgroundColor: colors.cardBackground, borderColor: colors.border },
+            {
+              width: stepperBtnSize,
+              height: stepperBtnSize,
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+            },
             {
               opacity: session.wagersPerTeam <= 0 ? 0.45 : pressed ? 0.85 : 1,
             },
@@ -219,11 +260,16 @@ export default function TeamSetupScreen() {
         >
           <Text style={[styles.stepperText, { color: colors.text }]}>−</Text>
         </Pressable>
-        <Text style={[styles.stepperValue, { color: colors.text }]}>{session.wagersPerTeam}</Text>
+        <Text style={[styles.stepperValue, { color: colors.text, fontSize: stepperValueSize }]}>{session.wagersPerTeam}</Text>
         <Pressable
           style={({ pressed }) => [
             styles.stepperButton,
-            { backgroundColor: colors.cardBackground, borderColor: colors.border },
+            {
+              width: stepperBtnSize,
+              height: stepperBtnSize,
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+            },
             {
               opacity: session.wagersPerTeam >= MAX_WAGERS_PER_TEAM ? 0.45 : pressed ? 0.85 : 1,
             },
@@ -238,7 +284,7 @@ export default function TeamSetupScreen() {
       </View>
       <Pressable
         onPress={() => setWagerInfoOpen(true)}
-        style={styles.wagerInfoLink}
+        style={[styles.wagerInfoLink, compact && styles.wagerInfoLinkCompact]}
         accessibilityRole="button"
         accessibilityLabel={t('play.wagerInfoLink')}
       >
@@ -292,12 +338,13 @@ export default function TeamSetupScreen() {
     >
       <WagerInfoModal visible={wagerInfoOpen} onClose={() => setWagerInfoOpen(false)} />
 
-      <View style={styles.dotsRow} accessibilityRole="tablist">
+      <View style={[styles.dotsRow, compact && styles.dotsRowCompact]} accessibilityRole="tablist">
         {steps.map((_, i) => (
           <View
             key={i}
             style={[
               styles.dot,
+              compact && styles.dotCompact,
               {
                 backgroundColor: i === slideIndex ? colors.primary : colors.border,
                 opacity: i === slideIndex ? 1 : 0.45,
@@ -317,38 +364,31 @@ export default function TeamSetupScreen() {
 const styles = StyleSheet.create({
   slideHost: {
     width: '100%',
-    flexGrow: 0,
+    flex: 1,
+    minHeight: 0,
     alignSelf: 'stretch',
   },
   slidePage: {
-    padding: SPACING.sm,
-    gap: SPACING.md,
     width: '100%',
-    flexGrow: 0,
+    flex: 1,
+    minHeight: 0,
   },
-  sectionTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '700',
-    fontFamily: FONTS.uiSemibold,
+  wagerSlide: {
+    justifyContent: 'center',
   },
   input: {
-    minHeight: 48,
     borderWidth: 1,
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    fontSize: FONT_SIZES.md,
+    paddingVertical: SPACING.xs,
   },
   stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.md,
-    marginTop: SPACING.sm,
   },
   stepperButton: {
-    width: 48,
-    height: 48,
     borderWidth: 1,
     borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
@@ -359,9 +399,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   stepperValue: {
-    minWidth: 40,
+    minWidth: 36,
     textAlign: 'center',
-    fontSize: 28,
     fontWeight: '800',
   },
   membersHeader: {
@@ -373,13 +412,14 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     fontWeight: '600',
   },
+  membersLabelCompact: {
+    fontSize: FONT_SIZES.xs,
+  },
   memberActions: {
     flexDirection: 'row',
     gap: SPACING.sm,
   },
   memberActionButton: {
-    width: 44,
-    height: 44,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     alignItems: 'center',
@@ -389,14 +429,22 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xl,
     fontWeight: '700',
   },
+  memberListScroll: {
+    flex: 1,
+    minHeight: 0,
+  },
   memberList: {
-    gap: SPACING.sm,
+    flexGrow: 1,
+    paddingBottom: SPACING.xs,
   },
   wagerInfoLink: {
-    marginTop: SPACING.md,
+    marginTop: SPACING.sm,
     alignSelf: 'center',
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.sm,
+  },
+  wagerInfoLinkCompact: {
+    marginTop: SPACING.xs,
   },
   wagerInfoLinkText: {
     fontSize: FONT_SIZES.sm,
@@ -407,11 +455,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: SPACING.sm,
+    flexShrink: 0,
+  },
+  dotsRowCompact: {
+    gap: SPACING.xs,
+    marginBottom: -SPACING.xs,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  dotCompact: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   footerActions: {
     flexDirection: 'row',

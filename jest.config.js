@@ -1,6 +1,6 @@
 module.exports = {
   preset: 'jest-expo',
-  setupFilesAfterFramework: ['@testing-library/jest-native/extend-expect'],
+  setupFilesAfterEnv: ['@testing-library/jest-native/extend-expect'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },

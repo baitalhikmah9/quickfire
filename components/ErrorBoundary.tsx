@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SPACING, FONT_SIZES, BORDER_RADIUS } from '@/constants';
 import { PALETTES } from '@/constants/theme';

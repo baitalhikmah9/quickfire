@@ -1,4 +1,5 @@
-import { Pressable, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { COLORS, TYPE_SCALE, BORDER_RADIUS, SHADOWS, SPACING, FONTS } from '@/constants/theme';
 import { useI18n } from '@/lib/i18n/useI18n';
 

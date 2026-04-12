@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image } from 'expo-image';
-import { View, Text, StyleSheet, Pressable, type ViewStyle, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, type ViewStyle, Dimensions } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, BORDER_RADIUS, COLORS, FONTS, SHADOWS } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 

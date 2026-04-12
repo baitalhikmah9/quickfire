@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   LayoutAnimation,
   Platform,
   type ViewStyle,
 } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, FONTS } from '@/constants';
 

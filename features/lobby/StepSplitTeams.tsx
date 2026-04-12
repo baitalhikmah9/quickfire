@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, FONT_SIZES, BORDER_RADIUS } from '@/constants';
 import { useTheme } from '@/lib/hooks/useTheme';
 

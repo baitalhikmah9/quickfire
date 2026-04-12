@@ -1,12 +1,15 @@
-import { ClerkProvider, ClerkLoaded, useAuth } from '@clerk/clerk-expo';
+import { ClerkProvider, ClerkLoaded, ClerkLoading, useAuth } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet } from 'react-native';
 import { useThemeHydration } from '@/lib/hooks/useTheme';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useGameHydration } from '@/store/game';
+import { usePlayHydration } from '@/store/play';
+import { PALETTES } from '@/constants/theme';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
 const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL ?? '';
@@ -32,19 +35,35 @@ function ProvidersContent({ children }: { children: React.ReactNode }) {
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <ClerkLoaded>
-        <ConvexProviderWithClerk client={convex!} useAuth={useAuth}>
+      <>
+        <ClerkLoading>
           <SafeAreaProvider>
-            <ThemeHydration>{children}</ThemeHydration>
+            <View
+              style={[
+                clerkBootstrapStyles.fill,
+                { backgroundColor: PALETTES.default.background },
+              ]}
+            >
+              <ActivityIndicator size="large" />
+            </View>
           </SafeAreaProvider>
-        </ConvexProviderWithClerk>
-      </ClerkLoaded>
+        </ClerkLoading>
+        <ClerkLoaded>
+          <ConvexProviderWithClerk client={convex!} useAuth={useAuth}>
+            <SafeAreaProvider>
+              <AppHydration>{children}</AppHydration>
+            </SafeAreaProvider>
+          </ConvexProviderWithClerk>
+        </ClerkLoaded>
+      </>
     </ClerkProvider>
   );
 }
 
-function ThemeHydration({ children }: { children: React.ReactNode }) {
+function AppHydration({ children }: { children: React.ReactNode }) {
   useThemeHydration();
+  usePlayHydration();
+  useGameHydration();
   return <>{children}</>;
 }
 
@@ -70,6 +89,14 @@ function SetupRequired() {
     </View>
   );
 }
+
+const clerkBootstrapStyles = StyleSheet.create({
+  fill: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 const setupStyles = StyleSheet.create({
   container: {
