@@ -9,7 +9,8 @@ export type GameMode =
   | 'classic'
   | 'quickPlay'
   | 'random'
-  | 'rumble';
+  | 'rumble'
+  | 'rapidFire';
 
 export interface TeamConfig {
   id: string;
@@ -143,16 +144,96 @@ export type TurnPhase =
   | 'overtimeCheck'
   | 'completed';
 
+export type ScoreEventReason =
+  | 'standard'
+  | 'steal'
+  | 'wager'
+  | 'lifeline'
+  | 'hotSeat'
+  | 'overtimeSurge'
+  | 'manualAdjustment';
+
 export interface ScoreEvent {
   teamId: string;
   points: number;
-  reason: string;
+  reason: ScoreEventReason;
+  questionId?: string;
+  turnIndex: number;
+  createdAt: number;
+  metadata?: Record<string, unknown>;
 }
+
+export type OvertimeSurgeStatus =
+  | 'inactive'
+  | 'armed'
+  | 'challengePending'
+  | 'completed';
 
 export interface OvertimeState {
   topics: string[];
   leadingTeamBanned?: string;
   trailingTeamSelected?: string;
+  surgeQuestionId?: string;
+  triggeringTeamId?: string;
+  challengedTeamId?: string;
+  challengeTopicIds?: string[];
+  surgeStatus?: OvertimeSurgeStatus;
+}
+
+/** Runtime lifeline counts and UI state during a session */
+export interface TeamLifelineRuntime {
+  callAFriend: number;
+  discard: number;
+  answerRewards: number;
+  rest?: number;
+  activeLifelineId?: LifelineId | null;
+  /** Applied point multiplier after answerRewards reveal (e.g. 0.5 for 50%) */
+  answerRewardsPointMultiplier?: number;
+}
+
+export interface LifelineRuntimeState {
+  perTeam: Record<string, TeamLifelineRuntime>;
+}
+
+export interface RapidFireState {
+  phase: 'topicSelect' | 'run' | 'results';
+  selectedTopicIds: string[];
+  questionIds: string[];
+  currentIndex: number;
+  seed: string;
+  runStartedAt: number;
+  correctCount?: number;
+}
+
+export interface ManualScoreAdjustment {
+  teamId: string;
+  delta: number;
+  appliedAt: number;
+  note?: string;
+}
+
+export interface DeviceInstallation {
+  deviceId: string;
+  userId?: string;
+  platform: 'ios' | 'android' | 'web';
+  appVersion: string;
+  firstSeenAt: number;
+  lastSeenAt: number;
+}
+
+export interface SessionSavePayload {
+  clientSessionId: string;
+  deviceId: string;
+  session: GameSessionState;
+  scoreEvents: ScoreEvent[];
+}
+
+export interface OfflineSessionQueueItem {
+  id: string;
+  payload: SessionSavePayload;
+  createdAt: number;
+  flushAttempts: number;
+  lastError?: string;
 }
 
 export interface GameSessionState {
@@ -177,6 +258,8 @@ export interface GameSessionState {
   lastAwardedTeamId?: string | null;
   timerStartedAt?: number;
   overtime?: OvertimeState;
+  scoreEvents: ScoreEvent[];
+  lifelineRuntime?: LifelineRuntimeState;
 }
 
 export interface WalletBalance {

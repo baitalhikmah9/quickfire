@@ -13,6 +13,8 @@ interface PlayScaffoldProps {
   title: string;
   subtitle?: string;
   children: ReactNode;
+  /** When set, replaces the default `PlayStackHeader` (e.g. full-width play board chrome). */
+  customHeader?: ReactNode;
   /** Custom back behavior (e.g. match end → home). Default: stack back or play hub. */
   onBack?: () => void;
   showHud?: boolean;
@@ -20,6 +22,8 @@ interface PlayScaffoldProps {
   scoreHudDense?: boolean;
   session?: GameSessionState | null;
   footer?: ReactNode;
+  /** Minimal padding and hairline top border — e.g. play board team strip. */
+  footerDense?: boolean;
   /**
    * When false, the body is a flex region with no outer scroll — children should size to fit (or use nested scroll).
    */
@@ -33,20 +37,40 @@ interface PlayScaffoldProps {
    * Header / HUD stay inset; body fills full width under horizontal safe areas (landscape bezels).
    */
   bodyEdgeToEdge?: boolean;
+  /**
+   * When used with `bodyEdgeToEdge`, inset the body and footer horizontally with
+   * `max(safe area, screen gutter)` so content clears rounded corners / notches (landscape bezels).
+   */
+  contentSafeAreaHorizontal?: boolean;
+  /**
+   * With `bodyEdgeToEdge`, render `footer` between the header chrome and the body (e.g. scores above the board).
+   * Ignored when `bodyEdgeToEdge` is false.
+   */
+  footerAboveBody?: boolean;
+  /**
+   * Skip the default footer shell (background, top border, outer padding). The footer node owns its own chrome.
+   * When `contentSafeAreaHorizontal` + `bodyEdgeToEdge`, only horizontal safe-area gutters wrap the footer.
+   */
+  footerBare?: boolean;
 }
 
 export function PlayScaffold({
   title,
   subtitle,
   children,
+  customHeader,
   onBack,
   showHud = false,
   scoreHudDense = false,
   session,
   footer,
+  footerDense = false,
   bodyScrollEnabled = true,
   bodyFrame = true,
   bodyEdgeToEdge = false,
+  contentSafeAreaHorizontal = false,
+  footerAboveBody = false,
+  footerBare = false,
 }: PlayScaffoldProps) {
   const colors = useTheme();
   const { getTextStyle } = useI18n();
@@ -80,9 +104,9 @@ export function PlayScaffold({
 
   const chrome = (
     <>
-      <PlayStackHeader title={title} onBackPress={onBack} />
+      {customHeader ?? <PlayStackHeader title={title} onBackPress={onBack} />}
 
-      {subtitle ? (
+      {customHeader ? null : subtitle ? (
         <Text
           style={[
             ...subtitleStyles,
@@ -94,7 +118,7 @@ export function PlayScaffold({
         </Text>
       ) : null}
 
-      {showHud && session ? (
+      {customHeader ? null : showHud && session ? (
         <ScoreHud session={session} compact dense={scoreHudDense} />
       ) : null}
     </>
@@ -140,6 +164,47 @@ export function PlayScaffold({
     </>
   );
 
+  const footerPlacementAbove = Boolean(footer && bodyEdgeToEdge && footerAboveBody);
+
+  const footerChromeStyles = [
+    styles.footer,
+    footerDense ? styles.footerDense : styles.footerFit,
+    contentSafeAreaHorizontal && bodyEdgeToEdge && {
+      paddingLeft: padLeft,
+      paddingRight: padRight,
+    },
+    {
+      backgroundColor: colors.background,
+      borderTopColor: colors.border,
+    },
+    footerPlacementAbove && {
+      borderTopWidth: 0,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    footerPlacementAbove && styles.footerSlotFixed,
+  ];
+
+  const footerHorizontalGutter =
+    footerBare && contentSafeAreaHorizontal && bodyEdgeToEdge
+      ? { paddingLeft: padLeft, paddingRight: padRight }
+      : null;
+
+  const footerShell =
+    footer ? (
+      footerBare ? (
+        footerHorizontalGutter ? (
+          <View style={[footerHorizontalGutter, footerPlacementAbove && styles.footerSlotFixed]}>{footer}</View>
+        ) : footerPlacementAbove ? (
+          <View style={styles.footerSlotFixed}>{footer}</View>
+        ) : (
+          footer
+        )
+      ) : (
+        <View style={footerChromeStyles}>{footer}</View>
+      )
+    ) : null;
+
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: colors.background }]}
@@ -148,26 +213,24 @@ export function PlayScaffold({
       <ScreenContent fullWidth style={styles.screenInner}>
         <View style={styles.fitRoot}>
           <View style={paddedColumnStyles}>{main}</View>
+          {footerPlacementAbove ? footerShell : null}
           {bodyEdgeToEdge ? (
-            <View style={styles.edgeBodySlot}>{bodySection}</View>
+            <View
+              style={[
+                styles.edgeBodySlot,
+                contentSafeAreaHorizontal && {
+                  paddingLeft: padLeft,
+                  paddingRight: padRight,
+                },
+              ]}
+            >
+              {bodySection}
+            </View>
           ) : null}
         </View>
       </ScreenContent>
 
-      {footer ? (
-        <View
-          style={[
-            styles.footer,
-            styles.footerFit,
-            {
-              backgroundColor: colors.background,
-              borderTopColor: colors.border,
-            },
-          ]}
-        >
-          {footer}
-        </View>
-      ) : null}
+      {footer && !footerPlacementAbove ? footerShell : null}
     </SafeAreaView>
   );
 }
@@ -203,6 +266,11 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: SPACING.sm,
     minHeight: 0,
+  },
+  /** Keeps team strip / footer from collapsing when the board body fights for height. */
+  footerSlotFixed: {
+    flexGrow: 0,
+    flexShrink: 0,
   },
   edgeBodySlot: {
     flex: 1,
@@ -290,5 +358,10 @@ const styles = StyleSheet.create({
   footerFit: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
+  },
+  footerDense: {
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
 });

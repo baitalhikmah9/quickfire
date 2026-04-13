@@ -116,6 +116,7 @@ function createSession(overrides: Partial<GameSessionState> = {}): GameSessionSt
       leadingTeamBanned: 'science',
       trailingTeamSelected: 'history',
     },
+    scoreEvents: [],
     ...overrides,
   };
 }
@@ -127,6 +128,7 @@ function seedPlayStorage(tokens: number, session: GameSessionState | null) {
       state: {
         tokens,
         session: serializeGameSession(session),
+        rapidFire: null,
       },
       version: 1,
     })
@@ -136,7 +138,7 @@ function seedPlayStorage(tokens: number, session: GameSessionState | null) {
 beforeEach(() => {
   mockStorage.clear();
   jest.clearAllMocks();
-  usePlayStore.setState({ session: null, tokens: 5 });
+  usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
 });
 
 describe('usePlayStore', () => {
@@ -336,8 +338,8 @@ describe('usePlayStore', () => {
   });
 
   it('rejects wagers in randomiser and rumble modes', () => {
-    for (const mode of ['random', 'rumble'] as const) {
-      usePlayStore.setState({ session: null, tokens: 5 });
+    for (const mode of ['random', 'rumble', 'rapidFire'] as const) {
+      usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
       usePlayStore.getState().ensureDraft();
       usePlayStore.getState().setMode(mode);
       expect(usePlayStore.getState().session?.config.wagerEnabled).toBe(false);

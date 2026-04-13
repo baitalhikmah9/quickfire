@@ -15,6 +15,7 @@ import type {
   GameMode,
   GameSessionState,
   QuestionCard,
+  RapidFireState,
   TeamConfig,
   TeamState,
   WagerState,
@@ -22,8 +23,10 @@ import type {
 import { getResolvedContentLocaleChain, type SupportedLocale } from '@/lib/i18n/config';
 import {
   deserializeGameSession,
+  deserializeRapidFire,
   type PersistedPlayState,
   serializeGameSession,
+  serializeRapidFire,
 } from '@/store/gameSessionPersistence';
 import { useLocaleStore } from '@/store/locale';
 
@@ -63,7 +66,7 @@ function getDefaultConfig(
     contentLocaleChain,
     quickPlayTopicCount: 3,
     hotSeatEnabled: false,
-    wagerEnabled: mode !== 'random' && mode !== 'rumble',
+    wagerEnabled: mode !== 'random' && mode !== 'rumble' && mode !== 'rapidFire',
     wagersPerTeam: 3,
   };
 }
@@ -94,6 +97,7 @@ function createDraftSession(): GameSessionState {
     wagersPerTeam: 3,
     wager: null,
     bonus: { ...DEFAULT_BONUS },
+    scoreEvents: [],
   };
 }
 
@@ -109,7 +113,8 @@ function syncConfig(session: GameSessionState): GameConfig {
     categories: session.selectedCategoryIds,
     contentLocaleChain: session.contentLocaleChain,
     quickPlayTopicCount: session.config.quickPlayTopicCount,
-    wagerEnabled: session.mode !== 'random' && session.mode !== 'rumble',
+    wagerEnabled:
+      session.mode !== 'random' && session.mode !== 'rumble' && session.mode !== 'rapidFire',
     wagersPerTeam: session.wagersPerTeam,
   };
 }
@@ -124,6 +129,7 @@ function withScores(teams: TeamState[]): { teams: TeamState[]; scores: Record<st
 interface PlayStore {
   tokens: number;
   session: GameSessionState | null;
+  rapidFire: RapidFireState | null;
   hydrate: () => Promise<void>;
   ensureDraft: () => void;
   resetSession: () => void;
@@ -173,10 +179,16 @@ function mergePersistedPlayState(
       ? currentState.session
       : deserializeGameSession(partialState.session) ?? currentState.session;
 
+  const nextRapidFire =
+    partialState.rapidFire === undefined
+      ? currentState.rapidFire
+      : deserializeRapidFire(partialState.rapidFire);
+
   return {
     ...currentState,
     tokens: nextTokens,
     session: nextSession,
+    rapidFire: nextRapidFire,
   };
 }
 
@@ -185,6 +197,7 @@ export const usePlayStore = create<PlayStore>()(
     (set, get) => ({
       tokens: 5,
       session: null,
+      rapidFire: null,
       hydrate: async () => {
         await usePlayStore.persist.rehydrate();
       },
@@ -195,7 +208,7 @@ export const usePlayStore = create<PlayStore>()(
         }
       },
 
-      resetSession: () => set({ session: null }),
+      resetSession: () => set({ session: null, rapidFire: null }),
 
       grantTokens: (amount) =>
         set((state) => ({ tokens: Math.max(0, state.tokens + amount) })),
@@ -219,7 +232,7 @@ export const usePlayStore = create<PlayStore>()(
             config: {
               ...nextSession.config,
               mode,
-              wagerEnabled: mode !== 'random' && mode !== 'rumble',
+              wagerEnabled: mode !== 'random' && mode !== 'rumble' && mode !== 'rapidFire',
             },
           });
           return { session: nextSession };
@@ -322,7 +335,7 @@ export const usePlayStore = create<PlayStore>()(
         set((state) => {
           if (!state.session) return state;
           const max = getModeCategoryCount(
-            state.session.mode as 'classic' | 'quickPlay' | 'random',
+            state.session.mode,
             state.session.config.quickPlayTopicCount ?? 3
           );
           const isSelected = state.session.selectedCategoryIds.includes(slug);
@@ -345,7 +358,7 @@ export const usePlayStore = create<PlayStore>()(
         const session = state.session;
         if (!session) return { ok: false, error: 'No session found.' };
         const required = getModeCategoryCount(
-          session.mode as 'classic' | 'quickPlay' | 'random',
+          session.mode,
           session.config.quickPlayTopicCount ?? 3
         );
         if (session.selectedCategoryIds.length !== required) {
@@ -412,10 +425,12 @@ export const usePlayStore = create<PlayStore>()(
 
       awardStandardQuestion: (teamId) =>
         set((state) => {
-          if (!state.session?.currentQuestion) return state;
+          if (!state.session) return state;
+          const currentQuestion = state.session.currentQuestion;
+          if (!currentQuestion) return state;
           const session = state.session;
           const multiplier = session.bonus.active ? session.bonus.multiplier : 1;
-          const points = session.currentQuestion.pointValue * multiplier;
+          const points = currentQuestion.pointValue * multiplier;
 
           let teams = session.teams.map((t) => ({ ...t }));
 
@@ -635,6 +650,7 @@ export const usePlayStore = create<PlayStore>()(
       partialize: (state): PersistedPlayState => ({
         tokens: state.tokens,
         session: serializeGameSession(state.session),
+        rapidFire: serializeRapidFire(state.rapidFire),
       }),
       merge: (persistedState, currentState) =>
         mergePersistedPlayState(persistedState, currentState as PlayStore),

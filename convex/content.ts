@@ -1,5 +1,8 @@
-import { query } from './_generated/server';
+import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
+import type { Doc } from './_generated/dataModel';
+import { requireUser } from './lib/auth';
+import { buildCanonicalPool, selectUnaskedWithFallback } from './lib/contentRules';
 
 export const listPlayableCategories = query({
   args: {
@@ -140,3 +143,67 @@ function pickLocalizedQuestion<T extends { canonicalKey: string; locale: string 
 
   return undefined;
 }
+
+export const getUnaskedQuestions = query({
+  args: {
+    deviceId: v.string(),
+    mode: v.string(),
+    categoryIds: v.array(v.id('categories')),
+    localeChain: v.optional(v.array(v.string())),
+    limit: v.optional(v.number()),
+    seed: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireUser(ctx);
+    const limit = args.limit ?? 36;
+    const localeChain = args.localeChain?.length ? args.localeChain : ['en'];
+
+    const history = await ctx.db
+      .query('device_question_history')
+      .withIndex('by_device', (q) => q.eq('deviceId', args.deviceId))
+      .collect();
+    const asked = new Set(history.map((h) => h.canonicalKey));
+
+    const rows: Doc<'questions'>[] = [];
+    for (const catId of args.categoryIds) {
+      const qs = await ctx.db
+        .query('questions')
+        .withIndex('by_category_status', (q) => q.eq('categoryId', catId).eq('status', 'active'))
+        .collect();
+      rows.push(...qs);
+    }
+
+    const pool = buildCanonicalPool(rows, localeChain);
+    const { selection } = selectUnaskedWithFallback(pool, asked, limit, args.seed);
+    void args.mode;
+    return selection;
+  },
+});
+
+export const recordAskedQuestions = mutation({
+  args: {
+    deviceId: v.string(),
+    sessionId: v.optional(v.string()),
+    entries: v.array(
+      v.object({
+        canonicalKey: v.string(),
+        categoryId: v.id('categories'),
+        questionId: v.optional(v.id('questions')),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    await requireUser(ctx);
+    const now = Date.now();
+    for (const e of args.entries) {
+      await ctx.db.insert('device_question_history', {
+        deviceId: args.deviceId,
+        canonicalKey: e.canonicalKey,
+        categoryId: e.categoryId,
+        questionId: e.questionId,
+        sessionId: args.sessionId,
+        askedAt: now,
+      });
+    }
+  },
+});

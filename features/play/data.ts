@@ -251,8 +251,12 @@ export function getBonusQuestion(
   return candidates.length ? pickRandom(candidates) : null;
 }
 
-export function getModeCategoryCount(mode: 'classic' | 'quickPlay' | 'random', quickPlayTopicCount: number): number {
+export function getModeCategoryCount(
+  mode: 'classic' | 'quickPlay' | 'random' | 'rumble' | 'rapidFire',
+  quickPlayTopicCount: number
+): number {
   if (mode === 'quickPlay') return quickPlayTopicCount;
+  if (mode === 'rapidFire') return 5;
   return 6;
 }
 

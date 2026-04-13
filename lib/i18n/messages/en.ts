@@ -327,6 +327,17 @@ const enBase = {
   'play.phase.answer': 'Answer',
   'play.phase.finished': 'Finished',
   'play.wagersUsed': 'Wagers {used}/{total}',
+  'play.boardExit': 'Exit',
+  'play.boardTopics': 'Topics',
+  'play.boardTopicsConfirmTitle': 'Return to topics?',
+  'play.boardTopicsConfirmBody': 'This ends the current match and returns you to topic selection.',
+  'play.boardLifelines': 'Lifelines',
+  'play.boardCurrentTurnA11y': 'Current turn',
+  'play.boardTopicModalHint': 'Choose a value to open the clue.',
+  'play.boardTopicModalClose': 'Close',
+  'play.boardTopicModalPickA11y': '{points} points',
+  'play.boardTopicModalPickSideOneA11y': '{points} points, first clue',
+  'play.boardTopicModalPickSideTwoA11y': '{points} points, second clue',
 } as const;
 
 export type TranslationKey = keyof typeof enBase;

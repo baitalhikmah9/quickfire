@@ -91,6 +91,7 @@ export const useGameStore = create<GameStore>()(
             played: false,
             multiplier: 2,
           },
+          scoreEvents: [],
         };
         set({
           session: gameReducer(initialState, { type: 'INIT', config, seed, questions }),

@@ -92,6 +92,7 @@ function createSession(): GameSessionState {
       played: false,
       multiplier: 2,
     },
+    scoreEvents: [],
   };
 }
 

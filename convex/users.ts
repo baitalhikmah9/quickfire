@@ -38,3 +38,17 @@ export const upsertOnFirstSignIn = mutation({
     });
   },
 });
+
+export const updatePreferences = mutation({
+  args: {
+    preferences: v.any(),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    await ctx.db.patch(user._id, {
+      preferences: args.preferences,
+      lastActiveAt: Date.now(),
+    });
+    return user._id;
+  },
+});

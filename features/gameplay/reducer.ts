@@ -80,6 +80,7 @@ function createInitialState(
     },
     currentQuestion: undefined,
     currentTeamId: teams[0]?.id,
+    scoreEvents: [],
   };
 }
 

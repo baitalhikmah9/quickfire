@@ -5,9 +5,12 @@ import type {
   GameConfig,
   GameMode,
   GameSessionState,
+  LifelineRuntimeState,
   OvertimeState,
   PlayRouteStep,
   QuestionCard,
+  RapidFireState,
+  ScoreEvent,
   TeamState,
   TurnPhase,
   WagerState,
@@ -28,7 +31,49 @@ const supportedLocaleSchema = z.enum([
   'bn',
 ]);
 
-const gameModeSchema = z.enum(['classic', 'quickPlay', 'random', 'rumble']);
+const gameModeSchema = z.enum(['classic', 'quickPlay', 'random', 'rumble', 'rapidFire']);
+
+const scoreEventReasonSchema = z.enum([
+  'standard',
+  'steal',
+  'wager',
+  'lifeline',
+  'hotSeat',
+  'overtimeSurge',
+  'manualAdjustment',
+]);
+
+const scoreEventSchema = z.object({
+  teamId: z.string().min(1),
+  points: z.number(),
+  reason: scoreEventReasonSchema,
+  questionId: z.string().optional(),
+  turnIndex: z.number(),
+  createdAt: z.number(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+const lifelineIdSchema = z.enum(['callAFriend', 'discard', 'answerRewards', 'rest']);
+
+const teamLifelineRuntimeSchema = z.object({
+  callAFriend: z.number(),
+  discard: z.number(),
+  answerRewards: z.number(),
+  rest: z.number().optional(),
+  activeLifelineId: lifelineIdSchema.nullable().optional(),
+  answerRewardsPointMultiplier: z.number().optional(),
+});
+
+const lifelineRuntimeStateSchema = z.object({
+  perTeam: z.record(teamLifelineRuntimeSchema),
+});
+
+const overtimeSurgeStatusSchema = z.enum([
+  'inactive',
+  'armed',
+  'challengePending',
+  'completed',
+]);
 const playRouteStepSchema = z.enum([
   'hub',
   'mode',
@@ -127,6 +172,21 @@ const overtimeStateSchema = z.object({
   topics: z.array(z.string()),
   leadingTeamBanned: z.string().optional(),
   trailingTeamSelected: z.string().optional(),
+  surgeQuestionId: z.string().optional(),
+  triggeringTeamId: z.string().optional(),
+  challengedTeamId: z.string().optional(),
+  challengeTopicIds: z.array(z.string()).optional(),
+  surgeStatus: overtimeSurgeStatusSchema.optional(),
+});
+
+const rapidFireStateSchema = z.object({
+  phase: z.enum(['topicSelect', 'run', 'results']),
+  selectedTopicIds: z.array(z.string()),
+  questionIds: z.array(z.string()),
+  currentIndex: z.number(),
+  seed: z.string().min(1),
+  runStartedAt: z.number(),
+  correctCount: z.number().optional(),
 });
 
 const persistedGameSessionSchema = z.object({
@@ -151,6 +211,8 @@ const persistedGameSessionSchema = z.object({
   lastAwardedTeamId: z.string().nullable().optional(),
   timerStartedAt: z.number().optional(),
   overtime: overtimeStateSchema.optional(),
+  scoreEvents: z.array(scoreEventSchema).default([]),
+  lifelineRuntime: lifelineRuntimeStateSchema.optional(),
 });
 
 export interface PersistedGameSessionState {
@@ -175,11 +237,14 @@ export interface PersistedGameSessionState {
   lastAwardedTeamId?: string | null;
   timerStartedAt?: number;
   overtime?: OvertimeState;
+  scoreEvents: ScoreEvent[];
+  lifelineRuntime?: LifelineRuntimeState;
 }
 
 export interface PersistedPlayState {
   tokens: number;
   session: PersistedGameSessionState | null;
+  rapidFire: RapidFireState | null;
 }
 
 export interface PersistedLegacyGameState {
@@ -256,7 +321,29 @@ export function serializeGameSession(
       ...session.bonus,
       question: session.bonus.question ? serializeQuestionCard(session.bonus.question) : session.bonus.question,
     },
-    overtime: session.overtime ? { ...session.overtime, topics: [...session.overtime.topics] } : session.overtime,
+    overtime: session.overtime
+      ? {
+          ...session.overtime,
+          topics: [...session.overtime.topics],
+          challengeTopicIds: session.overtime.challengeTopicIds
+            ? [...session.overtime.challengeTopicIds]
+            : session.overtime.challengeTopicIds,
+        }
+      : session.overtime,
+    scoreEvents: session.scoreEvents.map((e) => ({
+      ...e,
+      metadata: e.metadata ? { ...e.metadata } : undefined,
+    })),
+    lifelineRuntime: session.lifelineRuntime
+      ? {
+          perTeam: Object.fromEntries(
+            Object.entries(session.lifelineRuntime.perTeam).map(([teamId, rt]) => [
+              teamId,
+              { ...rt },
+            ])
+          ),
+        }
+      : session.lifelineRuntime,
   };
 }
 
@@ -282,5 +369,22 @@ export function deserializeGameSession(
     wager: session.wager as WagerState | null | undefined,
     bonus: session.bonus as BonusChallengeState,
     overtime: session.overtime as OvertimeState | undefined,
+    scoreEvents: session.scoreEvents as ScoreEvent[],
+    lifelineRuntime: session.lifelineRuntime as LifelineRuntimeState | undefined,
   };
+}
+
+export function serializeRapidFire(state: RapidFireState | null): RapidFireState | null {
+  if (!state) return null;
+  return {
+    ...state,
+    selectedTopicIds: [...state.selectedTopicIds],
+    questionIds: [...state.questionIds],
+  };
+}
+
+export function deserializeRapidFire(value: unknown): RapidFireState | null {
+  if (value === null || value === undefined) return null;
+  const parsed = rapidFireStateSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
 }

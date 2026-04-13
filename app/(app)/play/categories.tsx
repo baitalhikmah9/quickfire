@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { BORDER_RADIUS, COLORS, FONT_SIZES, SPACING } from '@/constants';
 import { getCategoryPictureSource } from '@/constants/categoryPictures';
 import { getModeCategoryCount } from '@/features/play/data';
+import type { GameMode } from '@/features/shared';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
@@ -33,7 +34,7 @@ export default function CategorySelectionScreen() {
   const required = useMemo(() => {
     if (!session) return 0;
     return getModeCategoryCount(
-      session.mode as 'classic' | 'quickPlay' | 'random',
+      session.mode as GameMode,
       session.config.quickPlayTopicCount ?? 3
     );
   }, [session]);

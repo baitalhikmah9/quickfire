@@ -12,7 +12,7 @@
 4. [x] Use `Convex` as the system of record for authenticated data: user profile mirror, token wallet balance, wallet transactions, promo codes/redemptions, persisted game history, rapid-fire stats, feature flags, and normalized question content.
 5. [x] Preserve `React Query` only for non-Convex async integrations later; do not use it for Convex-backed domain data. Convex hooks become the default for app data reads/writes.
 6. [x] Introduce feature-first folders under `features/`: `auth`, `content`, `lobby`, `gameplay`, `wallet`, `promo`, `profile`, `settings`, and `shared`. Keep presentational components in `components/ui` and shared hooks/utilities in `lib/`.
-7. [ ] Expand the current constants theme into semantic design tokens with 4 light palettes (Blue, Orange, Green, Red) plus a Dark mode, landscape-required layouts for all mobile game screens, and landscape-optimized board layouts on tablets. All text must remain legible across every palette. Non-game screens remain portrait-friendly. _(3 palettes + breakpoints done; need Green, Red, Dark, landscape-required)_
+7. [x] Expand the current constants theme into semantic design tokens with 4 light palettes (Blue, Orange, Green, Red) plus a Dark mode, landscape-required layouts for all mobile game screens, and landscape-optimized board layouts on tablets. All text must remain legible across every palette. Non-game screens remain portrait-friendly.
 
 ## Domain Model And Backend
 - [x] Normalize [constants/questions.json](/Users/mikhail/Documents/CURSOR%20CODES/In%20Progress/doubledown/constants/questions.json) into one-question-per-record seed data. The current grouped `questionAndanswer` shape is not suitable as the long-term source of truth.
@@ -52,7 +52,7 @@
 - Rules implementation defaults:
   - [x] Classic: fixed 36-cell board from selected categories, wagers enabled.
   - [x] Quick Play: same engine with smaller board and faster defaults.
-  - [ ] Random: 36 questions selected by randomizer animation, wagers disabled.
+  - [ ] Random: 36 questions selected by randomizer animation, wagers disabled. _(mode route, random draw, and wager disablement are done; randomizer animation still open)_
   - [ ] Rumble: 36 questions; 3+ teams or individuals, 30s deliberation, 15s primary answer, 15s steal.
   - [ ] Rapid Fire: player selects 5 topics; 10 random questions drawn from the question bank. 25s per question, then 5s answer-reveal window. Token cost configurable, per-run stat persistence for signed-in users.
   - [ ] Hot Seat: only available when player names are entered; disables lifelines during the turn. Hot Seat opponent has 15s to answer.
@@ -65,8 +65,8 @@
 1. [x] Foundation: replace template routes, wire Clerk + Convex providers, create app shell, theme system, env contracts, and feature folder structure.
 2. [x] Content layer: normalize question data, create Convex schema/functions, add seed import tooling, expose category/question queries, and build artwork/category cards from current assets.
 3. [x] Gameplay MVP: implement lobby builder, team/player setup, board rendering, deterministic game reducer, timers, scorekeeping, used-question tracking, Classic and Quick Play.
-4. [ ] Advanced modes: add Random, Rumble, Rapid Fire, Wager flow, Hot Seat, lifelines, overtime surge, recap screen, and local persistence/resume.
-5. [ ] Account and progression: add Clerk auth screens (required for all game access), profile sync, device ID binding for starter tokens, history, rapid-fire stats, and saved preferences.
+4. [ ] Advanced modes: add Random, Rumble, Rapid Fire, Wager flow, Hot Seat, lifelines, overtime surge, recap screen, and local persistence/resume. _(Wager flow, lifeline setup/display, and local persistence/resume are done; remaining modes and recap depth still open)_
+5. [ ] Account and progression: add Clerk auth screens (required for all game access), profile sync, device ID binding for starter tokens, history, rapid-fire stats, and saved preferences. _(Clerk auth screens and profile mirror are done; auth-gated gameplay, device binding, history, rapid-fire stats, and saved preferences still open)_
 6. [ ] Economy without payments: implement wallet ledger, device-bound starter token grants, game entry spends/refunds, promo code redemption, store UI with disabled “coming soon” purchase bundles, compliance-safe copy, and the online admin token portal (generate, list, cap tokens).
 7. [ ] Hardening and release prep: crash/error tracking, analytics events, accessibility pass, tablet/phone QA, performance tuning, CI, and app-store submission checklist.
 

@@ -2,8 +2,10 @@ import { describe, expect, it } from '@jest/globals';
 import type { GameConfig, GameSessionState, QuestionCard } from '@/features/shared';
 import {
   deserializeGameSession,
+  deserializeRapidFire,
   deserializeUsedQuestionIds,
   serializeGameSession,
+  serializeRapidFire,
   serializeUsedQuestionIds,
 } from '@/store/gameSessionPersistence';
 
@@ -90,6 +92,40 @@ function createSession(): GameSessionState {
       topics: ['science', 'history'],
       leadingTeamBanned: 'science',
       trailingTeamSelected: 'history',
+      surgeQuestionId: 'surge-q-1',
+      triggeringTeamId: 'team_2',
+      challengedTeamId: 'team_1',
+      challengeTopicIds: ['art', 'music', 'sports'],
+      surgeStatus: 'armed',
+    },
+    scoreEvents: [
+      {
+        teamId: 'team_1',
+        points: 200,
+        reason: 'standard',
+        questionId: 'q-board-1',
+        turnIndex: 0,
+        createdAt: 1,
+      },
+      {
+        teamId: 'team_2',
+        points: -50,
+        reason: 'manualAdjustment',
+        turnIndex: 1,
+        createdAt: 2,
+        metadata: { note: 'host fix' },
+      },
+    ],
+    lifelineRuntime: {
+      perTeam: {
+        team_1: {
+          callAFriend: 1,
+          discard: 1,
+          answerRewards: 1,
+          activeLifelineId: null,
+          answerRewardsPointMultiplier: 0.5,
+        },
+      },
     },
   };
 }
@@ -142,6 +178,40 @@ describe('gameSessionPersistence', () => {
     expect(restored?.scores.team_2).toBe(400);
     expect(restored?.usedQuestionIds).toBeInstanceOf(Set);
     expect(Array.from(restored?.usedQuestionIds ?? [])).toEqual(['q-board-1']);
+    expect(restored?.overtime).toMatchObject({
+      surgeStatus: 'armed',
+      challengeTopicIds: ['art', 'music', 'sports'],
+    });
+    expect(restored?.scoreEvents).toHaveLength(2);
+    expect(restored?.scoreEvents[1]).toMatchObject({
+      reason: 'manualAdjustment',
+      points: -50,
+    });
+    expect(restored?.lifelineRuntime?.perTeam.team_1.answerRewardsPointMultiplier).toBe(0.5);
+  });
+
+  it('defaults scoreEvents when legacy persisted session omits them', () => {
+    const serialized = JSON.parse(JSON.stringify(serializeGameSession(createSession()))) as Record<
+      string,
+      unknown
+    >;
+    delete serialized.scoreEvents;
+    const restored = deserializeGameSession(serialized);
+    expect(restored?.scoreEvents).toEqual([]);
+  });
+
+  it('round-trips rapid fire state', () => {
+    const rf = {
+      phase: 'run' as const,
+      selectedTopicIds: ['a', 'b', 'c', 'd', 'e'],
+      questionIds: ['q1', 'q2'],
+      currentIndex: 1,
+      seed: 'rf-seed',
+      runStartedAt: 99,
+      correctCount: 1,
+    };
+    expect(deserializeRapidFire(serializeRapidFire(rf))).toEqual(rf);
+    expect(deserializeRapidFire(null)).toBeNull();
   });
 
   it('returns null for malformed persisted data', () => {

@@ -167,7 +167,7 @@ export default function AppHubScreen() {
         <View style={styles.mainDeck}>
           <View style={[styles.deckColumn, styles.deckColumnGrow]}>
             {canResume ? (
-              <View style={styles.deckTopInset}>
+              <View style={[styles.deckTopInset, hubHorizontalInset]}>
                 <Pressable
                   onPress={() => router.push(getResumePath(session?.step))}
                   style={({ pressed }) => [
@@ -277,15 +277,11 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   headerInset: {},
-  /**
-   * Symmetric gutter so the resume CTA sits centered; hub pills below still use `hubHorizontalInset`
-   * (extra trailing inset). `alignItems` + `alignSelf: 'stretch'` on the bar keeps full inner width.
-   */
+  /** Horizontal inset from `hubHorizontalInset` (matches header + hub pills). */
   deckTopInset: {
     width: '100%',
     minWidth: 0,
-    paddingHorizontal: LAYOUT.screenGutter,
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'center',
   },
   /** Vertical flex + width; horizontal inset from `hubHorizontalInset` (+ extra right). */
@@ -362,13 +358,14 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     minWidth: 0,
+    /** Matches `deckColumn` gap: even band below header and above hub pills / continue row. */
+    paddingTop: SPACING.md,
   },
   /** Matches `Button` primary: pill, shadow, min height — hub “continue” CTA. */
   resumeBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    marginBottom: SPACING.sm,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xl + 4,
     minHeight: 56,
@@ -390,7 +387,8 @@ const styles = StyleSheet.create({
   },
   deckColumn: {
     minWidth: 0,
-    gap: SPACING.sm,
+    /** Space between continue row and hub pills (and symmetric with `mainDeck.paddingTop`). */
+    gap: SPACING.md,
   },
   deckColumnGrow: {
     flex: 1,
