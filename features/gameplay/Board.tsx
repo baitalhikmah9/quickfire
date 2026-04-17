@@ -1,8 +1,10 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import type { QuestionCard } from '@/features/shared';
-import { SPACING, FONT_SIZES, BORDER_RADIUS } from '@/constants';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { SPACING, FONTS } from '@/constants';
+import { HOME_SOFT_UI } from '@/themes';
+
+const T = HOME_SOFT_UI;
 
 interface BoardProps {
   questions: QuestionCard[];
@@ -21,61 +23,85 @@ function groupByCategory(questions: QuestionCard[]): Map<string, QuestionCard[]>
   return map;
 }
 
+/** Blocky plastic shadow tier. */
+function neumorphicLift3D(tier: 'pill' | 'card' | 'cell'): any {
+  const m =
+    tier === 'card'
+      ? { h: 8, el: 10 }
+      : tier === 'cell'
+      ? { h: 4, el: 4 }
+      : { h: 6, el: 8 };
+
+  return {
+    shadowColor: 'rgba(51, 51, 51, 0.15)',
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: m.el,
+  };
+}
+
 export function Board({ questions, onSelectQuestion, selectedQuestionId }: BoardProps) {
-  const colors = useTheme();
   const grouped = groupByCategory(questions);
   const categories = Array.from(grouped.keys());
 
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+
   if (categories.length === 0) {
     return (
-      <View style={styles.empty}>
-        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-          No questions loaded
+      <View style={[styles.empty, { backgroundColor: canvas }]}>
+        <Text style={[styles.emptyText, { color: textMuted }]}>
+          NO QUESTIONS LOADED
         </Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: canvas }]}>
       {categories.map((catName) => {
         const items = grouped.get(catName) ?? [];
         const sorted = [...items].sort((a, b) => a.pointValue - b.pointValue);
         return (
           <View key={catName} style={styles.categoryColumn}>
-            <Text style={[styles.categoryTitle, { color: colors.text }]} numberOfLines={1}>
-              {catName}
+            <Text style={[styles.categoryTitle, { color: textPrimary }]} numberOfLines={1}>
+              {catName.toUpperCase()}
             </Text>
             <View style={styles.cells}>
               {sorted.map((q) => {
                 const isUsed = q.used;
                 const isSelected = q.id === selectedQuestionId;
                 return (
-                  <Pressable
-                    key={q.id}
-                    style={[
-                      styles.cell,
-                      {
-                        backgroundColor: isUsed
-                          ? colors.boardCellUsed
-                          : isSelected
-                            ? colors.boardCellActive
-                            : colors.primary,
-                      },
-                    ]}
-                    onPress={() => !isUsed && onSelectQuestion(q)}
-                    disabled={isUsed}
-                  >
-                    <Text
-                      style={[
-                        styles.cellText,
-                        isUsed && { color: colors.textSecondary },
+                  <View key={q.id} style={styles.cellWrapper}>
+                    {isSelected && <View style={styles.selectionGlow} />}
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.cell,
+                        styles.plasticFace,
+                        {
+                          backgroundColor: surface,
+                          opacity: isUsed ? 0.35 : (pressed ? 0.94 : 1),
+                          transform: pressed ? [{ scale: 0.96 }] : [{ scale: 1 }],
+                        },
+                        !isUsed && neumorphicLift3D('cell'),
+                        isSelected && { shadowColor: '#FFB347', shadowOpacity: 0.45 },
                       ]}
-                      numberOfLines={1}
+                      onPress={() => !isUsed && onSelectQuestion(q)}
+                      disabled={isUsed}
                     >
-                      {isUsed ? '—' : q.pointValue}
-                    </Text>
-                  </Pressable>
+                      <Text
+                        style={[
+                          styles.cellText,
+                          { color: isUsed ? textMuted : textPrimary },
+                        ]}
+                      >
+                        {isUsed ? '✕' : q.pointValue}
+                      </Text>
+                    </Pressable>
+                  </View>
                 );
               })}
             </View>
@@ -87,44 +113,68 @@ export function Board({ questions, onSelectQuestion, selectedQuestionId }: Board
 }
 
 const styles = StyleSheet.create({
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  },
   container: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
     alignItems: 'flex-start',
-    gap: SPACING.sm,
-    padding: SPACING.md,
+    gap: SPACING.md,
+    padding: SPACING.lg,
   },
   categoryColumn: {
-    width: 88,
+    width: 100,
     flexShrink: 0,
+    gap: SPACING.md,
   },
   categoryTitle: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
-    marginBottom: SPACING.xs,
+    fontSize: 11,
+    fontFamily: FONTS.displayBold,
+    letterSpacing: 0.5,
     textAlign: 'center',
+    marginBottom: SPACING.xs,
   },
   cells: {
-    gap: SPACING.xs,
+    gap: SPACING.md,
+  },
+  cellWrapper: {
+    position: 'relative',
+  },
+  selectionGlow: {
+    position: 'absolute',
+    top: -3,
+    left: -3,
+    right: -3,
+    bottom: -3,
+    borderRadius: 18,
+    backgroundColor: '#FFB347',
+    opacity: 0.25,
   },
   cell: {
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.sm,
+    height: 56,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
   },
   cellText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: FONTS.displayBold,
+    letterSpacing: 0.5,
   },
   empty: {
-    padding: SPACING.xxl,
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.xxl,
   },
   emptyText: {
-    fontSize: FONT_SIZES.md,
+    fontSize: 14,
+    fontFamily: FONTS.uiBold,
+    letterSpacing: 1,
   },
 });
+

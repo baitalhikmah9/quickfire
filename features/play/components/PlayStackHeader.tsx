@@ -7,12 +7,22 @@ import { SPACING, BORDER_RADIUS, FONTS } from '@/constants';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
+import { HOME_SOFT_UI } from '@/themes';
+
+const T = HOME_SOFT_UI.colors;
 
 function formatTokens(n: number, locale: string) {
   return n.toLocaleString(locale, { maximumFractionDigits: 0 });
 }
+
+const backLift = {
+  shadowColor: '#0F172A',
+  shadowOffset: { width: 0, height: 5 },
+  shadowOpacity: 0.1,
+  shadowRadius: 11,
+  elevation: 5,
+} as const;
 
 export type PlayStackHeaderProps = {
   title: string;
@@ -21,12 +31,11 @@ export type PlayStackHeaderProps = {
 };
 
 /**
- * Matches hub / store top bar: back pill · centered title · token chip.
+ * Play stack top bar — docs/BRAND_GUIDELINES.md soft UI: cream-context chrome, white squircles, charcoal type.
  */
 export function PlayStackHeader({ title, onBackPress }: PlayStackHeaderProps) {
   const router = useRouter();
-  const colors = useTheme();
-  const { direction, t, getTextStyle, uiLocale } = useI18n();
+  const { direction, t, uiLocale } = useI18n();
   const tokens = usePlayStore((s) => s.tokens);
   const headerDir: ViewStyle['flexDirection'] = direction === 'rtl' ? 'row-reverse' : 'row';
   const rowDir = getRowDirection(direction);
@@ -52,11 +61,7 @@ export function PlayStackHeader({ title, onBackPress }: PlayStackHeaderProps) {
     <View style={[styles.topBar, { flexDirection: headerDir }]}>
       <View style={styles.titleOverlay} pointerEvents="none">
         <Text
-          style={[
-            styles.titleText,
-            { color: colors.textOnBackground },
-            getTextStyle(undefined, 'displayBold', 'center'),
-          ]}
+          style={styles.titleText}
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.75}
@@ -70,18 +75,19 @@ export function PlayStackHeader({ title, onBackPress }: PlayStackHeaderProps) {
           onPress={handleBack}
           style={({ pressed }) => [
             styles.backPill,
+            styles.plasticFace,
+            backLift,
             { flexDirection: rowDir },
             {
-              backgroundColor: colors.cardBackground,
-              borderColor: colors.border,
+              backgroundColor: T.surface,
               opacity: pressed ? 0.92 : 1,
             },
           ]}
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
         >
-          <Ionicons name={backIcon} size={20} color={colors.primary} />
-          <Text style={[styles.backLabel, { color: colors.textOnBackground }]}>{t('common.back')}</Text>
+          <Ionicons name={backIcon} size={20} color={T.textPrimary} />
+          <Text style={styles.backLabel}>{t('common.back')}</Text>
         </Pressable>
       </View>
 
@@ -92,6 +98,7 @@ export function PlayStackHeader({ title, onBackPress }: PlayStackHeaderProps) {
           label={t('common.tokens')}
           value={formatted}
           rowDirection={rowDir}
+          variant="softUi"
           onPress={() => router.push('/(app)/store')}
           accessibilityLabel={`${t('common.tokens')}: ${formatted}`}
         />
@@ -101,6 +108,12 @@ export function PlayStackHeader({ title, onBackPress }: PlayStackHeaderProps) {
 }
 
 const styles = StyleSheet.create({
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
   topBar: {
     position: 'relative',
     alignItems: 'center',
@@ -115,11 +128,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   titleText: {
-    fontSize: 15,
+    fontFamily: FONTS.uiBold,
+    fontSize: 14,
+    lineHeight: 18,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     textAlign: 'center',
     maxWidth: '42%',
+    color: T.textPrimary,
   },
   side: {
     minWidth: 120,
@@ -142,10 +158,11 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.xl,
-    borderWidth: 2,
+    borderWidth: 0,
   },
   backLabel: {
     fontFamily: FONTS.uiSemibold,
-    fontSize: 15,
+    fontSize: 14,
+    color: T.textPrimary,
   },
 });

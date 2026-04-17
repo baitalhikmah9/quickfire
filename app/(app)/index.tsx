@@ -1,405 +1,483 @@
-import { useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  useWindowDimensions,
+  type ViewStyle,
+  type TextStyle,
+} from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useUser } from '@clerk/clerk-expo';
-import { HubActionCard } from '@/components/HubActionCard';
-import { HubTokenChip } from '@/components/HubTokenChip';
-import {
-  SPACING,
-  BORDER_RADIUS,
-  FONTS,
-  COLORS,
-  LAYOUT,
-  SHADOWS,
-} from '@/constants';
+import { FONTS, SPACING, LAYOUT } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
-import { getChevronName, getRowDirection } from '@/lib/i18n/direction';
+import { HubTokenChip } from '@/components/HubTokenChip';
+import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
-import { useHubPillLayout } from '@/lib/hooks/useHubPillLayout';
+import { HOME_SOFT_UI } from '@/themes';
+import type { GameMode } from '@/features/shared';
+import type { TranslationKey } from '@/lib/i18n/messages/en';
 
-function getResumePath(step?: string): string {
-  switch (step) {
-    case 'question':
-      return '/(app)/play/question';
-    case 'answer':
-      return '/(app)/play/answer';
-    case 'end':
-      return '/(app)/play/end';
-    case 'board':
-      return '/(app)/play/board';
-    case 'categories':
-      return '/(app)/play/categories';
-    case 'team-setup':
-      return '/(app)/play/team-setup';
-    case 'quick-play-length':
-      return '/(app)/play/quick-length';
-    case 'mode':
-      return '/(app)/play/mode';
-    default:
-      return '/(app)/play/mode';
-  }
+const T = HOME_SOFT_UI;
+
+type ModeDef = {
+  id: GameMode;
+  titleKey: TranslationKey;
+  copyKey: TranslationKey;
+  icon: keyof typeof Ionicons.glyphMap;
+};
+
+const HOME_MODES: ModeDef[] = [
+  {
+    id: 'quickPlay',
+    titleKey: 'play.mode.quick',
+    copyKey: 'play.mode.quickCopy',
+    icon: 'flash-outline',
+  },
+  {
+    id: 'classic',
+    titleKey: 'play.mode.classic',
+    copyKey: 'play.mode.classicCopy',
+    icon: 'trophy-outline',
+  },
+  {
+    id: 'random',
+    titleKey: 'play.mode.random',
+    copyKey: 'play.mode.randomCopy',
+    icon: 'shuffle-outline',
+  },
+  {
+    id: 'rumble',
+    titleKey: 'play.mode.rumble',
+    copyKey: 'play.mode.rumbleCopy',
+    icon: 'people-outline',
+  },
+];
+
+/** Deeper drop shadow — reads as a raised plastic tile (tier scales with control size). */
+function neumorphicLift3D(
+  shadowColor: string,
+  tier: 'hero' | 'header' | 'pill'
+): ViewStyle {
+  const m =
+    tier === 'hero'
+      ? { h: 10, r: 0, el: 12 }
+      : tier === 'header'
+        ? { h: 6, r: 0, el: 8 }
+        : { h: 4, r: 0, el: 4 };
+  return {
+    shadowColor: 'rgba(51, 51, 51, 0.15)', // Solid charcoal-tinted depth
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: 1,
+    shadowRadius: m.r,
+    elevation: m.el,
+  };
 }
+
 
 export default function AppHubScreen() {
   const router = useRouter();
-  const colors = useTheme();
-  const { direction, getTextStyle, t } = useI18n();
-  const { user } = useUser();
-  const session = usePlayStore((state) => state.session);
+  const { direction, t, uiLocale } = useI18n();
   const tokens = usePlayStore((state) => state.tokens);
   const resetSession = usePlayStore((state) => state.resetSession);
-  const ensureDraft = usePlayStore((state) => state.ensureDraft);
+  const setMode = usePlayStore((state) => state.setMode);
+  const [activeModeInfo, setActiveModeInfo] = useState<GameMode | null>(null);
 
-  const canResume = Boolean(
-    session && session.step !== 'hub' && session.phase !== 'completed'
-  );
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  /** Tighter chrome when vertical space is limited (e.g. phone landscape). */
+  const compact = windowHeight < 560;
 
-  const headerDir = direction === 'rtl' ? 'row-reverse' : 'row';
   const rowDir = getRowDirection(direction);
-  const chevron = getChevronName(direction);
-  const formattedTokens = tokens.toLocaleString('en-US');
+  const formattedTokens = tokens.toLocaleString(uiLocale, { maximumFractionDigits: 0 });
 
-  const hubPills = useHubPillLayout(true);
-  const { width: windowWidth } = useWindowDimensions();
-  /** Extra air on the physical right vs symmetric gutter (LTR hub). */
   const hubHorizontalInset = useMemo(
     () => ({
       paddingLeft: LAYOUT.screenGutter,
-      paddingRight: LAYOUT.screenGutter + Math.round(windowWidth * 0.05),
+      paddingRight: LAYOUT.screenGutter + Math.round(windowWidth * 0.04),
     }),
     [windowWidth]
   );
 
-  const openPlay = useCallback(() => {
+  const modeGap = compact ? SPACING.md : SPACING.lg;
+  const modeIconSize = compact ? 72 : 96;
+  const modeInfoIconSize = compact ? 20 : 24;
+
+  const onSelectMode = useCallback((mode: GameMode) => {
     resetSession();
-    ensureDraft();
-    router.push('/(app)/play/mode');
-  }, [ensureDraft, resetSession, router]);
+    setMode(mode);
+    router.push(mode === 'quickPlay' ? '/play/quick-length' : '/play/team-setup');
+  }, [resetSession, router, setMode]);
+
+  const closeModeInfo = useCallback(() => {
+    setActiveModeInfo(null);
+  }, []);
+
+  const openModeInfo = useCallback((mode: GameMode) => {
+    setActiveModeInfo(mode);
+  }, []);
+
+  const activeMode = useMemo(
+    () => HOME_MODES.find((mode) => mode.id === activeModeInfo) ?? null,
+    [activeModeInfo]
+  );
+
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const shadowHex = T.colors.shadowStrong;
+
+  const logoWordmarkStyle: TextStyle = {
+    fontFamily: FONTS.displayBold,
+    fontSize: compact ? 22 : T.typography.logoWordmark.fontSize,
+    letterSpacing: T.typography.logoWordmark.letterSpacing,
+    color: textPrimary,
+    textAlign: 'center',
+    textTransform: 'none',
+  };
+
+  const logoCaplineStyle: TextStyle = {
+    fontFamily: FONTS.ui,
+    fontSize: compact ? 10 : T.typography.logoCapline.fontSize,
+    letterSpacing: compact ? 2.5 : T.typography.logoCapline.letterSpacing,
+    color: textPrimary,
+    textAlign: 'center',
+    marginTop: 2,
+    textTransform: 'uppercase',
+  };
+
+  const headerSquircle = (icon: keyof typeof Ionicons.glyphMap, onPress: () => void, a11y: string) => (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      style={({ pressed }) => [
+        styles.headerSquircleInner,
+        styles.plasticFace,
+        {
+          backgroundColor: surface,
+          borderRadius: 99,
+          opacity: pressed ? 0.94 : 1,
+          transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+        },
+        neumorphicLift3D(shadowHex, 'header'),
+      ]}
+    >
+      <Ionicons name={icon} size={T.layout.iconHeaderSize} color={textPrimary} />
+    </Pressable>
+  );
 
   return (
     <SafeAreaView
       collapsable={false}
-      edges={['top', 'bottom', 'left']}
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
+      edges={['top', 'bottom', 'left', 'right']}
+      style={[styles.safeArea, { backgroundColor: canvas }]}
     >
       <ScreenContent fullWidth style={styles.viewport}>
-        <View style={[styles.headerInset, hubHorizontalInset]}>
-        <View style={[styles.topBar, { flexDirection: headerDir }]}>
-          <View style={styles.topBarTitleOverlay} pointerEvents="none">
-            <Text
-              style={[
-                styles.topBarTitle,
-                { color: colors.textOnBackground },
-                getTextStyle(undefined, 'displayBold', 'center'),
-              ]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}
-            >
-              {t('common.appName').toUpperCase()}
-            </Text>
-          </View>
-
-          <View style={[styles.headerSide, styles.profileHeaderHit]}>
-            <Pressable
-              onPress={() => router.push('/(app)/profile')}
-              style={({ pressed }) => [
-                styles.profilePill,
-                { flexDirection: rowDir },
-                {
-                  backgroundColor: colors.cardBackground,
-                  borderColor: colors.border,
-                  opacity: pressed ? 0.92 : 1,
-                },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={t('common.profile')}
-            >
-              {user?.imageUrl ? (
-                <Image
-                  source={{ uri: user.imageUrl }}
-                  style={[styles.profileAvatar, { borderColor: colors.border }]}
-                  accessibilityIgnoresInvertColors
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.profileAvatarFallback,
-                    { backgroundColor: colors.border, borderColor: colors.border },
-                  ]}
-                >
-                  <Ionicons
-                    name="person"
-                    size={18}
-                    color={colors.textSecondaryOnBackground}
-                  />
-                </View>
-              )}
-              <Text
-                style={[styles.profilePillLabel, { color: colors.textOnBackground }]}
-                numberOfLines={1}
-              >
-                {t('common.profile')}
-              </Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.topBarSpacer} />
-
-          <View style={[styles.headerSide, styles.headerSideEnd]}>
-            <HubTokenChip
-              label={t('common.tokens')}
-              value={formattedTokens}
-              rowDirection={rowDir}
-              onPress={() => router.push('/(app)/store')}
-              accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
-            />
-          </View>
-        </View>
-        </View>
-
-        <View style={styles.mainDeck}>
-          <View style={[styles.deckColumn, styles.deckColumnGrow]}>
-            {canResume ? (
-              <View style={[styles.deckTopInset, hubHorizontalInset]}>
-                <Pressable
-                  onPress={() => router.push(getResumePath(session?.step))}
-                  style={({ pressed }) => [
-                    styles.resumeBar,
-                    SHADOWS.card,
-                    {
-                      alignSelf: 'stretch',
-                      backgroundColor: colors.primary,
-                      shadowColor: colors.primary,
-                      opacity: pressed ? 0.92 : 1,
-                      transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-                    },
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('home.continueGame')}
-                >
-                  <Ionicons name="play-circle" size={22} color={COLORS.surface} />
-                  <View style={styles.resumeBarText}>
-                    <Text
-                      style={[
-                        styles.resumeBarTitle,
-                        { color: COLORS.surface },
-                        getTextStyle(undefined, 'bodySemibold', 'start'),
-                      ]}
-                    >
-                      {t('home.continueGame')}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.resumeBarSub,
-                        { color: 'rgba(255,255,255,0.88)' },
-                        getTextStyle(undefined, 'body', 'start'),
-                      ]}
-                    >
-                      {t('home.pickUp')}
-                    </Text>
-                  </View>
-                  <Ionicons name={chevron} size={20} color={COLORS.surface} />
-                </Pressable>
-              </View>
-            ) : null}
-            <View style={[styles.deckCardInset, hubHorizontalInset]}>
-              <View
-                style={[
-                  styles.cardRow,
-                  {
-                    flexDirection: getRowDirection(direction),
-                    maxHeight: hubPills.maxHubPillHeight,
-                  },
-                ]}
-              >
-              <HubActionCard
-                title={t('hub.play')}
-                subtitle={t('home.pillPlaySub')}
-                icon="play-circle"
-                accent={colors.primary}
-                colors={colors}
-                titleStyle={getTextStyle(undefined, 'displayBold', 'center')}
-                subtitleStyle={getTextStyle(undefined, 'body', 'center')}
-                onPress={openPlay}
-                compact={hubPills.compactCards}
-                visualVariant="pill3d"
-                pillTone="primary"
-              />
-              <HubActionCard
-                title={t('home.pillStoreTitle')}
-                subtitle={t('home.pillStoreSub')}
-                icon="storefront-outline"
-                accent={colors.secondary}
-                colors={colors}
-                titleStyle={getTextStyle(undefined, 'displayBold', 'center')}
-                subtitleStyle={getTextStyle(undefined, 'body', 'center')}
+        <View style={[styles.pageColumn, hubHorizontalInset]}>
+          <View style={[styles.headerBar, compact && styles.headerBarCompact]}>
+            <View style={[styles.headerEdge, styles.headerEdgeLeading]}>
+              <HubTokenChip
+                label={t('common.tokens')}
+                value={formattedTokens}
+                rowDirection={rowDir}
+                variant="softUi"
+                outerStyle={styles.hubTokenLeading}
                 onPress={() => router.push('/(app)/store')}
-                compact={hubPills.compactCards}
-                visualVariant="pill3d"
-                pillTone="secondary"
+                accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
               />
-              <HubActionCard
-                title={t('home.pillHelpTitle')}
-                subtitle={t('home.pillHelpSub')}
-                icon="book-outline"
-                accent={colors.tertiary}
-                colors={colors}
-                titleStyle={getTextStyle(undefined, 'displayBold', 'center')}
-                subtitleStyle={getTextStyle(undefined, 'body', 'center')}
-                onPress={() => router.push('/how-to-play')}
-                compact={hubPills.compactCards}
-                visualVariant="pill3d"
-                pillTone="tertiary"
-              />
-              </View>
+            </View>
+
+            <View style={styles.headerLogoWrap} pointerEvents="none">
+              <Text style={logoWordmarkStyle} numberOfLines={1} adjustsFontSizeToFit>
+                {t('home.logoWordmark')}
+              </Text>
+              <Text style={logoCaplineStyle} numberOfLines={1}>
+                {t('home.logoCapline')}
+              </Text>
+            </View>
+
+            <View style={[styles.headerEdge, styles.headerEdgeTrailing]}>
+              {headerSquircle(
+                'settings-outline',
+                () => router.push('/(app)/profile'),
+                t('profile.preferences')
+              )}
+            </View>
+          </View>
+
+          <View style={styles.mainFill}>
+            <View
+              testID="home-mode-row"
+              style={[
+                styles.modeGrid,
+                { flexDirection: rowDir, flexWrap: 'nowrap', gap: modeGap },
+              ]}
+            >
+              {HOME_MODES.map((mode) => (
+                <View key={mode.id} style={styles.modeTileContainer}>
+                  <Pressable
+                    onPress={() => onSelectMode(mode.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t(mode.titleKey)}
+                    style={({ pressed }) => [
+                      styles.modeTile,
+                      styles.plasticFace,
+                      {
+                        backgroundColor: surface,
+                        borderRadius: 44,
+                        opacity: pressed ? 0.94 : 1,
+                        transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                      },
+                      neumorphicLift3D(shadowHex, 'hero'),
+                    ]}
+                  >
+                    <Ionicons
+                      name={mode.icon}
+                      size={modeIconSize * 0.82}
+                      color={textPrimary}
+                      style={{ marginBottom: compact ? 4 : 12 }}
+                    />
+                    <Text
+                      style={[styles.modeTileLabel, compact && styles.modeTileLabelCompact, { color: textPrimary }]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
+                      {t(mode.titleKey).toUpperCase()}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => openModeInfo(mode.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t(mode.titleKey)} info`}
+                    style={({ pressed }) => [
+                      styles.modeInfoButton,
+                      {
+                        opacity: pressed ? 0.82 : 1,
+                        transform: pressed ? [{ scale: 0.94 }] : [{ scale: 1 }],
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name="information-circle"
+                      size={modeInfoIconSize}
+                      color={textPrimary}
+                    />
+                  </Pressable>
+                </View>
+              ))}
             </View>
           </View>
         </View>
       </ScreenContent>
+
+      {activeMode ? (
+        <View
+          accessibilityViewIsModal
+          style={styles.infoModalRoot}
+          testID="home-mode-info-overlay"
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            onPress={closeModeInfo}
+            style={styles.infoModalBackdrop}
+          />
+          <View
+            style={[
+              styles.infoModalCard,
+              styles.plasticFace,
+              neumorphicLift3D(shadowHex || 'rgba(0,0,0,0.1)', 'hero'),
+              { backgroundColor: surface },
+            ]}
+          >
+            <Text style={[styles.infoModalTitle, { color: textPrimary }]}>
+              {t(activeMode.titleKey)}
+            </Text>
+            <Text style={[styles.infoModalBody, { color: textPrimary }]}>
+              {t(activeMode.copyKey)}
+            </Text>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('common.close')}
+              onPress={closeModeInfo}
+              style={({ pressed }) => [
+                styles.infoModalCloseButton,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Text style={styles.infoModalCloseText}>{t('common.close').toUpperCase()}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  /** Light top lip + soft bottom edge — reads extruded on white squircles. */
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  },
   safeArea: {
     flex: 1,
+    position: 'relative',
   },
   viewport: {
     flex: 1,
     minWidth: 0,
     minHeight: 0,
   },
-  headerInset: {},
-  /** Horizontal inset from `hubHorizontalInset` (matches header + hub pills). */
-  deckTopInset: {
-    width: '100%',
-    minWidth: 0,
-    alignItems: 'stretch',
-    justifyContent: 'center',
-  },
-  /** Vertical flex + width; horizontal inset from `hubHorizontalInset` (+ extra right). */
-  deckCardInset: {
+  pageColumn: {
     flex: 1,
+    minWidth: 0,
     minHeight: 0,
-    minWidth: 0,
-    justifyContent: 'center',
   },
-  topBar: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: SPACING.sm,
-    minHeight: 48,
-  },
-  topBarTitleOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topBarTitle: {
-    fontSize: 15,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    maxWidth: '42%',
-  },
-  headerSide: {
-    minWidth: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerSideEnd: {
-    alignItems: 'flex-end',
-  },
-  profileHeaderHit: {
-    alignItems: 'flex-start',
-  },
-  topBarSpacer: {
+  mainFill: {
     flex: 1,
-    minWidth: SPACING.md,
-  },
-  profilePill: {
-    alignItems: 'center',
-    gap: SPACING.xs,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.xl,
-    borderWidth: 2,
-  },
-  profilePillLabel: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 15,
-    flexShrink: 1,
     minWidth: 0,
-  },
-  profileAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: BORDER_RADIUS.pill,
-    borderWidth: 2,
-  },
-  profileAvatarFallback: {
-    width: 32,
-    height: 32,
-    borderRadius: BORDER_RADIUS.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  /** Fills space below the header so `cardRow` flex:1 can stretch hub pills vertically. */
-  mainDeck: {
-    flex: 1,
     minHeight: 0,
-    minWidth: 0,
-    /** Matches `deckColumn` gap: even band below header and above hub pills / continue row. */
-    paddingTop: SPACING.md,
+    justifyContent: 'center',
   },
-  /** Matches `Button` primary: pill, shadow, min height — hub “continue” CTA. */
-  resumeBar: {
+  headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.md,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl + 4,
+    width: '100%',
+    paddingVertical: SPACING.sm,
     minHeight: 56,
-    borderRadius: BORDER_RADIUS.pill,
-    borderWidth: 0,
+    flexShrink: 0,
   },
-  resumeBarText: {
+  headerBarCompact: {
+    paddingVertical: SPACING.xs,
+    minHeight: 48,
+  },
+  headerEdge: {
     flex: 1,
-    gap: 2,
     minWidth: 0,
+    justifyContent: 'center',
   },
-  resumeBarTitle: {
+  headerEdgeLeading: {
+    alignItems: 'flex-start',
+  },
+  headerEdgeTrailing: {
+    alignItems: 'flex-end',
+  },
+  headerLogoWrap: {
+    flex: 2,
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xs,
+  },
+  /** Home hub: token chip sits on the outer edge (play header uses default `flex-end`). */
+  hubTokenLeading: {
+    alignSelf: 'flex-start',
+  },
+
+  headerSquircleInner: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modeGrid: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  modeTileContainer: {
+    flex: 1,
+    aspectRatio: 0.85, // Taller for more presence
+    marginHorizontal: 2,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modeTile: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    zIndex: 1,
+  },
+  modeInfoButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 3,
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modeTileLabel: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 22,
+    letterSpacing: 1.2,
+    textAlign: 'center',
+    zIndex: 1,
+  },
+  modeTileLabelCompact: {
     fontSize: 16,
-    lineHeight: 20,
   },
-  resumeBarSub: {
-    fontSize: 14,
-    lineHeight: 18,
+  infoModalRoot: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 50,
+    elevation: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+    backgroundColor: 'rgba(250, 249, 246, 0.4)',
   },
-  deckColumn: {
-    minWidth: 0,
-    /** Space between continue row and hub pills (and symmetric with `mainDeck.paddingTop`). */
+  infoModalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
+  },
+  infoModalCard: {
+    width: '100%',
+    maxWidth: 280,
+    padding: SPACING.lg,
+    borderRadius: 42,
     gap: SPACING.md,
+    alignItems: 'center',
+    position: 'relative',
+    zIndex: 2,
   },
-  deckColumnGrow: {
-    flex: 1,
-    minHeight: 0,
-    justifyContent: 'flex-start',
+  infoModalTitle: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 20,
+    letterSpacing: -0.5,
+    textAlign: 'center',
   },
-  cardRow: {
-    flex: 1,
-    alignItems: 'stretch',
-    gap: SPACING.md,
-    minHeight: 0,
-    minWidth: 0,
+  infoModalBody: {
+    fontFamily: FONTS.ui,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  infoModalCloseButton: {
+    marginTop: SPACING.xs,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.03)',
+  },
+  infoModalCloseText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 1.2,
+    color: '#333333',
   },
 });

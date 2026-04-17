@@ -1,146 +1,135 @@
-import { useMemo, useCallback } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { HubActionCard } from '@/components/HubActionCard';
+import { Pressable } from '@/components/ui/Pressable';
 import { ScreenContent } from '@/components/ScreenContent';
-import { SPACING, LAYOUT, COLORS } from '@/constants';
+import { SPACING, LAYOUT, FONTS, BORDER_RADIUS } from '@/constants';
 import type { GameMode } from '@/features/shared';
 import { PlayStackHeader } from '@/features/play/components/PlayStackHeader';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { getRowDirection } from '@/lib/i18n/direction';
 import { usePlayStore } from '@/store/play';
-import { useHubPillLayout } from '@/lib/hooks/useHubPillLayout';
 import type { TranslationKey } from '@/lib/i18n/messages/en';
-import type { HubActionCardProps } from '@/components/HubActionCard';
+
+/** docs/BRAND_GUIDELINES.md — warm cream canvas */
+const CANVAS_WARM_CREAM = '#FAF9F6';
+/** Primary copy / icons on light surfaces */
+const CHARCOAL = '#333333';
 
 type ModeDef = {
   id: GameMode;
   titleKey: TranslationKey;
-  copyKey: TranslationKey;
-  icon: keyof typeof Ionicons.glyphMap;
-  accent: string;
-  pillTone: NonNullable<HubActionCardProps['pillTone']>;
 };
 
 export default function PlayModeScreen() {
   const router = useRouter();
-  const colors = useTheme();
-  const { getTextStyle, t } = useI18n();
+  const { width, height } = useWindowDimensions();
+  const { t, direction } = useI18n();
   const setMode = usePlayStore((state) => state.setMode);
-  const hubPills = useHubPillLayout(true);
-  const snapInterval = hubPills.cardW + hubPills.betweenCards;
+  const storedMode = usePlayStore((state) => state.session?.mode);
 
-  // #region agent log
-  fetch('http://127.0.0.1:7814/ingest/224abf79-359e-4b9a-836f-1b018a6a309d', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '92ac8d' },
-    body: JSON.stringify({
-      sessionId: '92ac8d',
-      location: 'app/(app)/play/mode.tsx:PlayModeScreen',
-      message: 'PlayModeScreen render after hubPills',
-      data: {
-        hypothesisId: 'H1-orphan-hook',
-        cardW: hubPills.cardW,
-        compactCards: hubPills.compactCards,
-        noUseWindowDimensionsCall: true,
-      },
-      timestamp: Date.now(),
-      runId: 'verify-post-fix',
-    }),
-  }).catch(() => {});
-  // #endregion
+  const [selected, setSelected] = useState<GameMode>('classic');
+
+  useEffect(() => {
+    if (storedMode) setSelected(storedMode);
+  }, [storedMode]);
 
   const modes: ModeDef[] = useMemo(
     () => [
       {
-        id: 'classic',
-        titleKey: 'play.mode.classic',
-        copyKey: 'play.mode.classicCopy',
-        icon: 'grid-outline',
-        accent: colors.primary,
-        pillTone: 'primary',
-      },
-      {
         id: 'quickPlay',
         titleKey: 'play.mode.quick',
-        copyKey: 'play.mode.quickCopy',
-        icon: 'timer-outline',
-        accent: colors.secondary,
-        pillTone: 'secondary',
+      },
+      {
+        id: 'classic',
+        titleKey: 'play.mode.classic',
       },
       {
         id: 'random',
         titleKey: 'play.mode.random',
-        copyKey: 'play.mode.randomCopy',
-        icon: 'shuffle',
-        accent: colors.tertiary,
-        pillTone: 'tertiary',
       },
       {
         id: 'rumble',
         titleKey: 'play.mode.rumble',
-        copyKey: 'play.mode.rumbleCopy',
-        icon: 'people',
-        accent: COLORS.accent,
-        pillTone: 'accent',
       },
     ],
-    [colors.primary, colors.secondary, colors.tertiary]
+    []
   );
 
   const onSelectMode = useCallback(
     (mode: GameMode) => {
       setMode(mode);
-      router.push(mode === 'quickPlay' ? '/(app)/play/quick-length' : '/(app)/play/team-setup');
+      router.push(mode === 'quickPlay' ? '/play/quick-length' : '/play/team-setup');
     },
     [router, setMode]
   );
 
+  const handlePress = useCallback(
+    (mode: GameMode) => {
+      setSelected(mode);
+      onSelectMode(mode);
+    },
+    [onSelectMode]
+  );
+
+  const horizontalPadding = LAYOUT.screenGutter * 2;
+  const gap = SPACING.md;
+  const gapsTotal = gap * 3;
+  /** Web / first paint can report 0×0 before layout; avoid 0-sized tiles and icon size 0 (can crash). */
+  const safeW = Math.max(1, width);
+  const safeH = Math.max(1, height);
+  const rowInnerWidth = safeW - horizontalPadding;
+  const rowTileBudget = Math.max(0, (rowInnerWidth - gapsTotal) / 4);
+  const tileSide = Math.max(56, Math.min(rowTileBudget, safeH * 0.38));
+
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
-      edges={['top', 'bottom', 'left', 'right']}
-    >
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: CANVAS_WARM_CREAM }]} edges={['top', 'bottom', 'left', 'right']}>
       <ScreenContent fullWidth style={styles.viewport}>
         <View style={styles.headerInset}>
           <PlayStackHeader title={t('play.chooseModeTitle')} />
         </View>
-        <View style={styles.carouselVertical}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator
-            decelerationRate="fast"
-            snapToInterval={snapInterval}
-            snapToAlignment="start"
-            disableIntervalMomentum
-            contentContainerStyle={[
-              styles.carouselContent,
-              hubPills.compactCards && styles.carouselContentCompact,
-              styles.carouselContentFillCross,
+
+        <View style={styles.gridVertical}>
+          <View
+            style={[
+              styles.modeRow,
+              {
+                gap,
+                maxWidth: Math.max(0, rowInnerWidth),
+                alignSelf: 'center',
+                flexDirection: getRowDirection(direction),
+              },
             ]}
-            style={[styles.carousel, { maxHeight: hubPills.maxHubPillHeight }]}
-            keyboardShouldPersistTaps="handled"
           >
-            {modes.map((mode) => (
-              <HubActionCard
-                key={mode.id}
-                title={t(mode.titleKey)}
-                subtitle={t(mode.copyKey)}
-                icon={mode.icon}
-                accent={mode.accent}
-                colors={colors}
-                titleStyle={getTextStyle(undefined, 'displayBold', 'center')}
-                subtitleStyle={getTextStyle(undefined, 'body', 'center')}
-                fixedWidth={hubPills.cardW}
-                compact={hubPills.compactCards}
-                visualVariant="pill3d"
-                pillTone={mode.pillTone}
-                onPress={() => onSelectMode(mode.id)}
-              />
-            ))}
-          </ScrollView>
+            {modes.map((mode) => {
+              const isSelected = selected === mode.id;
+              return (
+                <Pressable
+                  key={mode.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={t(mode.titleKey)}
+                  onPress={() => handlePress(mode.id)}
+                  style={({ pressed }) => [
+                    styles.tile,
+                    styles.tileShadow,
+                    {
+                      width: tileSide,
+                      height: tileSide,
+                      opacity: pressed ? 0.94 : 1,
+                    },
+                  ]}
+                >
+                  <View style={styles.tileInner} pointerEvents="none">
+                    <Text style={styles.tileLabel} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72}>
+                      {t(mode.titleKey).toUpperCase()}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       </ScreenContent>
     </SafeAreaView>
@@ -159,32 +148,43 @@ const styles = StyleSheet.create({
   headerInset: {
     paddingHorizontal: LAYOUT.screenGutter,
   },
-  /** Same flex contract as home `deckCardInset` → `cardRow`; vertical center when pills are height-capped. */
-  carouselVertical: {
+  gridVertical: {
     flex: 1,
     minHeight: 0,
     minWidth: 0,
     justifyContent: 'center',
-  },
-  carousel: {
-    flex: 1,
-    minHeight: 0,
-    minWidth: 0,
-  },
-  carouselContent: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    flexGrow: 1,
-    gap: SPACING.md,
-    paddingVertical: SPACING.sm,
     paddingHorizontal: LAYOUT.screenGutter,
   },
-  carouselContentCompact: {
-    gap: SPACING.sm,
-    paddingVertical: SPACING.xs,
+  modeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'nowrap',
   },
-  /** Match home hub row height: stretch pills to the ScrollView’s vertical space. */
-  carouselContentFillCross: {
-    minHeight: '100%',
+  tile: {
+    borderRadius: BORDER_RADIUS.xl,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  tileInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xs,
+  },
+  tileLabel: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 15,
+    letterSpacing: 0.6,
+    textAlign: 'center',
+    color: CHARCOAL,
+    zIndex: 1,
+  },
+  tileShadow: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 4, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 6,
   },
 });

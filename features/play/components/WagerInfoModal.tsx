@@ -1,8 +1,41 @@
-import { Modal, View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
-import { BORDER_RADIUS, COLORS, FONT_SIZES, SPACING, FONTS } from '@/constants';
+import { FONT_SIZES, SPACING, FONTS } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { HOME_SOFT_UI } from '@/themes';
+import type { ViewStyle } from 'react-native';
+
+const T = HOME_SOFT_UI.colors;
+
+/** Deeper drop shadow — reads as a raised plastic tile (tier scales with control size). */
+function neumorphicLift(
+  shadowColor: string,
+  tier: 'hero' | 'header' | 'pill' | 'card'
+): ViewStyle {
+  const m =
+    tier === 'hero'
+      ? { h: 14, op: 0.35, r: 28, el: 18 }
+      : tier === 'header'
+        ? { h: 8, op: 0.28, r: 18, el: 12 }
+        : tier === 'card'
+          ? { h: 10, op: 0.22, r: 22, el: 10 }
+          : { h: 6, op: 0.25, r: 14, el: 8 };
+  return {
+    shadowColor,
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: m.op,
+    shadowRadius: m.r,
+    elevation: m.el,
+  };
+}
+
+/** Light top lip + soft bottom edge — reads extruded on white squircles. */
+const PLASTIC_FACE: ViewStyle = {
+  borderTopWidth: 2,
+  borderTopColor: 'rgba(255, 255, 255, 0.78)',
+  borderBottomWidth: StyleSheet.hairlineWidth * 2,
+  borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+};
 
 type WagerInfoModalProps = {
   visible: boolean;
@@ -10,126 +43,123 @@ type WagerInfoModalProps = {
 };
 
 export function WagerInfoModal({ visible, onClose }: WagerInfoModalProps) {
-  const colors = useTheme();
-  const { getTextStyle, t } = useI18n();
+  const { t, getTextStyle } = useI18n();
+
+  if (!visible) {
+    return null;
+  }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose} accessibilityRole="button">
-        <Pressable
-          style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
-          onPress={(e) => e.stopPropagation()}
+    <View
+      accessibilityViewIsModal
+      style={styles.overlay}
+      testID="wager-info-overlay"
+    >
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={onClose}
+        accessibilityLabel={t('common.close')}
+        accessibilityRole="button"
+      />
+      <View
+        style={[styles.card, { backgroundColor: T.surface }, neumorphicLift(T.shadowStrong, 'hero')]}
+      >
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={[styles.title, { color: colors.text }, getTextStyle(undefined, 'display', 'start')]}>
-              {t('play.wagerInfoTitle')}
-            </Text>
-            <Text style={[styles.para, { color: colors.textSecondary }, getTextStyle()]}>
-              {t('play.wagerInfoParagraph1')}
-            </Text>
-            <Text style={[styles.para, { color: colors.textSecondary }, getTextStyle()]}>
-              {t('play.wagerInfoParagraph2')}
-            </Text>
+          <Text style={[styles.title, { color: T.textPrimary }, getTextStyle(undefined, 'display', 'start')]}>
+            {t('play.wagerInfoTitle')}
+          </Text>
+          <Text style={[styles.para, { color: T.textMuted }, getTextStyle()]}>
+            {t('play.wagerInfoParagraph1')}
+          </Text>
+          <Text style={[styles.para, { color: T.textMuted }, getTextStyle()]}>
+            {t('play.wagerInfoParagraph2')}
+          </Text>
 
-            <View style={[styles.table, { borderColor: colors.border }]}>
-              <View style={[styles.tableRow, styles.tableHeaderRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.cell, styles.headerCell, { color: colors.text }, getTextStyle()]}>
-                  {t('play.wagerInfoColMultiplier')}
-                </Text>
-                <Text style={[styles.cell, styles.headerCell, { color: colors.text }, getTextStyle()]}>
-                  {t('play.wagerInfoColCorrect')}
-                </Text>
-                <Text style={[styles.cell, styles.headerCell, { color: colors.text }, getTextStyle()]}>
-                  {t('play.wagerInfoColWrong')}
-                </Text>
-              </View>
-              {(
-                [
-                  ['0.5x', '+0.5x', '-0.5x'],
-                  ['1.5x', '+1.5x', '-1x'],
-                  ['2x', '+2x', '-1.5x'],
-                ] as const
-              ).map((row) => (
-                <View key={row[0]} style={[styles.tableRow, { borderBottomColor: colors.border }]}>
-                  <Text style={[styles.cell, { color: colors.text }, getTextStyle()]}>{row[0]}</Text>
-                  <Text style={[styles.cell, styles.cellPos, getTextStyle()]}>{row[1]}</Text>
-                  <Text style={[styles.cell, styles.cellNeg, getTextStyle()]}>{row[2]}</Text>
-                </View>
-              ))}
+          <View style={[styles.table, { borderColor: T.shadow }]}>
+            <View style={[styles.tableRow, styles.tableHeaderRow, { borderBottomColor: T.shadow }]}>
+              <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
+                {t('play.wagerInfoColMultiplier')}
+              </Text>
+              <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
+                {t('play.wagerInfoColCorrect')}
+              </Text>
+              <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
+                {t('play.wagerInfoColWrong')}
+              </Text>
             </View>
+            {(
+              [
+                ['0.5x', '+0.5x', '-0.5x'],
+                ['1.5x', '+1.5x', '-1x'],
+                ['2x', '+2x', '-1.5x'],
+              ] as const
+            ).map((row) => (
+              <View key={row[0]} style={[styles.tableRow, { borderBottomColor: T.shadow }]}>
+                <Text style={[styles.cell, { color: T.textPrimary }, getTextStyle()]}>{row[0]}</Text>
+                <Text style={[styles.cell, styles.cellPos, getTextStyle()]}>{row[1]}</Text>
+                <Text style={[styles.cell, styles.cellNeg, getTextStyle()]}>{row[2]}</Text>
+              </View>
+            ))}
+          </View>
 
-            <Text style={[styles.warning, { color: colors.textSecondary }, getTextStyle()]}>
-              {t('play.wagerInfoWarning')}
-            </Text>
-          </ScrollView>
+          <Text style={[styles.warning, { color: T.textMuted }, getTextStyle()]}>
+            {t('play.wagerInfoWarning')}
+          </Text>
+        </ScrollView>
 
-          <Pressable
-            onPress={onClose}
-            style={({ pressed }) => [
-              styles.doneButton,
-              { backgroundColor: colors.primary, opacity: pressed ? 0.9 : 1 },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={t('play.wagerInfoDone')}
-          >
-            <Text
-              style={[
-                styles.doneLabel,
-                { color: COLORS.surface },
-                getTextStyle(undefined, 'bodySemibold', 'center'),
-              ]}
-            >
-              {t('play.wagerInfoDone')}
-            </Text>
-          </Pressable>
-        </Pressable>
-      </Pressable>
-    </Modal>
+
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 50,
+    elevation: 50,
+    backgroundColor: 'rgba(250, 249, 246, 0.4)',
     justifyContent: 'center',
     padding: SPACING.lg,
   },
   card: {
     maxHeight: '85%',
-    borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 1,
+    borderRadius: 42,
     overflow: 'hidden',
+    ...PLASTIC_FACE,
   },
   scroll: {
     maxHeight: 420,
   },
   scrollContent: {
-    padding: SPACING.lg,
+    padding: SPACING.xl,
     paddingBottom: SPACING.md,
   },
   title: {
     fontSize: FONT_SIZES.xl,
-    fontWeight: '700',
-    fontFamily: FONTS.uiSemibold,
+    fontFamily: FONTS.displayBold,
     marginBottom: SPACING.md,
+    textTransform: 'uppercase',
+    textAlign: 'center',
   },
   para: {
-    fontSize: FONT_SIZES.sm,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
     marginBottom: SPACING.sm,
+    textAlign: 'center',
+    fontFamily: FONTS.ui,
   },
   table: {
     borderWidth: 1,
-    borderRadius: BORDER_RADIUS.md,
-    marginTop: SPACING.sm,
+    borderRadius: 24,
+    marginTop: SPACING.md,
     marginBottom: SPACING.md,
     overflow: 'hidden',
-    paddingHorizontal: SPACING.sm,
+    backgroundColor: 'rgba(0,0,0,0.02)',
   },
   tableRow: {
     flexDirection: 'row',
@@ -144,32 +174,30 @@ const styles = StyleSheet.create({
     minWidth: 0,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
-    fontSize: FONT_SIZES.sm,
+    fontSize: 14,
     textAlign: 'center',
-  },
-  headerCell: {
-    fontWeight: '700',
     fontFamily: FONTS.uiSemibold,
   },
+  headerCell: {
+    fontFamily: FONTS.displayBold,
+    textTransform: 'uppercase',
+    fontSize: 12,
+  },
   cellPos: {
-    color: '#15803d',
+    color: '#16A34A',
+    fontFamily: FONTS.uiBold,
   },
   cellNeg: {
-    color: '#b91c1c',
+    color: '#DC2626',
+    fontFamily: FONTS.uiBold,
   },
   warning: {
-    fontSize: FONT_SIZES.sm,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     fontStyle: 'italic',
+    textAlign: 'center',
+    fontFamily: FONTS.ui,
+    opacity: 0.8,
   },
-  doneButton: {
-    marginHorizontal: SPACING.lg,
-    marginBottom: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-  },
-  doneLabel: {
-    fontSize: FONT_SIZES.md,
-  },
+
 });

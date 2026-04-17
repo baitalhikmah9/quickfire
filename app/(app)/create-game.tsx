@@ -11,17 +11,37 @@ import { StepSplitTeams } from '@/features/lobby/StepSplitTeams';
 import { lifelinesToConfig } from '@/features/shared';
 import type { GameConfig, TeamConfig, LifelineId, QuestionCard } from '@/features/shared';
 import { FALLBACK_CATEGORIES } from '@/constants/categories';
-import { SPACING, FONT_SIZES } from '@/constants';
+import { SPACING, FONTS } from '@/constants';
 import { getResolvedContentLocaleChain } from '@/lib/i18n/config';
-import { useTheme } from '@/lib/hooks/useTheme';
 import { useGameStore } from '@/store/game';
 import { useLocaleStore } from '@/store/locale';
+import { HOME_SOFT_UI } from '@/themes';
+import { Ionicons } from '@expo/vector-icons';
+
+const T = HOME_SOFT_UI;
 
 const STEPS = ['categories', 'teamInfo', 'splitTeams'] as const;
 
+/** Raised plastic tile shadow tier. */
+function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill'): any {
+  const m =
+    tier === 'hero'
+      ? { h: 10, r: 0, el: 12 }
+      : tier === 'header'
+      ? { h: 6, r: 0, el: 8 }
+      : { h: 4, r: 0, el: 4 };
+
+  return {
+    shadowColor: 'rgba(51, 51, 51, 0.15)',
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: m.el,
+  };
+}
+
 export default function CreateGameScreen() {
   const router = useRouter();
-  const colors = useTheme();
   const contentLocaleChain = getResolvedContentLocaleChain(
     useLocaleStore.getState().contentLocales
   );
@@ -40,6 +60,12 @@ export default function CreateGameScreen() {
   const [totalPlayers, setTotalPlayers] = useState(4);
   const [team1Count, setTeam1Count] = useState(2);
   const [team2Count, setTeam2Count] = useState(2);
+
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+  const shadowHex = T.colors.shadowStrong;
 
   const categories: CategoryOption[] =
     convexCategories && convexCategories.length > 0
@@ -176,27 +202,45 @@ export default function CreateGameScreen() {
     );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Text style={[styles.backText, { color: colors.textOnBackground }]}>← Back</Text>
-        </Pressable>
-        <View style={styles.stepIndicator}>
-          {STEPS.map((s, i) => (
-            <View
-              key={s}
-              style={[
-                styles.stepDot,
-                {
-                  backgroundColor: i <= step ? colors.primary : colors.border,
-                },
-              ]}
-            />
-          ))}
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+      <View style={[styles.header, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'header')]}>
+        <View style={styles.headerLeft}>
+          <Pressable
+            onPress={() => (step > 0 ? setStep(step - 1) : router.back())}
+            style={({ pressed }) => [
+              styles.backButton,
+              styles.plasticFace,
+              { backgroundColor: surface, opacity: pressed ? 0.94 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
+              neumorphicLift3D(shadowHex, 'pill'),
+            ]}
+          >
+            <Ionicons name="chevron-back" size={20} color={textPrimary} />
+          </Pressable>
         </View>
-        <Text style={[styles.stepLabel, { color: colors.textSecondaryOnBackground }]}>
-          {step + 1} of {STEPS.length}
-        </Text>
+
+        <View style={styles.headerCenter}>
+          <View style={styles.stepIndicator}>
+            {STEPS.map((s, i) => (
+              <View
+                key={s}
+                style={[
+                  styles.stepDot,
+                  {
+                    backgroundColor: i === step ? textPrimary : textMuted,
+                    opacity: i === step ? 1 : 0.2,
+                    width: i === step ? 20 : 8,
+                  },
+                ]}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.headerRight}>
+           <Text style={[styles.stepLabel, { color: textMuted }]}>
+            {step + 1} / {STEPS.length}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.stepBody}>{stepContent}</View>
@@ -205,18 +249,45 @@ export default function CreateGameScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, minHeight: 0 },
-  stepBody: { flex: 1, minHeight: 0 },
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  safeArea: { flex: 1 },
+  stepBody: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.md,
-    borderBottomWidth: 1,
-    gap: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    height: 72,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    zIndex: 10,
   },
-  backButton: {},
-  backText: { fontSize: FONT_SIZES.md },
-  stepIndicator: { flexDirection: 'row', gap: SPACING.xs },
-  stepDot: { width: 10, height: 10, borderRadius: 5 },
-  stepLabel: { fontSize: FONT_SIZES.sm },
+  headerLeft: {
+    width: 60,
+    alignItems: 'flex-start',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerRight: {
+    width: 60,
+    alignItems: 'flex-end',
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepIndicator: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  stepDot: { height: 8, borderRadius: 4 },
+  stepLabel: { fontSize: 11, fontFamily: FONTS.uiBold, letterSpacing: 1 },
 });
+

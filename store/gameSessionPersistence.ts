@@ -149,6 +149,7 @@ const gameConfigSchema = z.object({
   lifelines: lifelineConfigSchema.optional(),
   teamLifelines: z.record(lifelineConfigSchema).optional(),
   hotSeatEnabled: z.boolean(),
+  hotSeatRounds: z.number().int().min(0).max(5).optional(),
   wagerEnabled: z.boolean(),
   overtimeThreshold: z.number().optional(),
   boardSize: z.number().optional(),

@@ -7,10 +7,13 @@ import { useGameStore } from '@/store/game';
 import { LobbyBuilder } from '@/features/lobby/LobbyBuilder';
 import { Board } from '@/features/gameplay/Board';
 import type { GameConfig, QuestionCard } from '@/features/shared';
-import { SPACING, FONT_SIZES, BORDER_RADIUS } from '@/constants';
+import { SPACING, FONTS } from '@/constants';
 import { getResolvedContentLocaleChain } from '@/lib/i18n/config';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { HOME_SOFT_UI } from '@/themes';
 import { useLocaleStore } from '@/store/locale';
+import { Ionicons } from '@expo/vector-icons';
+
+const T = HOME_SOFT_UI;
 
 /** Mock questions for offline/guest play when Convex is not seeded */
 function getMockQuestions(count: number): QuestionCard[] {
@@ -36,16 +39,40 @@ function getMockQuestions(count: number): QuestionCard[] {
   return questions;
 }
 
+/** Blocky plastic shadow tier. */
+function neumorphicLift3D(tier: 'pill' | 'card' | 'panel'): any {
+  const m =
+    tier === 'panel'
+      ? { h: 10, el: 12 }
+      : tier === 'card'
+      ? { h: 8, el: 10 }
+      : { h: 6, el: 8 };
+
+  return {
+    shadowColor: 'rgba(51, 51, 51, 0.15)',
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: m.el,
+  };
+}
+
 export default function GameScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string }>();
-  const colors = useTheme();
+  
   const contentLocaleChain = getResolvedContentLocaleChain(
     useLocaleStore.getState().contentLocales
   );
   const mode = (params.mode as 'classic' | 'quickPlay') ?? 'classic';
   const { session, initSession, dispatch, resetSession } = useGameStore();
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionCard | null>(null);
+
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+  const accentGlow = T.colors.accentGlow;
 
   const handleStartGame = (config: GameConfig) => {
     const boardSize = config.boardSize ?? 36;
@@ -79,11 +106,15 @@ export default function GameScreen() {
 
   if (!session) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+        <View style={[styles.header, styles.plasticFace, { backgroundColor: surface }]}>
           <Pressable onPress={handleBack} style={styles.backButton}>
-            <Text style={[styles.backText, { color: colors.textOnBackground }]}>← Back</Text>
+            <Ionicons name="arrow-back" size={24} color={textPrimary} />
           </Pressable>
+          <Text style={[styles.headerTitle, { color: textPrimary }]}>
+            {mode.toUpperCase()} SETUP
+          </Text>
+          <View style={{ width: 40 }} />
         </View>
         <View style={styles.lobbyBody}>
           <LobbyBuilder mode={mode} onStart={handleStartGame} />
@@ -102,252 +133,328 @@ export default function GameScreen() {
   const panelQuestion = showQuestionPanel && session.currentQuestion ? session.currentQuestion : null;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+      <View style={[styles.header, styles.plasticFace, { backgroundColor: surface }]}>
         <Pressable onPress={handleBack} style={styles.backButton}>
-          <Text style={[styles.backText, { color: colors.textOnBackground }]}>← Back</Text>
+          <Ionicons name="close" size={24} color={textPrimary} />
         </Pressable>
         <View style={styles.scores}>
           {session.config.teams.map((t) => (
-            <Text key={t.id} style={[styles.scoreText, { color: colors.textOnBackground }]}>
-              {t.name}: {session.scores[t.id] ?? 0}
-            </Text>
+            <View key={t.id} style={styles.scoreItem}>
+              <Text style={[styles.scoreTeamName, { color: textMuted }]}>{t.name.toUpperCase()}</Text>
+              <Text style={[styles.scoreValue, { color: textPrimary }]}>{session.scores[t.id] ?? 0}</Text>
+            </View>
           ))}
         </View>
+        <View style={{ width: 40 }} />
       </View>
 
-      {panelQuestion ? (
-        <View style={styles.questionPanel}>
-          <Text style={[styles.questionCategory, { color: colors.textSecondaryOnBackground }]}>
-            {panelQuestion.categoryName} • {panelQuestion.pointValue} pts
-          </Text>
-          <Text style={[styles.questionPrompt, { color: colors.textOnBackground }]}>
-            {panelQuestion.prompt}
-          </Text>
-          <Text style={[styles.questionAnswer, { color: colors.secondary }]}>
-            {panelQuestion.answer}
-          </Text>
-
-          {isDeliberation ? (
-            <>
-              <Text style={[styles.currentTeam, { color: colors.textSecondaryOnBackground }]}>
-                Answering: {session.config.teams.find((t) => t.id === session.currentTeamId)?.name}
-              </Text>
-              <View style={styles.answerButtons}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.answerBtn,
-                    { backgroundColor: colors.success },
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => {
-                    if (session.currentTeamId) {
-                      dispatch({ type: 'LOCK_ANSWER', teamId: session.currentTeamId, correct: true });
-                      setSelectedQuestion(null);
-                    }
-                  }}
-                >
-                  <Text style={styles.answerBtnText}>Correct</Text>
-                </Pressable>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.answerBtn,
-                    { backgroundColor: colors.error },
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => {
-                    if (session.currentTeamId) {
-                      dispatch({ type: 'LOCK_ANSWER', teamId: session.currentTeamId, correct: false });
-                      setSelectedQuestion(null);
-                    }
-                  }}
-                >
-                  <Text style={styles.answerBtnText}>Incorrect</Text>
-                </Pressable>
-              </View>
-              <Pressable
-                style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
-                onPress={() => setSelectedQuestion(null)}
-              >
-                <Text style={[styles.closeBtnText, { color: colors.textSecondaryOnBackground }]}>
-                  Close (no points)
-                </Text>
-              </Pressable>
-            </>
-          ) : null}
-
-          {stealingTeamId ? (
-            <>
-              <Text style={[styles.currentTeam, { color: colors.textSecondaryOnBackground }]}>
-                Steal: {session.config.teams.find((t) => t.id === stealingTeamId)?.name}
-              </Text>
-              <View style={[styles.answerButtons, { flexDirection: 'row', flexWrap: 'wrap' }]}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.answerBtn,
-                    { backgroundColor: colors.success },
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => {
-                    dispatch({ type: 'STEAL_ATTEMPT', teamId: stealingTeamId, correct: true });
-                    setSelectedQuestion(null);
-                  }}
-                >
-                  <Text style={styles.answerBtnText}>Correct</Text>
-                </Pressable>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.answerBtn,
-                    { backgroundColor: colors.error },
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => {
-                    dispatch({ type: 'STEAL_ATTEMPT', teamId: stealingTeamId, correct: false });
-                    setSelectedQuestion(null);
-                  }}
-                >
-                  <Text style={styles.answerBtnText}>Incorrect</Text>
-                </Pressable>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.answerBtn,
-                    { backgroundColor: colors.secondary },
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => {
-                    dispatch({ type: 'SKIP_STEAL' });
-                    setSelectedQuestion(null);
-                  }}
-                >
-                  <Text style={styles.answerBtnText}>Skip</Text>
-                </Pressable>
-              </View>
-            </>
-          ) : null}
-
-          {isScoring ? (
-            <Pressable
-              style={({ pressed }) => [
-                styles.nextBtn,
-                { backgroundColor: colors.primary },
-                pressed && styles.pressed,
+      <View style={styles.content}>
+        {panelQuestion ? (
+          <View style={styles.panelWrapper}>
+            <View
+              style={[
+                styles.questionPanel,
+                styles.plasticFace,
+                { backgroundColor: surface },
+                neumorphicLift3D('panel'),
               ]}
-              onPress={() => {
-                dispatch({ type: 'NEXT_TURN' });
-                setSelectedQuestion(null);
-              }}
             >
-              <Text style={styles.nextBtnText}>Next Question</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ) : (
-        <ScrollView
-          horizontal
-          style={styles.boardScroll}
-          contentContainerStyle={styles.boardScrollContent}
-          showsHorizontalScrollIndicator
-        >
-          <Board
-            questions={session.board.map((q) => ({
-              ...q,
-              used: session.usedQuestionIds.has(q.id),
-            }))}
-            onSelectQuestion={handleSelectQuestion}
-            selectedQuestionId={selectedQuestion?.id}
-          />
-        </ScrollView>
-      )}
+              <Text style={[styles.questionCategory, { color: textMuted }]}>
+                {panelQuestion.categoryName.toUpperCase()} • {panelQuestion.pointValue} PTS
+              </Text>
+              <Text style={[styles.questionPrompt, { color: textPrimary }]}>
+                {panelQuestion.prompt}
+              </Text>
+              
+              <View style={styles.answerSection}>
+                <Text style={[styles.answerLabel, { color: textMuted }]}>ANSWER</Text>
+                <Text style={[styles.questionAnswer, { color: '#FFB347' }]}>
+                  {panelQuestion.answer}
+                </Text>
+              </View>
+
+              {isDeliberation ? (
+                <>
+                  <Text style={[styles.currentTeam, { color: textMuted }]}>
+                    ANSWERING: <Text style={{ color: textPrimary }}>{session.config.teams.find((t) => t.id === session.currentTeamId)?.name.toUpperCase()}</Text>
+                  </Text>
+                  <View style={styles.actionButtons}>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.actionBtn,
+                        styles.plasticFace,
+                        { 
+                          backgroundColor: surface,
+                          opacity: pressed ? 0.94 : 1,
+                          transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                        },
+                        neumorphicLift3D('pill'),
+                      ]}
+                      onPress={() => {
+                        if (session.currentTeamId) {
+                          dispatch({ type: 'LOCK_ANSWER', teamId: session.currentTeamId, correct: true });
+                          setSelectedQuestion(null);
+                        }
+                      }}
+                    >
+                      <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                      <Text style={[styles.actionBtnText, { color: textPrimary }]}>CORRECT</Text>
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.actionBtn,
+                        styles.plasticFace,
+                        { 
+                          backgroundColor: surface,
+                          opacity: pressed ? 0.94 : 1,
+                          transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                        },
+                        neumorphicLift3D('pill'),
+                      ]}
+                      onPress={() => {
+                        if (session.currentTeamId) {
+                          dispatch({ type: 'LOCK_ANSWER', teamId: session.currentTeamId, correct: false });
+                          setSelectedQuestion(null);
+                        }
+                      }}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#EF4444" />
+                      <Text style={[styles.actionBtnText, { color: textPrimary }]}>INCORRECT</Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : null}
+
+              {stealingTeamId ? (
+                <>
+                  <Text style={[styles.currentTeam, { color: textMuted }]}>
+                    STEAL OPPORTUNITY: <Text style={{ color: textPrimary }}>{session.config.teams.find((t) => t.id === stealingTeamId)?.name.toUpperCase()}</Text>
+                  </Text>
+                  <View style={styles.actionButtons}>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.actionBtn,
+                        styles.plasticFace,
+                        { backgroundColor: surface, opacity: pressed ? 0.94 : 1 },
+                        neumorphicLift3D('pill'),
+                      ]}
+                      onPress={() => {
+                        dispatch({ type: 'STEAL_ATTEMPT', teamId: stealingTeamId, correct: true });
+                        setSelectedQuestion(null);
+                      }}
+                    >
+                      <Text style={[styles.actionBtnText, { color: textPrimary }]}>CORRECT</Text>
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.actionBtn,
+                        styles.plasticFace,
+                        { backgroundColor: surface, opacity: pressed ? 0.94 : 1 },
+                        neumorphicLift3D('pill'),
+                      ]}
+                      onPress={() => {
+                        dispatch({ type: 'STEAL_ATTEMPT', teamId: stealingTeamId, correct: false });
+                        setSelectedQuestion(null);
+                      }}
+                    >
+                      <Text style={[styles.actionBtnText, { color: textPrimary }]}>INCORRECT</Text>
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.actionBtn,
+                        styles.plasticFace,
+                        { backgroundColor: surface, opacity: pressed ? 0.94 : 1 },
+                        neumorphicLift3D('pill'),
+                      ]}
+                      onPress={() => {
+                        dispatch({ type: 'SKIP_STEAL' });
+                        setSelectedQuestion(null);
+                      }}
+                    >
+                      <Text style={[styles.actionBtnText, { color: textPrimary }]}>SKIP</Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : null}
+
+              {isScoring ? (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.primaryBtn,
+                    styles.plasticFace,
+                    { 
+                      backgroundColor: surface,
+                      opacity: pressed ? 0.94 : 1,
+                      shadowColor: accentGlow,
+                    },
+                    neumorphicLift3D('pill'),
+                  ]}
+                  onPress={() => {
+                    dispatch({ type: 'NEXT_TURN' });
+                    setSelectedQuestion(null);
+                  }}
+                >
+                  <Text style={[styles.primaryBtnText, { color: textPrimary }]}>NEXT QUESTION</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            style={styles.boardScroll}
+            contentContainerStyle={styles.boardScrollContent}
+            showsHorizontalScrollIndicator={false}
+          >
+            <Board
+              questions={session.board.map((q) => ({
+                ...q,
+                used: session.usedQuestionIds.has(q.id),
+              }))}
+              onSelectQuestion={handleSelectQuestion}
+              selectedQuestionId={selectedQuestion?.id}
+            />
+          </ScrollView>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  },
   safeArea: {
     flex: 1,
-  },
-  lobbyBody: {
-    flex: 1,
-    minHeight: 0,
-  },
-  boardScroll: {
-    flex: 1,
-  },
-  boardScrollContent: {
-    flexGrow: 1,
-    alignItems: 'stretch',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: SPACING.md,
-    borderBottomWidth: 1,
+    paddingHorizontal: SPACING.xl,
+    height: 80,
   },
-  backButton: {},
-  backText: {
-    fontSize: FONT_SIZES.md,
+  headerTitle: {
+    fontSize: 16,
+    fontFamily: FONTS.displayBold,
+    letterSpacing: 2,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scores: {
     flexDirection: 'row',
-    gap: SPACING.lg,
+    gap: SPACING.xxl,
   },
-  scoreText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
+  scoreItem: {
+    alignItems: 'center',
+  },
+  scoreTeamName: {
+    fontSize: 10,
+    fontFamily: FONTS.uiBold,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  scoreValue: {
+    fontSize: 24,
+    fontFamily: FONTS.displayBold,
+  },
+  content: {
+    flex: 1,
+  },
+  lobbyBody: {
+    flex: 1,
+  },
+  boardScroll: {
+    flex: 1,
+  },
+  boardScrollContent: {
+    paddingVertical: SPACING.lg,
+  },
+  panelWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.xxl,
   },
   questionPanel: {
-    flex: 1,
-    padding: SPACING.lg,
+    width: '100%',
+    maxWidth: 600,
+    borderRadius: 32,
+    padding: SPACING.xxl,
+    alignItems: 'center',
+    gap: SPACING.lg,
   },
   questionCategory: {
-    fontSize: FONT_SIZES.sm,
-    marginBottom: SPACING.xs,
+    fontSize: 12,
+    fontFamily: FONTS.uiBold,
+    letterSpacing: 1,
   },
   questionPrompt: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: '600',
-    marginBottom: SPACING.md,
+    fontSize: 32,
+    fontFamily: FONTS.displayBold,
+    textAlign: 'center',
+    lineHeight: 40,
+  },
+  answerSection: {
+    alignItems: 'center',
+    gap: SPACING.xs,
+    marginTop: SPACING.md,
+  },
+  answerLabel: {
+    fontSize: 10,
+    fontFamily: FONTS.uiBold,
+    letterSpacing: 1,
   },
   questionAnswer: {
-    fontSize: FONT_SIZES.md,
-    marginBottom: SPACING.md,
+    fontSize: 20,
+    fontFamily: FONTS.displayBold,
+    textAlign: 'center',
   },
   currentTeam: {
-    fontSize: FONT_SIZES.sm,
-    marginBottom: SPACING.sm,
-  },
-  answerButtons: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-    marginBottom: SPACING.lg,
-  },
-  answerBtn: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-  },
-  answerBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  closeBtn: {
-    paddingVertical: SPACING.sm,
-  },
-  closeBtnText: {},
-  nextBtn: {
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
+    fontSize: 12,
+    fontFamily: FONTS.uiBold,
+    letterSpacing: 0.5,
     marginTop: SPACING.lg,
   },
-  nextBtnText: {
-    color: '#FFFFFF',
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '600',
+  actionButtons: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginTop: SPACING.sm,
   },
-  pressed: {
-    opacity: 0.8,
+  actionBtn: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  actionBtnText: {
+    fontSize: 14,
+    fontFamily: FONTS.displayBold,
+  },
+  primaryBtn: {
+    marginTop: SPACING.xl,
+    paddingHorizontal: SPACING.xxl,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryBtnText: {
+    fontSize: 18,
+    fontFamily: FONTS.displayBold,
+    letterSpacing: 1,
   },
 });
+

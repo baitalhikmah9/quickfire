@@ -3,13 +3,42 @@ import { View, Text, StyleSheet, ScrollView, type ViewStyle } from 'react-native
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, FONTS } from '@/constants';
+import { COLORS, SPACING, BORDER_RADIUS, FONTS, LAYOUT } from '@/constants';
 import { PillCollapsibleSection } from '@/components/PillCollapsibleSection';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { usePlayStore } from '@/store/play';
+import { HOME_SOFT_UI } from '@/themes';
+
+const T = HOME_SOFT_UI;
+
+/** Raised plastic tile shadow tier. */
+function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill'): any {
+  const m =
+    tier === 'hero'
+      ? { h: 14, op: 0.14, r: 28, el: 18 }
+      : tier === 'header'
+      ? { h: 8, op: 0.12, r: 18, el: 12 }
+      : { h: 6, op: 0.1, r: 14, el: 8 };
+
+  return {
+    shadowColor,
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: m.op,
+    shadowRadius: m.r,
+    elevation: m.el,
+  };
+}
+
+const AMBER_GLOW = {
+  shadowColor: '#FFB347',
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0.45,
+  shadowRadius: 24,
+  elevation: 10,
+};
 
 function formatTokens(n: number) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -22,6 +51,12 @@ export function ProfileAuthGate() {
   const tokens = usePlayStore((s) => s.tokens);
   const headerDir: ViewStyle['flexDirection'] = direction === 'rtl' ? 'row-reverse' : 'row';
   const rowDir = getRowDirection(direction);
+
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+  const shadowHex = T.colors.shadowStrong;
 
   const handleBack = useCallback(() => {
     if (router.canGoBack()) {
@@ -51,8 +86,7 @@ export function ProfileAuthGate() {
           <Text
             style={[
               styles.topBarTitle,
-              { color: colors.textOnBackground },
-              getTextStyle(undefined, 'displayBold', 'center'),
+              { color: textPrimary },
             ]}
             numberOfLines={1}
             adjustsFontSizeToFit
@@ -66,19 +100,20 @@ export function ProfileAuthGate() {
           <Pressable
             onPress={handleBack}
             style={({ pressed }) => [
-              styles.backPill,
-              { flexDirection: rowDir },
+              styles.headerSquircleInner,
+              styles.plasticFace,
               {
-                backgroundColor: colors.cardBackground,
-                borderColor: colors.border,
-                opacity: pressed ? 0.92 : 1,
+                backgroundColor: surface,
+                borderRadius: 99,
+                opacity: pressed ? 0.94 : 1,
+                transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
               },
+              neumorphicLift3D(shadowHex, 'header'),
             ]}
             accessibilityRole="button"
             accessibilityLabel={t('common.back')}
           >
-            <Ionicons name={backIcon} size={20} color={colors.primary} />
-            <Text style={[styles.backLabel, { color: colors.textOnBackground }]}>{t('common.back')}</Text>
+            <Ionicons name={backIcon} size={22} color={textPrimary} />
           </Pressable>
         </View>
 
@@ -89,61 +124,74 @@ export function ProfileAuthGate() {
             label={t('common.tokens')}
             value={formatTokens(tokens)}
             rowDirection={rowDir}
+            variant="softUi"
             accessibilityLabel={t('profile.guest.tokenPill', { count: formatTokens(tokens) })}
           />
         </View>
       </View>
 
-      <PillCollapsibleSection
-        icon="ribbon-outline"
-        title={pillTitle}
-        kicker={t('profile.guest.pillKicker')}
-        tone="primary"
-        cardBackground={colors.cardBackground}
-        rowDir={rowDir}
-        collapsible={false}
-      >
-        <Text style={[styles.subtitle, { color: colors.textSecondary }, getTextStyle(undefined, 'body', 'start')]}>
+      <View style={[styles.heroCard, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'hero')]}>
+        <View style={styles.iconCircle}>
+          <Ionicons name="ribbon-outline" size={48} color={textPrimary} />
+        </View>
+        <Text style={[styles.heroTitle, { color: textPrimary }]}>{pillTitle}</Text>
+        <Text style={[styles.kicker, { color: textMuted }]}>{t('profile.guest.pillKicker').toUpperCase()}</Text>
+        <Text style={[styles.subtitle, { color: textMuted }]}>
           {t('profile.guest.subtitle')}
         </Text>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.primaryCta,
-            { backgroundColor: COLORS.accent, opacity: pressed ? 0.92 : 1 },
-          ]}
-          onPress={() => router.push('/(auth)/sign-up')}
-          accessibilityRole="button"
-          accessibilityHint={t('auth.signUp.heroTitle')}
-        >
-          <Text style={[styles.primaryCtaLabel, getTextStyle(undefined, 'bodyBold', 'center')]}>
-            {t('profile.guest.createAccount')}
-          </Text>
-        </Pressable>
+        <View style={styles.ctaGroup}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryCta,
+              styles.plasticFace,
+              {
+                backgroundColor: surface,
+                opacity: pressed ? 0.94 : 1,
+                transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }]
+              },
+              neumorphicLift3D(shadowHex, 'pill'),
+              AMBER_GLOW,
+            ]}
+            onPress={() => router.push('/(auth)/sign-up')}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.primaryCtaLabel, { color: textPrimary }]}>
+              {t('profile.guest.createAccount').toUpperCase()}
+            </Text>
+          </Pressable>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.secondaryCta,
-            {
-              borderColor: COLORS.secondary,
-              backgroundColor: colors.cardBackground,
-              opacity: pressed ? 0.94 : 1,
-            },
-          ]}
-          onPress={() => router.push('/(auth)/sign-in')}
-          accessibilityRole="button"
-          accessibilityHint={t('auth.signIn.heroTitle')}
-        >
-          <Text style={[styles.secondaryCtaLabel, { color: COLORS.secondary }, getTextStyle(undefined, 'bodyBold', 'center')]}>
-            {t('profile.guest.login')}
-          </Text>
-        </Pressable>
-      </PillCollapsibleSection>
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryCta,
+              styles.plasticFace,
+              {
+                backgroundColor: surface,
+                opacity: pressed ? 0.94 : 1,
+                transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }]
+              },
+              neumorphicLift3D(shadowHex, 'pill'),
+            ]}
+            onPress={() => router.push('/(auth)/sign-in')}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.secondaryCtaLabel, { color: textPrimary }]}>
+              {t('profile.guest.login').toUpperCase()}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
   scroll: {
     flex: 1,
     width: '100%',
@@ -157,7 +205,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: SPACING.sm,
-    minHeight: 48,
+    minHeight: 56,
   },
   topBarTitleOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -165,15 +213,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   topBarTitle: {
-    fontSize: 15,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    fontFamily: FONTS.displayBold,
+    fontSize: 20,
+    letterSpacing: -0.5,
     textAlign: 'center',
-    maxWidth: '42%',
   },
   headerSide: {
-    minWidth: 120,
-    alignItems: 'center',
+    minWidth: 100,
     justifyContent: 'center',
   },
   headerSideEnd: {
@@ -184,50 +230,75 @@ const styles = StyleSheet.create({
   },
   topBarSpacer: {
     flex: 1,
-    minWidth: SPACING.md,
   },
-  backPill: {
-    alignItems: 'center',
-    gap: SPACING.xs,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.xl,
-    borderWidth: 2,
-  },
-  backLabel: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 15,
-  },
-  subtitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: SPACING.lg,
-  },
-  primaryCta: {
-    paddingVertical: SPACING.md + 2,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: BORDER_RADIUS.sm,
+  headerSquircleInner: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.md,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.22)',
+  },
+  heroCard: {
+    borderRadius: 42,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    marginTop: SPACING.md,
+  },
+  iconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.xl,
+  },
+  heroTitle: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 28,
+    letterSpacing: -0.5,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  kicker: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 2,
+    marginBottom: SPACING.lg,
+  },
+  subtitle: {
+    fontFamily: FONTS.ui,
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: SPACING.xxl,
+    opacity: 0.7,
+    maxWidth: 320,
+  },
+  ctaGroup: {
+    alignSelf: 'stretch',
+    gap: SPACING.md,
+  },
+  primaryCta: {
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   primaryCtaLabel: {
-    fontSize: 13,
-    letterSpacing: 0.9,
-    color: '#FFFFFF',
+    fontFamily: FONTS.uiBold,
+    fontSize: 15,
+    letterSpacing: 1.2,
   },
   secondaryCta: {
-    paddingVertical: SPACING.md + 2,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: BORDER_RADIUS.sm,
-    borderWidth: 3,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryCtaLabel: {
-    fontSize: 13,
-    letterSpacing: 0.9,
+    fontFamily: FONTS.uiBold,
+    fontSize: 15,
+    letterSpacing: 1.2,
   },
 });

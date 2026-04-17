@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { Alert, View, Text, StyleSheet, ScrollView, useWindowDimensions, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
@@ -17,8 +17,11 @@ import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
+import { HOME_SOFT_UI } from '@/themes';
 
 const GRID_COLS = 3;
+
+const T = HOME_SOFT_UI;
 
 interface BoardRow {
   pointValue: number;
@@ -120,6 +123,37 @@ function lifelineSlotsForTeam(teamId: string, config: GameConfig): LifelineId[] 
   return out.slice(0, 3);
 }
 
+/** Blocky plastic shadow tier — solid charcoal-tinted depth. */
+function neumorphicLift3D(
+  tier: 'card' | 'pill' | 'tile' | 'header' | 'score'
+): any {
+  const m =
+    tier === 'card'
+      ? { h: 8, el: 10 }
+      : tier === 'tile'
+      ? { h: 5, el: 6 }
+      : tier === 'header' || tier === 'score'
+      ? { h: 6, el: 8 }
+      : { h: 4, el: 4 };
+
+  return {
+    shadowColor: 'rgba(51, 51, 51, 0.15)',
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: m.el,
+  };
+}
+
+
+
+const PLASTIC_FACE = {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+};
+
 type BoardMetrics = {
   gridGap: number;
   cellBorder: number;
@@ -133,16 +167,16 @@ type BoardMetrics = {
 
 function getBoardMetrics(screenHeight: number, screenWidth: number): BoardMetrics {
   const micro = screenHeight < 400 || screenWidth < 520;
-  const compact = screenHeight < 520;
+  const compact = screenHeight < 560;
   return {
-    gridGap: micro ? 4 : compact ? 6 : 8,
+    gridGap: micro ? 8 : compact ? 12 : 20,
     cellBorder: micro ? 1 : 2,
-    innerGap: micro ? 2 : compact ? 4 : 6,
-    tileFont: micro ? 9 : compact ? 10 : 11,
-    titleOnImage: micro ? 9 : compact ? 10 : 12,
-    scoreFont: micro ? 15 : compact ? 18 : 21,
-    lifelineIcon: micro ? 12 : compact ? 13 : 14,
-    lifelineIconBox: micro ? 20 : compact ? 22 : 24,
+    innerGap: micro ? 2 : compact ? 6 : 10,
+    tileFont: micro ? 11 : compact ? 13 : 15,
+    titleOnImage: micro ? 8 : compact ? 9 : 11,
+    scoreFont: micro ? 14 : compact ? 16 : 18,
+    lifelineIcon: micro ? 10 : compact ? 12 : 14,
+    lifelineIconBox: micro ? 18 : compact ? 20 : 24,
   };
 }
 
@@ -160,14 +194,19 @@ export default function PlayBoardScreen() {
   const [topicModalColumn, setTopicModalColumn] = useState<CategoryColumn | null>(null);
 
   const metrics = useMemo(() => getBoardMetrics(height, width), [height, width]);
+
+  // Notch detection: Blank side is the one with smaller safe area insets.
+  const isLeftBlank = insets.left <= insets.right;
+  const blankSide = isLeftBlank ? 'left' : 'right';
+  const sidebarWidth = 52;
   const headerRowDir = getRowDirection(direction);
   const footerRowDir = getRowDirection(direction);
 
   useEffect(() => {
     if (session?.step === 'question') {
-      router.replace('/(app)/play/question');
+      router.replace('/play/question');
     } else if (session?.step === 'end') {
-      router.replace('/(app)/play/end');
+      router.replace('/play/end');
     }
   }, [router, session?.step]);
 
@@ -225,217 +264,202 @@ export default function PlayBoardScreen() {
 
   const renderTile = (column: CategoryColumn, question: QuestionCard) => {
     const used = session.usedQuestionIds.has(question.id);
+    const surface = T.colors.surface;
+    const textPrimary = T.colors.textPrimary;
+    const textMuted = T.colors.textMuted;
+
     return (
-      <Pressable
-        style={({ pressed }) => [
-          styles.pointTile,
-          {
-            borderRadius: BORDER_RADIUS.sm,
-            backgroundColor: used ? colors.boardCellUsed : colors.boardCell,
-            borderColor: used ? colors.border : colors.primary,
-            borderWidth: 1,
-            opacity: used ? 0.55 : pressed ? 0.88 : 1,
-          },
-        ]}
-        onPress={() => {
-          if (used) return;
-          setTopicModalColumn(column);
-        }}
-        disabled={used}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: used }}
-        accessibilityLabel={`${question.pointValue} points`}
-      >
-        <Text
-          style={[
-            styles.pointTileText,
-            getTextStyle(question.locale, 'bodyBold', 'center'),
-            {
-              fontSize: metrics.tileFont,
-              lineHeight: metrics.tileFont + 3,
-              color: used ? colors.textSecondary : colors.primary,
-            },
-          ]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.7}
+      <View style={styles.tileWrapper}>
+
+         <Pressable
+            style={({ pressed }) => [
+                styles.pointTile,
+                PLASTIC_FACE,
+                {
+                    backgroundColor: surface,
+                    opacity: used ? 0.45 : (pressed ? 0.94 : 1),
+                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                },
+                !used && neumorphicLift3D('tile'),
+            ]}
+            onPress={() => {
+                if (used) return;
+                setTopicModalColumn(column);
+            }}
+            disabled={used}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: used }}
+            accessibilityLabel={`${question.pointValue} points`}
         >
-          {used ? '—' : question.pointValue}
-        </Text>
-      </Pressable>
+            <Text
+            style={[
+                styles.pointTileText,
+                {
+                    fontSize: metrics.tileFont,
+                    color: used ? textMuted : textPrimary,
+                    textDecorationLine: used ? 'line-through' : 'none',
+                    opacity: used ? 0.5 : 1,
+                },
+            ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+            >
+            {question.pointValue}
+            </Text>
+        </Pressable>
+      </View>
     );
   };
 
   const categoryCell = (column: (typeof grouped)[0]) => {
-    const accent = getCategoryBoardAccent(column.categoryId);
     const picture = getCategoryPictureSource(column.categoryId);
-    const locale = column.rows[0]?.left.locale ?? 'en';
+    const surface = T.colors.surface;
+    const textPrimary = T.colors.textPrimary;
+    const textMuted = T.colors.textMuted;
+    const compact = height < 560;
 
     return (
-      <View
-        key={column.categoryId}
-        style={[
-          styles.categoryCell,
-          {
-            borderRadius: BORDER_RADIUS.md,
-            borderColor: colors.primary,
-            borderWidth: metrics.cellBorder,
-            backgroundColor: colors.cardBackground,
-          },
-        ]}
-      >
-        <View style={[styles.categoryTriplet, { gap: metrics.innerGap, padding: metrics.innerGap }]}>
-          <View style={[styles.tileRail, { flex: layoutTuning.railFlex, gap: metrics.innerGap }]}>
-            {column.rows.map((row) => (
-              <View key={`L-${row.pointValue}`} style={styles.tileRailSlot}>
-                {renderTile(column, row.left)}
-              </View>
-            ))}
+      <View key={column.categoryId} style={styles.categoryBlock}>
+        <View style={styles.categoryTriplet}>
+          {/* Left Column */}
+          <View style={styles.railColumn}>
+            {!compact && <Text style={[styles.playableLabel, { color: textMuted }]}>PLAYABLE</Text>}
+            <View style={[styles.tileRail, { gap: metrics.innerGap }]}>
+                {column.rows.map((row) => (
+                    <View key={`L-${row.pointValue}`} style={styles.tileRailSlot}>
+                        {renderTile(column, row.left)}
+                    </View>
+                ))}
+            </View>
           </View>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.pictureFrame,
-              {
-                flex: layoutTuning.pictureFlex,
-                borderRadius: BORDER_RADIUS.sm,
-                backgroundColor: colors.primary,
-                padding: metrics.innerGap <= 2 ? 2 : metrics.innerGap,
-                opacity: pressed ? 0.92 : 1,
-              },
-            ]}
-            onPress={() => setTopicModalColumn(column)}
-            accessibilityRole="button"
-            accessibilityLabel={column.categoryName}
-          >
-            <View style={styles.pictureInner}>
-              {picture ? (
-                <Image source={picture} style={styles.pictureImage} contentFit="cover" transition={120} />
-              ) : (
-                <View style={[styles.pictureFallbackFill, { backgroundColor: `${accent}28` }]}>
-                  <Text style={[styles.pictureFallbackLetter, { color: accent, fontSize: metrics.scoreFont * 0.75 }]}>
-                    {column.categoryName.charAt(0)}
-                  </Text>
+          {/* Central Card */}
+          <View style={styles.centralCardWrapper}>
+            <Pressable
+                style={({ pressed }) => [
+                styles.pictureFrame,
+                PLASTIC_FACE,
+                {
+                    backgroundColor: surface,
+                    opacity: pressed ? 0.96 : 1,
+                    transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                },
+                neumorphicLift3D('card'),
+                ]}
+                onPress={() => setTopicModalColumn(column)}
+                accessibilityRole="button"
+                accessibilityLabel={column.categoryName}
+            >
+                <View style={styles.pictureInner}>
+                {picture ? (
+                    <Image source={picture} style={styles.pictureImage} contentFit="cover" transition={120} />
+                ) : (
+                    <View style={styles.pictureFallbackFill}>
+                        <Ionicons name="image-outline" size={24} color="rgba(51, 51, 51, 0.1)" />
+                    </View>
+                )}
                 </View>
-              )}
-              <View style={styles.pictureTitleBar}>
-                <Text
-                  style={[
-                    styles.pictureTitleText,
-                    getTextStyle(locale, 'bodyBold', 'center'),
-                    { fontSize: metrics.titleOnImage, lineHeight: metrics.titleOnImage + 3 },
-                  ]}
-                  numberOfLines={2}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.65}
-                >
-                  {column.categoryName}
-                </Text>
-              </View>
-            </View>
-          </Pressable>
+                <View style={styles.categoryTitleContainer}>
+                    <Text
+                        style={[
+                            styles.categoryTitleText,
+                            { color: textPrimary, fontSize: compact ? 9 : 10 },
+                        ]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.8}
+                    >
+                        {column.categoryName.toUpperCase()}
+                    </Text>
+                </View>
+            </Pressable>
+          </View>
 
-          <View style={[styles.tileRail, { flex: layoutTuning.railFlex, gap: metrics.innerGap }]}>
-            {column.rows.map((row) => (
-              <View key={`R-${row.pointValue}`} style={styles.tileRailSlot}>
-                {renderTile(column, row.right)}
-              </View>
-            ))}
+          {/* Right Column */}
+          <View style={styles.railColumn}>
+            {!compact && <Text style={[styles.playableLabel, { color: textMuted }]}>PLAYABLE</Text>}
+            <View style={[styles.tileRail, { gap: metrics.innerGap }]}>
+                {column.rows.map((row) => (
+                    <View key={`R-${row.pointValue}`} style={styles.tileRailSlot}>
+                        {renderTile(column, row.right)}
+                    </View>
+                ))}
+            </View>
           </View>
         </View>
       </View>
     );
   };
 
-  const boardHeader = (
-    <View style={styles.boardHeader}>
-      <View style={[styles.hubTopBar, { flexDirection: headerRowDir }]}>
-        <View style={styles.topBarTitleOverlay} pointerEvents="none">
-          <Text
-            style={[
-              styles.hubTopBarTitle,
-              { color: colors.textOnBackground },
-              getTextStyle(undefined, 'displayBold', 'center'),
-            ]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-          >
-            {t('common.appName').toUpperCase()}
-          </Text>
-        </View>
+  const logoWordmarkStyle: any = {
+    fontFamily: FONTS.displayBold,
+    fontSize: layoutTuning.narrow ? 22 : T.typography.logoWordmark.fontSize,
+    letterSpacing: T.typography.logoWordmark.letterSpacing,
+    color: T.colors.textPrimary,
+    textAlign: 'center',
+    textTransform: 'none',
+  };
 
-        <View style={[styles.hubHeaderSide, styles.hubHeaderSideStart, { minWidth: layoutTuning.hubSideMin }]}>
-          <Pressable
+  const logoCaplineStyle: any = {
+    fontFamily: FONTS.ui,
+    fontSize: layoutTuning.narrow ? 10 : T.typography.logoCapline.fontSize,
+    letterSpacing: layoutTuning.narrow ? 2.5 : T.typography.logoCapline.letterSpacing,
+    color: T.colors.textPrimary,
+    textAlign: 'center',
+    marginTop: 2,
+    textTransform: 'uppercase',
+  };
+
+  const boardHeader = (
+    <View
+      style={[
+        styles.headerSideBar,
+        {
+          [blankSide]: 0,
+          paddingTop: Math.max(insets.top, 16),
+          paddingBottom: Math.max(insets.bottom, 16),
+          width: sidebarWidth,
+          borderRightWidth: blankSide === 'left' ? StyleSheet.hairlineWidth : 0,
+          borderLeftWidth: blankSide === 'right' ? StyleSheet.hairlineWidth : 0,
+          borderColor: 'rgba(0,0,0,0.05)',
+        },
+      ]}
+    >
+        <Pressable
             onPress={leaveMatch}
-            style={({ pressed }) => [
-              styles.headerHubPill,
-              { flexDirection: headerRowDir },
-              {
-                backgroundColor: colors.cardBackground,
-                borderColor: colors.border,
-                opacity: pressed ? 0.92 : 1,
-              },
-            ]}
             accessibilityRole="button"
             accessibilityLabel={t('play.boardExit')}
-          >
-            <Ionicons name="log-out-outline" size={20} color={colors.primary} />
-            <Text
-              style={[styles.headerHubPillLabel, { color: colors.textOnBackground }]}
-              numberOfLines={1}
-            >
-              {t('play.boardExit')}
-            </Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.topBarSpacer} />
-
-        <View style={[styles.hubHeaderSide, styles.hubHeaderSideEnd, { minWidth: layoutTuning.hubSideMin }]}>
-          <View style={styles.boardHeaderEndStack}>
-            <HubTokenChip
-              label={t('common.tokens')}
-              value={formattedTokens}
-              rowDirection={headerRowDir}
-              onPress={() => router.push('/(app)/store')}
-              accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
-            />
-          </View>
-        </View>
-      </View>
+            style={({ pressed }) => [
+                styles.headerSquircleInner,
+                PLASTIC_FACE,
+                {
+                    backgroundColor: T.colors.surface,
+                    borderRadius: 99,
+                    opacity: pressed ? 0.94 : 1,
+                    transform: pressed ? [{ scale: 0.94 }] : [{ scale: 1 }],
+                },
+                neumorphicLift3D('header'),
+            ]}
+        >
+            <Ionicons name="log-out-outline" size={24} color={T.colors.textPrimary} />
+        </Pressable>
     </View>
   );
 
-  const footerPadBottom = Math.max(
-    height < 420 ? SPACING.sm : SPACING.md,
-    insets.bottom > 0 ? insets.bottom : SPACING.xs,
-  );
+  const footerPadBottom = height < 520 ? 2 : SPACING.xs;
   const footerCompact = innerWidth < 560;
 
   const boardFooter = (
     <View style={[styles.footerStripOuter, { paddingBottom: footerPadBottom }]}>
-      <View
-        style={[
-          styles.footerStripCard,
-          {
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.border,
-            shadowColor: colors.shadow,
-            paddingVertical: footerCompact ? SPACING.xs : SPACING.sm,
-            paddingHorizontal: footerCompact ? SPACING.sm : SPACING.md,
-          },
-        ]}
-      >
         <View
           style={[
             styles.footerRow,
-            { flexDirection: footerRowDir, gap: footerCompact ? SPACING.xs : SPACING.sm },
+            { flexDirection: footerRowDir, gap: SPACING.md },
           ]}
         >
           {session.teams.map((team, teamIndex) => {
             const slots = lifelineSlotsForTeam(team.id, session.config);
-            const showDivider = teamIndex > 0;
             const isCurrentTurn = Boolean(session.currentTeamId && team.id === session.currentTeamId);
             const a11yLabel = [
               team.name,
@@ -445,120 +469,92 @@ export default function PlayBoardScreen() {
             ]
               .filter(Boolean)
               .join(', ');
-            const highlightRadius = BORDER_RADIUS.md;
-            const turnHighlightCorners =
-              isCurrentTurn && teamIndex === 0
-                ? {
-                    borderTopStartRadius: highlightRadius,
-                    borderBottomStartRadius: highlightRadius,
-                  }
-                : isCurrentTurn && teamIndex === session.teams.length - 1
-                  ? {
-                      borderTopEndRadius: highlightRadius,
-                      borderBottomEndRadius: highlightRadius,
-                    }
-                  : isCurrentTurn
-                    ? {}
-                    : {};
 
             return (
               <View
                 key={team.id}
                 style={[
-                  styles.footerTeam,
-                  showDivider
-                    ? [
-                        styles.footerTeamDivider,
-                        {
-                          borderStartColor: colors.border,
-                          paddingStart: footerCompact ? SPACING.sm : SPACING.md,
-                          marginStart: footerCompact ? SPACING.xs : SPACING.sm,
-                        },
-                      ]
-                    : null,
-                  isCurrentTurn && {
-                    backgroundColor: `${colors.primary}18`,
-                    borderColor: colors.primary,
+                  styles.scoreCard,
+                  PLASTIC_FACE,
+                  {
+                      backgroundColor: T.colors.surface,
+                      opacity: isCurrentTurn ? 1 : 0.85,
+                      transform: isCurrentTurn ? [{ scale: 1 }] : [{ scale: 0.96 }],
                   },
-                  turnHighlightCorners,
+                  neumorphicLift3D('score'),
                 ]}
                 accessibilityState={isCurrentTurn ? { selected: true } : undefined}
+                accessibilityLabel={a11yLabel}
               >
-                <Text
-                  style={[
-                    styles.footerTeamName,
-                    { color: isCurrentTurn ? colors.primary : colors.textSecondary },
-                    getTextStyle(undefined, 'bodySemibold', 'center'),
-                  ]}
-                  numberOfLines={1}
-                >
-                  {team.name}
-                </Text>
-                <View
-                  style={[
-                    styles.footerScoreLifelinesRow,
-                    { flexDirection: footerRowDir, gap: footerCompact ? SPACING.xs : SPACING.sm },
-                  ]}
-                  accessibilityRole="summary"
-                  accessibilityLabel={a11yLabel}
-                >
-                  <Text
-                    style={[
-                      styles.footerScore,
-                      {
-                        color: colors.primary,
-                        fontSize: metrics.scoreFont,
-                        fontFamily: FONTS.displayBold,
-                      },
-                    ]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.65}
-                  >
-                    {team.score}
-                  </Text>
-                  <View
-                    style={[styles.lifelineIcons, { flexDirection: footerRowDir }]}
-                    importantForAccessibility="no-hide-descendants"
-                  >
-                    {slots.map((id, i) => (
-                      <View
-                        key={`${team.id}-${id}-${i}`}
-                        style={[
-                          styles.lifelineIconWrap,
-                          {
-                            width: metrics.lifelineIconBox,
-                            height: metrics.lifelineIconBox,
-                            borderRadius: BORDER_RADIUS.sm,
-                            borderColor: isCurrentTurn ? colors.primary : colors.border,
-                            backgroundColor: isCurrentTurn ? `${colors.primary}10` : colors.background,
-                          },
-                        ]}
-                      >
-                        <Ionicons name={lifelineGlyph(id)} size={metrics.lifelineIcon} color={colors.primary} />
+                  {isCurrentTurn && (
+                      <View style={[styles.turnIndicator, { backgroundColor: T.colors.amberGlow || '#FFB411' }]} />
+                  )}
+
+                  <View style={styles.scoreContent}>
+                      <View style={styles.scoreIdentity}>
+                          <Text
+                            style={[
+                                styles.scoreTeamName,
+                                { color: T.colors.textPrimary },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {team.name.toUpperCase()}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.scoreValue,
+                              {
+                                color: T.colors.textPrimary,
+                                fontSize: metrics.scoreFont + 4,
+                              },
+                            ]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            {team.score}
+                          </Text>
                       </View>
-                    ))}
+
+                      <View
+                        style={[styles.lifelineStack, { flexDirection: footerRowDir }]}
+                      >
+                        {slots.map((id, i) => (
+                          <View
+                            key={`${team.id}-${id}-${i}`}
+                            style={[
+                              styles.scoreLifelineIcon,
+                              {
+                                width: metrics.lifelineIconBox + 2,
+                                height: metrics.lifelineIconBox + 2,
+                                backgroundColor: isCurrentTurn ? 'rgba(51, 51, 51, 0.05)' : 'rgba(0,0,0,0.02)',
+                              },
+                            ]}
+                          >
+                            <Ionicons name={lifelineGlyph(id)} size={metrics.lifelineIcon + 2} color={T.colors.textPrimary} />
+                          </View>
+                        ))}
+                      </View>
                   </View>
-                </View>
               </View>
             );
           })}
         </View>
-      </View>
     </View>
   );
 
   const pickQuestionFromTopicModal = (question: QuestionCard) => {
     selectQuestion(question);
     setTopicModalColumn(null);
-    router.replace('/(app)/play/question');
+    router.replace('/play/question');
   };
 
   return (
     <>
       <PlayScaffold
         title={t('play.questionBoardTitle')}
-        customHeader={boardHeader}
+        backgroundColor={T.colors.canvas}
+        customHeader={<View />}
         onBack={leaveMatch}
         showHud={false}
         session={session}
@@ -571,6 +567,7 @@ export default function PlayBoardScreen() {
         bodyEdgeToEdge
         contentSafeAreaHorizontal
       >
+      {boardHeader}
       {wager ? (
         <View
           style={[
@@ -598,39 +595,43 @@ export default function PlayBoardScreen() {
         </View>
       ) : null}
 
-      <ScrollView
-        style={styles.gridScroll}
-        contentContainerStyle={[
-          styles.gridScrollContent,
-          {
-            paddingBottom: Math.max(insets.bottom, SPACING.sm) + SPACING.md,
-          },
-        ]}
-        showsVerticalScrollIndicator
-        keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled
-        bounces
-      >
+      <View style={{ flex: 1, [blankSide === 'left' ? 'paddingLeft' : 'paddingRight']: sidebarWidth }}>
+        <ScrollView
+            style={[styles.gridScroll, { backgroundColor: T.colors.canvas }]}
+            contentContainerStyle={[
+            styles.gridScrollContent,
+            {
+                paddingBottom: Math.max(insets.bottom, SPACING.sm) + SPACING.md,
+            },
+            ]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+            bounces
+        >
         {session.mode === 'random' ? (
           <View style={[styles.randomWrap, { minHeight: Math.max(220, height * 0.4) }]}>
             <Pressable
               style={({ pressed }) => [
                 styles.randomButton,
+                PLASTIC_FACE,
                 {
-                  backgroundColor: colors.primary,
+                  backgroundColor: surface,
                   paddingHorizontal: SPACING.lg,
                   opacity: pressed ? 0.88 : 1,
                 },
+                neumorphicLift3D('pill'),
+
               ]}
               onPress={() => {
                 const randomQuestion = getRandomRemainingQuestion(session.board, session.usedQuestionIds);
                 if (!randomQuestion) return;
                 selectQuestion(randomQuestion);
-                router.replace('/(app)/play/question');
+                router.replace('/play/question');
               }}
               disabled={!remaining.length}
             >
-              <Text style={[styles.randomButtonText, getTextStyle(undefined, 'bodyBold', 'center'), { fontSize: FONT_SIZES.lg }]}>
+              <Text style={[styles.randomButtonText, { color: textPrimary, fontSize: FONT_SIZES.lg, fontFamily: FONTS.displayBold }]}>
                 {remaining.length ? t('play.drawRandomQuestion') : t('play.noQuestionsLeft')}
               </Text>
             </Pressable>
@@ -644,8 +645,8 @@ export default function PlayBoardScreen() {
                   styles.gridRow,
                   {
                     gap: metrics.gridGap,
-                    marginBottom: ri < gridRows.length - 1 ? metrics.gridGap : 0,
-                    minHeight: layoutTuning.rowMinHeight,
+                    paddingHorizontal: metrics.gridGap,
+                    marginBottom: metrics.gridGap,
                   },
                 ]}
               >
@@ -659,7 +660,8 @@ export default function PlayBoardScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
+        </ScrollView>
+      </View>
       </PlayScaffold>
       <TopicColumnPickerModal
         visible={topicModalColumn !== null}
@@ -688,17 +690,48 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     lineHeight: 16,
   },
+  headerSideBar: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    zIndex: 100,
+    backgroundColor: 'rgba(250, 249, 246, 0.65)',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
+  sideBarLogoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sideBarTokenContainer: {
+    paddingBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 60,
+  },
   boardHeader: {
     width: '100%',
     flexShrink: 0,
   },
-  /** Mirrors `app/(app)/index.tsx` hub top bar — light chrome, not solid primary. */
   hubTopBar: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: SPACING.sm,
-    minHeight: 48,
+    paddingVertical: SPACING.xs,
+    minHeight: 40,
+  },
+  footerStripOuter: {
+    width: '100%',
+    paddingHorizontal: SPACING.md,
+    marginTop: -SPACING.sm,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 0,
   },
   topBarTitleOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -722,209 +755,182 @@ const styles = StyleSheet.create({
   hubHeaderSideEnd: {
     alignItems: 'flex-end',
   },
-  headerHubPill: {
-    alignItems: 'center',
-    gap: SPACING.xs,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.xl,
-    borderWidth: 2,
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  headerHubPillLabel: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 15,
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  topBarSpacer: {
-    flex: 1,
-    minWidth: SPACING.md,
-  },
-  boardHeaderEndStack: {
-    alignItems: 'flex-end',
-    gap: SPACING.xs,
-    maxWidth: '100%',
-  },
-  /** Centers the pill; no full-bleed background (avoids a wide empty bar on web / landscape). */
-  footerStripOuter: {
-    width: '100%',
-    alignItems: 'center',
-    maxWidth: '100%',
-  },
-  footerStripCard: {
-    alignSelf: 'center',
-    maxWidth: '100%',
-    flexShrink: 1,
-    borderRadius: BORDER_RADIUS.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    maxWidth: '100%',
-  },
-  /** Equal halves so the active-team tint reads as a full side, not a content-sized pill. */
-  footerTeam: {
-    flex: 1,
-    minWidth: 0,
+  headerSquircleInner: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: SPACING.xs,
-    paddingVertical: SPACING.sm,
+  },
+  scoreCard: {
+    flex: 1,
+    height: 54,
+    borderRadius: 16,
     paddingHorizontal: SPACING.sm,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  footerTeamDivider: {
-    borderStartWidth: StyleSheet.hairlineWidth,
-  },
-  footerTeamName: {
-    fontSize: 11,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    maxWidth: '100%',
-  },
-  footerScoreLifelinesRow: {
-    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
     justifyContent: 'center',
+  },
+  turnIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+  },
+  scoreContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: SPACING.sm,
-    maxWidth: '100%',
   },
-  footerScore: {
-    fontWeight: '800',
-    minWidth: 28,
-    textAlign: 'center',
-  },
-  lifelineIcons: {
-    gap: 5,
-    alignItems: 'center',
-  },
-  lifelineIconWrap: {
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  randomWrap: {
+  scoreIdentity: {
     flex: 1,
-    minHeight: 0,
-    justifyContent: 'center',
+    gap: 2,
+  },
+  scoreTeamName: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 10,
+    letterSpacing: 1,
+    opacity: 0.6,
+  },
+  scoreValue: {
+    fontFamily: FONTS.displayBold,
+  },
+  lifelineStack: {
+    flexDirection: 'row',
+    gap: 4,
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.xs,
   },
-  randomButton: {
-    borderRadius: BORDER_RADIUS.xl,
+  scoreLifelineIcon: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
-    paddingVertical: SPACING.md,
-  },
-  randomButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  gridBleed: {
-    width: '100%',
-    minWidth: 0,
-    paddingTop: SPACING.xs,
+    borderRadius: 8,
   },
   gridScroll: {
     flex: 1,
-    minHeight: 0,
-    minWidth: 0,
   },
   gridScrollContent: {
-    flexGrow: 1,
+    paddingTop: 0,
+    paddingBottom: SPACING.md,
+  },
+  gridBleed: {
+    width: '100%',
   },
   gridRow: {
     flexDirection: 'row',
-    minWidth: 0,
+    alignItems: 'flex-start',
+    width: '100%',
   },
   gridCellSpacer: {
     flex: 1,
-    minWidth: 0,
-    minHeight: 0,
   },
-  categoryCell: {
+  categoryBlock: {
     flex: 1,
     minWidth: 0,
-    minHeight: 0,
-    overflow: 'hidden',
   },
   categoryTriplet: {
-    flex: 1,
     flexDirection: 'row',
-    alignItems: 'stretch',
-    minHeight: 0,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  railColumn: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  playableLabel: {
+    fontSize: 7,
+    fontFamily: FONTS.uiBold,
+    letterSpacing: 0.5,
+    opacity: 0.6,
   },
   tileRail: {
-    minWidth: 0,
-    minHeight: 0,
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   tileRailSlot: {
-    flex: 1,
-    minHeight: 0,
-    justifyContent: 'center',
-  },
-  pointTile: {
-    flex: 1,
-    minHeight: 0,
-    minWidth: 0,
+    width: 54,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 2,
-    paddingVertical: 2,
+  },
+  tileWrapper: {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  pointTile: {
+    width: '85%',
+    height: '85%',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pointTileText: {
-    fontWeight: '800',
+    fontFamily: FONTS.displayBold,
+    textAlign: 'center',
+  },
+  centralCardWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8,
   },
   pictureFrame: {
-    minWidth: 0,
-    minHeight: 0,
+    width: '100%',
+    aspectRatio: 0.75,
+    borderRadius: 20,
     overflow: 'hidden',
-    alignSelf: 'stretch',
   },
   pictureInner: {
     flex: 1,
-    minHeight: 0,
-    borderRadius: BORDER_RADIUS.sm - 2,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  pictureImage: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  pictureTitleBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-    backgroundColor: 'rgba(15, 23, 42, 0.72)',
-  },
-  pictureTitleText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  pictureFallbackFill: {
-    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.02)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: BORDER_RADIUS.sm - 2,
   },
-  pictureFallbackLetter: {
-    fontWeight: '800',
+  pictureImage: {
+    width: '100%',
+    height: '100%',
+  },
+  pictureFallbackFill: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  categoryTitleContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(51,51,51,0.05)',
+  },
+  categoryTitleText: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 10,
+    textAlign: 'center',
+    letterSpacing: -0.2,
+  },
+  randomWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  randomButton: {
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  randomButtonText: {
+    letterSpacing: 1,
   },
 });

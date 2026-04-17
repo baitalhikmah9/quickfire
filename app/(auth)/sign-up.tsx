@@ -4,11 +4,32 @@ import { Pressable } from '@/components/ui/Pressable';
 import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPACING, FONT_SIZES } from '@/constants';
+import { Ionicons } from '@expo/vector-icons';
+import { SPACING, FONTS, LAYOUT } from '@/constants';
 import { OAuthProviderButtons } from '@/components/OAuthProviderButtons';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
 import { useClerkOAuthFlow } from '@/lib/hooks/useClerkOAuthFlow';
+import { HOME_SOFT_UI } from '@/themes';
+
+const T = HOME_SOFT_UI;
+
+/** Raised plastic tile shadow tier. */
+function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill'): any {
+  const m =
+    tier === 'hero'
+      ? { h: 14, op: 0.14, r: 28, el: 18 }
+      : tier === 'header'
+      ? { h: 8, op: 0.12, r: 18, el: 12 }
+      : { h: 6, op: 0.1, r: 14, el: 8 };
+
+  return {
+    shadowColor,
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: m.op,
+    shadowRadius: m.r,
+    elevation: m.el,
+  };
+}
 
 function useWarmUpBrowser() {
   useEffect(() => {
@@ -22,79 +43,83 @@ function useWarmUpBrowser() {
 export default function SignUpScreen() {
   useWarmUpBrowser();
   const router = useRouter();
-  const colors = useTheme();
-  const { getTextStyle, t } = useI18n();
+  const { direction, t } = useI18n();
   const { busy, signInWithOAuthStrategy } = useClerkOAuthFlow();
 
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+  const shadowHex = T.colors.shadowStrong;
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Text style={[styles.backText, { color: colors.textOnBackground }, getTextStyle()]}>
-            ← {t('common.back')}
-          </Text>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [
+            styles.headerSquircleInner,
+            styles.plasticFace,
+            {
+              backgroundColor: surface,
+              borderRadius: 99,
+              opacity: pressed ? 0.94 : 1,
+              transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+            },
+            neumorphicLift3D(shadowHex, 'header'),
+          ]}
+        >
+          <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
         </Pressable>
 
-        <Text
-          style={[
-            styles.title,
-            { color: colors.textOnBackground },
-            getTextStyle(undefined, 'display', 'start'),
-          ]}
-        >
-          {t('auth.signUp.heroTitle')}
-        </Text>
-        <Text
-          style={[
-            styles.subtitle,
-            { color: colors.textSecondaryOnBackground },
-            getTextStyle(),
-          ]}
-        >
-          {t('auth.signUp.heroSubtitle')}
-        </Text>
-
-        <Text
-          style={[
-            styles.sectionLabel,
-            { color: colors.textOnBackground },
-            getTextStyle(undefined, 'bodySemibold', 'start'),
-          ]}
-        >
-          {t('auth.signUp.with')}
-        </Text>
-
-        {busy ? (
-          <View style={styles.busy}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : (
-          <OAuthProviderButtons
-            onGooglePress={() => void signInWithOAuthStrategy('oauth_google')}
-            onApplePress={() => void signInWithOAuthStrategy('oauth_apple')}
-            googlePrimaryLabel={t('auth.signIn.google')}
-            googleSecondaryLabel={t('auth.signUp.fastSecure')}
-            applePrimaryLabel={t('auth.signIn.apple')}
-            appleSecondaryLabel={t('auth.signUp.fastSecure')}
-          />
-        )}
-
-        <View style={styles.footerRow}>
-          <Text style={[{ color: colors.textSecondaryOnBackground }, getTextStyle()]}>
-            {t('auth.signUp.alreadyHaveAccount')}{' '}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: textPrimary }]}>
+            {t('auth.signUp.heroTitle')}
           </Text>
-          <Pressable onPress={() => router.replace('/(auth)/sign-in')}>
-            <Text style={[{ color: colors.primary }, getTextStyle(undefined, 'bodySemibold', 'start')]}>
-              {t('auth.signUp.signIn')}
-            </Text>
-          </Pressable>
+          <Text style={[styles.subtitle, { color: textMuted }]}>
+            {t('auth.signUp.heroSubtitle')}
+          </Text>
         </View>
 
-        <Text style={[styles.legal, { color: colors.textSecondary }, getTextStyle(undefined, 'body', 'center')]}>
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: textMuted }]}>
+            {t('auth.signUp.with').toUpperCase()}
+          </Text>
+
+          {busy ? (
+            <View style={styles.busy}>
+              <ActivityIndicator size="large" color={textPrimary} />
+            </View>
+          ) : (
+            <OAuthProviderButtons
+              onGooglePress={() => void signInWithOAuthStrategy('oauth_google')}
+              onApplePress={() => void signInWithOAuthStrategy('oauth_apple')}
+              googlePrimaryLabel={t('auth.signIn.google')}
+              googleSecondaryLabel={t('auth.signUp.fastSecure')}
+              applePrimaryLabel={t('auth.signIn.apple')}
+              appleSecondaryLabel={t('auth.signUp.fastSecure')}
+            />
+          )}
+        </View>
+
+        <View style={styles.links}>
+          <View style={styles.footerRow}>
+            <Text style={[styles.footerText, { color: textMuted }]}>
+              {t('auth.signUp.alreadyHaveAccount')}
+            </Text>
+            <Pressable onPress={() => router.replace('/(auth)/sign-in')}>
+              <Text style={[styles.footerLink, { color: textPrimary }]}>
+                {t('auth.signUp.signIn').toUpperCase()}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <Text style={[styles.legal, { color: textMuted }]}>
           {t('auth.termsPrefix')} {t('auth.terms')} {t('auth.and')} {t('auth.privacy')}.
         </Text>
       </ScrollView>
@@ -103,46 +128,81 @@ export default function SignUpScreen() {
 }
 
 const styles = StyleSheet.create({
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
   safeArea: {
     flex: 1,
   },
   scrollContent: {
-    padding: SPACING.lg,
+    padding: LAYOUT.screenGutter,
     paddingBottom: SPACING.xxl,
-    gap: SPACING.md,
+    gap: SPACING.xl,
   },
-  backButton: {
+  headerSquircleInner: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: SPACING.sm,
-    alignSelf: 'flex-start',
   },
-  backText: {
-    fontSize: FONT_SIZES.md,
+  header: {
+    gap: SPACING.xs,
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontFamily: FONTS.displayBold,
+    fontSize: 32,
+    letterSpacing: -1,
   },
   subtitle: {
-    fontSize: FONT_SIZES.md,
-    marginBottom: SPACING.md,
+    fontFamily: FONTS.ui,
+    fontSize: 16,
+    lineHeight: 22,
+    opacity: 0.7,
+  },
+  section: {
+    gap: SPACING.lg,
   },
   sectionLabel: {
-    fontSize: FONT_SIZES.sm,
-    marginTop: SPACING.sm,
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 1.5,
+    opacity: 0.6,
   },
   busy: {
     paddingVertical: SPACING.xl,
     alignItems: 'center',
   },
+  links: {
+    alignItems: 'center',
+    gap: SPACING.lg,
+    marginTop: SPACING.md,
+  },
   footerRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
-    marginTop: SPACING.lg,
+    gap: 8,
+  },
+  footerText: {
+    fontFamily: FONTS.ui,
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  footerLink: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 13,
+    letterSpacing: 1,
   },
   legal: {
     marginTop: SPACING.xl,
-    fontSize: FONT_SIZES.sm,
-    lineHeight: 20,
+    fontFamily: FONTS.ui,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+    opacity: 0.5,
   },
 });

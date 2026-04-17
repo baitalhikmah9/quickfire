@@ -60,6 +60,8 @@ export interface GameConfig {
   /** Per-team lifeline config (teamId -> config) */
   teamLifelines?: Record<string, LifelineConfig>;
   hotSeatEnabled: boolean;
+  /** Rounds of Hot Seat per match; 0 turns the feature off. Synced with `hotSeatEnabled`. */
+  hotSeatRounds?: number;
   wagerEnabled: boolean;
   overtimeThreshold?: number;
   boardSize?: number;

@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
-import { SPACING, FONT_SIZES, BORDER_RADIUS, FONTS } from '@/constants';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { SPACING, FONTS } from '@/constants';
 import { CategoryCard } from './CategoryCard';
+import { HOME_SOFT_UI } from '@/themes';
+
+const T = HOME_SOFT_UI;
 
 export interface CategoryOption {
   id: string;
@@ -26,7 +28,23 @@ interface StepCategoriesProps {
 const PER_TEAM = 3;
 const CARD_W = 120;
 /** Approximate card height from CategoryCard layout */
-const CARD_H = CARD_W * 1.3 + 44;
+const CARD_H = CARD_W * 1.1 + 48; // Updated to match CategoryCard.tsx height
+
+/** Raised plastic tile shadow tier. */
+function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'pill'): any {
+  const m =
+    tier === 'hero'
+      ? { h: 14, op: 1, r: 28, el: 18 }
+      : { h: 6, op: 0.8, r: 14, el: 8 };
+
+  return {
+    shadowColor,
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: m.op,
+    shadowRadius: m.r,
+    elevation: m.el,
+  };
+}
 
 export function StepCategories({
   categories,
@@ -36,9 +54,14 @@ export function StepCategories({
   onTeam2Toggle,
   onNext,
 }: StepCategoriesProps) {
-  const colors = useTheme();
   const [bodyH, setBodyH] = useState(0);
   const gridGap = SPACING.md;
+
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+  const shadowHex = T.colors.shadowStrong;
 
   const toggle = (slug: string) => {
     const isT1 = team1Selected.includes(slug);
@@ -53,9 +76,9 @@ export function StepCategories({
   };
 
   const getSelectionState = (slug: string) => {
-    if (team1Selected.includes(slug)) return { selected: true, color: colors.primary };
-    if (team2Selected.includes(slug)) return { selected: true, color: colors.secondary };
-    return { selected: false, color: undefined };
+    if (team1Selected.includes(slug)) return { selected: true };
+    if (team2Selected.includes(slug)) return { selected: true };
+    return { selected: false };
   };
 
   const canNext = team1Selected.length === PER_TEAM && team2Selected.length === PER_TEAM;
@@ -74,26 +97,27 @@ export function StepCategories({
   }, [categories, rowsFit]);
 
   return (
-    <View style={styles.outerContainer}>
-      <Text style={[styles.title, { color: colors.textOnBackground }]}>Choose Categories</Text>
+    <View style={[styles.outerContainer, { backgroundColor: canvas }]}>
+      <Text style={[styles.title, { color: textPrimary }]}>
+        {T.id === 'home-soft-ui' ? 'CHOOSE CATEGORIES' : 'Choose Categories'}
+      </Text>
 
       <View style={styles.scrollHost} onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
         {bodyH > 0 ? (
           <ScrollView
             horizontal
-            showsHorizontalScrollIndicator
-            contentContainerStyle={[styles.columnsRow, { gap: gridGap }]}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[styles.columnsRow, { gap: gridGap + 8 }]}
           >
             {categoryColumns.map((col, ci) => (
               <View key={`col-${ci}`} style={[styles.column, { gap: gridGap, width: CARD_W }]}>
                 {col.map((c) => {
-                  const { selected, color } = getSelectionState(c.slug);
+                  const { selected } = getSelectionState(c.slug);
                   return (
                     <CategoryCard
                       key={c.id}
                       title={c.title}
                       isSelected={selected}
-                      selectionColor={color}
                       onPress={() => toggle(c.slug)}
                       onInfoPress={() => {}}
                       style={{ width: CARD_W, marginBottom: 0 }}
@@ -109,27 +133,36 @@ export function StepCategories({
       <View
         style={[
           styles.footer,
+          styles.plasticFace,
           {
-            backgroundColor: colors.background,
-            borderTopColor: colors.border,
+            backgroundColor: surface,
           },
+          neumorphicLift3D(shadowHex, 'pill'),
         ]}
       >
         <View style={styles.selectionInfo}>
-          <Text style={[styles.selectionText, { color: colors.textSecondaryOnBackground }]}>
-            Team 1: {team1Selected.length}/3  •  Team 2: {team2Selected.length}/3
+          <Text style={[styles.selectionText, { color: textMuted }]}>
+            TEAM 1: {team1Selected.length}/3  •  TEAM 2: {team2Selected.length}/3
           </Text>
         </View>
         <Pressable
           style={({ pressed }) => [
             styles.nextButton,
-            { backgroundColor: colors.primary },
-            (!canNext || pressed) && styles.buttonDisabled,
+            styles.plasticFace,
+            {
+              backgroundColor: surface,
+              opacity: canNext ? (pressed ? 0.94 : 1) : 0.5,
+              transform: canNext && pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+            },
+            neumorphicLift3D(shadowHex, 'pill'),
+            canNext && { shadowColor: '#FFB347', shadowOpacity: 0.45 }, // Amber glow for CTA
           ]}
           onPress={onNext}
           disabled={!canNext}
         >
-          <Text style={styles.nextButtonText}>Next Step</Text>
+          <Text style={[styles.nextButtonText, { color: textPrimary }]}>
+            {canNext ? 'CONTINUE' : 'CHOOSE 6 CATEGORIES'}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -137,16 +170,23 @@ export function StepCategories({
 }
 
 const styles = StyleSheet.create({
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+  },
   outerContainer: {
     flex: 1,
     minHeight: 0,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontFamily: FONTS.displayBold,
     textAlign: 'center',
-    marginBottom: SPACING.md,
-    marginTop: SPACING.sm,
+    letterSpacing: -0.5,
+    marginBottom: SPACING.lg,
+    marginTop: SPACING.md,
     flexShrink: 0,
   },
   scrollHost: {
@@ -156,41 +196,37 @@ const styles = StyleSheet.create({
   columnsRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
   },
   column: {
     flexDirection: 'column',
   },
   selectionInfo: {
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   selectionText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
+    fontSize: 12,
+    fontFamily: FONTS.uiBold,
+    letterSpacing: 1,
   },
   footer: {
     padding: SPACING.lg,
-    borderTopWidth: 2,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderTopLeftRadius: 42,
+    borderTopRightRadius: 42,
     flexShrink: 0,
   },
   nextButton: {
-    height: 56,
-    borderRadius: BORDER_RADIUS.xl,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
   nextButtonText: {
-    color: '#FFFFFF',
-    fontSize: FONT_SIZES.lg,
-    fontFamily: FONTS.uiBold,
+    fontSize: 16,
+    fontFamily: FONTS.displayBold,
+    letterSpacing: 1.2,
   },
 });
+

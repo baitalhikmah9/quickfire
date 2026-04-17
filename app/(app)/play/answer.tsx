@@ -1,15 +1,57 @@
 import { Fragment, useMemo } from 'react';
-import { Alert, View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { Alert, View, Text, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
-import { BORDER_RADIUS, FONT_SIZES, SPACING, SHADOWS } from '@/constants';
+import { FONTS, BORDER_RADIUS, FONT_SIZES, SPACING, SHADOWS } from '@/constants';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
+import { HOME_SOFT_UI } from '@/themes';
+
+const T = HOME_SOFT_UI.colors;
+
+/** Deeper drop shadow — reads as a raised plastic tile (tier scales with control size). */
+function neumorphicLift(
+  shadowColor: string,
+  tier: 'hero' | 'header' | 'pill' | 'card'
+): ViewStyle {
+  const m =
+    tier === 'hero'
+      ? { h: 14, op: 0.35, r: 28, el: 18 }
+      : tier === 'header'
+        ? { h: 8, op: 0.28, r: 18, el: 12 }
+        : tier === 'card'
+          ? { h: 10, op: 0.22, r: 22, el: 10 }
+          : { h: 6, op: 0.25, r: 14, el: 8 };
+  return {
+    shadowColor,
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: m.op,
+    shadowRadius: m.r,
+    elevation: m.el,
+  };
+}
+
+/** Soft amber glow for focal focal squircles. */
+const AMBER_GLOW: ViewStyle = {
+  shadowColor: '#FFB347',
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0.45,
+  shadowRadius: 36,
+  elevation: 12,
+};
+
+/** Light top lip + soft bottom edge — reads extruded on white squircles. */
+const PLASTIC_FACE: ViewStyle = {
+  borderTopWidth: 2,
+  borderTopColor: 'rgba(255, 255, 255, 0.78)',
+  borderBottomWidth: StyleSheet.hairlineWidth * 2,
+  borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+};
 
 function getAnswerLayoutDensity(screenWidth: number, screenHeight: number) {
   const shortSide = Math.min(screenWidth, screenHeight);
@@ -258,21 +300,24 @@ export default function PlayAnswerScreen() {
     <View style={[styles.footerRow, { flexDirection: rowDir, gap: sectionGap }]}>
       <View style={styles.footerBtn}>
         <Button
-          title={`Correct for ${session.teams.find((team) => team.id === wager.targetTeamId)?.name ?? 'Target Team'}`}
+          title={`CORRECT FOR ${session.teams.find((team) => team.id === wager.targetTeamId)?.name ?? 'Target Team'}`.toUpperCase()}
           onPress={() => {
             resolveWager(true);
-            router.replace('/(app)/play/board');
+            router.replace('/play/board');
           }}
+          style={styles.softUiBtn}
+          textStyle={[styles.softUiBtnText, getTextStyle(undefined, 'bodySemibold', 'center')]}
         />
       </View>
       <View style={styles.footerBtn}>
         <Button
-          title="Incorrect"
-          variant="destructive"
+          title="INCORRECT"
           onPress={() => {
             resolveWager(false);
-            router.replace('/(app)/play/board');
+            router.replace('/play/board');
           }}
+          style={[styles.softUiBtn, { backgroundColor: '#FEE2E2' }]} // Subtle destructive tint
+          textStyle={[styles.softUiBtnText, { color: '#DC2626' }, getTextStyle(undefined, 'bodySemibold', 'center')]}
         />
       </View>
     </View>
@@ -282,24 +327,27 @@ export default function PlayAnswerScreen() {
     <View style={[styles.footerRow, { flexDirection: rowDir, gap: sectionGap }]}>
       <View style={styles.footerBtn}>
         <Button
-          title={session.bonus.active ? t('play.finishMatch') : t('play.nextTurn')}
+          title={(session.bonus.active ? t('play.finishMatch') : t('play.nextTurn')).toUpperCase()}
           onPress={() => {
             continueAfterStandardQuestion();
-            router.replace('/(app)/play/board');
+            router.replace('/play/board');
           }}
+          style={[styles.softUiBtn, styles.primarySoftUiBtn]}
+          textStyle={[styles.softUiBtnText, getTextStyle(undefined, 'bodySemibold', 'center')]}
         />
       </View>
       {canWager ? (
         <View style={styles.footerBtn}>
           <Button
-            title={t('play.wagerNextTeam')}
-            variant="accent"
+            title={t('play.wagerNextTeam').toUpperCase()}
             onPress={() => {
               const result = initiateWager();
               if (result.ok) {
-                router.replace('/(app)/play/board');
+                router.replace('/play/board');
               }
             }}
+            style={styles.softUiBtn}
+            textStyle={[styles.softUiBtnText, getTextStyle(undefined, 'bodySemibold', 'center')]}
           />
         </View>
       ) : null}
@@ -725,5 +773,21 @@ const styles = StyleSheet.create({
   footerBtn: {
     flex: 1,
     minWidth: 0,
+  },
+  softUiBtn: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    ...PLASTIC_FACE,
+    ...neumorphicLift('rgba(15, 23, 42, 0.14)', 'pill'),
+  },
+  primarySoftUiBtn: {
+    ...AMBER_GLOW,
+  },
+  softUiBtnText: {
+    color: '#333333',
+    fontFamily: FONTS.displayBold,
+    letterSpacing: 2,
+    fontSize: 14,
   },
 });

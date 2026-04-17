@@ -81,7 +81,7 @@ export default function PlayEndScreen() {
           onPress={() => {
             resetSession();
             ensureDraft();
-            router.replace('/(app)/play/mode');
+            router.replace('/play/mode');
           }}
         />
       </View>

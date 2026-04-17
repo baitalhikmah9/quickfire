@@ -1,7 +1,10 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
-import { SPACING, FONT_SIZES, BORDER_RADIUS } from '@/constants';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { SPACING, FONTS } from '@/constants';
+import { HOME_SOFT_UI } from '@/themes';
+import { Ionicons } from '@expo/vector-icons';
+
+const T = HOME_SOFT_UI;
 
 interface StepSplitTeamsProps {
   totalPlayers: number;
@@ -13,6 +16,26 @@ interface StepSplitTeamsProps {
   onStart: () => void;
 }
 
+/** Raised plastic tile shadow tier. */
+function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill' | 'card'): any {
+  const m =
+    tier === 'hero'
+      ? { h: 10, r: 0, el: 12 }
+      : tier === 'header'
+      ? { h: 6, r: 0, el: 8 }
+      : tier === 'card'
+      ? { h: 8, r: 0, el: 10 }
+      : { h: 4, r: 0, el: 4 };
+
+  return {
+    shadowColor: 'rgba(51, 51, 51, 0.15)',
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: m.el,
+  };
+}
+
 export function StepSplitTeams({
   totalPlayers,
   team1Count,
@@ -22,7 +45,12 @@ export function StepSplitTeams({
   onTeam2CountChange,
   onStart,
 }: StepSplitTeamsProps) {
-  const colors = useTheme();
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+  const shadowHex = T.colors.shadowStrong;
+
   const valid = totalPlayers >= 2 && team1Count + team2Count === totalPlayers && team1Count >= 1 && team2Count >= 1;
 
   const inc = (setter: (v: number) => void, current: number, max: number) => {
@@ -38,115 +66,138 @@ export function StepSplitTeams({
     onTeam2CountChange(totalPlayers - next);
   };
 
+  const stepper = (label: string, value: string | number, onDec: () => void, onInc: () => void) => (
+    <View style={styles.section}>
+      <Text style={[styles.label, { color: textMuted }]}>{label.toUpperCase()}</Text>
+      <View style={[styles.stepperContainer, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'card')]}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.stepperBtn,
+            { opacity: pressed ? 0.7 : 1, transform: pressed ? [{ scale: 0.94 }] : [{ scale: 1 }] }
+          ]}
+          onPress={onDec}
+        >
+          <Ionicons name="remove" size={24} color={textPrimary} />
+        </Pressable>
+        <View style={styles.stepperValueContainer}>
+          <Text style={[styles.stepperValue, { color: textPrimary }]}>{value}</Text>
+        </View>
+        <Pressable
+          style={({ pressed }) => [
+            styles.stepperBtn,
+            { opacity: pressed ? 0.7 : 1, transform: pressed ? [{ scale: 0.94 }] : [{ scale: 1 }] }
+          ]}
+          onPress={onInc}
+        >
+          <Ionicons name="add" size={24} color={textPrimary} />
+        </Pressable>
+      </View>
+    </View>
+  );
+
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: canvas }]}>
+      <Text style={[styles.title, { color: textPrimary }]}>SPLIT TEAMS</Text>
+      
       <View style={styles.columns}>
         <View style={styles.col}>
-          <Text style={[styles.title, { color: colors.textOnBackground }]}>Split Teams</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondaryOnBackground }]}>
-            How many players total? How many on each team?
-          </Text>
-
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.textOnBackground }]}>Total players</Text>
-            <View style={styles.stepper}>
-              <Pressable
-                style={[styles.stepperBtn, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
-                onPress={() => dec(onTotalChange, totalPlayers)}
-              >
-                <Text style={[styles.stepperText, { color: colors.text }]}>−</Text>
-              </Pressable>
-              <Text style={[styles.stepperValue, { color: colors.text }]}>{totalPlayers}</Text>
-              <Pressable
-                style={[styles.stepperBtn, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
-                onPress={() => inc(onTotalChange, totalPlayers, 20)}
-              >
-                <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
-              </Pressable>
-            </View>
-          </View>
+          {stepper('TOTAL PLAYERS', totalPlayers, () => dec(onTotalChange, totalPlayers), () => inc(onTotalChange, totalPlayers, 20))}
         </View>
 
         <View style={styles.col}>
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.textOnBackground }]}>
-              Team 1: {team1Count} · Team 2: {team2Count}
-            </Text>
-            <View style={styles.stepper}>
-              <Pressable
-                style={[styles.stepperBtn, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
-                onPress={() => handleTeam1Change(-1)}
-              >
-                <Text style={[styles.stepperText, { color: colors.text }]}>−</Text>
-              </Pressable>
-              <Text style={[styles.stepperValue, { color: colors.text }]}>
-                {team1Count} / {team2Count}
-              </Text>
-              <Pressable
-                style={[styles.stepperBtn, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
-                onPress={() => handleTeam1Change(1)}
-              >
-                <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
-              </Pressable>
-            </View>
-            <Text style={[styles.hint, { color: colors.textSecondaryOnBackground }]}>
-              Adjust split: Team 1 vs Team 2
-            </Text>
-          </View>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              { backgroundColor: colors.primary },
-              (!valid || pressed) && styles.buttonDisabled,
-            ]}
-            onPress={onStart}
-            disabled={!valid}
-          >
-            <Text style={styles.buttonText}>Start Playing</Text>
-          </Pressable>
+          {stepper('TEAM SPLIT', `${team1Count} VS ${team2Count}`, () => handleTeam1Change(-1), () => handleTeam1Change(1))}
         </View>
+      </View>
+
+      <View style={[styles.footer, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'pill')]}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            styles.plasticFace,
+            { backgroundColor: surface, opacity: valid ? (pressed ? 0.94 : 1) : 0.5 },
+            neumorphicLift3D(shadowHex, 'pill'),
+            valid && { shadowColor: '#FFB347', shadowOpacity: 0.45 },
+          ]}
+          onPress={onStart}
+          disabled={!valid}
+        >
+          <Text style={[styles.buttonText, { color: textPrimary }]}>START PLAYING</Text>
+        </Pressable>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, padding: SPACING.lg, minHeight: 0 },
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  root: { flex: 1 },
   columns: {
     flex: 1,
     flexDirection: 'row',
     gap: SPACING.xl,
-    alignItems: 'stretch',
-    minHeight: 0,
+    padding: SPACING.lg,
+    alignItems: 'center',
   },
   col: {
     flex: 1,
-    minWidth: 0,
-    justifyContent: 'center',
     gap: SPACING.lg,
   },
-  title: { fontSize: FONT_SIZES.xxl, fontWeight: 'bold', marginBottom: SPACING.sm },
-  subtitle: { fontSize: FONT_SIZES.md, marginBottom: SPACING.md },
-  section: { marginBottom: 0 },
-  label: { fontSize: FONT_SIZES.sm, fontWeight: '600', marginBottom: SPACING.sm },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  title: {
+    fontSize: 24,
+    fontFamily: FONTS.displayBold,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  section: { gap: SPACING.md },
+  label: { 
+    fontSize: 10,
+    fontFamily: FONTS.uiBold,
+    letterSpacing: 1.5,
+    paddingLeft: SPACING.sm,
+  },
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 80,
+    borderRadius: 32,
+    paddingHorizontal: SPACING.md,
+  },
   stepperBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.03)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepperText: { fontSize: FONT_SIZES.xl, fontWeight: '600' },
-  stepperValue: { fontSize: FONT_SIZES.lg, fontWeight: '700', minWidth: 72, textAlign: 'center' },
-  hint: { fontSize: FONT_SIZES.sm, marginTop: SPACING.sm },
-  button: {
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
+  stepperValueContainer: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#FFFFFF', fontSize: FONT_SIZES.lg, fontWeight: '600' },
+  stepperValue: { 
+    fontFamily: FONTS.displayBold,
+    fontSize: 24,
+    letterSpacing: -0.5,
+  },
+  footer: {
+    padding: SPACING.lg,
+    borderTopLeftRadius: 42,
+    borderTopRightRadius: 42,
+  },
+  button: {
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: { fontSize: 16, fontFamily: FONTS.displayBold, letterSpacing: 1.2 },
 });
+

@@ -12,6 +12,8 @@ import { PlayStackHeader } from './PlayStackHeader';
 interface PlayScaffoldProps {
   title: string;
   subtitle?: string;
+  /** Overrides shell background (e.g. brand cream canvas on team setup). */
+  backgroundColor?: string;
   children: ReactNode;
   /** When set, replaces the default `PlayStackHeader` (e.g. full-width play board chrome). */
   customHeader?: ReactNode;
@@ -57,6 +59,7 @@ interface PlayScaffoldProps {
 export function PlayScaffold({
   title,
   subtitle,
+  backgroundColor,
   children,
   customHeader,
   onBack,
@@ -73,6 +76,7 @@ export function PlayScaffold({
   footerBare = false,
 }: PlayScaffoldProps) {
   const colors = useTheme();
+  const shellBackground = backgroundColor ?? colors.background;
   const { getTextStyle } = useI18n();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -174,7 +178,7 @@ export function PlayScaffold({
       paddingRight: padRight,
     },
     {
-      backgroundColor: colors.background,
+      backgroundColor: shellBackground,
       borderTopColor: colors.border,
     },
     footerPlacementAbove && {
@@ -207,7 +211,7 @@ export function PlayScaffold({
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
+      style={[styles.safeArea, { backgroundColor: shellBackground }]}
       edges={bodyEdgeToEdge ? ['top', 'bottom'] : undefined}
     >
       <ScreenContent fullWidth style={styles.screenInner}>
@@ -250,13 +254,13 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.lg,
-    paddingBottom: SPACING.huge,
+    paddingBottom: SPACING.sm,
   },
   contentFit: {
     flex: 1,
     paddingTop: 0,
     paddingHorizontal: LAYOUT.screenGutter,
-    paddingBottom: SPACING.sm,
+    paddingBottom: SPACING.xs,
     minHeight: 0,
   },
   /** Top chrome only — body is a sibling (`edgeBodySlot`) for full horizontal bleed. */

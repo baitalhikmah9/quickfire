@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, useClerk, useUser } from '@clerk/clerk-expo';
 import { SPACING, BORDER_RADIUS, SHADOWS, FONTS, LAYOUT } from '@/constants';
@@ -16,13 +16,42 @@ import { ScreenContent } from '@/components/ScreenContent';
 import { useLocaleStore } from '@/store/locale';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
+import { HOME_SOFT_UI } from '@/themes';
 
-const STAT_CARD_RADIUS = BORDER_RADIUS.lg;
-const CTA_RADIUS = BORDER_RADIUS.xl;
-const AVATAR_SIZE = 108;
-const RANK_BADGE_BG = '#92400E';
-const SETTINGS_BUTTON_BG = 'rgba(161, 143, 252, 0.28)';
-const SETTINGS_BUTTON_TEXT = '#4C1D95';
+const T = HOME_SOFT_UI;
+
+const STAT_CARD_RADIUS = 32;
+const CTA_RADIUS = 99;
+const AVATAR_SIZE = 120;
+const RANK_BADGE_BG = '#333333';
+
+/** Raised plastic tile shadow tier. */
+function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill' | 'card'): any {
+  const m =
+    tier === 'hero'
+      ? { h: 14, op: 0.14, r: 28, el: 18 }
+      : tier === 'header'
+      ? { h: 8, op: 0.12, r: 18, el: 12 }
+      : tier === 'card'
+      ? { h: 10, op: 0.12, r: 22, el: 14 }
+      : { h: 6, op: 0.1, r: 14, el: 8 };
+
+  return {
+    shadowColor,
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: m.op,
+    shadowRadius: m.r,
+    elevation: m.el,
+  };
+}
+
+const AMBER_GLOW = {
+  shadowColor: '#FFB347',
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0.45,
+  shadowRadius: 24,
+  elevation: 10,
+};
 
 type ActivityRow = {
   id: string;
@@ -43,8 +72,8 @@ const PLACEHOLDER_ACTIVITY: ActivityRow[] = [
     titleKey: 'profile.activityClassic',
     timeKey: 'profile.activityMinsAgo',
     timeCount: 24,
-    icon: 'game-controller',
-    iconTint: COLORS.primary,
+    icon: 'game-controller-outline',
+    iconTint: '#333333',
     deltaSign: '+',
     deltaAmount: 250,
     statusKey: 'profile.activityVictory',
@@ -55,8 +84,8 @@ const PLACEHOLDER_ACTIVITY: ActivityRow[] = [
     titleKey: 'profile.activityQuick',
     timeKey: 'profile.activityHoursAgo',
     timeCount: 2,
-    icon: 'flash',
-    iconTint: COLORS.mutedText,
+    icon: 'flash-outline',
+    iconTint: '#333333',
     deltaSign: '-',
     deltaAmount: 100,
     statusKey: 'profile.activityDefeat',
@@ -67,8 +96,8 @@ const PLACEHOLDER_ACTIVITY: ActivityRow[] = [
     titleKey: 'profile.activityRumble',
     timeKey: 'profile.activityMinsAgo',
     timeCount: 51,
-    icon: 'ribbon',
-    iconTint: COLORS.primary,
+    icon: 'people-outline',
+    iconTint: '#333333',
     deltaSign: '+',
     deltaAmount: 500,
     statusKey: 'profile.activityRankUp',
@@ -84,22 +113,19 @@ export default function ProfileScreen() {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
-  const colors = useTheme();
+  const router = useRouter();
   const paletteId = useThemeStore((s) => s.paletteId);
   const isDark = paletteId === 'dark';
   const { direction, getLocaleName, getTextStyle, t, uiLocale } = useI18n();
   const contentLocales = useLocaleStore((state) => state.contentLocales);
   const tokens = usePlayStore((state) => state.tokens);
 
-  const mutedSurface = isDark ? 'rgba(255,255,255,0.07)' : '#F1F5F9';
-  const pageBg = isDark ? colors.background : COLORS.surface;
-
   if (!isSignedIn) {
     return (
       <SafeAreaView
         collapsable={false}
         edges={['top', 'bottom', 'left', 'right']}
-        style={[styles.safeArea, { backgroundColor: colors.background }]}
+        style={[styles.safeArea, { backgroundColor: T.colors.canvas }]}
       >
         <ScreenContent fullWidth style={styles.authGateViewport}>
           <ProfileAuthGate />
@@ -134,338 +160,277 @@ export default function ProfileScreen() {
     tokens >= 1000 ? t('profile.rankBadgeElite') : t('profile.rankBadgeRival');
 
   const rowDir = getRowDirection(direction);
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+  const shadowHex = T.colors.shadowStrong;
 
   return (
     <SafeAreaView
       collapsable={false}
       edges={['top', 'bottom', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor: pageBg }]}
+      style={[styles.safeArea, { backgroundColor: canvas }]}
     >
       <ScreenContent fullWidth style={styles.profileViewport}>
-        <View style={[styles.topBar, { flexDirection: rowDir }]}>
-          <Text
-            style={[
-              styles.brandWordmark,
-              { color: COLORS.accent },
-              getTextStyle(undefined, 'displayBold', 'start'),
-            ]}
-            numberOfLines={1}
-          >
-            {t('common.appName').toUpperCase()}
-          </Text>
-          <View
-            style={[
-              styles.tokenChip,
-              { backgroundColor: isDark ? 'rgba(0, 123, 255, 0.22)' : `${COLORS.primary}14` },
-            ]}
-          >
-            <Ionicons name="diamond" size={16} color={COLORS.primary} />
-            <Text style={[styles.tokenChipValue, { color: COLORS.accent }]}>
-              {formatTokens(tokens, uiLocale)}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.profileColumns}>
-          <View style={styles.profileCol}>
-            <View style={styles.hero}>
-            <View style={styles.avatarWrap}>
-              {user?.imageUrl ? (
-                <Image
-                  source={{ uri: user.imageUrl }}
-                  style={styles.avatarImage}
-                  contentFit="cover"
-                  accessibilityLabel={displayHandle}
-                />
-              ) : (
-                <View style={[styles.avatarFallback, { backgroundColor: COLORS.primary }]}>
-                  <Ionicons name="person" size={48} color="#FFFFFF" />
-                </View>
-              )}
-              <View style={styles.rankBadgeAnchor}>
-                <View style={styles.rankBadge}>
-                  <Text style={styles.rankBadgeText}>{rankBadge}</Text>
-                </View>
-              </View>
-            </View>
-            <Text
-              style={[styles.displayName, { color: colors.text }, getTextStyle(undefined, 'displayBold', 'center')]}
-              numberOfLines={2}
-            >
-              {displayHandle}
-            </Text>
-            {memberSinceLine ? (
-              <Text style={[styles.memberSince, { color: colors.textSecondary }, getTextStyle(undefined, 'body', 'center')]}>
-                {memberSinceLine}
-              </Text>
-            ) : null}
-          </View>
-
-          <View style={[styles.winRateCard, { backgroundColor: mutedSurface }]}>
-            <View style={[styles.winRateTop, { flexDirection: rowDir }]}>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }, getTextStyle(undefined, 'bodySemibold', 'start')]}>
-                {t('profile.winRate')}
-              </Text>
-              <Ionicons name="trending-up" size={22} color={`${COLORS.primary}99`} />
-            </View>
-            <Text style={[styles.winRateValue, { color: COLORS.primary }, getTextStyle(undefined, 'displayBold', 'start')]}>
-              {winRatePct.toFixed(1)}%
-            </Text>
-            <View style={[styles.progressTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : `${COLORS.primary}18` }]}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${Math.min(100, Math.max(0, winRatePct))}%`,
-                    backgroundColor: COLORS.primary,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-
-          <View style={[styles.twoCol, { flexDirection: rowDir }]}>
-            <View style={[styles.smallStat, { backgroundColor: mutedSurface }]}>
-              <View style={[styles.smallStatTop, { flexDirection: rowDir }]}>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }, getTextStyle(undefined, 'bodySemibold', 'start')]}>
-                  {t('profile.bestStreak')}
-                </Text>
-                <Ionicons name="flame" size={20} color={COLORS.secondary} />
-              </View>
-              <Text style={[styles.smallStatValue, { color: colors.text }, getTextStyle(undefined, 'displayBold', 'start')]}>
-                {bestStreak}
-              </Text>
-            </View>
-            <View style={[styles.smallStat, { backgroundColor: mutedSurface }]}>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }, getTextStyle(undefined, 'bodySemibold', 'start')]}>
-                {t('profile.accuracy')}
-              </Text>
-              <Text style={[styles.smallStatValue, { color: colors.text }, getTextStyle(undefined, 'displayBold', 'start')]}>
-                {accuracyPct}%
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.rankCard}>
-            <View style={[styles.rankCardInner, { flexDirection: rowDir }]}>
-              <View style={styles.rankCardCopy}>
-                <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.55)' }, getTextStyle(undefined, 'bodySemibold', 'start')]}>
-                  {t('profile.globalRank')}
-                </Text>
-                <Text style={[styles.rankCardValue, getTextStyle(undefined, 'displayBold', 'start')]}>
-                  {t('profile.rankPending')}
-                </Text>
-              </View>
-              <View style={styles.rankIconCircle}>
-                <Ionicons name="stats-chart" size={24} color="#FFFFFF" />
-              </View>
-            </View>
-          </View>
-
-          <Link href="/(app)/game-recap" asChild>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.topBar, { flexDirection: rowDir }]}>
             <Pressable
+              onPress={() => router.back()}
               style={({ pressed }) => [
-                styles.primaryCta,
-                { backgroundColor: COLORS.primary, opacity: pressed ? 0.92 : 1 },
+                styles.headerSquircleInner,
+                styles.plasticFace,
+                {
+                  backgroundColor: surface,
+                  borderRadius: 99,
+                  opacity: pressed ? 0.94 : 1,
+                  transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                },
+                neumorphicLift3D(shadowHex, 'header'),
               ]}
-              accessibilityRole="button"
-              accessibilityLabel={t('profile.viewAnalytics')}
             >
-              <Ionicons name="bar-chart" size={20} color="#FFFFFF" />
-              <Text style={[styles.ctaLabel, getTextStyle(undefined, 'bodyBold', 'center')]}>
-                {t('profile.viewAnalytics')}
+              <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
+            </Pressable>
+
+            <View style={styles.headerLogoWrap}>
+              <Text style={[styles.brandWordmark, { color: textPrimary }]}>
+                {t('home.logoWordmark')}
+              </Text>
+              <Text style={[styles.brandCapline, { color: textPrimary }]}>
+                {t('home.logoCapline').toUpperCase()}
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={() => router.push('/(app)/store')}
+              style={({ pressed }) => [
+                styles.tokenChip,
+                styles.plasticFace,
+                {
+                  backgroundColor: surface,
+                  opacity: pressed ? 0.94 : 1,
+                  transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                },
+                neumorphicLift3D(shadowHex, 'header'),
+              ]}
+            >
+              <Ionicons name="diamond-outline" size={16} color={textPrimary} />
+              <Text style={[styles.tokenChipValue, { color: textPrimary }]}>
+                {formatTokens(tokens, uiLocale)}
               </Text>
             </Pressable>
-          </Link>
-
-          <Link href="/(app)/theme-picker" asChild>
-            <Pressable
-              style={({ pressed }) => [
-                styles.settingsCta,
-                {
-                  backgroundColor: isDark ? 'rgba(161, 143, 252, 0.2)' : SETTINGS_BUTTON_BG,
-                  opacity: pressed ? 0.9 : 1,
-                },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={t('profile.openSettings')}
-            >
-              <Ionicons name="settings-sharp" size={20} color={SETTINGS_BUTTON_TEXT} />
-              <Text style={[styles.settingsCtaLabel, getTextStyle(undefined, 'bodyBold', 'center')]}>
-                {t('profile.openSettings')}
-              </Text>
-            </Pressable>
-          </Link>
           </View>
 
-          <View style={styles.profileCol}>
-          <View style={[styles.activityHeader, { flexDirection: rowDir }]}>
-            <Text style={[styles.activityTitle, { color: colors.text }, getTextStyle(undefined, 'bodyBold', 'start')]}>
-              {t('profile.recentActivity')}
-            </Text>
-            <View style={styles.activityDot} />
-          </View>
+          <View style={styles.profileColumns}>
+            <View style={styles.profileCol}>
+              <View style={styles.hero}>
+                <View style={[styles.avatarWrap, neumorphicLift3D(shadowHex, 'hero')]}>
+                  <View style={[styles.avatarSquircle, styles.plasticFace, { backgroundColor: surface }]}>
+                    {user?.imageUrl ? (
+                      <Image
+                        source={{ uri: user.imageUrl }}
+                        style={styles.avatarImage}
+                        contentFit="cover"
+                        accessibilityLabel={displayHandle}
+                      />
+                    ) : (
+                      <Ionicons name="person-outline" size={56} color={textPrimary} />
+                    )}
+                  </View>
+                  <View style={styles.rankBadgeAnchor}>
+                    <View style={[styles.rankBadge, styles.plasticFace, { backgroundColor: textPrimary }]}>
+                      <Text style={styles.rankBadgeText}>{rankBadge.toUpperCase()}</Text>
+                    </View>
+                  </View>
+                </View>
+                <Text
+                  style={[styles.displayName, { color: textPrimary }]}
+                  numberOfLines={1}
+                >
+                  {displayHandle}
+                </Text>
+                {memberSinceLine ? (
+                  <Text style={[styles.memberSince, { color: textMuted }]}>
+                    {memberSinceLine}
+                  </Text>
+                ) : null}
+              </View>
 
-          {PLACEHOLDER_ACTIVITY.map((row) => (
-            <View
-              key={row.id}
-              style={[
-                styles.activityCard,
-                {
-                  backgroundColor: colors.cardBackground,
-                  flexDirection: rowDir,
-                },
-                SHADOWS.card,
-              ]}
-            >
-              <View style={[styles.activityIconWrap, { backgroundColor: `${row.iconTint}18` }]}>
-                <Ionicons name={row.icon} size={22} color={row.iconTint} />
+              <View style={[styles.statsRow, { flexDirection: rowDir }]}>
+                <View style={[styles.statCard, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'card')]}>
+                  <Text style={[styles.statLabel, { color: textMuted }]}>{t('profile.winRate').toUpperCase()}</Text>
+                  <Text style={[styles.statValue, { color: textPrimary }]}>{winRatePct.toFixed(0)}%</Text>
+                </View>
+                <View style={[styles.statCard, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'card')]}>
+                  <Text style={[styles.statLabel, { color: textMuted }]}>{t('profile.bestStreak').toUpperCase()}</Text>
+                  <Text style={[styles.statValue, { color: textPrimary }]}>{bestStreak}</Text>
+                </View>
+                <View style={[styles.statCard, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'card')]}>
+                  <Text style={[styles.statLabel, { color: textMuted }]}>{t('profile.accuracy').toUpperCase()}</Text>
+                  <Text style={[styles.statValue, { color: textPrimary }]}>{accuracyPct}%</Text>
+                </View>
               </View>
-              <View style={styles.activityCenter}>
-                <Text style={[styles.activityRowTitle, { color: colors.text }, getTextStyle(undefined, 'bodyBold', 'start')]}>
-                  {t(row.titleKey)}
-                </Text>
-                <Text style={[styles.activityTime, { color: colors.textSecondary }, getTextStyle(undefined, 'body', 'start')]}>
-                  {t(row.timeKey, { count: row.timeCount })}
-                </Text>
-              </View>
-              <View style={styles.activityRight}>
-                <Text
-                  style={[
-                    styles.tokenDelta,
-                    { color: row.deltaSign === '+' ? COLORS.primary : COLORS.error },
-                    getTextStyle(undefined, 'bodySemibold', 'end'),
-                  ]}
-                >
-                  {t('profile.tokenDelta', { sign: row.deltaSign, count: row.deltaAmount })}
-                </Text>
-                <Text
-                  style={[
-                    styles.activityStatus,
-                    {
-                      color: row.statusPositive ? COLORS.primary : COLORS.error,
-                    },
-                    getTextStyle(undefined, 'bodySemibold', 'end'),
-                  ]}
-                >
-                  {t(row.statusKey)}
-                </Text>
+
+              <View style={styles.ctaRow}>
+                <Link href="/(app)/game-recap" asChild>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.primaryCta,
+                      styles.plasticFace,
+                      {
+                        backgroundColor: surface,
+                        opacity: pressed ? 0.94 : 1,
+                        transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                      },
+                      neumorphicLift3D(shadowHex, 'pill'),
+                      AMBER_GLOW,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('profile.viewAnalytics')}
+                  >
+                    <Ionicons name="bar-chart-outline" size={20} color={textPrimary} />
+                    <Text style={[styles.ctaLabel, { color: textPrimary }]}>
+                      {t('profile.viewAnalytics').toUpperCase()}
+                    </Text>
+                  </Pressable>
+                </Link>
               </View>
             </View>
-          ))}
 
-          <Text style={[styles.prefsSectionTitle, { color: colors.textSecondary }, getTextStyle(undefined, 'bodySemibold', 'start')]}>
-            {t('profile.preferences')}
-          </Text>
-
-          <View style={[styles.prefsGroup, { backgroundColor: colors.cardBackground }, SHADOWS.card]}>
-            <Link href="/(app)/theme-picker" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.prefRow,
-                  { flexDirection: rowDir, borderBottomColor: colors.border },
-                  pressed && styles.prefRowPressed,
-                ]}
-              >
-                <View style={[styles.prefIcon, { backgroundColor: `${COLORS.tertiary}22` }]}>
-                  <Ionicons name="color-palette" size={20} color={COLORS.tertiary} />
-                </View>
-                <Text style={[styles.prefLabel, { color: colors.text }, getTextStyle(undefined, 'bodySemibold', 'start')]}>
-                  {t('profile.changeTheme')}
+            <View style={styles.profileCol}>
+              <View style={[styles.sectionHeader, { flexDirection: rowDir }]}>
+                <Text style={[styles.sectionTitle, { color: textPrimary }]}>
+                  {t('profile.recentActivity').toUpperCase()}
                 </Text>
-                <Ionicons name={getChevronName(direction)} size={18} color={colors.textSecondary} />
-              </Pressable>
-            </Link>
-            <Link href="/(app)/language-picker" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.prefRow,
-                  { flexDirection: rowDir, borderBottomColor: colors.border },
-                  pressed && styles.prefRowPressed,
-                ]}
-              >
-                <View style={[styles.prefIcon, { backgroundColor: `${COLORS.tertiary}22` }]}>
-                  <Ionicons name="language" size={20} color={COLORS.tertiary} />
-                </View>
-                <View style={styles.prefTextBlock}>
-                  <Text style={[styles.prefLabel, { color: colors.text }, getTextStyle(undefined, 'bodySemibold', 'start')]}>
-                    {t('settings.appLanguageTitle')}
-                  </Text>
-                  <Text style={[styles.prefMeta, { color: colors.textSecondary }, getTextStyle(undefined, 'body', 'start')]}>
-                    {getLocaleName(uiLocale, 'both')}
-                  </Text>
-                </View>
-                <Ionicons name={getChevronName(direction)} size={18} color={colors.textSecondary} />
-              </Pressable>
-            </Link>
-            <Link href="/(app)/content-languages-picker" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.prefRowLast,
-                  { flexDirection: rowDir },
-                  pressed && styles.prefRowPressed,
-                ]}
-              >
-                <View style={[styles.prefIcon, { backgroundColor: `${COLORS.tertiary}22` }]}>
-                  <Ionicons name="globe" size={20} color={COLORS.tertiary} />
-                </View>
-                <View style={styles.prefTextBlock}>
-                  <Text style={[styles.prefLabel, { color: colors.text }, getTextStyle(undefined, 'bodySemibold', 'start')]}>
-                    {t('settings.triviaLanguagesTitle')}
-                  </Text>
-                  <Text style={[styles.prefMeta, { color: colors.textSecondary }, getTextStyle(undefined, 'body', 'start')]}>
-                    {selectedContentLocales || t('settings.englishFallback')}
-                  </Text>
-                </View>
-                <Ionicons name={getChevronName(direction)} size={18} color={colors.textSecondary} />
-              </Pressable>
-            </Link>
-          </View>
+              </View>
 
-          <Pressable
-            style={({ pressed }) => [styles.signOutText, pressed && { opacity: 0.6 }]}
-            onPress={() => signOut?.()}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.signOut')}
-          >
-            <Text style={[styles.signOutTextLabel, { color: COLORS.error }, getTextStyle(undefined, 'bodyBold', 'center')]}>
-              {t('common.signOut')}
-            </Text>
-          </Pressable>
+              <View style={styles.activityList}>
+                {PLACEHOLDER_ACTIVITY.map((row) => (
+                  <View
+                    key={row.id}
+                    style={[
+                      styles.activityCard,
+                      styles.plasticFace,
+                      {
+                        backgroundColor: surface,
+                        flexDirection: rowDir,
+                      },
+                      neumorphicLift3D(shadowHex, 'pill'),
+                    ]}
+                  >
+                    <View style={styles.activityIconWrap}>
+                      <Ionicons name={row.icon} size={22} color={textPrimary} />
+                    </View>
+                    <View style={styles.activityCenter}>
+                      <Text style={[styles.activityRowTitle, { color: textPrimary }]}>
+                        {t(row.titleKey)}
+                      </Text>
+                      <Text style={[styles.activityTime, { color: textMuted }]}>
+                        {t(row.timeKey, { count: row.timeCount })}
+                      </Text>
+                    </View>
+                    <View style={styles.activityRight}>
+                      <Text
+                        style={[
+                          styles.tokenDelta,
+                          { color: textPrimary },
+                        ]}
+                      >
+                        {t('profile.tokenDelta', { sign: row.deltaSign, count: row.deltaAmount })}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <View style={[styles.sectionHeader, { flexDirection: rowDir, marginTop: SPACING.lg }]}>
+                <Text style={[styles.sectionTitle, { color: textPrimary }]}>
+                  {t('profile.preferences').toUpperCase()}
+                </Text>
+              </View>
+
+              <View style={[styles.prefsGroup, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'card')]}>
+                <Link href="/(app)/theme-picker" asChild>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.prefRow,
+                      { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.05)' },
+                      pressed && { backgroundColor: 'rgba(0,0,0,0.02)' },
+                    ]}
+                  >
+                    <Ionicons name="color-palette-outline" size={20} color={textPrimary} />
+                    <Text style={[styles.prefLabel, { color: textPrimary }]}>
+                      {t('profile.changeTheme')}
+                    </Text>
+                    <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
+                  </Pressable>
+                </Link>
+                <Link href="/(app)/language-picker" asChild>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.prefRow,
+                      { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.05)' },
+                      pressed && { backgroundColor: 'rgba(0,0,0,0.02)' },
+                    ]}
+                  >
+                    <Ionicons name="language-outline" size={20} color={textPrimary} />
+                    <View style={styles.prefTextBlock}>
+                      <Text style={[styles.prefLabel, { color: textPrimary }]}>
+                        {t('settings.appLanguageTitle')}
+                      </Text>
+                      <Text style={[styles.prefMeta, { color: textMuted }]}>
+                        {getLocaleName(uiLocale, 'both')}
+                      </Text>
+                    </View>
+                    <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
+                  </Pressable>
+                </Link>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.prefRowLast,
+                    { flexDirection: rowDir },
+                    pressed && { backgroundColor: 'rgba(0,0,0,0.02)' },
+                  ]}
+                  onPress={() => signOut?.()}
+                >
+                  <Ionicons name="log-out-outline" size={20} color="#DC2626" />
+                  <Text style={[styles.prefLabel, { color: '#DC2626' }]}>
+                    {t('common.signOut')}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </ScreenContent>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
   safeArea: {
     flex: 1,
   },
+  scrollContent: {
+    paddingHorizontal: LAYOUT.screenGutter,
+    paddingBottom: SPACING.xxl,
+  },
   profileViewport: {
     flex: 1,
-    minHeight: 0,
     paddingTop: SPACING.md,
-    paddingHorizontal: LAYOUT.screenGutter,
-  },
-  profileColumns: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: SPACING.md,
-    minHeight: 0,
-    minWidth: 0,
-  },
-  profileCol: {
-    flex: 1,
-    minWidth: 0,
-    gap: SPACING.md,
   },
   authGateViewport: {
     flex: 1,
-    minWidth: 0,
-    minHeight: 0,
-    paddingHorizontal: LAYOUT.screenGutter,
   },
   topBar: {
     alignItems: 'center',
@@ -473,281 +438,216 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
     gap: SPACING.md,
   },
+  headerSquircleInner: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerLogoWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   brandWordmark: {
-    fontSize: 19,
-    letterSpacing: 1.2,
-    fontStyle: 'italic',
-    flexShrink: 1,
+    fontFamily: FONTS.displayBold,
+    fontSize: 22,
+    letterSpacing: -0.5,
+  },
+  brandCapline: {
+    fontFamily: FONTS.ui,
+    fontSize: 11,
+    letterSpacing: 3,
+    marginTop: -2,
   },
   tokenChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: BORDER_RADIUS.pill,
   },
   tokenChipValue: {
     fontFamily: FONTS.uiBold,
     fontSize: 16,
   },
+  profileColumns: {
+    flexDirection: 'row',
+    gap: SPACING.xl,
+  },
+  profileCol: {
+    flex: 1,
+    gap: SPACING.lg,
+  },
   hero: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.md,
   },
   avatarWrap: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
     marginBottom: SPACING.lg,
+    position: 'relative',
+    borderRadius: 42,
   },
-  avatarImage: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-  },
-  avatarFallback: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
+  avatarSquircle: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 42,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   rankBadgeAnchor: {
     position: 'absolute',
-    bottom: -6,
+    bottom: -10,
     left: 0,
     right: 0,
     alignItems: 'center',
+    zIndex: 2,
   },
   rankBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
     borderRadius: BORDER_RADIUS.pill,
-    backgroundColor: RANK_BADGE_BG,
   },
   rankBadgeText: {
     fontFamily: FONTS.uiBold,
-    fontSize: 11,
-    letterSpacing: 0.8,
+    fontSize: 10,
+    letterSpacing: 1.2,
     color: '#FFFFFF',
   },
   displayName: {
-    fontSize: 26,
-    lineHeight: 32,
-    letterSpacing: 0.5,
+    fontFamily: FONTS.displayBold,
+    fontSize: 28,
+    letterSpacing: -0.5,
     textAlign: 'center',
   },
   memberSince: {
-    ...TYPE_SCALE.bodyS,
-    marginTop: SPACING.xs,
+    fontFamily: FONTS.ui,
+    fontSize: 14,
+    marginTop: 4,
     textAlign: 'center',
+    opacity: 0.6,
   },
-  winRateCard: {
-    borderRadius: STAT_CARD_RADIUS,
-    padding: SPACING.lg,
-    marginBottom: SPACING.md,
-  },
-  winRateTop: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.sm,
-  },
-  statLabel: {
-    fontSize: 11,
-    letterSpacing: 0.7,
-    textTransform: 'uppercase',
-  },
-  winRateValue: {
-    fontSize: 36,
-    lineHeight: 42,
-    marginBottom: SPACING.md,
-  },
-  progressTrack: {
-    height: 10,
-    borderRadius: BORDER_RADIUS.pill,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: BORDER_RADIUS.pill,
-  },
-  twoCol: {
+  statsRow: {
     gap: SPACING.md,
     marginBottom: SPACING.md,
   },
-  smallStat: {
+  statCard: {
     flex: 1,
-    borderRadius: STAT_CARD_RADIUS,
-    padding: SPACING.lg,
-  },
-  smallStatTop: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.sm,
-  },
-  smallStatValue: {
-    fontSize: 28,
-    lineHeight: 34,
-  },
-  rankCard: {
-    borderRadius: STAT_CARD_RADIUS,
-    backgroundColor: COLORS.text,
-    marginBottom: SPACING.xl,
-    overflow: 'hidden',
-  },
-  rankCardInner: {
-    padding: SPACING.lg,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  rankCardCopy: {
-    flex: 1,
-    gap: SPACING.xs,
-  },
-  rankCardValue: {
-    fontSize: 34,
-    lineHeight: 40,
-    color: '#FFFFFF',
-  },
-  rankIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: BORDER_RADIUS.pill,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.35)',
+    borderRadius: 24,
+    padding: SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginStart: SPACING.md,
+  },
+  statLabel: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 9,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  statValue: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 24,
+  },
+  ctaRow: {
+    marginTop: SPACING.sm,
   },
   primaryCta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: SPACING.sm,
-    paddingVertical: 16,
-    borderRadius: CTA_RADIUS,
-    marginBottom: SPACING.md,
+    gap: SPACING.md,
+    height: 64,
+    borderRadius: 32,
+    width: '100%',
   },
   ctaLabel: {
-    fontSize: 14,
-    letterSpacing: 0.6,
-    color: '#FFFFFF',
+    fontFamily: FONTS.uiBold,
+    fontSize: 15,
+    letterSpacing: 1.2,
   },
-  settingsCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-    paddingVertical: 16,
-    borderRadius: CTA_RADIUS,
-    marginBottom: SPACING.xl,
-  },
-  settingsCtaLabel: {
-    fontSize: 14,
-    letterSpacing: 0.6,
-    color: SETTINGS_BUTTON_TEXT,
-  },
-  activityHeader: {
+  sectionHeader: {
     alignItems: 'center',
     marginBottom: SPACING.md,
-    gap: SPACING.sm,
   },
-  activityTitle: {
-    fontSize: 18,
+  sectionTitle: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 1.5,
   },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: BORDER_RADIUS.pill,
-    backgroundColor: RANK_BADGE_BG,
+  activityList: {
+    gap: SPACING.md,
   },
   activityCard: {
     alignItems: 'center',
-    borderRadius: BORDER_RADIUS.modal,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
+    borderRadius: 28,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     gap: SPACING.md,
   },
   activityIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: BORDER_RADIUS.pill,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.03)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   activityCenter: {
     flex: 1,
-    minWidth: 0,
   },
   activityRowTitle: {
-    fontSize: 16,
+    fontFamily: FONTS.uiBold,
+    fontSize: 15,
   },
   activityTime: {
-    ...TYPE_SCALE.caption,
+    fontFamily: FONTS.ui,
+    fontSize: 12,
     marginTop: 2,
   },
   activityRight: {
     alignItems: 'flex-end',
   },
   tokenDelta: {
-    fontSize: 15,
-  },
-  activityStatus: {
-    fontSize: 12,
-    letterSpacing: 0.5,
-    marginTop: 2,
-  },
-  prefsSectionTitle: {
-    fontSize: 11,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: SPACING.sm,
+    fontFamily: FONTS.uiBold,
+    fontSize: 14,
   },
   prefsGroup: {
-    borderRadius: BORDER_RADIUS.modal,
+    borderRadius: 32,
     overflow: 'hidden',
-    marginBottom: SPACING.xl,
   },
   prefRow: {
     alignItems: 'center',
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
     borderBottomWidth: 1,
     gap: SPACING.md,
   },
   prefRowLast: {
     alignItems: 'center',
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
     gap: SPACING.md,
-  },
-  prefRowPressed: {
-    opacity: 0.75,
-  },
-  prefIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   prefLabel: {
     flex: 1,
-    fontSize: 16,
+    fontFamily: FONTS.uiSemibold,
+    fontSize: 15,
   },
   prefTextBlock: {
     flex: 1,
-    minWidth: 0,
   },
   prefMeta: {
-    ...TYPE_SCALE.caption,
-    marginTop: 2,
-  },
-  signOutText: {
-    paddingVertical: SPACING.lg,
-    alignItems: 'center',
-  },
-  signOutTextLabel: {
-    fontSize: 16,
+    fontFamily: FONTS.ui,
+    fontSize: 12,
+    marginTop: 4,
   },
 });

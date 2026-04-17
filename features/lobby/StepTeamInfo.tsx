@@ -1,8 +1,11 @@
 import { View, Text, StyleSheet, TextInput, ScrollView } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { LIFELINES, LIFELINES_PER_TEAM, type LifelineId } from './lifelines';
-import { SPACING, FONT_SIZES, BORDER_RADIUS } from '@/constants';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { SPACING, FONTS } from '@/constants';
+import { HOME_SOFT_UI } from '@/themes';
+import { Ionicons } from '@expo/vector-icons';
+
+const T = HOME_SOFT_UI;
 
 interface StepTeamInfoProps {
   team1Name: string;
@@ -18,6 +21,26 @@ interface StepTeamInfoProps {
 
 const LIFELINE_CARD_W = 168;
 
+/** Raised plastic tile shadow tier. */
+function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill' | 'card'): any {
+  const m =
+    tier === 'hero'
+      ? { h: 14, op: 1, r: 28, el: 18 }
+      : tier === 'header'
+      ? { h: 8, op: 0.9, r: 18, el: 12 }
+      : tier === 'card'
+      ? { h: 10, op: 0.9, r: 22, el: 14 }
+      : { h: 6, op: 0.8, r: 14, el: 8 };
+
+  return {
+    shadowColor,
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: m.op,
+    shadowRadius: m.r,
+    elevation: m.el,
+  };
+}
+
 export function StepTeamInfo({
   team1Name,
   team2Name,
@@ -29,7 +52,12 @@ export function StepTeamInfo({
   onTeam2LifelineToggle,
   onNext,
 }: StepTeamInfoProps) {
-  const colors = useTheme();
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+  const shadowHex = T.colors.shadowStrong;
+
   const canNext =
     team1Name.trim().length > 0 &&
     team2Name.trim().length > 0 &&
@@ -42,40 +70,48 @@ export function StepTeamInfo({
     onToggle: (id: LifelineId) => void
   ) => (
     <View style={styles.lifelineSection}>
-      <Text style={[styles.lifelineTitle, { color: colors.textOnBackground }]}>
-        {title}: Choose {LIFELINES_PER_TEAM} lifelines ({selected.length}/{LIFELINES_PER_TEAM})
+      <Text style={[styles.lifelineTitle, { color: textMuted }]}>
+        {title.toUpperCase()} LIFELINES ({selected.length}/{LIFELINES_PER_TEAM})
       </Text>
       <ScrollView
         horizontal
-        showsHorizontalScrollIndicator
+        showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.lifelineRow}
       >
         {LIFELINES.map((l) => {
           const sel = selected.includes(l.id);
           const disabled = !sel && selected.length >= LIFELINES_PER_TEAM;
           return (
-            <Pressable
-              key={l.id}
-              style={[
-                styles.lifelineCard,
-                {
-                  backgroundColor: sel ? colors.primary : colors.cardBackground,
-                  borderColor: colors.border,
-                  opacity: disabled ? 0.5 : 1,
-                },
-              ]}
-              onPress={() => !disabled && onToggle(l.id)}
-            >
-              <Text style={[styles.lifelineLabel, { color: sel ? '#FFF' : colors.text }]}>
-                {l.label}
-              </Text>
-              <Text
-                style={[styles.lifelineDesc, { color: sel ? 'rgba(255,255,255,0.9)' : colors.textSecondary }]}
-                numberOfLines={2}
+            <View key={l.id} style={styles.lifelineCardWrapper}>
+              {sel && <View style={styles.selectionGlow} />}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.lifelineCard,
+                  styles.plasticFace,
+                  {
+                    backgroundColor: surface,
+                    opacity: disabled ? 0.4 : pressed ? 0.94 : 1,
+                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                  },
+                  neumorphicLift3D(shadowHex, 'card'),
+                  sel && { shadowColor: '#FFB347', shadowOpacity: 0.3 },
+                ]}
+                onPress={() => !disabled && onToggle(l.id)}
               >
-                {l.description}
-              </Text>
-            </Pressable>
+                <View style={[styles.iconWrap, { backgroundColor: sel ? 'rgba(51, 51, 51, 0.05)' : 'rgba(0,0,0,0.02)' }]}>
+                   <Ionicons name={sel ? 'shield-checkmark' : 'shield-outline'} size={24} color={textPrimary} />
+                </View>
+                <Text style={[styles.lifelineLabel, { color: textPrimary }]}>
+                  {l.label.toUpperCase()}
+                </Text>
+                <Text
+                  style={[styles.lifelineDesc, { color: textMuted }]}
+                  numberOfLines={2}
+                >
+                  {l.description}
+                </Text>
+              </Pressable>
+            </View>
           );
         })}
       </ScrollView>
@@ -83,105 +119,169 @@ export function StepTeamInfo({
   );
 
   return (
-    <View style={styles.root}>
-      <Text style={[styles.title, { color: colors.textOnBackground }]}>Define Team Info</Text>
-      <Text style={[styles.subtitle, { color: colors.textSecondaryOnBackground }]}>
-        Name your teams and choose 3 lifelines per team.
-      </Text>
+    <View style={[styles.root, { backgroundColor: canvas }]}>
+      <Text style={[styles.title, { color: textPrimary }]}>TEAM INFORMATION</Text>
+      
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.inputSection}>
+          <View style={styles.col}>
+            <Text style={[styles.label, { color: textMuted }]}>TEAM 1 NAME</Text>
+            <View style={[styles.inputWrap, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'header')]}>
+              <TextInput
+                style={[styles.input, { color: textPrimary }]}
+                value={team1Name}
+                onChangeText={onTeam1NameChange}
+                placeholder="ENTER NAME"
+                placeholderTextColor={textMuted}
+                autoCapitalize="characters"
+              />
+            </View>
+          </View>
 
-      <View style={styles.columns}>
-        <View style={styles.col}>
-          <Text style={[styles.label, { color: colors.textOnBackground }]}>Team 1</Text>
-          <TextInput
-            style={[
-              styles.input,
-              { borderColor: colors.border, backgroundColor: colors.cardBackground, color: colors.text },
-            ]}
-            value={team1Name}
-            onChangeText={onTeam1NameChange}
-            placeholder="Team name"
-            placeholderTextColor={colors.textSecondary}
-          />
-          {renderLifelineSection('Team 1', team1Lifelines, onTeam1LifelineToggle)}
+          <View style={styles.col}>
+            <Text style={[styles.label, { color: textMuted }]}>TEAM 2 NAME</Text>
+            <View style={[styles.inputWrap, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'header')]}>
+              <TextInput
+                style={[styles.input, { color: textPrimary }]}
+                value={team2Name}
+                onChangeText={onTeam2NameChange}
+                placeholder="ENTER NAME"
+                placeholderTextColor={textMuted}
+                autoCapitalize="characters"
+              />
+            </View>
+          </View>
         </View>
 
-        <View style={styles.col}>
-          <Text style={[styles.label, { color: colors.textOnBackground }]}>Team 2</Text>
-          <TextInput
-            style={[
-              styles.input,
-              { borderColor: colors.border, backgroundColor: colors.cardBackground, color: colors.text },
-            ]}
-            value={team2Name}
-            onChangeText={onTeam2NameChange}
-            placeholder="Team name"
-            placeholderTextColor={colors.textSecondary}
-          />
-          {renderLifelineSection('Team 2', team2Lifelines, onTeam2LifelineToggle)}
-        </View>
+        {renderLifelineSection('Team 1', team1Lifelines, onTeam1LifelineToggle)}
+        {renderLifelineSection('Team 2', team2Lifelines, onTeam2LifelineToggle)}
+      </ScrollView>
+
+      <View style={[styles.footer, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'pill')]}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            styles.plasticFace,
+            { backgroundColor: surface, opacity: canNext ? (pressed ? 0.94 : 1) : 0.5 },
+            neumorphicLift3D(shadowHex, 'pill'),
+            canNext && { shadowColor: '#FFB347', shadowOpacity: 0.45 },
+          ]}
+          onPress={onNext}
+          disabled={!canNext}
+        >
+          <Text style={[styles.buttonText, { color: textPrimary }]}>{canNext ? 'CONTINUE' : 'CHOOSE NAMES & LIFELINES'}</Text>
+        </Pressable>
       </View>
-
-      <Pressable
-        style={({ pressed }) => [
-          styles.button,
-          { backgroundColor: colors.primary },
-          (!canNext || pressed) && styles.buttonDisabled,
-        ]}
-        onPress={onNext}
-        disabled={!canNext}
-      >
-        <Text style={styles.buttonText}>Next</Text>
-      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, padding: SPACING.lg, minHeight: 0, gap: SPACING.md },
-  title: { fontSize: FONT_SIZES.xxl, fontWeight: 'bold' },
-  subtitle: { fontSize: FONT_SIZES.md, marginBottom: SPACING.sm },
-  columns: {
-    flex: 1,
-    flexDirection: 'row',
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  root: { flex: 1 },
+  scroll: { flex: 1 },
+  scrollContent: { padding: SPACING.lg, gap: SPACING.xl },
+  title: {
+    fontSize: 24,
+    fontFamily: FONTS.displayBold,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  inputSection: {
     gap: SPACING.lg,
-    minHeight: 0,
-    minWidth: 0,
   },
   col: {
-    flex: 1,
-    minWidth: 0,
     gap: SPACING.sm,
   },
-  label: { fontSize: FONT_SIZES.sm, fontWeight: '600' },
-  input: {
-    borderWidth: 1,
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    fontSize: FONT_SIZES.md,
+  label: { 
+    fontSize: 10,
+    fontFamily: FONTS.uiBold,
+    letterSpacing: 1.5,
+    paddingLeft: SPACING.sm,
   },
-  lifelineSection: { flex: 1, minHeight: 0 },
-  lifelineTitle: { fontSize: FONT_SIZES.sm, fontWeight: '600', marginBottom: SPACING.sm },
+  inputWrap: {
+    borderRadius: 24,
+    height: 56,
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.lg,
+  },
+  input: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 16,
+    letterSpacing: 0.5,
+  },
+  lifelineSection: { gap: SPACING.md },
+  lifelineTitle: {
+    fontSize: 10,
+    fontFamily: FONTS.uiBold,
+    letterSpacing: 1.5,
+    paddingLeft: SPACING.sm,
+  },
   lifelineRow: {
     flexDirection: 'row',
-    gap: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    alignItems: 'stretch',
+    gap: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+  },
+  lifelineCardWrapper: {
+    position: 'relative',
+  },
+  selectionGlow: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    borderRadius: 26,
+    backgroundColor: '#FFB347',
+    opacity: 0.15,
   },
   lifelineCard: {
     width: LIFELINE_CARD_W,
-    flexShrink: 0,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-  },
-  lifelineLabel: { fontSize: FONT_SIZES.md, fontWeight: '600', marginBottom: 4 },
-  lifelineDesc: { fontSize: FONT_SIZES.xs },
-  button: {
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.lg,
+    borderRadius: 24,
     alignItems: 'center',
-    flexShrink: 0,
   },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#FFFFFF', fontSize: FONT_SIZES.lg, fontWeight: '600' },
+  iconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  lifelineLabel: {
+    fontSize: 12,
+    fontFamily: FONTS.displayBold,
+    textAlign: 'center',
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  lifelineDesc: { 
+    fontSize: 11,
+    fontFamily: FONTS.ui,
+    textAlign: 'center',
+    lineHeight: 16,
+    opacity: 0.8,
+  },
+  footer: {
+    padding: SPACING.lg,
+    borderTopLeftRadius: 42,
+    borderTopRightRadius: 42,
+  },
+  button: {
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: { fontSize: 16, fontFamily: FONTS.displayBold, letterSpacing: 1.2 },
 });
+

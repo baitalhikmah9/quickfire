@@ -1,0 +1,76 @@
+{
+  "id": "home-soft-ui",
+  "version": "1.0.0",
+  "description": "Neumorphic home / lobby — warm cream canvas, white squircles, amber glow halos (see docs/BRAND_GUIDELINES.md)",
+  "colors": {
+    "canvas": "#FAF9F6",
+    "surface": "#FFFFFF",
+    "textPrimary": "#333333",
+    "textMuted": "rgba(51, 51, 51, 0.58)",
+    "accentGlow": "#FFB347",
+    "accentGlowMid": "#FFCC80",
+    "accentGlowTransparent": "rgba(255, 179, 71, 0.42)",
+    "shadow": "rgba(15, 23, 42, 0.1)",
+    "shadowStrong": "rgba(15, 23, 42, 0.14)",
+    "resumeAccent": "#007BFF",
+    "resumeAccentSoft": "rgba(0, 123, 255, 0.12)"
+  },
+  "radii": {
+    "squircleLg": 32,
+    "squircleMd": 26,
+    "squircleSm": 22,
+    "pill": 999
+  },
+  "layout": {
+    "primarySquircleMaxWidth": 320,
+    "primarySquircleMinHeight": 200,
+    "glowSpread": 28,
+    "iconPrimarySize": 36,
+    "iconHeaderSize": 22
+  },
+  "shadows": {
+    "neumorphic": {
+      "shadowColorKey": "shadowStrong",
+      "shadowOffset": { "width": 0, "height": 10 },
+      "shadowOpacity": 1,
+      "shadowRadius": 22,
+      "elevation": 12
+    },
+    "glow": {
+      "shadowColorKey": "accentGlow",
+      "shadowOffset": { "width": 0, "height": 0 },
+      "shadowOpacity": 0.55,
+      "shadowRadius": 26,
+      "elevation": 8
+    }
+  },
+  "typography": {
+    "logoWordmark": {
+      "fontRole": "displayBold",
+      "fontSize": 28,
+      "letterSpacing": -0.5
+    },
+    "logoCapline": {
+      "fontRole": "ui",
+      "fontSize": 13,
+      "letterSpacing": 4,
+      "textTransform": "uppercase"
+    },
+    "ctaTitle": {
+      "fontRole": "uiBold",
+      "fontSize": 18,
+      "letterSpacing": 1.2,
+      "textTransform": "uppercase"
+    },
+    "ctaSubtitle": {
+      "fontRole": "ui",
+      "fontSize": 14,
+      "letterSpacing": 0.2
+    },
+    "footerMeta": {
+      "fontRole": "ui",
+      "fontSize": 13,
+      "letterSpacing": 0.15
+    }
+  }
+}

@@ -109,8 +109,14 @@ export function TopicColumnPickerModal({
   };
 
   const body = (
-    <Pressable style={styles.overlay} onPress={onClose} accessibilityRole="button">
+    <View style={styles.overlay}>
       <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel={t('play.boardTopicModalClose')}
+      />
+      <View
         style={[
           styles.sheet,
           {
@@ -120,8 +126,6 @@ export function TopicColumnPickerModal({
             width: '100%',
           },
         ]}
-        onPress={stopCardPressFromClosingOverlay}
-        accessibilityViewIsModal
       >
         <ScrollView
           style={styles.sheetScroll}
@@ -199,8 +203,8 @@ export function TopicColumnPickerModal({
             </Text>
           </Pressable>
         </ScrollView>
-      </Pressable>
-    </Pressable>
+      </View>
+    </View>
   );
 
   if (Platform.OS === 'web') {

@@ -1,12 +1,16 @@
-import { View, Text, StyleSheet, type FlexStyle } from 'react-native';
+import { View, Text, StyleSheet, type FlexStyle, type ViewStyle } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, BORDER_RADIUS, FONTS, COLORS } from '@/constants';
+import { HOME_SOFT_UI } from '@/themes';
 
 /** Match `HubActionCard` pill3d chrome (squared + lip). */
 const CHIP_RADIUS = BORDER_RADIUS.sm;
+const SOFT_CHIP_RADIUS = BORDER_RADIUS.md;
 const DEPTH_LIP = 8;
 const DEPTH_TOP_INSET = 4;
+
+const SOFT = HOME_SOFT_UI.colors;
 
 type HubTokenChipProps = {
   label: string;
@@ -15,6 +19,21 @@ type HubTokenChipProps = {
   rowDirection: FlexStyle['flexDirection'];
   onPress?: () => void;
   accessibilityLabel?: string;
+  /**
+   * `softUi` — docs/BRAND_GUIDELINES.md: white squircle, charcoal type, soft shadow (lobby / play hub).
+   * `default` — legacy electric-blue 3D chip.
+   */
+  variant?: 'default' | 'softUi';
+  /** Merged onto the outer wrapper (e.g. `alignSelf: 'flex-start'` for home leading column). */
+  outerStyle?: ViewStyle;
+};
+
+const softShadow: ViewStyle = {
+  shadowColor: 'rgba(51, 51, 51, 0.15)',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 1,
+  shadowRadius: 0,
+  elevation: 8,
 };
 
 /**
@@ -26,6 +45,8 @@ export function HubTokenChip({
   rowDirection,
   onPress,
   accessibilityLabel,
+  variant = 'default',
+  outerStyle,
 }: HubTokenChipProps) {
   const shadow = {
     shadowColor: '#0F172A',
@@ -34,6 +55,43 @@ export function HubTokenChip({
     shadowRadius: 12,
     elevation: 10,
   };
+
+  if (variant === 'softUi') {
+    const innerSoft = (
+      <View style={[styles.softFace, softShadow]}>
+        <View style={[styles.row, styles.softRow, { flexDirection: rowDirection }]}>
+
+          <Ionicons name="diamond-outline" size={14} color={SOFT.textPrimary} />
+          <Text style={styles.softValue} numberOfLines={1}>
+            {value}
+          </Text>
+        </View>
+      </View>
+    );
+
+    if (onPress) {
+      return (
+        <Pressable
+          onPress={onPress}
+          style={[styles.outerSoft, outerStyle]}
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityLabel ?? `${label}: ${value}`}
+        >
+          {innerSoft}
+        </Pressable>
+      );
+    }
+
+    return (
+      <View
+        style={[styles.outerSoft, outerStyle]}
+        accessibilityRole="text"
+        accessibilityLabel={accessibilityLabel ?? `${label}: ${value}`}
+      >
+        {innerSoft}
+      </View>
+    );
+  }
 
   const inner = (
     <View style={[styles.pressable, shadow]}>
@@ -50,9 +108,7 @@ export function HubTokenChip({
         />
         <View style={styles.face}>
           <View style={[styles.row, { flexDirection: rowDirection }]}>
-            <Text style={styles.label} numberOfLines={1}>
-              {label}
-            </Text>
+
             <View style={styles.iconTile}>
               <Ionicons name="diamond" size={13} color="#FFFFFF" accessibilityIgnoresInvertColors />
             </View>
@@ -69,7 +125,7 @@ export function HubTokenChip({
     return (
       <Pressable
         onPress={onPress}
-        style={styles.outer}
+        style={[styles.outer, outerStyle]}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel ?? `${label}: ${value}`}
       >
@@ -79,7 +135,11 @@ export function HubTokenChip({
   }
 
   return (
-    <View style={styles.outer} accessibilityRole="text" accessibilityLabel={accessibilityLabel ?? `${label}: ${value}`}>
+    <View
+      style={[styles.outer, outerStyle]}
+      accessibilityRole="text"
+      accessibilityLabel={accessibilityLabel ?? `${label}: ${value}`}
+    >
       {inner}
     </View>
   );
@@ -89,6 +149,30 @@ const styles = StyleSheet.create({
   outer: {
     alignSelf: 'flex-end',
     maxWidth: 240,
+  },
+  outerSoft: {
+    alignSelf: 'flex-end',
+    maxWidth: 240,
+  },
+  softFace: {
+    borderRadius: SOFT_CHIP_RADIUS,
+    backgroundColor: SOFT.surface,
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+  },
+  softRow: {
+    gap: 6,
+  },
+
+  softValue: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 15,
+    color: SOFT.textPrimary,
+    fontVariant: ['tabular-nums'],
   },
   pressable: {
     borderRadius: CHIP_RADIUS,
@@ -120,13 +204,7 @@ const styles = StyleSheet.create({
     gap: 8,
     justifyContent: 'center',
   },
-  label: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 10,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    color: 'rgba(255, 255, 255, 0.92)',
-  },
+
   iconTile: {
     width: 22,
     height: 22,

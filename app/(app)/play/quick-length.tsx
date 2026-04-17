@@ -40,7 +40,7 @@ export default function QuickLengthScreen() {
           ]}
           onPress={() => {
             setQuickPlayTopicCount(option.count);
-            router.push('/(app)/play/team-setup');
+            router.push('/play/team-setup');
           }}
         >
           <Text

@@ -66,6 +66,7 @@ function getDefaultConfig(
     contentLocaleChain,
     quickPlayTopicCount: 3,
     hotSeatEnabled: false,
+    hotSeatRounds: 0,
     wagerEnabled: mode !== 'random' && mode !== 'rumble' && mode !== 'rapidFire',
     wagersPerTeam: 3,
   };
@@ -106,8 +107,13 @@ function getOtherTeamId(teams: TeamState[], teamId?: string): string | undefined
 }
 
 function syncConfig(session: GameSessionState): GameConfig {
+  const cfg = session.config;
+  const hotSeatRoundsRaw =
+    cfg.hotSeatRounds !== undefined ? cfg.hotSeatRounds : cfg.hotSeatEnabled ? 1 : 0;
+  const hotSeatRounds = Math.max(0, Math.min(5, hotSeatRoundsRaw));
+
   return {
-    ...session.config,
+    ...cfg,
     mode: session.mode,
     teams: session.teams.map(({ id, name, playerNames }) => ({ id, name, playerNames })),
     categories: session.selectedCategoryIds,
@@ -116,6 +122,8 @@ function syncConfig(session: GameSessionState): GameConfig {
     wagerEnabled:
       session.mode !== 'random' && session.mode !== 'rumble' && session.mode !== 'rapidFire',
     wagersPerTeam: session.wagersPerTeam,
+    hotSeatRounds,
+    hotSeatEnabled: hotSeatRounds > 0,
   };
 }
 
@@ -141,7 +149,9 @@ interface PlayStore {
   removeTeamMember: (teamId: string) => void;
   updateTeamMemberName: (teamId: string, index: number, name: string) => void;
   setWagersPerTeam: (count: number) => void;
+  setHotSeatRounds: (count: number) => void;
   toggleCategory: (slug: string) => void;
+  setCategories: (slugs: string[]) => void;
   startBoard: () => { ok: boolean; error?: string };
   selectQuestion: (question: QuestionCard) => void;
   revealAnswer: () => void;
@@ -331,6 +341,22 @@ export const usePlayStore = create<PlayStore>()(
           return { session };
         }),
 
+      setHotSeatRounds: (count) =>
+        set((state) => {
+          if (!state.session) return state;
+          const hotSeatRounds = Math.max(0, Math.min(5, count));
+          const session = {
+            ...state.session,
+            config: {
+              ...state.session.config,
+              hotSeatRounds,
+              hotSeatEnabled: hotSeatRounds > 0,
+            },
+          };
+          session.config = syncConfig(session);
+          return { session };
+        }),
+
       toggleCategory: (slug) =>
         set((state) => {
           if (!state.session) return state;
@@ -348,6 +374,18 @@ export const usePlayStore = create<PlayStore>()(
             ...state.session,
             step: 'categories' as const,
             selectedCategoryIds,
+          };
+          session.config = syncConfig(session);
+          return { session };
+        }),
+
+      setCategories: (slugs) =>
+        set((state) => {
+          if (!state.session) return state;
+          const session = {
+            ...state.session,
+            step: 'categories' as const,
+            selectedCategoryIds: slugs,
           };
           session.config = syncConfig(session);
           return { session };
