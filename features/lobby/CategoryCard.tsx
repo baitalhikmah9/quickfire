@@ -1,10 +1,11 @@
 import React from 'react';
 import { Image } from 'expo-image';
-import { View, Text, StyleSheet, type ViewStyle, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, type ViewStyle, Dimensions, Platform } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
-import { SPACING, FONTS } from '@/constants/theme';
+import { SPACING, FONTS, COLORS, SHADOWS } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { HOME_SOFT_UI } from '@/themes';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const T = HOME_SOFT_UI;
 const { width } = Dimensions.get('window');
@@ -22,25 +23,15 @@ interface CategoryCardProps {
     style?: ViewStyle;
 }
 
-/** Raised plastic tile shadow tier. */
-function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill' | 'card'): any {
-  const m =
-    tier === 'hero'
-      ? { h: 10, r: 0, el: 12 }
-      : tier === 'header'
-      ? { h: 6, r: 0, el: 8 }
-      : tier === 'card'
-      ? { h: 8, r: 0, el: 10 }
-      : { h: 4, r: 0, el: 4 };
-
-  return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: m.el,
-  };
-}
+const getCardShadow = (isSelected: boolean) => {
+    return {
+        shadowColor: 'rgba(51, 51, 51, 0.15)',
+        shadowOffset: { width: 0, height: isSelected ? 2 : 5 },
+        shadowOpacity: 1,
+        shadowRadius: 0,
+        elevation: isSelected ? 2 : 5,
+    };
+};
 
 export function CategoryCard({
     title,
@@ -53,173 +44,227 @@ export function CategoryCard({
 }: CategoryCardProps) {
     const surface = T.colors.surface;
     const textPrimary = T.colors.textPrimary;
-    const shadowHex = T.colors.shadowStrong;
+    const accentColor = T.colors.resumeAccent;
 
     return (
         <View style={[styles.cardWrapper, style]}>
-            {isSelected && <View style={styles.selectionGlow} />}
             <Pressable
                 onPress={onPress}
                 style={({ pressed }) => [
                     styles.card,
-                    styles.plasticFace,
                     {
                         backgroundColor: surface,
-                        opacity: pressed ? 0.96 : 1,
-                        transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                        opacity: pressed ? 0.94 : 1,
+                        transform: (pressed || isSelected) 
+                            ? [{ scale: 0.98 }, { translateY: isSelected ? 2 : 0 }] 
+                            : [{ scale: 1 }, { translateY: 0 }],
+                        
+                        // Raised surface treatment
+                        borderTopWidth: 2,
+                        borderTopColor: isSelected ? accentColor : 'rgba(255, 255, 255, 0.78)',
+                        borderBottomWidth: isSelected ? 2.5 : 4,
+                        borderBottomColor: isSelected ? accentColor : 'rgba(0, 0, 0, 0.1)',
+                        borderLeftWidth: isSelected ? 2.5 : 0,
+                        borderRightWidth: isSelected ? 2.5 : 0,
+                        borderColor: isSelected ? accentColor : 'transparent',
+                        
+                        ...getCardShadow(isSelected),
                     },
-                    neumorphicLift3D(shadowHex, 'card'),
                 ]}
             >
-                <View style={styles.contentContainer}>
-                    {/* Info Icon */}
-                    <Pressable
-                        onPress={onInfoPress}
-                        style={({ pressed }) => [
-                            styles.infoIcon,
-                            { opacity: pressed ? 0.7 : 1 }
-                        ]}
-                    >
-                        <Ionicons name="information-circle-outline" size={20} color={textPrimary} />
-                    </Pressable>
-
-                    {/* Illustration Area */}
-                    <View style={styles.illustrationContainer}>
-                        {illustration ? (
-                            <Image source={illustration} style={styles.illustration} contentFit="contain" />
-                        ) : (
-                            <View style={styles.illustrationPlaceholder}>
-                                <Ionicons name="image-outline" size={32} color="rgba(51, 51, 51, 0.1)" />
+                {/* Full-Card Illustration Background */}
+                <View style={styles.imageContainer}>
+                    {illustration ? (
+                        <Image 
+                            source={illustration} 
+                            style={styles.fullImage} 
+                            contentFit="cover"
+                            transition={400}
+                        />
+                    ) : (
+                        <LinearGradient
+                            colors={['#F8FAFC', '#F1F5F9']}
+                            style={styles.fullImage}
+                        >
+                            <View style={styles.placeholderCenter}>
+                                <Ionicons 
+                                    name={getIconForCategory(title)} 
+                                    size={48} 
+                                    color="rgba(0, 123, 255, 0.12)" 
+                                />
                             </View>
-                        )}
-                    </View>
+                        </LinearGradient>
+                    )}
+                    
+                    {/* Darker gradient at bottom for text contrast */}
+                    <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0.4)']}
+                        style={styles.bottomGradient}
+                    />
+                </View>
 
-                    {/* Flag Badge */}
-                    <View style={styles.flagBadge}>
-                        {flag ? (
-                            <Image source={flag} style={styles.flagImage} contentFit="cover" />
-                        ) : (
-                            <View style={styles.flagPlaceholder} />
-                        )}
+                {/* Info Icon - Glass style */}
+                <Pressable
+                    onPress={onInfoPress}
+                    style={({ pressed }) => [
+                        styles.infoIcon,
+                        { opacity: pressed ? 0.6 : 1 }
+                    ]}
+                >
+                    <Ionicons name="information" size={14} color="#FFF" />
+                </Pressable>
+
+                {/* Selection Indicator */}
+                {isSelected && (
+                    <View style={styles.selectionBadge}>
+                        <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                    </View>
+                )}
+
+                {/* Floating Title Pill */}
+                <View style={styles.titleOverlay}>
+                    <View style={[
+                        styles.titlePill,
+                        { backgroundColor: isSelected ? accentColor : 'rgba(255, 255, 255, 0.95)' }
+                    ]}>
+                        <Text 
+                            style={[
+                                styles.titleText, 
+                                { color: isSelected ? '#FFF' : textPrimary }
+                            ]} 
+                            numberOfLines={1}
+                        >
+                            {title.toUpperCase()}
+                        </Text>
                     </View>
                 </View>
 
-                {/* Title Banner */}
-                <View style={styles.banner}>
-                    <Text style={[styles.titleText, { color: textPrimary }]} numberOfLines={1}>
-                        {title.toUpperCase()}
-                    </Text>
+                {/* Flag Badge */}
+                <View style={styles.flagContainer}>
+                    {flag && (
+                        <View style={styles.flagBadge}>
+                             <Image source={flag} style={styles.flagImage} contentFit="cover" />
+                        </View>
+                    )}
                 </View>
             </Pressable>
         </View>
     );
 }
 
+function getIconForCategory(title: string): any {
+    const t = title.toLowerCase();
+    if (t.includes('history') || t.includes('century')) return 'time-outline';
+    if (t.includes('game') || t.includes('halo') || t.includes('cod')) return 'game-controller-outline';
+    if (t.includes('sport') || t.includes('nba') || t.includes('league')) return 'trophy-outline';
+    if (t.includes('movie') || t.includes('show') || t.includes('marvel')) return 'film-outline';
+    if (t.includes('science')) return 'flask-outline';
+    if (t.includes('geography')) return 'earth-outline';
+    return 'rocket-outline';
+}
+
 const styles = StyleSheet.create({
     cardWrapper: {
         width: CARD_WIDTH,
         marginBottom: SPACING.md,
-        position: 'relative',
     },
-    selectionGlow: {
-        position: 'absolute',
-        top: -4,
-        left: -4,
-        right: -4,
-        bottom: -4,
-        borderRadius: 30,
-        backgroundColor: '#FFB347',
-        opacity: 0.3,
-        zIndex: 0,
-    },
-    plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
-  },
     card: {
         width: '100%',
-        borderRadius: 26,
+        aspectRatio: 0.78, // Slightly taller for more image impact
+        borderRadius: 24,
+        backgroundColor: '#FFF',
         overflow: 'hidden',
-        zIndex: 1,
     },
-    contentContainer: {
-        height: CARD_WIDTH * 1.1,
-        backgroundColor: 'rgba(0,0,0,0.02)',
-        padding: 0,
-        position: 'relative',
+    imageContainer: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: '#F1F5F9',
+    },
+    fullImage: {
+        width: '100%',
+        height: '100%',
+    },
+    placeholderCenter: {
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    bottomGradient: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: '50%',
     },
     infoIcon: {
         position: 'absolute',
-        top: 6,
-        right: 6,
-        zIndex: 10,
-        width: 28,
-        height: 28,
+        top: 8,
+        right: 8,
+        zIndex: 20,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: 'rgba(0,0,0,0.3)',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    illustrationContainer: {
-        flex: 1,
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    illustration: {
-        width: '80%',
-        height: '80%',
-    },
-    illustrationPlaceholder: {
-        flex: 1,
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    flagBadge: {
+    selectionBadge: {
         position: 'absolute',
-        bottom: -14,
-        zIndex: 15,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#FFF',
-        borderWidth: 2,
-        borderColor: '#FFF',
+        top: 8,
+        left: 8,
+        zIndex: 20,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        borderRadius: 12,
+        width: 24,
+        height: 24,
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: 'hidden',
+    },
+    titleOverlay: {
+        position: 'absolute',
+        bottom: 10,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        paddingHorizontal: 8,
+    },
+    titlePill: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 12,
+        maxWidth: '100%',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 2,
     },
-    flagImage: {
-        width: '100%',
-        height: '100%',
-        borderRadius: 16,
-    },
-    flagPlaceholder: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#E2E8F0',
-        borderRadius: 16,
-    },
-    banner: {
-        height: 48,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: SPACING.sm,
-        paddingTop: 8,
-    },
     titleText: {
-        fontSize: 11,
+        fontSize: 9,
         fontFamily: FONTS.displayBold,
         textAlign: 'center',
         letterSpacing: 0.5,
     },
+    flagContainer: {
+        position: 'absolute',
+        top: '40%',
+        right: -5,
+        zIndex: 15,
+    },
+    flagBadge: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: '#FFF',
+        borderWidth: 1.5,
+        borderColor: '#FFF',
+        overflow: 'hidden',
+    },
+    flagImage: {
+        width: '100%',
+        height: '100%',
+    },
 });
+
+
+
 

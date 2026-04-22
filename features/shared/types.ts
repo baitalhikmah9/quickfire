@@ -65,6 +65,8 @@ export interface GameConfig {
   wagerEnabled: boolean;
   overtimeThreshold?: number;
   boardSize?: number;
+  /** Tokens already charged at mode selection before board start. */
+  entryTokenCharge?: number;
 }
 
 export interface QuestionCard {
@@ -74,12 +76,18 @@ export interface QuestionCard {
   categoryName: string;
   prompt: string;
   answer: string;
+  promptImageUrl?: string;
+  answerImageUrl?: string;
   pointValue: number;
   locale: SupportedLocale;
   resolvedFromFallback: boolean;
   used: boolean;
   /** Jeopardy board column (TriviaApp q_ / w_ parity). */
   boardSide?: 'left' | 'right';
+  /** Rumble party that gets the first timed answer window. */
+  rumbleFirstTeamId?: string;
+  /** Rumble party that gets the second timed answer window. */
+  rumbleSecondTeamId?: string;
 }
 
 export interface CategoryOption {
@@ -132,6 +140,26 @@ export interface WagerRoll {
 export interface HotSeatAssignment {
   teamId: string;
   playerId: string;
+}
+
+export interface HotSeatParticipant {
+  teamId: string;
+  playerName: string;
+}
+
+export interface HotSeatChallenge {
+  id: string;
+  triggerAfterQuestion: number;
+  answeringTeamId: string;
+  participants: HotSeatParticipant[];
+  question?: QuestionCard;
+  completed: boolean;
+}
+
+export interface HotSeatState {
+  completedQuestionCount: number;
+  challenges: HotSeatChallenge[];
+  activeChallenge?: HotSeatChallenge;
 }
 
 export type TurnPhase =
@@ -214,8 +242,16 @@ export interface ManualScoreAdjustment {
   note?: string;
 }
 
+export interface AnswerReviewState {
+  question: QuestionCard;
+  awardedTeamId?: string | null;
+  pointsAwarded?: number;
+  revealedAt: number;
+}
+
 export interface DeviceInstallation {
   deviceId: string;
+  purchaserAccountId?: string;
   userId?: string;
   platform: 'ios' | 'android' | 'web';
   appVersion: string;
@@ -262,11 +298,13 @@ export interface GameSessionState {
   overtime?: OvertimeState;
   scoreEvents: ScoreEvent[];
   lifelineRuntime?: LifelineRuntimeState;
+  hotSeat?: HotSeatState;
+  lastResolvedTurn?: AnswerReviewState;
 }
 
 export interface WalletBalance {
   balance: number;
-  userId: string;
+  purchaserAccountId: string | null;
 }
 
 export interface WalletTransaction {
@@ -274,7 +312,50 @@ export interface WalletTransaction {
   type: string;
   amount: number;
   createdAt: number;
+  source?: string;
+  productKey?: string;
+  store?: string;
+  storeTransactionId?: string;
+  originalStoreTransactionId?: string;
   metadata?: Record<string, unknown>;
+}
+
+export interface PurchaserAccount {
+  purchaserAccountId: string;
+  linkedUserId?: string | null;
+  canonicalPurchaserAccountId?: string | null;
+}
+
+export interface TokenProduct {
+  productKey: string;
+  tokensGranted: number;
+  iosProductId: string;
+  androidProductId: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface StorePurchase {
+  id: string;
+  purchaserAccountId: string;
+  productKey: string;
+  store: string;
+  storeTransactionId: string;
+  originalStoreTransactionId?: string;
+  status: string;
+  purchasedAt: number;
+}
+
+export interface PaymentWebhookEvent {
+  eventId: string;
+  type: string;
+  appUserId?: string;
+  originalAppUserId?: string;
+  aliases?: string[];
+  receivedAt: number;
+  processedAt?: number;
+  status: string;
+  errorCode?: string;
 }
 
 export interface PromoRedemptionResult {

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, type FlexStyle, type ViewStyle } from 'react-native';
+import { Image, View, Text, StyleSheet, type FlexStyle, type ImageSourcePropType, type ViewStyle } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, BORDER_RADIUS, FONTS, COLORS } from '@/constants';
@@ -26,6 +26,7 @@ type HubTokenChipProps = {
   variant?: 'default' | 'softUi';
   /** Merged onto the outer wrapper (e.g. `alignSelf: 'flex-start'` for home leading column). */
   outerStyle?: ViewStyle;
+  artworkSource?: ImageSourcePropType;
 };
 
 const softShadow: ViewStyle = {
@@ -47,6 +48,7 @@ export function HubTokenChip({
   accessibilityLabel,
   variant = 'default',
   outerStyle,
+  artworkSource,
 }: HubTokenChipProps) {
   const shadow = {
     shadowColor: '#0F172A',
@@ -60,8 +62,11 @@ export function HubTokenChip({
     const innerSoft = (
       <View style={[styles.softFace, softShadow]}>
         <View style={[styles.row, styles.softRow, { flexDirection: rowDirection }]}>
-
-          <Ionicons name="diamond-outline" size={14} color={SOFT.textPrimary} />
+          {artworkSource ? (
+            <Image source={artworkSource} style={styles.artwork} resizeMode="contain" />
+          ) : (
+            <Ionicons name="diamond" size={14} color={SOFT.textPrimary} />
+          )}
           <Text style={styles.softValue} numberOfLines={1}>
             {value}
           </Text>
@@ -108,10 +113,13 @@ export function HubTokenChip({
         />
         <View style={styles.face}>
           <View style={[styles.row, { flexDirection: rowDirection }]}>
-
-            <View style={styles.iconTile}>
-              <Ionicons name="diamond" size={13} color="#FFFFFF" accessibilityIgnoresInvertColors />
-            </View>
+            {artworkSource ? (
+              <Image source={artworkSource} style={styles.artwork} resizeMode="contain" />
+            ) : (
+              <View style={styles.iconTile}>
+                <Ionicons name="diamond" size={13} color="#FFFFFF" accessibilityIgnoresInvertColors />
+              </View>
+            )}
             <Text style={styles.value} numberOfLines={1}>
               {value}
             </Text>
@@ -173,6 +181,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: SOFT.textPrimary,
     fontVariant: ['tabular-nums'],
+  },
+  artwork: {
+    width: 22,
+    height: 22,
   },
   pressable: {
     borderRadius: CHIP_RADIUS,

@@ -53,6 +53,19 @@ Overall voice: clean, modern **geometric sans-serif** feel—tight hierarchy, re
 - **Secondary / settings:** Smaller squircle, same family of treatment (top-trailing placement is acceptable in landscape).
 - **Footer info:** Centered stack for time-sensitive copy and last score; smaller type; emphasize numeric outcomes with weight contrast.
 
+## Standard button surface (raised)
+
+Use this as the default treatment for action buttons and tappable cards across play and lobby flows.
+
+- **Surface color:** `#FFFFFF`
+- **Corner radius:** `14` by default (components may increase radius for larger hero controls)
+- **Top lip:** `borderTopWidth: 2`, `borderTopColor: rgba(255, 255, 255, 0.78)`
+- **Bottom edge:** `borderBottomWidth: 3`, `borderBottomColor: rgba(0, 0, 0, 0.08)`
+- **Shadow/depth:** `shadowColor: rgba(51, 51, 51, 0.15)`, `shadowOffset: { width: 0, height: 4 }`, `shadowOpacity: 1`, `shadowRadius: 0`, `elevation: 4`
+- **Pressed state:** keep geometry; lower opacity to ~`0.85`–`0.94` (optional slight scale down to ~`0.97`–`0.98`)
+
+This style is the reference “raised back-button” treatment and should be reused consistently instead of creating per-screen shadow variants.
+
 ## Layout
 
 - **Orientation:** Landscape-first on phone for this flow (match game orientation strategy).

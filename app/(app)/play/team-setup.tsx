@@ -3,6 +3,7 @@ import {
   View,
   Text,
   TextInput,
+  ScrollView,
   StyleSheet,
   useWindowDimensions,
   type ViewStyle,
@@ -14,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { FONT_SIZES, FONTS, SPACING } from '@/constants';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
+import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { usePlayStore } from '@/store/play';
 import type { GameSessionState } from '@/features/shared';
@@ -26,20 +28,9 @@ function neumorphicLift(
   shadowColor: string,
   tier: 'hero' | 'header' | 'pill' | 'card'
 ): ViewStyle {
-  const m =
-    tier === 'hero'
-      ? { h: 14, op: 0.35, r: 28, el: 18 }
-      : tier === 'header'
-        ? { h: 8, op: 0.28, r: 18, el: 12 }
-        : tier === 'card'
-          ? { h: 10, op: 0.22, r: 22, el: 10 }
-          : { h: 6, op: 0.25, r: 14, el: 8 };
   return {
+    ...softSurfaceLift(),
     shadowColor,
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: m.op,
-    shadowRadius: m.r,
-    elevation: m.el,
   };
 }
 
@@ -54,11 +45,10 @@ const AMBER_GLOW: ViewStyle = {
 
 /** Light top lip + soft bottom edge — reads extruded on white squircles. */
 const PLASTIC_FACE: ViewStyle = {
-  borderTopWidth: 2,
-  borderTopColor: 'rgba(255, 255, 255, 0.78)',
-  borderBottomWidth: StyleSheet.hairlineWidth * 2,
-  borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  ...SOFT_SURFACE_FACE,
 };
+const MIN_RUMBLE_PARTIES = 3;
+const MAX_RUMBLE_PARTIES = 4;
 const MAX_WAGERS_PER_TEAM = 9;
 const MAX_HOT_SEAT_ROUNDS = 5;
 
@@ -74,6 +64,7 @@ export default function TeamSetupScreen() {
   const compact = windowHeight < 520 || windowWidth < 340;
   const shortScreen = windowHeight < 700;
   const landscape = windowWidth > windowHeight;
+  const viewportScale = Math.max(0.82, Math.min(1.08, Math.min(windowWidth / 860, windowHeight / 620)));
   const { getTextStyle, t } = useI18n();
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
   const [hotSeatInfoOpen, setHotSeatInfoOpen] = useState(false);
@@ -84,6 +75,7 @@ export default function TeamSetupScreen() {
   const addTeamMember = usePlayStore((state) => state.addTeamMember);
   const removeTeamMember = usePlayStore((state) => state.removeTeamMember);
   const updateTeamMemberName = usePlayStore((state) => state.updateTeamMemberName);
+  const setTeamCount = usePlayStore((state) => state.setTeamCount);
   const setWagersPerTeam = usePlayStore((state) => state.setWagersPerTeam);
   const setHotSeatRounds = usePlayStore((state) => state.setHotSeatRounds);
 
@@ -97,18 +89,20 @@ export default function TeamSetupScreen() {
   );
 
   const wagerEnabled = session?.config.wagerEnabled ?? false;
+  const hotSeatAvailable = session ? session.mode === 'classic' || session.mode === 'quickPlay' : false;
+  const rumbleMode = session?.mode === 'rumble';
   const hotSeatRounds = session ? hotSeatRoundsFromConfig(session.config) : 0;
 
   useLayoutEffect(() => {
     ensureDraft();
   }, [ensureDraft]);
 
-  const inputMinH = shortScreen ? 26 : compact ? 32 : 40;
-  const inputFontSize = shortScreen ? FONT_SIZES.xs : compact ? FONT_SIZES.sm : FONT_SIZES.md;
-  const stepperBtn = shortScreen ? 34 : compact ? 38 : 42;
-  const stepperValueSize = shortScreen ? 18 : compact ? 20 : 24;
-  const cardPad = shortScreen ? SPACING.sm : SPACING.md;
-  const centerTitleSize = shortScreen ? FONT_SIZES.md : FONT_SIZES.lg;
+  const inputMinH = Math.round((shortScreen ? 26 : compact ? 32 : 40) * viewportScale);
+  const inputFontSize = Math.round((shortScreen ? FONT_SIZES.xs : compact ? FONT_SIZES.sm : FONT_SIZES.md) * viewportScale);
+  const stepperBtn = Math.round((shortScreen ? 34 : compact ? 38 : 42) * viewportScale);
+  const stepperValueSize = Math.round((shortScreen ? 18 : compact ? 20 : 24) * viewportScale);
+  const cardPad = Math.round((shortScreen ? SPACING.sm : SPACING.md) * viewportScale);
+  const centerTitleSize = Math.round((shortScreen ? FONT_SIZES.md : FONT_SIZES.lg) * viewportScale);
 
   const renderStepper = useCallback(
     (value: number, onMinus: () => void, onPlus: () => void, minusDisabled: boolean, plusDisabled: boolean) => (
@@ -144,7 +138,7 @@ export default function TeamSetupScreen() {
         </Pressable>
       </View>
     ),
-    [stepperBtn, stepperValueSize]
+    [getTextStyle, stepperBtn, stepperValueSize]
   );
 
   const teamCard = (team: GameSessionState['teams'][number]) => {
@@ -203,20 +197,30 @@ export default function TeamSetupScreen() {
         <View style={[styles.teamLinksRow, shortScreen && styles.teamLinksRowTight]}>
           <Pressable
             onPress={() => addTeamMember(team.id)}
-            style={styles.addPlayerHit}
+            style={({ pressed }) => [
+              styles.playerActionButton,
+              styles.addPlayerAction,
+              pressed && styles.playerActionPressed,
+            ]}
             accessibilityRole="button"
             accessibilityLabel={t('play.addTeamMemberA11y')}
           >
-            <Text style={[styles.linkText, getTextStyle()]}>{t('play.addPlayerLink')}</Text>
+            <Text style={[styles.addPlayerActionText, getTextStyle()]}>{t('play.addPlayerLink')}</Text>
           </Pressable>
           {memberCount > 1 ? (
             <Pressable
               onPress={() => removeTeamMember(team.id)}
-              style={styles.addPlayerHit}
+              style={({ pressed }) => [
+                styles.playerActionButton,
+                styles.removePlayerAction,
+                pressed && styles.playerActionPressed,
+              ]}
               accessibilityRole="button"
               accessibilityLabel={t('play.removeTeamMemberA11y')}
             >
-              <Text style={[styles.linkTextMuted, getTextStyle()]}>{t('play.removeLastPlayerLink')}</Text>
+              <Text style={[styles.removePlayerActionText, getTextStyle()]}>
+                {t('play.removeLastPlayerLink')}
+              </Text>
             </Pressable>
           ) : null}
         </View>
@@ -230,21 +234,38 @@ export default function TeamSetupScreen() {
     const gap = shortScreen ? SPACING.sm : SPACING.md;
     return (
       <View style={[stackStyle, { gap }]}>
-        <View style={[styles.centerCard, shortScreen && styles.centerCardTight, { padding: cardPad }]}>
-          <Text style={[styles.centerCardTitle, { fontSize: centerTitleSize }, getTextStyle(undefined, 'display', 'center')]}>
-            {t('play.hotSeatTitle')}
-          </Text>
-          {renderStepper(
-            hotSeatRounds,
-            () => setHotSeatRounds(hotSeatRounds - 1),
-            () => setHotSeatRounds(hotSeatRounds + 1),
-            hotSeatRounds <= 0,
-            hotSeatRounds >= MAX_HOT_SEAT_ROUNDS
-          )}
-          <Pressable onPress={() => setHotSeatInfoOpen(true)} style={styles.helpHit} accessibilityRole="button">
-            <Text style={[styles.linkText, getTextStyle()]}>{t('play.hotSeatInfoLink')}</Text>
-          </Pressable>
-        </View>
+        {rumbleMode ? (
+          <View style={[styles.centerCard, shortScreen && styles.centerCardTight, { padding: cardPad }]}>
+            <Text style={[styles.centerCardTitle, { fontSize: centerTitleSize }, getTextStyle(undefined, 'display', 'center')]}>
+              {t('play.rumblePartyCountTitle')}
+            </Text>
+            {renderStepper(
+              session.teams.length,
+              () => setTeamCount(session.teams.length - 1),
+              () => setTeamCount(session.teams.length + 1),
+              session.teams.length <= MIN_RUMBLE_PARTIES,
+              session.teams.length >= MAX_RUMBLE_PARTIES
+            )}
+          </View>
+        ) : null}
+
+        {hotSeatAvailable ? (
+          <View style={[styles.centerCard, shortScreen && styles.centerCardTight, { padding: cardPad }]}>
+            <Text style={[styles.centerCardTitle, { fontSize: centerTitleSize }, getTextStyle(undefined, 'display', 'center')]}>
+              {t('play.hotSeatTitle')}
+            </Text>
+            {renderStepper(
+              hotSeatRounds,
+              () => setHotSeatRounds(hotSeatRounds - 1),
+              () => setHotSeatRounds(hotSeatRounds + 1),
+              hotSeatRounds <= 0,
+              hotSeatRounds >= MAX_HOT_SEAT_ROUNDS
+            )}
+            <Pressable onPress={() => setHotSeatInfoOpen(true)} style={styles.helpHit} accessibilityRole="button">
+              <Text style={[styles.linkText, getTextStyle()]}>{t('play.hotSeatInfoLink')}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {wagerEnabled ? (
           <View style={[styles.centerCard, shortScreen && styles.centerCardTight, { padding: cardPad }]}>
@@ -272,8 +293,11 @@ export default function TeamSetupScreen() {
   }, [
     session,
     wagerEnabled,
+    hotSeatAvailable,
+    rumbleMode,
     hotSeatRounds,
     renderStepper,
+    setTeamCount,
     setHotSeatRounds,
     setWagersPerTeam,
     t,
@@ -292,7 +316,23 @@ export default function TeamSetupScreen() {
     );
   }
 
-  const mainContent = (
+  const teamSetupBody = rumbleMode ? (
+    <ScrollView
+      style={styles.rumbleScroll}
+      contentContainerStyle={[styles.rumbleScrollContent, shortScreen && styles.rumbleScrollContentTight]}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.rumbleTeamGrid}>
+        {session.teams.map((team) => (
+          <View key={team.id} style={styles.rumbleTeamSlot}>
+            {teamCard(team)}
+          </View>
+        ))}
+      </View>
+      <View style={styles.rumbleCenterSlot}>{centerColumn}</View>
+    </ScrollView>
+  ) : (
     <>
       {landscape ? (
         <View style={[styles.landscapeRow, shortScreen && styles.landscapeRowTight]}>
@@ -307,6 +347,12 @@ export default function TeamSetupScreen() {
           <View style={styles.portraitCenterSlot}>{centerColumn}</View>
         </View>
       )}
+    </>
+  );
+
+  const mainContent = (
+    <View style={styles.fixedViewportLayout}>
+      <View style={styles.cardsViewport}>{teamSetupBody}</View>
 
       <View style={styles.floatingButtonWrap}>
         <Button
@@ -331,12 +377,13 @@ export default function TeamSetupScreen() {
           </Text>
         )}
       </View>
-    </>
+    </View>
   );
 
   return (
     <PlayScaffold
       title={t('play.teamSetupTitle')}
+      onBack={() => router.replace('/(app)/')}
       bodyScrollEnabled={false}
       bodyFrame={false}
       backgroundColor={T.canvas}
@@ -383,6 +430,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingBottom: 0,
   },
+  fixedViewportLayout: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+  },
+  cardsViewport: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+  },
   landscapeRow: {
     flex: 1,
     flexDirection: 'row',
@@ -423,6 +480,31 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     flexGrow: 0,
     alignItems: 'stretch',
+  },
+  rumbleScroll: {
+    flex: 1,
+    minHeight: 0,
+  },
+  rumbleScrollContent: {
+    gap: SPACING.md,
+    paddingBottom: SPACING.md,
+  },
+  rumbleScrollContentTight: {
+    gap: SPACING.sm,
+    paddingBottom: SPACING.sm,
+  },
+  rumbleTeamGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+  },
+  rumbleTeamSlot: {
+    width: '48%',
+    minHeight: 180,
+    flexGrow: 1,
+  },
+  rumbleCenterSlot: {
+    alignSelf: 'stretch',
   },
   teamCard: {
     flex: 1,
@@ -466,9 +548,8 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   playerRowSlot: {
-    flex: 1,
-    minHeight: 0,
-    justifyContent: 'center',
+    flexShrink: 0,
+    justifyContent: 'flex-start',
   },
   playerInput: {
     flex: 1,
@@ -483,18 +564,48 @@ const styles = StyleSheet.create({
   teamLinksRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.md,
-    marginTop: SPACING.sm,
+    gap: SPACING.lg,
+    marginTop: SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   teamLinksRowTight: {
     marginTop: SPACING.xs,
-    gap: SPACING.sm,
+    gap: SPACING.md,
   },
-  addPlayerHit: {
+  playerActionButton: {
+    minHeight: 32,
+    borderRadius: 8,
+    paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playerActionPressed: {
+    transform: [{ scale: 0.98 }],
+  },
+  addPlayerAction: {
+    backgroundColor: T.textPrimary,
+    flexGrow: 1,
+    flexBasis: 116,
+  },
+  removePlayerAction: {
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(51,51,51,0.14)',
+    flexGrow: 0,
+    flexBasis: 140,
+  },
+  addPlayerActionText: {
+    fontSize: FONT_SIZES.xs,
+    fontFamily: FONTS.uiSemibold,
+    color: T.canvas,
+  },
+  removePlayerActionText: {
+    fontSize: FONT_SIZES.xs,
+    fontFamily: FONTS.uiSemibold,
+    color: T.textMuted,
   },
   linkText: {
     fontSize: FONT_SIZES.xs,
@@ -502,12 +613,6 @@ const styles = StyleSheet.create({
     color: T.textPrimary,
     textDecorationLine: 'underline',
     opacity: 0.7,
-  },
-  linkTextMuted: {
-    fontSize: FONT_SIZES.xs,
-    fontFamily: FONTS.uiSemibold,
-    color: T.textMuted,
-    textDecorationLine: 'underline',
   },
   centerStackLandscape: {
     flex: 1,
@@ -571,10 +676,10 @@ const styles = StyleSheet.create({
   floatingButtonWrap: {
     width: '100%',
     alignItems: 'center',
-    marginTop: 'auto',
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.xs,
     gap: 4,
+    flexShrink: 0,
   },
   footerInner: {
     width: '100%',

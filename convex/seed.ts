@@ -6,6 +6,7 @@
 
 import { internalMutation } from './_generated/server';
 import { v } from 'convex/values';
+import { DEFAULT_TOKEN_PRODUCTS } from './lib/paymentCatalog';
 
 export const seedCategories = internalMutation({
   args: {
@@ -107,6 +108,30 @@ export const seedQuestions = internalMutation({
         pointValue: q.pointValue,
         locale: q.locale,
         status: q.status,
+      });
+    }
+  },
+});
+
+export const seedTokenProducts = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    for (const product of DEFAULT_TOKEN_PRODUCTS) {
+      const existing = await ctx.db
+        .query('token_products')
+        .withIndex('by_product_key', (q) => q.eq('productKey', product.productKey))
+        .unique();
+
+      if (existing) {
+        continue;
+      }
+
+      await ctx.db.insert('token_products', {
+        ...product,
+        createdAt: now,
+        updatedAt: now,
       });
     }
   },

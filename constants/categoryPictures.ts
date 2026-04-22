@@ -5,7 +5,7 @@
 
 import type { ImageSource } from 'expo-image';
 
-const LOCAL_S9 = require('@/assets/capitals-and-cities.jpg');
+const LOCAL_S9 = require('../assets/capitals-and-cities.jpg');
 
 export const CATEGORY_PICTURE_URIS: Record<string, string> = {
   h1: 'https://i.postimg.cc/d312mFb2/19th-century.png',

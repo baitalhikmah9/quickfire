@@ -136,7 +136,7 @@ export function TopicColumnPickerModal({
           <View style={[styles.hero, { minHeight: heroMinHeight, backgroundColor: colors.primary }]}>
             <View style={styles.heroInner}>
               {picture ? (
-                <Image source={picture} style={styles.heroImage} contentFit="cover" transition={120} />
+                <Image source={picture} style={styles.heroImage as never} contentFit="cover" transition={120} />
               ) : (
                 <View style={[styles.heroFallback, { backgroundColor: `${accent}28` }]}>
                   <Text style={[styles.heroFallbackLetter, { color: accent }]}>{column.categoryName.charAt(0)}</Text>
@@ -220,7 +220,7 @@ export function TopicColumnPickerModal({
 
 const styles = StyleSheet.create({
   webOverlayRoot: {
-    position: 'fixed',
+    position: 'fixed' as 'absolute',
     top: 0,
     left: 0,
     right: 0,

@@ -9,13 +9,21 @@ import {
   getPlayableCategories,
   getRandomRemainingQuestion,
 } from '@/features/play/data';
+import {
+  getGameTokenCost,
+  normalizeQuickPlayTopicCount,
+} from '@/features/play/tokenCosts';
 import type {
+  AnswerReviewState,
   BonusChallengeState,
   GameConfig,
   GameMode,
   GameSessionState,
+  HotSeatChallenge,
+  HotSeatState,
   QuestionCard,
   RapidFireState,
+  ScoreEvent,
   TeamConfig,
   TeamState,
   WagerState,
@@ -35,11 +43,62 @@ const DEFAULT_TEAMS: TeamState[] = [
   { id: 'team_2', name: 'Team 2', playerNames: ['Player 1'], score: 0, wagersUsed: 0 },
 ];
 
+const DEFAULT_WAGERS_PER_TEAM = 1;
 const DEFAULT_BONUS: BonusChallengeState = {
   active: false,
   played: false,
   multiplier: 2,
 };
+
+const MIN_RUMBLE_TEAMS = 3;
+const MAX_RUMBLE_TEAMS = 4;
+const MAX_HOT_SEAT_ROUNDS = 5;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function createDefaultTeam(index: number): TeamState {
+  return {
+    id: `team_${index + 1}`,
+    name: `Team ${index + 1}`,
+    playerNames: ['Player 1'],
+    score: 0,
+    wagersUsed: 0,
+  };
+}
+
+function cloneTeam(team: TeamState, index: number): TeamState {
+  return {
+    id: team.id || `team_${index + 1}`,
+    name: team.name || `Team ${index + 1}`,
+    playerNames: team.playerNames?.length ? [...team.playerNames] : ['Player 1'],
+    score: team.score ?? 0,
+    wagersUsed: team.wagersUsed ?? 0,
+  };
+}
+
+function normalizeTeamsForMode(mode: GameMode, teams: TeamState[]): TeamState[] {
+  const maxTeams = mode === 'rumble' ? MAX_RUMBLE_TEAMS : 2;
+  const minTeams = mode === 'rumble' ? MIN_RUMBLE_TEAMS : 2;
+  const normalized = (teams.length ? teams : DEFAULT_TEAMS)
+    .slice(0, maxTeams)
+    .map(cloneTeam);
+
+  while (normalized.length < minTeams) {
+    normalized.push(createDefaultTeam(normalized.length));
+  }
+
+  return normalized;
+}
+
+function isWagerAvailable(mode: GameMode): boolean {
+  return mode !== 'random' && mode !== 'rumble' && mode !== 'rapidFire';
+}
+
+function isHotSeatAvailable(mode: GameMode): boolean {
+  return mode === 'classic' || mode === 'quickPlay';
+}
 
 function buildScores(teams: TeamState[]): Record<string, number> {
   return teams.reduce<Record<string, number>>((scores, team) => {
@@ -53,7 +112,8 @@ function getDefaultConfig(
   teams: TeamState[] = DEFAULT_TEAMS,
   contentLocaleChain: SupportedLocale[] = ['en']
 ): GameConfig {
-  const teamConfigs: TeamConfig[] = teams.map(({ id, name, playerNames }) => ({
+  const normalizedTeams = normalizeTeamsForMode(mode, teams);
+  const teamConfigs: TeamConfig[] = normalizedTeams.map(({ id, name, playerNames }) => ({
     id,
     name,
     playerNames,
@@ -64,11 +124,12 @@ function getDefaultConfig(
     teams: teamConfigs,
     categories: [],
     contentLocaleChain,
-    quickPlayTopicCount: 3,
+    quickPlayTopicCount: normalizeQuickPlayTopicCount(3),
     hotSeatEnabled: false,
     hotSeatRounds: 0,
-    wagerEnabled: mode !== 'random' && mode !== 'rumble' && mode !== 'rapidFire',
-    wagersPerTeam: 3,
+    wagerEnabled: isWagerAvailable(mode),
+    wagersPerTeam: DEFAULT_WAGERS_PER_TEAM,
+    entryTokenCharge: 0,
   };
 }
 
@@ -95,10 +156,11 @@ function createDraftSession(): GameSessionState {
     scores: buildScores(teams),
     usedQuestionIds: new Set(),
     seed: `seed_${Date.now()}`,
-    wagersPerTeam: 3,
+    wagersPerTeam: DEFAULT_WAGERS_PER_TEAM,
     wager: null,
     bonus: { ...DEFAULT_BONUS },
     scoreEvents: [],
+    lastResolvedTurn: undefined,
   };
 }
 
@@ -110,7 +172,9 @@ function syncConfig(session: GameSessionState): GameConfig {
   const cfg = session.config;
   const hotSeatRoundsRaw =
     cfg.hotSeatRounds !== undefined ? cfg.hotSeatRounds : cfg.hotSeatEnabled ? 1 : 0;
-  const hotSeatRounds = Math.max(0, Math.min(5, hotSeatRoundsRaw));
+  const hotSeatRounds = isHotSeatAvailable(session.mode)
+    ? clamp(hotSeatRoundsRaw, 0, MAX_HOT_SEAT_ROUNDS)
+    : 0;
 
   return {
     ...cfg,
@@ -118,10 +182,10 @@ function syncConfig(session: GameSessionState): GameConfig {
     teams: session.teams.map(({ id, name, playerNames }) => ({ id, name, playerNames })),
     categories: session.selectedCategoryIds,
     contentLocaleChain: session.contentLocaleChain,
-    quickPlayTopicCount: session.config.quickPlayTopicCount,
-    wagerEnabled:
-      session.mode !== 'random' && session.mode !== 'rumble' && session.mode !== 'rapidFire',
+    quickPlayTopicCount: normalizeQuickPlayTopicCount(session.config.quickPlayTopicCount),
+    wagerEnabled: isWagerAvailable(session.mode),
     wagersPerTeam: session.wagersPerTeam,
+    entryTokenCharge: cfg.entryTokenCharge ?? 0,
     hotSeatRounds,
     hotSeatEnabled: hotSeatRounds > 0,
   };
@@ -134,6 +198,148 @@ function withScores(teams: TeamState[]): { teams: TeamState[]; scores: Record<st
   };
 }
 
+function buildBalancedTeamSequence(teamIds: string[], length: number, offset: number): string[] {
+  const sequence: string[] = [];
+  let cursor = offset;
+
+  while (sequence.length < length) {
+    sequence.push(teamIds[cursor % teamIds.length]);
+    cursor += 1;
+  }
+
+  return sequence;
+}
+
+function assignRumbleQuestionParties(board: QuestionCard[], teams: TeamState[]): QuestionCard[] {
+  if (teams.length < MIN_RUMBLE_TEAMS) return board;
+
+  const teamIds = teams.map((team) => team.id);
+  const byPointValue = new Map<number, QuestionCard[]>();
+
+  for (const question of board) {
+    const questions = byPointValue.get(question.pointValue) ?? [];
+    questions.push(question);
+    byPointValue.set(question.pointValue, questions);
+  }
+
+  const assignments = new Map<string, Pick<QuestionCard, 'rumbleFirstTeamId' | 'rumbleSecondTeamId'>>();
+
+  for (const questions of byPointValue.values()) {
+    const firstTeams = buildBalancedTeamSequence(teamIds, questions.length, 0);
+    const secondTeams = buildBalancedTeamSequence(teamIds, questions.length, 1);
+
+    questions.forEach((question, index) => {
+      const firstTeamId = firstTeams[index]!;
+      let secondTeamId = secondTeams[index]!;
+      if (secondTeamId === firstTeamId) {
+        const firstIndex = teamIds.indexOf(firstTeamId);
+        secondTeamId = teamIds[(firstIndex + 1) % teamIds.length]!;
+      }
+
+      assignments.set(question.id, {
+        rumbleFirstTeamId: firstTeamId,
+        rumbleSecondTeamId: secondTeamId,
+      });
+    });
+  }
+
+  return board.map((question) => ({
+    ...question,
+    ...assignments.get(question.id),
+  }));
+}
+
+function getHotSeatPlayerName(team: TeamState, index: number): string {
+  const players = team.playerNames?.filter((name) => name.trim().length > 0) ?? [];
+  return players[index % Math.max(players.length, 1)] ?? team.name;
+}
+
+function buildHotSeatState(teams: TeamState[], rounds: number): HotSeatState | undefined {
+  const hotSeatRounds = clamp(rounds, 0, MAX_HOT_SEAT_ROUNDS);
+  if (hotSeatRounds <= 0 || teams.length < 2) return undefined;
+
+  const challenges: HotSeatChallenge[] = [];
+
+  for (let round = 0; round < hotSeatRounds; round += 1) {
+    for (let teamIndex = 0; teamIndex < teams.length; teamIndex += 1) {
+      const answeringTeam = teams[teamIndex]!;
+      const opposingTeam = teams[(teamIndex + 1) % teams.length]!;
+      const playerIndex = round * teams.length + teamIndex;
+
+      challenges.push({
+        id: `hot-seat-${answeringTeam.id}-round-${round + 1}`,
+        triggerAfterQuestion: 4 + challenges.length * 5,
+        answeringTeamId: answeringTeam.id,
+        participants: [
+          {
+            teamId: answeringTeam.id,
+            playerName: getHotSeatPlayerName(answeringTeam, playerIndex),
+          },
+          {
+            teamId: opposingTeam.id,
+            playerName: getHotSeatPlayerName(opposingTeam, playerIndex),
+          },
+        ],
+        completed: false,
+      });
+    }
+  }
+
+  return {
+    completedQuestionCount: 0,
+    challenges,
+  };
+}
+
+function completeActiveHotSeat(hotSeat: HotSeatState | undefined): HotSeatState | undefined {
+  if (!hotSeat?.activeChallenge) return hotSeat;
+
+  const activeChallenge = hotSeat.activeChallenge;
+  return {
+    ...hotSeat,
+    activeChallenge: undefined,
+    challenges: hotSeat.challenges.map((challenge) =>
+      challenge.id === activeChallenge.id
+        ? {
+            ...challenge,
+            question: activeChallenge.question,
+            completed: true,
+          }
+        : challenge
+    ),
+  };
+}
+
+function createScoreEvent(
+  session: GameSessionState,
+  event: Omit<ScoreEvent, 'turnIndex' | 'createdAt'>
+): ScoreEvent {
+  return {
+    ...event,
+    turnIndex: session.scoreEvents.length,
+    createdAt: Date.now(),
+  };
+}
+
+function withUpdatedTeamScore(teams: TeamState[], teamId: string, delta: number): TeamState[] {
+  return teams.map((team) =>
+    team.id === teamId ? { ...team, score: team.score + delta } : team
+  );
+}
+
+function buildLastResolvedTurn(
+  question: QuestionCard,
+  awardedTeamId: string | null | undefined,
+  pointsAwarded: number
+): AnswerReviewState {
+  return {
+    question,
+    awardedTeamId,
+    pointsAwarded,
+    revealedAt: Date.now(),
+  };
+}
+
 interface PlayStore {
   tokens: number;
   session: GameSessionState | null;
@@ -142,7 +348,9 @@ interface PlayStore {
   ensureDraft: () => void;
   resetSession: () => void;
   grantTokens: (amount: number) => void;
+  startModeSession: (mode: GameMode) => { ok: boolean; error?: string };
   setMode: (mode: GameMode) => void;
+  setTeamCount: (count: number) => void;
   setQuickPlayTopicCount: (count: number) => void;
   updateTeamName: (teamId: string, name: string) => void;
   addTeamMember: (teamId: string) => void;
@@ -154,9 +362,12 @@ interface PlayStore {
   setCategories: (slugs: string[]) => void;
   startBoard: () => { ok: boolean; error?: string };
   selectQuestion: (question: QuestionCard) => void;
+  cancelCurrentQuestion: () => void;
   revealAnswer: () => void;
   awardStandardQuestion: (teamId: string | null) => void;
   continueAfterStandardQuestion: () => void;
+  adjustScoreByPoints: (teamId: string, delta: number, note?: string) => void;
+  reopenLastResolvedTurn: () => void;
   initiateWager: () => { ok: boolean; error?: string };
   confirmRandomWagerQuestion: () => void;
   resolveWager: (correct: boolean) => void;
@@ -223,9 +434,15 @@ export const usePlayStore = create<PlayStore>()(
       grantTokens: (amount) =>
         set((state) => ({ tokens: Math.max(0, state.tokens + amount) })),
 
-      setMode: (mode) =>
-        set((state) => {
-          const session = state.session ?? createDraftSession();
+      startModeSession: (mode) => {
+        const state = get();
+        const tokenCost = getGameTokenCost(mode, mode === 'quickPlay' ? 3 : undefined);
+        if (state.tokens < tokenCost) {
+          return { ok: false, error: 'You need more tokens to start a new game.' };
+        }
+        set((current) => {
+          const session = current.session ?? createDraftSession();
+          const teams = normalizeTeamsForMode(mode, session.teams);
           const nextStep = mode === 'quickPlay' ? 'quick-play-length' : 'team-setup';
           const nextSession: GameSessionState = {
             ...session,
@@ -234,30 +451,91 @@ export const usePlayStore = create<PlayStore>()(
             contentLocaleChain: session.contentLocaleChain,
             step: nextStep,
             phase: 'lobby',
+            ...withScores(teams),
             wager: null,
+            hotSeat: undefined,
             bonus: { ...DEFAULT_BONUS },
+            lastResolvedTurn: undefined,
           };
           nextSession.config = syncConfig({
             ...nextSession,
             config: {
               ...nextSession.config,
               mode,
-              wagerEnabled: mode !== 'random' && mode !== 'rumble' && mode !== 'rapidFire',
+              wagerEnabled: isWagerAvailable(mode),
+              entryTokenCharge: tokenCost,
+            },
+          });
+          return {
+            tokens: current.tokens - tokenCost,
+            session: nextSession,
+          };
+        });
+        return { ok: true };
+      },
+
+      setMode: (mode) =>
+        set((state) => {
+          const session = state.session ?? createDraftSession();
+          const teams = normalizeTeamsForMode(mode, session.teams);
+          const nextStep = mode === 'quickPlay' ? 'quick-play-length' : 'team-setup';
+          const nextSession: GameSessionState = {
+            ...session,
+            id: session.id || `play_${Date.now()}`,
+            mode,
+            contentLocaleChain: session.contentLocaleChain,
+            step: nextStep,
+            phase: 'lobby',
+            ...withScores(teams),
+            wager: null,
+            hotSeat: undefined,
+            bonus: { ...DEFAULT_BONUS },
+            lastResolvedTurn: undefined,
+          };
+          nextSession.config = syncConfig({
+            ...nextSession,
+            config: {
+              ...nextSession.config,
+              mode,
+              wagerEnabled: isWagerAvailable(mode),
+              entryTokenCharge: 0,
             },
           });
           return { session: nextSession };
         }),
 
+      setTeamCount: (count) =>
+        set((state) => {
+          if (!state.session) return state;
+
+          const desiredCount =
+            state.session.mode === 'rumble' ? clamp(count, MIN_RUMBLE_TEAMS, MAX_RUMBLE_TEAMS) : 2;
+          const teams = state.session.teams.slice(0, desiredCount).map(cloneTeam);
+
+          while (teams.length < desiredCount) {
+            teams.push(createDefaultTeam(teams.length));
+          }
+
+          const session = {
+            ...state.session,
+            ...withScores(teams),
+            hotSeat: undefined,
+          };
+          session.config = syncConfig(session);
+          return { session };
+        }),
+
       setQuickPlayTopicCount: (count) =>
         set((state) => {
           const base = state.session ?? createDraftSession();
+          const quickPlayTopicCount = normalizeQuickPlayTopicCount(count);
           const session: GameSessionState = {
             ...base,
             mode: 'quickPlay',
             step: 'team-setup',
             config: {
               ...base.config,
-              quickPlayTopicCount: count,
+              quickPlayTopicCount,
             },
           };
           session.config = syncConfig(session);
@@ -344,8 +622,10 @@ export const usePlayStore = create<PlayStore>()(
       setHotSeatRounds: (count) =>
         set((state) => {
           if (!state.session) return state;
-          const hotSeatRounds = Math.max(0, Math.min(5, count));
-          const session = {
+          const hotSeatRounds = isHotSeatAvailable(state.session.mode)
+            ? clamp(count, 0, MAX_HOT_SEAT_ROUNDS)
+            : 0;
+          const session: GameSessionState = {
             ...state.session,
             config: {
               ...state.session.config,
@@ -362,7 +642,7 @@ export const usePlayStore = create<PlayStore>()(
           if (!state.session) return state;
           const max = getModeCategoryCount(
             state.session.mode,
-            state.session.config.quickPlayTopicCount ?? 3
+            normalizeQuickPlayTopicCount(state.session.config.quickPlayTopicCount)
           );
           const isSelected = state.session.selectedCategoryIds.includes(slug);
           const selectedCategoryIds = isSelected
@@ -395,21 +675,36 @@ export const usePlayStore = create<PlayStore>()(
         const state = get();
         const session = state.session;
         if (!session) return { ok: false, error: 'No session found.' };
+        const quickPlayTopicCount = normalizeQuickPlayTopicCount(
+          session.config.quickPlayTopicCount
+        );
         const required = getModeCategoryCount(
           session.mode,
-          session.config.quickPlayTopicCount ?? 3
+          quickPlayTopicCount
         );
         if (session.selectedCategoryIds.length !== required) {
           return { ok: false, error: `Select ${required} topics to continue.` };
         }
-        if (state.tokens <= 0) {
+        const tokenCost = getGameTokenCost(session.mode, quickPlayTopicCount);
+        const entryTokenCharge = session.config.entryTokenCharge ?? 0;
+        const remainingTokenCost = Math.max(0, tokenCost - entryTokenCharge);
+        if (state.tokens < remainingTokenCost) {
           return { ok: false, error: 'You need more tokens to start a new game.' };
         }
-        const teams = session.teams.map((team) => ({ ...team, score: 0, wagersUsed: 0 }));
-        const board = buildBoard(
+        const teams = normalizeTeamsForMode(session.mode, session.teams).map((team) => ({
+          ...team,
+          score: 0,
+          wagersUsed: 0,
+        }));
+        const rawBoard = buildBoard(
           session.selectedCategoryIds,
           session.contentLocaleChain
         );
+        const board =
+          session.mode === 'rumble' ? assignRumbleQuestionParties(rawBoard, teams) : rawBoard;
+        const hotSeat = isHotSeatAvailable(session.mode)
+          ? buildHotSeatState(teams, session.config.hotSeatRounds ?? 0)
+          : undefined;
         const nextSession: GameSessionState = {
           ...session,
           step: 'board',
@@ -421,12 +716,14 @@ export const usePlayStore = create<PlayStore>()(
           currentTeamId: teams[0]?.id,
           wager: null,
           bonus: { ...DEFAULT_BONUS },
+          hotSeat,
           lastAwardedTeamId: undefined,
+          lastResolvedTurn: undefined,
           seed: `seed_${Date.now()}`,
         };
         nextSession.config = syncConfig(nextSession);
         set({
-          tokens: state.tokens - 1,
+          tokens: state.tokens - remainingTokenCost,
           session: nextSession,
         });
         return { ok: true };
@@ -441,10 +738,35 @@ export const usePlayStore = create<PlayStore>()(
             session: {
               ...state.session,
               currentQuestion: question,
+              currentTeamId:
+                state.session.mode === 'rumble'
+                  ? question.rumbleFirstTeamId ?? state.session.currentTeamId
+                  : state.session.currentTeamId,
               usedQuestionIds,
               step: 'question',
               phase: 'questionReveal',
               timerStartedAt: Date.now(),
+            },
+          };
+        }),
+
+      cancelCurrentQuestion: () =>
+        set((state) => {
+          const session = state.session;
+          const currentQuestion = session?.currentQuestion;
+          if (!session || !currentQuestion) return state;
+
+          const usedQuestionIds = new Set(session.usedQuestionIds);
+          usedQuestionIds.delete(currentQuestion.id);
+
+          return {
+            session: {
+              ...session,
+              currentQuestion: undefined,
+              usedQuestionIds,
+              step: 'board',
+              phase: 'wagerDecision',
+              timerStartedAt: undefined,
             },
           };
         }),
@@ -505,6 +827,40 @@ export const usePlayStore = create<PlayStore>()(
         set((state) => {
           const session = state.session;
           if (!session) return state;
+          const currentQuestion = session.currentQuestion;
+          const wasHotSeatQuestion = Boolean(session.hotSeat?.activeChallenge);
+          const completedHotSeat = completeActiveHotSeat(session.hotSeat);
+          const completedQuestionCount =
+            completedHotSeat && !wasHotSeatQuestion
+              ? completedHotSeat.completedQuestionCount + 1
+              : completedHotSeat?.completedQuestionCount;
+          const hotSeat = completedHotSeat
+            ? {
+                ...completedHotSeat,
+                completedQuestionCount: completedQuestionCount ?? completedHotSeat.completedQuestionCount,
+              }
+            : undefined;
+          const awardedTeamId = session.lastAwardedTeamId;
+          const pointsAwarded =
+            awardedTeamId !== undefined && awardedTeamId !== null && currentQuestion
+              ? currentQuestion.pointValue * (session.bonus.active ? session.bonus.multiplier : 1)
+              : 0;
+          const scoreEvents =
+            currentQuestion && awardedTeamId !== undefined && awardedTeamId !== null
+              ? [
+                  ...session.scoreEvents,
+                  createScoreEvent(session, {
+                    teamId: awardedTeamId,
+                    points: pointsAwarded,
+                    reason: wasHotSeatQuestion ? 'hotSeat' : 'standard',
+                    questionId: currentQuestion.id,
+                  }),
+                ]
+              : session.scoreEvents;
+          const lastResolvedTurn =
+            currentQuestion && session.phase === 'scoring'
+              ? buildLastResolvedTurn(currentQuestion, awardedTeamId, pointsAwarded)
+              : session.lastResolvedTurn;
           const remaining = session.board.filter(
             (question) => !session.usedQuestionIds.has(question.id)
           );
@@ -526,6 +882,7 @@ export const usePlayStore = create<PlayStore>()(
                     ...session,
                     currentQuestion: bonusQuestion,
                     usedQuestionIds,
+                    hotSeat,
                     bonus: {
                       active: true,
                       played: true,
@@ -536,6 +893,8 @@ export const usePlayStore = create<PlayStore>()(
                     phase: 'questionReveal',
                     timerStartedAt: Date.now(),
                     lastAwardedTeamId: undefined,
+                    scoreEvents,
+                    lastResolvedTurn,
                   },
                 };
               }
@@ -546,11 +905,58 @@ export const usePlayStore = create<PlayStore>()(
                 ...session,
                 currentQuestion: undefined,
                 wager: null,
+                hotSeat,
                 bonus: { ...session.bonus, active: false },
                 step: 'end',
                 phase: 'completed',
+                scoreEvents,
+                lastResolvedTurn,
               },
             };
+          }
+
+          if (hotSeat && !wasHotSeatQuestion) {
+            const activeChallenge = hotSeat.challenges.find(
+              (challenge) =>
+                !challenge.completed &&
+                challenge.triggerAfterQuestion === hotSeat.completedQuestionCount
+            );
+            if (activeChallenge) {
+              const hotSeatQuestion = getRandomRemainingQuestion(
+                session.board,
+                session.usedQuestionIds
+              );
+
+              if (hotSeatQuestion) {
+                const usedQuestionIds = new Set(session.usedQuestionIds);
+                usedQuestionIds.add(hotSeatQuestion.id);
+                const challengeWithQuestion = {
+                  ...activeChallenge,
+                  question: hotSeatQuestion,
+                };
+
+                return {
+                  session: {
+                    ...session,
+                    hotSeat: {
+                      ...hotSeat,
+                      activeChallenge: challengeWithQuestion,
+                    },
+                    currentQuestion: hotSeatQuestion,
+                    currentTeamId: activeChallenge.answeringTeamId,
+                    usedQuestionIds,
+                    step: 'question',
+                    phase: 'questionReveal',
+                    timerStartedAt: Date.now(),
+                    wager: null,
+                    bonus: { ...session.bonus, active: false },
+                    lastAwardedTeamId: undefined,
+                    scoreEvents,
+                    lastResolvedTurn,
+                  },
+                };
+              }
+            }
           }
 
           const currentIndex = session.teams.findIndex((team) => team.id === session.currentTeamId);
@@ -563,8 +969,48 @@ export const usePlayStore = create<PlayStore>()(
               currentQuestion: undefined,
               currentTeamId: session.teams[nextIndex]?.id,
               wager: null,
+              hotSeat,
               bonus: { ...session.bonus, active: false },
               lastAwardedTeamId: undefined,
+              scoreEvents,
+              lastResolvedTurn,
+            },
+          };
+        }),
+
+      adjustScoreByPoints: (teamId, delta, note) =>
+        set((state) => {
+          const session = state.session;
+          if (!session) return state;
+          const teams = withUpdatedTeamScore(session.teams, teamId, delta);
+          return {
+            session: {
+              ...session,
+              ...withScores(teams),
+              scoreEvents: [
+                ...session.scoreEvents,
+                createScoreEvent(session, {
+                  teamId,
+                  points: delta,
+                  reason: 'manualAdjustment',
+                  metadata: note ? { note } : undefined,
+                }),
+              ],
+            },
+          };
+        }),
+
+      reopenLastResolvedTurn: () =>
+        set((state) => {
+          const session = state.session;
+          if (!session?.lastResolvedTurn) return state;
+          return {
+            session: {
+              ...session,
+              currentQuestion: session.lastResolvedTurn.question,
+              lastAwardedTeamId: session.lastResolvedTurn.awardedTeamId,
+              step: 'answer',
+              phase: 'scoring',
             },
           };
         }),

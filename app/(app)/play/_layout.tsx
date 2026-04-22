@@ -1,7 +1,20 @@
-import { Stack } from 'expo-router';
+import { useAuth } from '@clerk/clerk-expo';
+import { Redirect, Stack } from 'expo-router';
+import { isAuthDisabled } from '@/lib/authMode';
 import { landscapeStackScreenOptions } from '@/lib/navigation/landscapeStack';
 
 export default function PlayLayout() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const authDisabled = isAuthDisabled();
+
+  if (!isLoaded && !authDisabled) {
+    return null;
+  }
+
+  if (!isSignedIn && !authDisabled) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
+
   return (
     <Stack screenOptions={landscapeStackScreenOptions}>
       <Stack.Screen name="index" />

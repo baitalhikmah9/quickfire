@@ -73,11 +73,15 @@ export default function CreateGameScreen() {
           id: c._id,
           slug: c.slug,
           title: c.title,
+          illustration: (c as any).illustration,
+          flag: (c as any).flag,
         }))
       : FALLBACK_CATEGORIES.map((c) => ({
           id: c.id,
           slug: c.slug,
           title: c.title,
+          illustration: c.illustration,
+          flag: (c as any).flag,
         }));
 
   useEffect(() => {

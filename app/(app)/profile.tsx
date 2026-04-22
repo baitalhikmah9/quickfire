@@ -10,6 +10,7 @@ import { COLORS, TYPE_SCALE } from '@/constants/theme';
 import { contentLocalePriorityToArray } from '@/lib/i18n/config';
 import { getChevronName, getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { isAuthDisabled } from '@/lib/authMode';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { ProfileAuthGate } from '@/components/ProfileAuthGate';
 import { ScreenContent } from '@/components/ScreenContent';
@@ -109,10 +110,18 @@ function formatTokens(n: number, locale: string) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(n);
 }
 
+function formatPaletteName(id: string) {
+  return id
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 export default function ProfileScreen() {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const authDisabled = isAuthDisabled();
   const router = useRouter();
   const paletteId = useThemeStore((s) => s.paletteId);
   const isDark = paletteId === 'dark';
@@ -120,7 +129,7 @@ export default function ProfileScreen() {
   const contentLocales = useLocaleStore((state) => state.contentLocales);
   const tokens = usePlayStore((state) => state.tokens);
 
-  if (!isSignedIn) {
+  if (!isSignedIn && !authDisabled) {
     return (
       <SafeAreaView
         collapsable={false}
@@ -139,9 +148,16 @@ export default function ProfileScreen() {
     user?.emailAddresses[0]?.emailAddress?.split('@')[0] ||
     t('common.playerFallback');
   const displayHandle = (user?.username ?? greetingName).toUpperCase();
+  const accountAuthSummary =
+    user?.primaryEmailAddress?.emailAddress ??
+    user?.emailAddresses[0]?.emailAddress ??
+    displayHandle;
+  const themeSummary = formatPaletteName(paletteId);
   const selectedContentLocales = contentLocalePriorityToArray(contentLocales)
     .map((locale) => getLocaleName(locale, 'english'))
     .join(', ');
+  const contentLanguageSummary =
+    selectedContentLocales || t('settings.noTriviaLanguagesSelected');
 
   const createdAt = user?.createdAt;
   const memberDate =
@@ -354,6 +370,22 @@ export default function ProfileScreen() {
               </View>
 
               <View style={[styles.prefsGroup, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'card')]}>
+                <View
+                  style={[
+                    styles.prefRow,
+                    { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.05)' },
+                  ]}
+                >
+                  <Ionicons name="person-circle-outline" size={20} color={textPrimary} />
+                  <View style={styles.prefTextBlock}>
+                    <Text style={[styles.prefLabel, { color: textPrimary }]}>
+                      {t('settings.accountAuthTitle')}
+                    </Text>
+                    <Text style={[styles.prefMeta, { color: textMuted }]}>
+                      {accountAuthSummary}
+                    </Text>
+                  </View>
+                </View>
                 <Link href="/(app)/theme-picker" asChild>
                   <Pressable
                     style={({ pressed }) => [
@@ -363,9 +395,14 @@ export default function ProfileScreen() {
                     ]}
                   >
                     <Ionicons name="color-palette-outline" size={20} color={textPrimary} />
-                    <Text style={[styles.prefLabel, { color: textPrimary }]}>
-                      {t('profile.changeTheme')}
-                    </Text>
+                    <View style={styles.prefTextBlock}>
+                      <Text style={[styles.prefLabel, { color: textPrimary }]}>
+                        {t('settings.themeSelectionTitle')}
+                      </Text>
+                      <Text style={[styles.prefMeta, { color: textMuted }]}>
+                        {themeSummary}
+                      </Text>
+                    </View>
                     <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
                   </Pressable>
                 </Link>
@@ -389,19 +426,41 @@ export default function ProfileScreen() {
                     <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
                   </Pressable>
                 </Link>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.prefRowLast,
-                    { flexDirection: rowDir },
-                    pressed && { backgroundColor: 'rgba(0,0,0,0.02)' },
-                  ]}
-                  onPress={() => signOut?.()}
-                >
-                  <Ionicons name="log-out-outline" size={20} color="#DC2626" />
-                  <Text style={[styles.prefLabel, { color: '#DC2626' }]}>
-                    {t('common.signOut')}
-                  </Text>
-                </Pressable>
+                <Link href="/(app)/content-languages-picker" asChild>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.prefRow,
+                      { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.05)' },
+                      pressed && { backgroundColor: 'rgba(0,0,0,0.02)' },
+                    ]}
+                  >
+                    <Ionicons name="chatbubbles-outline" size={20} color={textPrimary} />
+                    <View style={styles.prefTextBlock}>
+                      <Text style={[styles.prefLabel, { color: textPrimary }]}>
+                        {t('settings.languagesUpToThreeTitle')}
+                      </Text>
+                      <Text style={[styles.prefMeta, { color: textMuted }]}>
+                        {contentLanguageSummary}
+                      </Text>
+                    </View>
+                    <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
+                  </Pressable>
+                </Link>
+                {!authDisabled && signOut ? (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.prefRowLast,
+                      { flexDirection: rowDir },
+                      pressed && { backgroundColor: 'rgba(0,0,0,0.02)' },
+                    ]}
+                    onPress={() => signOut()}
+                  >
+                    <Ionicons name="log-out-outline" size={20} color="#DC2626" />
+                    <Text style={[styles.prefLabel, { color: '#DC2626' }]}>
+                      {t('common.signOut')}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </View>
             </View>
           </View>

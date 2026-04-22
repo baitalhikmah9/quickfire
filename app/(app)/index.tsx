@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
+  Alert,
   View,
   Text,
+  Image,
   StyleSheet,
   useWindowDimensions,
   type ViewStyle,
@@ -9,6 +11,7 @@ import {
 } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FONTS, SPACING, LAYOUT } from '@/constants';
@@ -16,12 +19,15 @@ import { ScreenContent } from '@/components/ScreenContent';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { isAuthDisabled } from '@/lib/authMode';
 import { usePlayStore } from '@/store/play';
 import { HOME_SOFT_UI } from '@/themes';
-import type { GameMode } from '@/features/shared';
+import { getGameTokenCost, getHomeModeTokenCostLabel } from '@/features/play/tokenCosts';
+import type { GameMode, PlayRouteStep } from '@/features/shared';
 import type { TranslationKey } from '@/lib/i18n/messages/en';
 
 const T = HOME_SOFT_UI;
+const QUICKFIRE_MODE_ART = require('../../assets/QF logo.png');
 
 type ModeDef = {
   id: GameMode;
@@ -57,34 +63,56 @@ const HOME_MODES: ModeDef[] = [
   },
 ];
 
-/** Deeper drop shadow — reads as a raised plastic tile (tier scales with control size). */
-function neumorphicLift3D(
-  shadowColor: string,
-  tier: 'hero' | 'header' | 'pill'
-): ViewStyle {
-  const m =
-    tier === 'hero'
-      ? { h: 10, r: 0, el: 12 }
-      : tier === 'header'
-        ? { h: 6, r: 0, el: 8 }
-        : { h: 4, r: 0, el: 4 };
+/** docs/BRAND_GUIDELINES.md standard raised surface treatment. */
+function brandRaisedSurfaceShadow(tier: 'hero' | 'header' | 'pill'): ViewStyle {
+  const elevation = tier === 'hero' ? 4 : tier === 'header' ? 4 : 3;
   return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)', // Solid charcoal-tinted depth
-    shadowOffset: { width: 0, height: m.h },
+    shadowColor: 'rgba(51, 51, 51, 0.15)',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
-    shadowRadius: m.r,
-    elevation: m.el,
+    shadowRadius: 0,
+    elevation,
   };
 }
 
+function RumblePeopleIcon({ size, color, compact }: { size: number; color: string; compact: boolean }) {
+  const personSize = Math.round(size * 0.42);
+  return (
+    <View
+      style={[
+        styles.rumblePeopleIcon,
+        {
+          width: size,
+          height: Math.round(size * 0.74),
+          marginBottom: compact ? 4 : 10,
+        },
+      ]}
+      accessible={false}
+      testID="home-rumble-people-icon"
+    >
+      <View testID="home-rumble-person-1" style={[styles.rumblePerson, styles.rumblePersonLeft]}>
+        <Ionicons name="person" size={personSize} color={color} />
+      </View>
+      <View testID="home-rumble-person-2" style={[styles.rumblePerson, styles.rumblePersonCenter]}>
+        <Ionicons name="person" size={Math.round(personSize * 1.14)} color={color} />
+      </View>
+      <View testID="home-rumble-person-3" style={[styles.rumblePerson, styles.rumblePersonRight]}>
+        <Ionicons name="person" size={personSize} color={color} />
+      </View>
+    </View>
+  );
+}
 
 export default function AppHubScreen() {
   const router = useRouter();
+  const { isSignedIn } = useAuth();
+  const authDisabled = isAuthDisabled();
   const { direction, t, uiLocale } = useI18n();
   const tokens = usePlayStore((state) => state.tokens);
-  const resetSession = usePlayStore((state) => state.resetSession);
-  const setMode = usePlayStore((state) => state.setMode);
+  const session = usePlayStore((state) => state.session);
+  const startModeSession = usePlayStore((state) => state.startModeSession);
   const [activeModeInfo, setActiveModeInfo] = useState<GameMode | null>(null);
+  const [pendingMode, setPendingMode] = useState<GameMode | null>(null);
 
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   /** Tighter chrome when vertical space is limited (e.g. phone landscape). */
@@ -104,12 +132,84 @@ export default function AppHubScreen() {
   const modeGap = compact ? SPACING.md : SPACING.lg;
   const modeIconSize = compact ? 72 : 96;
   const modeInfoIconSize = compact ? 20 : 24;
+  const minimumTokenCostForMode = useCallback(
+    (mode: GameMode) => (mode === 'quickPlay' ? getGameTokenCost(mode, 3) : getGameTokenCost(mode)),
+    []
+  );
+
+  const startNewGame = useCallback((mode: GameMode) => {
+    const minimumCost = minimumTokenCostForMode(mode);
+    if (tokens < minimumCost) {
+      Alert.alert('', t('play.needTokens'));
+      return;
+    }
+    const result = startModeSession(mode);
+    if (!result.ok) {
+      Alert.alert('', result.error ?? t('play.needTokens'));
+      return;
+    }
+    router.push(mode === 'quickPlay' ? '/play/quick-length' : '/play/team-setup');
+  }, [minimumTokenCostForMode, router, startModeSession, t, tokens]);
+
+  const routeForSessionStep = useCallback((step: PlayRouteStep) => {
+    switch (step) {
+      case 'quick-play-length':
+        return '/play/quick-length';
+      case 'team-setup':
+        return '/play/team-setup';
+      case 'categories':
+        return '/play/categories';
+      case 'board':
+        return '/play/board';
+      case 'question':
+        return '/play/question';
+      case 'answer':
+        return '/play/answer';
+      case 'end':
+        return '/play/end';
+      default:
+        return null;
+    }
+  }, []);
 
   const onSelectMode = useCallback((mode: GameMode) => {
-    resetSession();
-    setMode(mode);
-    router.push(mode === 'quickPlay' ? '/play/quick-length' : '/play/team-setup');
-  }, [resetSession, router, setMode]);
+    if (!isSignedIn && !authDisabled) {
+      router.push('/(auth)/sign-in');
+      return;
+    }
+    const hasOngoingSession =
+      session && session.step !== 'hub' && session.step !== 'mode' && session.step !== 'end';
+    if (hasOngoingSession) {
+      setPendingMode(mode);
+      return;
+    }
+    startNewGame(mode);
+  }, [authDisabled, isSignedIn, router, session, startNewGame]);
+
+  const closeResumeChoice = useCallback(() => {
+    setPendingMode(null);
+  }, []);
+
+  const continueCurrentGame = useCallback(() => {
+    if (!session) {
+      closeResumeChoice();
+      return;
+    }
+    const targetRoute = routeForSessionStep(session.step);
+    closeResumeChoice();
+    if (targetRoute) {
+      router.push(targetRoute);
+    }
+  }, [closeResumeChoice, routeForSessionStep, router, session]);
+
+  const startPendingModeNewGame = useCallback(() => {
+    if (!pendingMode) {
+      return;
+    }
+    const nextMode = pendingMode;
+    closeResumeChoice();
+    startNewGame(nextMode);
+  }, [closeResumeChoice, pendingMode, startNewGame]);
 
   const closeModeInfo = useCallback(() => {
     setActiveModeInfo(null);
@@ -127,12 +227,12 @@ export default function AppHubScreen() {
   const canvas = T.colors.canvas;
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
-  const shadowHex = T.colors.shadowStrong;
+  const textMuted = T.colors.textMuted;
 
   const logoWordmarkStyle: TextStyle = {
     fontFamily: FONTS.displayBold,
-    fontSize: compact ? 22 : T.typography.logoWordmark.fontSize,
-    letterSpacing: T.typography.logoWordmark.letterSpacing,
+    fontSize: compact ? 30 : 44,
+    letterSpacing: compact ? -1.2 : -1.8,
     color: textPrimary,
     textAlign: 'center',
     textTransform: 'none',
@@ -140,11 +240,11 @@ export default function AppHubScreen() {
 
   const logoCaplineStyle: TextStyle = {
     fontFamily: FONTS.ui,
-    fontSize: compact ? 10 : T.typography.logoCapline.fontSize,
-    letterSpacing: compact ? 2.5 : T.typography.logoCapline.letterSpacing,
+    fontSize: compact ? 11 : 13,
+    letterSpacing: compact ? 3 : 4.2,
     color: textPrimary,
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: 4,
     textTransform: 'uppercase',
   };
 
@@ -162,7 +262,7 @@ export default function AppHubScreen() {
           opacity: pressed ? 0.94 : 1,
           transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
         },
-        neumorphicLift3D(shadowHex, 'header'),
+        brandRaisedSurfaceShadow('header'),
       ]}
     >
       <Ionicons name={icon} size={T.layout.iconHeaderSize} color={textPrimary} />
@@ -218,36 +318,97 @@ export default function AppHubScreen() {
             >
               {HOME_MODES.map((mode) => (
                 <View key={mode.id} style={styles.modeTileContainer}>
+                  {(() => {
+                    const minimumCost = minimumTokenCostForMode(mode.id);
+                    const canAffordMode = tokens >= minimumCost;
+                    return (
                   <Pressable
                     onPress={() => onSelectMode(mode.id)}
+                    disabled={!canAffordMode}
                     accessibilityRole="button"
                     accessibilityLabel={t(mode.titleKey)}
+                    accessibilityHint={`${t(mode.copyKey)} ${getHomeModeTokenCostLabel(mode.id)} ${t('common.tokens')}.`}
+                    accessibilityState={{ disabled: !canAffordMode }}
+                    testID={`home-mode-card-${mode.id}`}
                     style={({ pressed }) => [
                       styles.modeTile,
                       styles.plasticFace,
                       {
                         backgroundColor: surface,
                         borderRadius: 44,
-                        opacity: pressed ? 0.94 : 1,
+                        opacity: !canAffordMode ? 0.45 : pressed ? 0.94 : 1,
                         transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
                       },
-                      neumorphicLift3D(shadowHex, 'hero'),
+                      brandRaisedSurfaceShadow('hero'),
                     ]}
                   >
-                    <Ionicons
-                      name={mode.icon}
-                      size={modeIconSize * 0.82}
-                      color={textPrimary}
-                      style={{ marginBottom: compact ? 4 : 12 }}
-                    />
+                    {mode.id === 'rumble' ? (
+                      <RumblePeopleIcon
+                        size={modeIconSize * 0.74}
+                        color={textPrimary}
+                        compact={compact}
+                      />
+                    ) : mode.id === 'quickPlay' ? (
+                      <Image
+                        source={QUICKFIRE_MODE_ART}
+                        style={[
+                          styles.quickFireModeArt,
+                          compact && styles.quickFireModeArtCompact,
+                          { marginBottom: compact ? 4 : 10 },
+                        ]}
+                        resizeMode="contain"
+                        testID="home-quickfire-mode-art"
+                      />
+                    ) : (
+                      <Ionicons
+                        name={mode.icon}
+                        size={modeIconSize * 0.74}
+                        color={textPrimary}
+                        style={{ marginBottom: compact ? 4 : 10 }}
+                      />
+                    )}
                     <Text
-                      style={[styles.modeTileLabel, compact && styles.modeTileLabelCompact, { color: textPrimary }]}
+                      testID={`home-mode-card-title-${mode.id}`}
+                      style={[
+                        styles.modeTileLabel,
+                        compact && styles.modeTileLabelCompact,
+                        { color: textPrimary },
+                      ]}
                       numberOfLines={1}
                       adjustsFontSizeToFit
                     >
                       {t(mode.titleKey).toUpperCase()}
                     </Text>
+                    <Text
+                      testID={`home-mode-card-copy-${mode.id}`}
+                      style={[
+                        styles.modeTileCopy,
+                        compact && styles.modeTileCopyCompact,
+                        { color: textMuted },
+                      ]}
+                      numberOfLines={2}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.82}
+                    >
+                      {t(mode.copyKey)}
+                    </Text>
+                    <View style={styles.modeTileCostRow}>
+                      <Ionicons name="diamond" size={compact ? 9 : 11} color={textPrimary} />
+                      <Text
+                        testID={`home-mode-token-cost-${mode.id}`}
+                        style={[
+                          styles.modeTileCostText,
+                          compact && styles.modeTileCostTextCompact,
+                          { color: textPrimary },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {`${getHomeModeTokenCostLabel(mode.id)} ${t('common.tokens').toUpperCase()}`}
+                      </Text>
+                    </View>
                   </Pressable>
+                    );
+                  })()}
                   <Pressable
                     onPress={() => openModeInfo(mode.id)}
                     accessibilityRole="button"
@@ -261,7 +422,7 @@ export default function AppHubScreen() {
                     ]}
                   >
                     <Ionicons
-                      name="information-circle"
+                      name="information-circle-outline"
                       size={modeInfoIconSize}
                       color={textPrimary}
                     />
@@ -289,7 +450,7 @@ export default function AppHubScreen() {
             style={[
               styles.infoModalCard,
               styles.plasticFace,
-              neumorphicLift3D(shadowHex || 'rgba(0,0,0,0.1)', 'hero'),
+              brandRaisedSurfaceShadow('hero'),
               { backgroundColor: surface },
             ]}
           >
@@ -311,6 +472,61 @@ export default function AppHubScreen() {
             >
               <Text style={styles.infoModalCloseText}>{t('common.close').toUpperCase()}</Text>
             </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      {pendingMode ? (
+        <View
+          accessibilityViewIsModal
+          style={styles.infoModalRoot}
+          testID="home-resume-overlay"
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            onPress={closeResumeChoice}
+            style={styles.infoModalBackdrop}
+          />
+          <View
+            style={[
+              styles.infoModalCard,
+              styles.plasticFace,
+              brandRaisedSurfaceShadow('hero'),
+              { backgroundColor: surface },
+            ]}
+          >
+            <Text style={[styles.infoModalTitle, { color: textPrimary }]}>
+              {t('home.resumeModalTitle')}
+            </Text>
+            <Text style={[styles.infoModalBody, { color: textPrimary }]}>
+              {t('home.resumeModalBody')}
+            </Text>
+
+            <View style={styles.resumeButtonsRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('home.continueGame')}
+                onPress={continueCurrentGame}
+                style={({ pressed }) => [
+                  styles.resumePrimaryButton,
+                  { opacity: pressed ? 0.78 : 1 },
+                ]}
+              >
+                <Text style={styles.resumePrimaryButtonText}>{t('home.continueGame')}</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('home.newGame')}
+                onPress={startPendingModeNewGame}
+                style={({ pressed }) => [
+                  styles.resumeSecondaryButton,
+                  { opacity: pressed ? 0.78 : 1 },
+                ]}
+              >
+                <Text style={styles.resumeSecondaryButtonText}>{t('home.newGame')}</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       ) : null}
@@ -344,7 +560,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     minHeight: 0,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: SPACING.xxl,
   },
   headerBar: {
     flexDirection: 'row',
@@ -394,6 +611,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 8,
+    marginTop: SPACING.xl,
   },
   modeTileContainer: {
     flex: 1,
@@ -408,6 +626,8 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.lg,
     overflow: 'hidden',
     zIndex: 1,
   },
@@ -422,14 +642,80 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modeTileLabel: {
-    fontFamily: FONTS.displayBold,
-    fontSize: 22,
+    fontFamily: FONTS.uiBold,
+    fontSize: 18,
     letterSpacing: 1.2,
     textAlign: 'center',
+    textTransform: 'uppercase',
     zIndex: 1,
   },
   modeTileLabelCompact: {
-    fontSize: 16,
+    fontSize: 14,
+    letterSpacing: 1,
+  },
+  modeTileCopy: {
+    marginTop: SPACING.xs,
+    fontFamily: FONTS.ui,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.15,
+    textAlign: 'center',
+    zIndex: 1,
+  },
+  modeTileCopyCompact: {
+    fontSize: 10,
+    lineHeight: 13,
+  },
+  modeTileCostRow: {
+    marginTop: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    minHeight: 16,
+    zIndex: 1,
+  },
+  modeTileCostText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.6,
+    textAlign: 'center',
+  },
+  modeTileCostTextCompact: {
+    fontSize: 9,
+    lineHeight: 12,
+    letterSpacing: 0.4,
+  },
+  rumblePeopleIcon: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rumblePerson: {
+    position: 'absolute',
+  },
+  rumblePersonLeft: {
+    left: 0,
+    bottom: 0,
+  },
+  rumblePersonCenter: {
+    top: 0,
+    alignSelf: 'center',
+  },
+  rumblePersonRight: {
+    right: 0,
+    bottom: 0,
+  },
+  quickFireModeArt: {
+    width: 64,
+    height: 64,
+    transform: [{ scale: 1.35 }],
+  },
+  quickFireModeArtCompact: {
+    width: 52,
+    height: 52,
+    transform: [{ scale: 1.35 }],
   },
   infoModalRoot: {
     ...StyleSheet.absoluteFillObject,
@@ -478,6 +764,38 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.uiBold,
     fontSize: 12,
     letterSpacing: 1.2,
+    color: '#333333',
+  },
+  resumeButtonsRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: SPACING.sm,
+    marginTop: SPACING.xs,
+  },
+  resumePrimaryButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1B73E8',
+  },
+  resumePrimaryButtonText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  resumeSecondaryButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.06)',
+  },
+  resumeSecondaryButtonText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 13,
     color: '#333333',
   },
 });

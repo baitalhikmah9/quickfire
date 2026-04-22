@@ -142,19 +142,105 @@ beforeEach(() => {
 });
 
 describe('usePlayStore', () => {
+  it('creates classic setup with zero hot seat rounds and one wager per team', () => {
+    usePlayStore.getState().setMode('classic');
+
+    const session = usePlayStore.getState().session;
+
+    expect(session?.config.hotSeatEnabled).toBe(false);
+    expect(session?.config.hotSeatRounds).toBe(0);
+    expect(session?.config.wagersPerTeam).toBe(1);
+    expect(session?.wagersPerTeam).toBe(1);
+  });
+
   it('branches quick play through topic length before team setup', () => {
     usePlayStore.getState().setMode('quickPlay');
     expect(usePlayStore.getState().session?.step).toBe('quick-play-length');
 
-    usePlayStore.getState().setQuickPlayTopicCount(4);
+    usePlayStore.getState().setQuickPlayTopicCount(5);
     expect(usePlayStore.getState().session?.step).toBe('team-setup');
-    expect(usePlayStore.getState().session?.config.quickPlayTopicCount).toBe(4);
+    expect(usePlayStore.getState().session?.config.quickPlayTopicCount).toBe(5);
   });
 
   it('sends rumble into team setup like classic', () => {
     usePlayStore.getState().setMode('rumble');
     expect(usePlayStore.getState().session?.step).toBe('team-setup');
     expect(usePlayStore.getState().session?.mode).toBe('rumble');
+  });
+
+  it('lets rumble use three to four parties while keeping wagers and hot seat off', () => {
+    usePlayStore.getState().setMode('rumble');
+
+    let session = usePlayStore.getState().session;
+    expect(session?.teams).toHaveLength(3);
+
+    usePlayStore.getState().setTeamCount(4);
+    session = usePlayStore.getState().session;
+    expect(session?.teams).toHaveLength(4);
+    expect(session?.config.teams).toHaveLength(4);
+    expect(session?.config.wagerEnabled).toBe(false);
+    expect(session?.config.hotSeatEnabled).toBe(false);
+    expect(session?.config.hotSeatRounds).toBe(0);
+
+    usePlayStore.getState().setTeamCount(2);
+    session = usePlayStore.getState().session;
+    expect(session?.teams).toHaveLength(3);
+
+    usePlayStore.getState().setTeamCount(5);
+    session = usePlayStore.getState().session;
+    expect(session?.teams).toHaveLength(4);
+  });
+
+  it('assigns rumble questions to first and second answer parties', () => {
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
+    const store = usePlayStore.getState();
+    store.setMode('rumble');
+    usePlayStore.getState().setTeamCount(4);
+    const categories = usePlayStore.getState().session?.availableCategories.slice(0, 6) ?? [];
+
+    for (const category of categories) {
+      usePlayStore.getState().toggleCategory(category.slug);
+    }
+
+    const result = usePlayStore.getState().startBoard();
+
+    expect(result).toMatchObject({ ok: true });
+    const session = usePlayStore.getState().session!;
+    const byPointValue = session.board.reduce<Record<number, typeof session.board>>(
+      (groups, question) => {
+        groups[question.pointValue] = groups[question.pointValue] ?? [];
+        groups[question.pointValue].push(question);
+        return groups;
+      },
+      {}
+    );
+
+    for (const questions of Object.values(byPointValue)) {
+      const firstCounts = questions.reduce<Record<string, number>>((counts, question) => {
+        counts[question.rumbleFirstTeamId!] = (counts[question.rumbleFirstTeamId!] ?? 0) + 1;
+        return counts;
+      }, {});
+      const secondCounts = questions.reduce<Record<string, number>>((counts, question) => {
+        counts[question.rumbleSecondTeamId!] = (counts[question.rumbleSecondTeamId!] ?? 0) + 1;
+        return counts;
+      }, {});
+
+      expect(firstCounts).toEqual({
+        team_1: 3,
+        team_2: 3,
+        team_3: 3,
+        team_4: 3,
+      });
+      expect(secondCounts).toEqual({
+        team_1: 3,
+        team_2: 3,
+        team_3: 3,
+        team_4: 3,
+      });
+      for (const question of questions) {
+        expect(question.rumbleSecondTeamId).not.toBe(question.rumbleFirstTeamId);
+      }
+    }
   });
 
   it('hydrates token balance from storage', async () => {
@@ -250,6 +336,7 @@ describe('usePlayStore', () => {
   });
 
   it('requires the correct topic count and consumes a token when the board starts', () => {
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
     const store = usePlayStore.getState();
     store.setMode('classic');
     const categories = usePlayStore.getState().session?.availableCategories.slice(0, 6) ?? [];
@@ -262,9 +349,136 @@ describe('usePlayStore', () => {
     result = usePlayStore.getState().startBoard();
 
     expect(result).toMatchObject({ ok: true });
-    expect(usePlayStore.getState().tokens).toBe(4);
+    expect(usePlayStore.getState().tokens).toBe(10);
     expect(usePlayStore.getState().session?.step).toBe('board');
     expect(usePlayStore.getState().session?.board.length).toBeGreaterThan(0);
+  });
+
+  it('charges quick play based on the selected topic count', () => {
+    for (const [topicCount, expectedTokens] of [
+      [3, 15],
+      [4, 13],
+      [5, 12],
+    ] as const) {
+      usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
+      usePlayStore.getState().setMode('quickPlay');
+      usePlayStore.getState().setQuickPlayTopicCount(topicCount);
+      const categories = usePlayStore.getState().session?.availableCategories.slice(0, topicCount) ?? [];
+
+      for (const category of categories) {
+        usePlayStore.getState().toggleCategory(category.slug);
+      }
+
+      const result = usePlayStore.getState().startBoard();
+
+      expect(result).toMatchObject({ ok: true });
+      expect(usePlayStore.getState().tokens).toBe(expectedTokens);
+      expect(usePlayStore.getState().session?.selectedCategoryIds).toHaveLength(topicCount);
+    }
+  });
+
+  it('only enables hot seat in classic and quick play', () => {
+    for (const mode of ['classic', 'quickPlay'] as const) {
+      usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
+      usePlayStore.getState().setMode(mode);
+      usePlayStore.getState().setHotSeatRounds(1);
+      expect(usePlayStore.getState().session?.config.hotSeatEnabled).toBe(true);
+      expect(usePlayStore.getState().session?.config.hotSeatRounds).toBe(1);
+    }
+
+    for (const mode of ['random', 'rumble', 'rapidFire'] as const) {
+      usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
+      usePlayStore.getState().setMode(mode);
+      usePlayStore.getState().setHotSeatRounds(1);
+      expect(usePlayStore.getState().session?.config.hotSeatEnabled).toBe(false);
+      expect(usePlayStore.getState().session?.config.hotSeatRounds).toBe(0);
+    }
+  });
+
+  it('starts hot seat challenges with two named players after scheduled question counts', () => {
+    const board = Array.from({ length: 12 }, (_, index) =>
+      createQuestion({
+        id: `q-board-${index + 1}`,
+        canonicalKey: `science:${index + 1}`,
+        pointValue: 200,
+      })
+    );
+    const session = createSession({
+      step: 'board',
+      phase: 'scoring',
+      board,
+      currentQuestion: board[3],
+      usedQuestionIds: new Set(board.slice(0, 4).map((question) => question.id)),
+      teams: [
+        {
+          id: 'team_1',
+          name: 'Alpha',
+          playerNames: ['Ava', 'Amir'],
+          score: 0,
+          wagersUsed: 0,
+        },
+        {
+          id: 'team_2',
+          name: 'Beta',
+          playerNames: ['Bianca', 'Ben'],
+          score: 0,
+          wagersUsed: 0,
+        },
+      ],
+      scores: { team_1: 0, team_2: 0 },
+      config: {
+        mode: 'classic',
+        teams: [
+          { id: 'team_1', name: 'Alpha', playerNames: ['Ava', 'Amir'] },
+          { id: 'team_2', name: 'Beta', playerNames: ['Bianca', 'Ben'] },
+        ],
+        categories: ['science'],
+        contentLocaleChain: ['en'],
+        quickPlayTopicCount: 3,
+        hotSeatEnabled: true,
+        hotSeatRounds: 1,
+        wagerEnabled: true,
+        wagersPerTeam: 3,
+      },
+      wager: null,
+      hotSeat: {
+        completedQuestionCount: 3,
+        challenges: [
+          {
+            id: 'hot-seat-team-1-round-1',
+            triggerAfterQuestion: 4,
+            answeringTeamId: 'team_1',
+            participants: [
+              { teamId: 'team_1', playerName: 'Ava' },
+              { teamId: 'team_2', playerName: 'Bianca' },
+            ],
+            completed: false,
+          },
+          {
+            id: 'hot-seat-team-2-round-1',
+            triggerAfterQuestion: 9,
+            answeringTeamId: 'team_2',
+            participants: [
+              { teamId: 'team_2', playerName: 'Ben' },
+              { teamId: 'team_1', playerName: 'Amir' },
+            ],
+            completed: false,
+          },
+        ],
+      },
+    });
+    usePlayStore.setState({ session, tokens: 5, rapidFire: null });
+
+    usePlayStore.getState().continueAfterStandardQuestion();
+
+    const hotSeat = usePlayStore.getState().session?.hotSeat;
+    expect(usePlayStore.getState().session?.step).toBe('question');
+    expect(usePlayStore.getState().session?.currentTeamId).toBe('team_1');
+    expect(hotSeat?.activeChallenge?.participants.map((participant) => participant.playerName)).toEqual([
+      'Ava',
+      'Bianca',
+    ]);
+    expect(usePlayStore.getState().session?.currentQuestion?.id).toBeDefined();
   });
 
   it('persists a cleared session while keeping the token balance', async () => {
@@ -284,6 +498,7 @@ describe('usePlayStore', () => {
   });
 
   it('progresses a standard turn from board to answer and rotates to the next team', () => {
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
     const store = usePlayStore.getState();
     store.setMode('classic');
     const categories = usePlayStore.getState().session?.availableCategories.slice(0, 6) ?? [];
@@ -307,6 +522,7 @@ describe('usePlayStore', () => {
   });
 
   it('lets the user switch standard-question points between teams without stacking', () => {
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
     const store = usePlayStore.getState();
     store.setMode('classic');
     const categories = usePlayStore.getState().session?.availableCategories.slice(0, 6) ?? [];
@@ -337,9 +553,68 @@ describe('usePlayStore', () => {
     expect(usePlayStore.getState().session?.lastAwardedTeamId).toBeNull();
   });
 
+  it('logs manual score adjustments and allows scores to go negative', () => {
+    const session = createSession({
+      teams: [
+        { id: 'team_1', name: 'Alpha', playerNames: ['Ava'], score: 25, wagersUsed: 0 },
+        { id: 'team_2', name: 'Beta', playerNames: ['Ben'], score: 0, wagersUsed: 0 },
+      ],
+      scores: { team_1: 25, team_2: 0 },
+      step: 'board',
+      phase: 'wagerDecision',
+      currentQuestion: undefined,
+      wager: null,
+    });
+
+    usePlayStore.setState({ session, tokens: 5, rapidFire: null });
+
+    const store = usePlayStore.getState() as typeof usePlayStore extends { getState: () => infer T } ? T : never;
+    (store as any).adjustScoreByPoints('team_1', -50, 'host correction');
+
+    const adjusted = usePlayStore.getState().session;
+
+    expect(adjusted?.scores.team_1).toBe(-25);
+    expect(adjusted?.teams.find((team) => team.id === 'team_1')?.score).toBe(-25);
+    expect(adjusted?.scoreEvents.at(-1)).toMatchObject({
+      teamId: 'team_1',
+      points: -50,
+      reason: 'manualAdjustment',
+      metadata: { note: 'host correction' },
+    });
+  });
+
+  it('stores the last resolved answer and can reopen it after leaving the answer screen', () => {
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
+    const store = usePlayStore.getState();
+    store.setMode('classic');
+    const categories = usePlayStore.getState().session?.availableCategories.slice(0, 6) ?? [];
+
+    for (const category of categories) {
+      usePlayStore.getState().toggleCategory(category.slug);
+    }
+    usePlayStore.getState().startBoard();
+
+    const question = usePlayStore.getState().session!.board[0];
+    usePlayStore.getState().selectQuestion(question);
+    usePlayStore.getState().revealAnswer();
+    usePlayStore.getState().awardStandardQuestion('team_1');
+    usePlayStore.getState().continueAfterStandardQuestion();
+
+    const resolved = usePlayStore.getState().session?.lastResolvedTurn;
+    expect(resolved).toMatchObject({
+      question: expect.objectContaining({ id: question.id }),
+      awardedTeamId: 'team_1',
+    });
+
+    (usePlayStore.getState() as any).reopenLastResolvedTurn();
+
+    expect(usePlayStore.getState().session?.step).toBe('answer');
+    expect(usePlayStore.getState().session?.currentQuestion?.id).toBe(question.id);
+  });
+
   it('rejects wagers in randomiser and rumble modes', () => {
     for (const mode of ['random', 'rumble', 'rapidFire'] as const) {
-      usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
+      usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
       usePlayStore.getState().ensureDraft();
       usePlayStore.getState().setMode(mode);
       expect(usePlayStore.getState().session?.config.wagerEnabled).toBe(false);
@@ -362,6 +637,7 @@ describe('usePlayStore', () => {
   });
 
   it('supports the wager loop on the next team and restores turn control after resolution', () => {
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
     const store = usePlayStore.getState();
     store.setMode('classic');
     const categories = usePlayStore.getState().session?.availableCategories.slice(0, 6) ?? [];

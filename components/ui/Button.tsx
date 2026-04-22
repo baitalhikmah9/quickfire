@@ -1,4 +1,4 @@
-import { Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { Text, StyleSheet, type StyleProp, type ViewStyle, type TextStyle } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { COLORS, TYPE_SCALE, BORDER_RADIUS, SHADOWS, SPACING, FONTS } from '@/constants/theme';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -13,9 +13,9 @@ interface ButtonProps {
   /** When true, the button is non-interactive and visually dimmed. */
   disabled?: boolean;
   /** Additional styles applied to the button container. */
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   /** Additional styles applied to the button label. */
-  textStyle?: TextStyle;
+  textStyle?: StyleProp<TextStyle>;
 }
 
 /**
@@ -33,9 +33,9 @@ export function Button({
   const { getTextStyle } = useI18n();
 
   const getVariantStyles = (pressed: boolean) => {
-    let backgroundColor = COLORS.primary;
-    let textColor = COLORS.surface;
-    let borderColor = 'transparent';
+    let backgroundColor: string = COLORS.primary;
+    let textColor: string = COLORS.surface;
+    let borderColor: string = 'transparent';
     let borderWidth = 0;
 
     switch (variant) {

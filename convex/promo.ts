@@ -3,6 +3,7 @@ import { v } from 'convex/values';
 import { evaluatePromoRedemption, normalizePromoCode } from './lib/promoRules';
 import { ensureWalletDoc } from './lib/ensureWallet';
 import { requireUser } from './lib/auth';
+import { ensureCanonicalPurchaserAccountForUser } from './lib/purchaserAccounts';
 
 export const redeemCode = mutation({
   args: {
@@ -10,6 +11,7 @@ export const redeemCode = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
+    const purchaserAccount = await ensureCanonicalPurchaserAccountForUser(ctx, user);
     const normalized = normalizePromoCode(args.code);
 
     const promo = await ctx.db
@@ -47,7 +49,11 @@ export const redeemCode = mutation({
       return { success: false as const, error: promoCheck.reason };
     }
 
-    const wallet = await ensureWalletDoc(ctx, user._id);
+    if (!purchaserAccount) {
+      throw new Error('Purchaser account creation failed');
+    }
+
+    const wallet = await ensureWalletDoc(ctx, purchaserAccount.appUserId, user._id);
     const idempotencyKey = `promo:${user._id}:${promo._id}`;
 
     const existingTx = await ctx.db
@@ -74,6 +80,7 @@ export const redeemCode = mutation({
       amount: grantAmount,
       createdAt: txNow,
       status: 'posted',
+      source: 'promo',
       idempotencyKey,
       metadata: { code: normalized, promoCodeId: promo._id },
     });

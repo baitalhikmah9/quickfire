@@ -1,11 +1,13 @@
 import { Fragment, useMemo } from 'react';
-import { Alert, View, Text, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
+import { Alert, View, Text, StyleSheet, useWindowDimensions, Platform, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import { Button } from '@/components/ui/Button';
-import { FONTS, BORDER_RADIUS, FONT_SIZES, SPACING, SHADOWS } from '@/constants';
+import { FONTS, BORDER_RADIUS, FONT_SIZES, SPACING } from '@/constants';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
+import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
@@ -13,44 +15,23 @@ import { usePlayStore } from '@/store/play';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI.colors;
+const BRAND_BORDER = 'rgba(51, 51, 51, 0.12)';
+const BRAND_SUBTLE_TEXT = 'rgba(51, 51, 51, 0.72)';
 
 /** Deeper drop shadow — reads as a raised plastic tile (tier scales with control size). */
 function neumorphicLift(
   shadowColor: string,
   tier: 'hero' | 'header' | 'pill' | 'card'
 ): ViewStyle {
-  const m =
-    tier === 'hero'
-      ? { h: 14, op: 0.35, r: 28, el: 18 }
-      : tier === 'header'
-        ? { h: 8, op: 0.28, r: 18, el: 12 }
-        : tier === 'card'
-          ? { h: 10, op: 0.22, r: 22, el: 10 }
-          : { h: 6, op: 0.25, r: 14, el: 8 };
   return {
+    ...softSurfaceLift(),
     shadowColor,
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: m.op,
-    shadowRadius: m.r,
-    elevation: m.el,
   };
 }
 
-/** Soft amber glow for focal focal squircles. */
-const AMBER_GLOW: ViewStyle = {
-  shadowColor: '#FFB347',
-  shadowOffset: { width: 0, height: 0 },
-  shadowOpacity: 0.45,
-  shadowRadius: 36,
-  elevation: 12,
-};
-
 /** Light top lip + soft bottom edge — reads extruded on white squircles. */
 const PLASTIC_FACE: ViewStyle = {
-  borderTopWidth: 2,
-  borderTopColor: 'rgba(255, 255, 255, 0.78)',
-  borderBottomWidth: StyleSheet.hairlineWidth * 2,
-  borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  ...SOFT_SURFACE_FACE,
 };
 
 function getAnswerLayoutDensity(screenWidth: number, screenHeight: number) {
@@ -249,6 +230,32 @@ export default function PlayAnswerScreen() {
   /** One rhythm for gaps between answer card, headings, awards, and action rows (matches question `chromeGap` × density). */
   const sectionGap = Math.min(chromeGap, layoutDensity.sheetGap);
 
+  const confirmLeaveMatch = () => {
+    const performLeave = () => {
+      resetSession();
+      router.replace('/(app)/');
+    };
+
+    if (Platform.OS === 'web' && typeof globalThis.confirm === 'function') {
+      const confirmed = globalThis.confirm(
+        `${t('play.leaveMatchTitle')}\n\n${t('play.leaveMatchBody')}`
+      );
+      if (confirmed) {
+        performLeave();
+      }
+      return;
+    }
+
+    Alert.alert(t('play.leaveMatchTitle'), t('play.leaveMatchBody'), [
+      { text: t('common.stay'), style: 'cancel' },
+      {
+        text: t('common.leave'),
+        style: 'destructive',
+        onPress: performLeave,
+      },
+    ]);
+  };
+
   if (!session?.currentQuestion) {
     return (
       <PlayScaffold title={t('common.loading')}>
@@ -281,19 +288,19 @@ export default function PlayAnswerScreen() {
         ? `${colors.primary}24`
         : variant === 'rail'
           ? 'transparent'
-          : colors.cardBackground;
+          : T.surface;
     }
     if (session.phase === 'answerLock' && teamId === session.currentTeamId) {
       return `${colors.primary}14`;
     }
-    return variant === 'rail' ? 'transparent' : colors.cardBackground;
+    return variant === 'rail' ? 'transparent' : T.surface;
   };
 
   const neitherAwardSurface = (variant: 'stack' | 'rail'): string => {
     if (awardChoiceCommitted && session.lastAwardedTeamId === null) {
       return `${colors.primary}20`;
     }
-    return variant === 'rail' ? 'transparent' : colors.cardBackground;
+    return variant === 'rail' ? 'transparent' : T.surface;
   };
 
   const footer = wager ? (
@@ -316,7 +323,7 @@ export default function PlayAnswerScreen() {
             resolveWager(false);
             router.replace('/play/board');
           }}
-          style={[styles.softUiBtn, { backgroundColor: '#FEE2E2' }]} // Subtle destructive tint
+          style={[styles.softUiBtn, { backgroundColor: '#FEE2E2' }]}
           textStyle={[styles.softUiBtnText, { color: '#DC2626' }, getTextStyle(undefined, 'bodySemibold', 'center')]}
         />
       </View>
@@ -332,7 +339,7 @@ export default function PlayAnswerScreen() {
             continueAfterStandardQuestion();
             router.replace('/play/board');
           }}
-          style={[styles.softUiBtn, styles.primarySoftUiBtn]}
+          style={styles.softUiBtn}
           textStyle={[styles.softUiBtnText, getTextStyle(undefined, 'bodySemibold', 'center')]}
         />
       </View>
@@ -364,7 +371,7 @@ export default function PlayAnswerScreen() {
                 style={({ pressed }) => [
                   styles.awardStackCell,
                   {
-                    borderColor: colors.border,
+                    borderColor: BRAND_BORDER,
                     borderWidth: layoutDensity.borderWidth,
                     backgroundColor: teamAwardSurface(team.id, 'stack'),
                     minHeight: layoutDensity.awardStackMinH,
@@ -380,7 +387,7 @@ export default function PlayAnswerScreen() {
                 <Text
                   style={[
                     styles.segmentTitle,
-                    { color: colors.text, fontSize: layoutDensity.segmentTitleSize },
+                    { color: T.textPrimary, fontSize: layoutDensity.segmentTitleSize },
                     getTextStyle(undefined, 'bodyBold', 'center'),
                   ]}
                   numberOfLines={2}
@@ -392,7 +399,7 @@ export default function PlayAnswerScreen() {
                 <Text
                   style={[
                     styles.segmentMeta,
-                    { color: colors.textSecondary, fontSize: layoutDensity.segmentMetaSize },
+                    { color: BRAND_SUBTLE_TEXT, fontSize: layoutDensity.segmentMetaSize },
                     getTextStyle(undefined, 'body', 'center'),
                   ]}
                   numberOfLines={1}
@@ -405,7 +412,7 @@ export default function PlayAnswerScreen() {
             style={({ pressed }) => [
               styles.awardStackCell,
               {
-                borderColor: colors.border,
+                borderColor: BRAND_BORDER,
                 borderWidth: layoutDensity.borderWidth,
                 backgroundColor: neitherAwardSurface('stack'),
                 minHeight: layoutDensity.awardStackMinH,
@@ -421,7 +428,7 @@ export default function PlayAnswerScreen() {
             <Text
               style={[
                 styles.segmentTitle,
-                { color: colors.text, fontSize: layoutDensity.segmentTitleSize },
+                { color: T.textPrimary, fontSize: layoutDensity.segmentTitleSize },
                 getTextStyle(undefined, 'bodyBold', 'center'),
               ]}
               numberOfLines={1}
@@ -431,7 +438,7 @@ export default function PlayAnswerScreen() {
             <Text
               style={[
                 styles.segmentMeta,
-                { color: colors.textSecondary, fontSize: layoutDensity.segmentMetaSize },
+                { color: BRAND_SUBTLE_TEXT, fontSize: layoutDensity.segmentMetaSize },
                 getTextStyle(undefined, 'body', 'center'),
               ]}
               numberOfLines={2}
@@ -449,7 +456,7 @@ export default function PlayAnswerScreen() {
           styles.awardRail,
           {
             flexDirection: rowDir,
-            borderColor: colors.border,
+            borderColor: BRAND_BORDER,
             borderWidth: layoutDensity.borderWidth,
             minHeight: layoutDensity.awardStackMinH,
           },
@@ -458,7 +465,7 @@ export default function PlayAnswerScreen() {
         {session.teams.map((team, index) => (
             <Fragment key={team.id}>
               {index > 0 ? (
-                <View style={[styles.awardDivider, { backgroundColor: colors.border }]} />
+                <View style={[styles.awardDivider, { backgroundColor: BRAND_BORDER }]} />
               ) : null}
               <Pressable
                 style={({ pressed }) => [
@@ -477,7 +484,7 @@ export default function PlayAnswerScreen() {
                 <Text
                   style={[
                     styles.segmentTitle,
-                    { color: colors.text, fontSize: layoutDensity.segmentTitleSize },
+                    { color: T.textPrimary, fontSize: layoutDensity.segmentTitleSize },
                     getTextStyle(undefined, 'bodyBold', 'center'),
                   ]}
                   numberOfLines={2}
@@ -489,7 +496,7 @@ export default function PlayAnswerScreen() {
                 <Text
                   style={[
                     styles.segmentMeta,
-                    { color: colors.textSecondary, fontSize: layoutDensity.segmentMetaSize },
+                    { color: BRAND_SUBTLE_TEXT, fontSize: layoutDensity.segmentMetaSize },
                     getTextStyle(undefined, 'body', 'center'),
                   ]}
                   numberOfLines={1}
@@ -499,7 +506,7 @@ export default function PlayAnswerScreen() {
               </Pressable>
             </Fragment>
         ))}
-        <View style={[styles.awardDivider, { backgroundColor: colors.border }]} />
+        <View style={[styles.awardDivider, { backgroundColor: BRAND_BORDER }]} />
         <Pressable
           style={({ pressed }) => [
             styles.awardCell,
@@ -517,7 +524,7 @@ export default function PlayAnswerScreen() {
           <Text
             style={[
               styles.segmentTitle,
-              { color: colors.text, fontSize: layoutDensity.segmentTitleSize },
+              { color: T.textPrimary, fontSize: layoutDensity.segmentTitleSize },
               getTextStyle(undefined, 'bodyBold', 'center'),
             ]}
             numberOfLines={1}
@@ -527,7 +534,7 @@ export default function PlayAnswerScreen() {
           <Text
             style={[
               styles.segmentMeta,
-              { color: colors.textSecondary, fontSize: layoutDensity.segmentMetaSize },
+              { color: BRAND_SUBTLE_TEXT, fontSize: layoutDensity.segmentMetaSize },
               getTextStyle(undefined, 'body', 'center'),
             ]}
             numberOfLines={2}
@@ -542,25 +549,14 @@ export default function PlayAnswerScreen() {
   return (
     <PlayScaffold
       title={t('play.resolveTurnTitle')}
+      backgroundColor={T.canvas}
       subtitle={
         hideSubtitle || !session.bonus.active ? undefined : t('play.resolveBonusSubtitle')
       }
       bodyScrollEnabled={false}
       bodyFrame={false}
       bodyEdgeToEdge
-      onBack={() =>
-        Alert.alert(t('play.leaveMatchTitle'), t('play.leaveMatchBody'), [
-          { text: t('common.stay'), style: 'cancel' },
-          {
-            text: t('common.leave'),
-            style: 'destructive',
-            onPress: () => {
-              resetSession();
-              router.replace('/(app)/');
-            },
-          },
-        ])
-      }
+      onBack={confirmLeaveMatch}
       footer={footer}
     >
       <View style={styles.bleed}>
@@ -589,9 +585,9 @@ export default function PlayAnswerScreen() {
                   style={[
                     styles.answerRevealCard,
                     {
-                      borderColor: colors.border,
+                      borderColor: BRAND_BORDER,
                       borderWidth: layoutDensity.borderWidth,
-                      backgroundColor: colors.cardBackground,
+                      backgroundColor: T.surface,
                       shadowColor: colors.primary,
                       paddingVertical: layoutDensity.answerCardPadV,
                       paddingHorizontal: layoutDensity.answerCardPadH,
@@ -603,9 +599,37 @@ export default function PlayAnswerScreen() {
                 >
                   <Text
                     style={[
+                      styles.originalQuestionEyebrow,
+                      { color: BRAND_SUBTLE_TEXT },
+                      getTextStyle(undefined, 'body', 'center'),
+                    ]}
+                  >
+                    {t('play.originalQuestion')}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.originalQuestionText,
+                      { color: BRAND_SUBTLE_TEXT },
+                      getTextStyle(undefined, 'body', 'center'),
+                    ]}
+                    numberOfLines={3}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                  >
+                    {currentQuestion.prompt}
+                  </Text>
+                  {currentQuestion.answerImageUrl ? (
+                    <Image
+                      source={{ uri: currentQuestion.answerImageUrl }}
+                      style={styles.answerImage}
+                      contentFit="contain"
+                    />
+                  ) : null}
+                  <Text
+                    style={[
                       styles.answerEyebrow,
                       {
-                        color: colors.textSecondary,
+                        color: BRAND_SUBTLE_TEXT,
                         marginBottom: layoutDensity.answerEyebrowMarginBottom,
                       },
                       getTextStyle(undefined, 'body', 'center'),
@@ -617,7 +641,7 @@ export default function PlayAnswerScreen() {
                     style={[
                       styles.answerText,
                       {
-                        color: colors.text,
+                        color: T.textPrimary,
                         fontSize: layoutDensity.answerFontSize,
                         lineHeight: layoutDensity.answerLineHeight,
                       },
@@ -639,7 +663,7 @@ export default function PlayAnswerScreen() {
                     style={[
                       styles.sectionTitle,
                       {
-                        color: colors.text,
+                        color: T.textPrimary,
                         fontSize: layoutDensity.sectionTitleSize,
                         lineHeight: layoutDensity.sectionTitleSize + 6,
                       },
@@ -673,6 +697,7 @@ const styles = StyleSheet.create({
     minHeight: 0,
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.xs,
+    backgroundColor: T.canvas,
   },
   fitBody: {
     flex: 1,
@@ -698,6 +723,22 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
   },
+  originalQuestionEyebrow: {
+    fontSize: FONT_SIZES.xs,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  originalQuestionText: {
+    fontSize: FONT_SIZES.sm,
+    lineHeight: 18,
+    marginBottom: SPACING.md,
+  },
+  answerImage: {
+    width: '100%',
+    height: 160,
+    marginBottom: SPACING.md,
+  },
   awardRegion: {
     flexShrink: 0,
     width: '100%',
@@ -711,11 +752,8 @@ const styles = StyleSheet.create({
   answerRevealCard: {
     borderRadius: BORDER_RADIUS.xl,
     alignSelf: 'stretch',
-    ...SHADOWS.card,
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    ...SOFT_SURFACE_FACE,
+    ...softSurfaceLift(),
   },
   answerEyebrow: {
     fontSize: 9,
@@ -733,6 +771,7 @@ const styles = StyleSheet.create({
   },
   awardRail: {
     borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: T.surface,
     overflow: 'hidden',
     alignItems: 'stretch',
     alignSelf: 'stretch',
@@ -743,6 +782,8 @@ const styles = StyleSheet.create({
   awardStackCell: {
     alignSelf: 'stretch',
     borderRadius: BORDER_RADIUS.lg,
+    ...SOFT_SURFACE_FACE,
+    ...softSurfaceLift(),
     paddingHorizontal: SPACING.md,
     justifyContent: 'center',
     alignItems: 'center',
@@ -765,7 +806,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   segmentMeta: {
-    fontVariant: 'tabular-nums',
+    fontVariant: ['tabular-nums'],
   },
   footerRow: {
     alignItems: 'stretch',
@@ -780,9 +821,6 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     ...PLASTIC_FACE,
     ...neumorphicLift('rgba(15, 23, 42, 0.14)', 'pill'),
-  },
-  primarySoftUiBtn: {
-    ...AMBER_GLOW,
   },
   softUiBtnText: {
     color: '#333333',

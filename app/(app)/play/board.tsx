@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { Alert, View, Text, StyleSheet, ScrollView, useWindowDimensions, Animated } from 'react-native';
+import { Alert, View, Text, StyleSheet, ScrollView, useWindowDimensions, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
@@ -12,14 +12,12 @@ import { getCategoryBoardAccent, getCategoryPictureSource } from '@/constants/ca
 import { getRandomRemainingQuestion } from '@/features/play/data';
 import type { GameConfig, LifelineId, QuestionCard } from '@/features/shared';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
-import { TopicColumnPickerModal } from '@/features/play/components/TopicColumnPickerModal';
+import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
 import { HOME_SOFT_UI } from '@/themes';
-
-const GRID_COLS = 3;
 
 const T = HOME_SOFT_UI;
 
@@ -84,6 +82,12 @@ function chunkColumns<T>(items: T[], chunkSize: number): T[][] {
   return out;
 }
 
+function getGridColumnCount(mode: string, categoryCount: number): number {
+  if (mode === 'quickPlay' && categoryCount === 4) return 2;
+  if (categoryCount <= 2) return Math.max(1, categoryCount);
+  return 3;
+}
+
 function lifelineGlyph(id: LifelineId): keyof typeof Ionicons.glyphMap {
   switch (id) {
     case 'callAFriend':
@@ -127,31 +131,13 @@ function lifelineSlotsForTeam(teamId: string, config: GameConfig): LifelineId[] 
 function neumorphicLift3D(
   tier: 'card' | 'pill' | 'tile' | 'header' | 'score'
 ): any {
-  const m =
-    tier === 'card'
-      ? { h: 8, el: 10 }
-      : tier === 'tile'
-      ? { h: 5, el: 6 }
-      : tier === 'header' || tier === 'score'
-      ? { h: 6, el: 8 }
-      : { h: 4, el: 4 };
-
-  return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: m.el,
-  };
+  return softSurfaceLift();
 }
 
 
 
 const PLASTIC_FACE = {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 2,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    ...SOFT_SURFACE_FACE,
 };
 
 type BoardMetrics = {
@@ -190,8 +176,7 @@ export default function PlayBoardScreen() {
   const tokens = usePlayStore((state) => state.tokens);
   const selectQuestion = usePlayStore((state) => state.selectQuestion);
   const confirmRandomWagerQuestion = usePlayStore((state) => state.confirmRandomWagerQuestion);
-
-  const [topicModalColumn, setTopicModalColumn] = useState<CategoryColumn | null>(null);
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
 
   const metrics = useMemo(() => getBoardMetrics(height, width), [height, width]);
 
@@ -217,7 +202,8 @@ export default function PlayBoardScreen() {
   }, [confirmRandomWagerQuestion, session?.wager]);
 
   const grouped = useMemo(() => (session ? groupBoardTrivia(session) : []), [session]);
-  const gridRows = useMemo(() => chunkColumns(grouped, GRID_COLS), [grouped]);
+  const gridColumnCount = getGridColumnCount(session?.mode ?? 'classic', grouped.length);
+  const gridRows = useMemo(() => chunkColumns(grouped, gridColumnCount), [grouped, gridColumnCount]);
 
   const padX = Math.max(insets.left, LAYOUT.screenGutter) + Math.max(insets.right, LAYOUT.screenGutter);
   const innerWidth = Math.max(0, width - padX);
@@ -241,15 +227,27 @@ export default function PlayBoardScreen() {
   }, [innerWidth, height, insets.top, insets.bottom, gridRows.length]);
 
   const leaveMatch = () => {
+    const performLeave = () => {
+      usePlayStore.getState().resetSession();
+      router.replace('/(app)/');
+    };
+
+    if (Platform.OS === 'web' && typeof globalThis.confirm === 'function') {
+      const confirmed = globalThis.confirm(
+        `${t('play.leaveMatchTitle')}\n\n${t('play.leaveMatchBody')}`
+      );
+      if (confirmed) {
+        performLeave();
+      }
+      return;
+    }
+
     Alert.alert(t('play.leaveMatchTitle'), t('play.leaveMatchBody'), [
       { text: t('common.stay'), style: 'cancel' },
       {
         text: t('common.leave'),
         style: 'destructive',
-        onPress: () => {
-          usePlayStore.getState().resetSession();
-          router.replace('/(app)/');
-        },
+        onPress: performLeave,
       },
     ]);
   };
@@ -284,7 +282,8 @@ export default function PlayBoardScreen() {
             ]}
             onPress={() => {
                 if (used) return;
-                setTopicModalColumn(column);
+                selectQuestion(question);
+                router.replace('/play/question');
             }}
             disabled={used}
             accessibilityRole="button"
@@ -347,7 +346,14 @@ export default function PlayBoardScreen() {
                 },
                 neumorphicLift3D('card'),
                 ]}
-                onPress={() => setTopicModalColumn(column)}
+                onPress={() => {
+                  const next = column.rows
+                    .flatMap((row) => [row.left, row.right])
+                    .find((candidate) => !session.usedQuestionIds.has(candidate.id));
+                  if (!next) return;
+                  selectQuestion(next);
+                  router.replace('/play/question');
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={column.categoryName}
             >
@@ -449,6 +455,7 @@ export default function PlayBoardScreen() {
 
   const footerPadBottom = height < 520 ? 2 : SPACING.xs;
   const footerCompact = innerWidth < 560;
+  const activeTeam = session?.teams.find((team) => team.id === activeTeamId) ?? null;
 
   const boardFooter = (
     <View style={[styles.footerStripOuter, { paddingBottom: footerPadBottom }]}>
@@ -471,8 +478,9 @@ export default function PlayBoardScreen() {
               .join(', ');
 
             return (
-              <View
+              <Pressable
                 key={team.id}
+                onPress={() => setActiveTeamId(team.id)}
                 style={[
                   styles.scoreCard,
                   PLASTIC_FACE,
@@ -484,10 +492,12 @@ export default function PlayBoardScreen() {
                   neumorphicLift3D('score'),
                 ]}
                 accessibilityState={isCurrentTurn ? { selected: true } : undefined}
-                accessibilityLabel={a11yLabel}
+                accessibilityRole="button"
+                accessibilityLabel={`${a11yLabel}. Open team details`}
+                hitSlop={8}
               >
                   {isCurrentTurn && (
-                      <View style={[styles.turnIndicator, { backgroundColor: T.colors.amberGlow || '#FFB411' }]} />
+                      <View style={[styles.turnIndicator, { backgroundColor: T.colors.accentGlow || '#FFB411' }]} />
                   )}
 
                   <View style={styles.scoreContent}>
@@ -536,18 +546,12 @@ export default function PlayBoardScreen() {
                         ))}
                       </View>
                   </View>
-              </View>
+              </Pressable>
             );
           })}
         </View>
     </View>
   );
-
-  const pickQuestionFromTopicModal = (question: QuestionCard) => {
-    selectQuestion(question);
-    setTopicModalColumn(null);
-    router.replace('/play/question');
-  };
 
   return (
     <>
@@ -616,7 +620,7 @@ export default function PlayBoardScreen() {
                 styles.randomButton,
                 PLASTIC_FACE,
                 {
-                  backgroundColor: surface,
+                  backgroundColor: T.colors.surface,
                   paddingHorizontal: SPACING.lg,
                   opacity: pressed ? 0.88 : 1,
                 },
@@ -631,7 +635,7 @@ export default function PlayBoardScreen() {
               }}
               disabled={!remaining.length}
             >
-              <Text style={[styles.randomButtonText, { color: textPrimary, fontSize: FONT_SIZES.lg, fontFamily: FONTS.displayBold }]}>
+              <Text style={[styles.randomButtonText, { color: T.colors.textPrimary, fontSize: FONT_SIZES.lg, fontFamily: FONTS.displayBold }]}>
                 {remaining.length ? t('play.drawRandomQuestion') : t('play.noQuestionsLeft')}
               </Text>
             </Pressable>
@@ -651,8 +655,8 @@ export default function PlayBoardScreen() {
                 ]}
               >
                 {row.map((col) => categoryCell(col))}
-                {row.length < GRID_COLS
-                  ? Array.from({ length: GRID_COLS - row.length }).map((_, ei) => (
+                {row.length < gridColumnCount
+                  ? Array.from({ length: gridColumnCount - row.length }).map((_, ei) => (
                       <View key={`empty-${ri}-${ei}`} style={styles.gridCellSpacer} />
                     ))
                   : null}
@@ -662,14 +666,54 @@ export default function PlayBoardScreen() {
         )}
         </ScrollView>
       </View>
+      {activeTeam ? (
+        <View style={styles.teamModalRoot} accessibilityViewIsModal>
+          <Pressable
+            style={styles.teamModalBackdrop}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            onPress={() => setActiveTeamId(null)}
+          />
+          <View style={[styles.teamModalCard, PLASTIC_FACE, neumorphicLift3D('tile')]}>
+            <Text style={styles.teamModalTitle} numberOfLines={1}>
+              {activeTeam.name.toUpperCase()}
+            </Text>
+            <Text style={styles.teamModalScore}>
+              {t('common.points', { count: activeTeam.score })}
+            </Text>
+            <View style={styles.teamModalButtonsRow}>
+              {lifelineSlotsForTeam(activeTeam.id, session.config).map((id, idx) => (
+                <Pressable
+                  key={`${activeTeam.id}-modal-${id}-${idx}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={id}
+                  style={({ pressed }) => [
+                    styles.teamModalLifelineButton,
+                    {
+                      opacity: pressed ? 0.82 : 1,
+                      transform: pressed ? [{ scale: 0.96 }] : [{ scale: 1 }],
+                    },
+                  ]}
+                >
+                  <Ionicons name={lifelineGlyph(id)} size={22} color={T.colors.textPrimary} />
+                </Pressable>
+              ))}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('common.close')}
+              onPress={() => setActiveTeamId(null)}
+              style={({ pressed }) => [
+                styles.teamModalCloseBtn,
+                { opacity: pressed ? 0.82 : 1 },
+              ]}
+            >
+              <Text style={styles.teamModalCloseText}>{t('common.close')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
       </PlayScaffold>
-      <TopicColumnPickerModal
-        visible={topicModalColumn !== null}
-        column={topicModalColumn}
-        usedQuestionIds={session.usedQuestionIds}
-        onClose={() => setTopicModalColumn(null)}
-        onPickQuestion={pickQuestionFromTopicModal}
-      />
     </>
   );
 }
@@ -807,6 +851,69 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
   },
+  teamModalRoot: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.lg,
+    backgroundColor: 'rgba(250, 249, 246, 0.45)',
+  },
+  teamModalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  teamModalCard: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: BORDER_RADIUS.xl,
+    backgroundColor: T.colors.surface,
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  teamModalTitle: {
+    fontFamily: FONTS.displayBold,
+    fontSize: FONT_SIZES.lg,
+    color: T.colors.textPrimary,
+    letterSpacing: 0.8,
+  },
+  teamModalScore: {
+    fontFamily: FONTS.uiSemibold,
+    fontSize: FONT_SIZES.md,
+    color: T.colors.textPrimary,
+  },
+  teamModalButtonsRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginTop: SPACING.xs,
+  },
+  teamModalLifelineButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(51, 51, 51, 0.06)',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: 'rgba(51, 51, 51, 0.12)',
+  },
+  teamModalCloseBtn: {
+    marginTop: SPACING.sm,
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+  },
+  teamModalCloseText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: FONT_SIZES.sm,
+    color: T.colors.textPrimary,
+    letterSpacing: 0.6,
+  },
   gridScroll: {
     flex: 1,
   },
@@ -832,7 +939,7 @@ const styles = StyleSheet.create({
   categoryTriplet: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     gap: 8,
   },
   railColumn: {

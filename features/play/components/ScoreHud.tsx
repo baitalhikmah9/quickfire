@@ -1,11 +1,13 @@
 import { Fragment } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, BORDER_RADIUS, FONT_SIZES } from '@/constants';
 import { COLORS, FONTS } from '@/constants/theme';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import type { GameSessionState } from '@/features/shared';
+import { usePlayStore } from '@/store/play';
 
 /** Below this width, use the compact strip typography and chrome. */
 const NARROW_SCORE_BREAKPOINT = 560;
@@ -21,6 +23,7 @@ export function ScoreHud({ session, compact, dense }: ScoreHudProps) {
   const colors = useTheme();
   const { width } = useWindowDimensions();
   const { direction, getTextStyle, t } = useI18n();
+  const adjustScoreByPoints = usePlayStore((state) => state.adjustScoreByPoints);
   const showWagerMeta = session.config.wagerEnabled;
   const useStripLayout = dense || width < NARROW_SCORE_BREAKPOINT;
   const compactSegment = useStripLayout || dense;
@@ -144,6 +147,30 @@ export function ScoreHud({ session, compact, dense }: ScoreHudProps) {
                   >
                     {team.score}
                   </Text>
+                  <View style={styles.scoreAdjustRow}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${team.name} minus 50`}
+                      onPress={() => adjustScoreByPoints(team.id, -50, 'score hud decrement')}
+                      style={({ pressed }) => [
+                        styles.scoreAdjustButton,
+                        { borderColor: colors.border, opacity: pressed ? 0.82 : 1 },
+                      ]}
+                    >
+                      <Text style={[styles.scoreAdjustText, { color: colors.textSecondary }]}>-50</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${team.name} plus 50`}
+                      onPress={() => adjustScoreByPoints(team.id, 50, 'score hud increment')}
+                      style={({ pressed }) => [
+                        styles.scoreAdjustButton,
+                        { borderColor: colors.border, opacity: pressed ? 0.82 : 1 },
+                      ]}
+                    >
+                      <Text style={[styles.scoreAdjustText, { color: colors.textSecondary }]}>+50</Text>
+                    </Pressable>
+                  </View>
                   {showWagerMeta ? (
                     <Text
                       style={[
@@ -245,7 +272,7 @@ const styles = StyleSheet.create({
   },
   segmentScoreValue: {
     fontFamily: FONTS.displayBold,
-    fontVariant: 'tabular-nums',
+    fontVariant: ['tabular-nums'],
     letterSpacing: -0.5,
   },
   segmentScoreValueCompact: {
@@ -259,10 +286,30 @@ const styles = StyleSheet.create({
   segmentWagerLine: {
     width: '100%',
     fontFamily: FONTS.uiMedium,
-    fontVariant: 'tabular-nums',
+    fontVariant: ['tabular-nums'],
     fontSize: FONT_SIZES.xs,
     lineHeight: 14,
     opacity: 0.92,
+  },
+  scoreAdjustRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+  },
+  scoreAdjustButton: {
+    minWidth: 38,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreAdjustText: {
+    fontSize: 10,
+    fontFamily: FONTS.uiBold,
+    letterSpacing: 0.2,
   },
   segmentWagerLineCompact: {
     fontSize: 10,

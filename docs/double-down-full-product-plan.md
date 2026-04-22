@@ -3,7 +3,8 @@
 ## Summary
 - Build Double Down from the current Expo template in [docs/CODEBASE_MAP.md](/Users/mikhail/Documents/CURSOR%20CODES/In%20Progress/doubledown/docs/CODEBASE_MAP.md) into a full product with local-first gameplay, account-backed sync, token ledger, promo code redemption, and content expansion.
 - Locked decisions: full product scope, `Clerk` for auth, `Convex` for backend/data, local shared-device multiplayer for v1, English-first release, real-money purchases deferred to a later phase.
-- Starting point: the repo is still template-level UI with placeholder tabs and a minimal auth store; no domain model, backend integration, or gameplay engine exists yet.
+- Audit basis: checked against the current repo on 2026-04-21. `[x]` means the implementation exists in code; notes call out where the repo still has partial wiring or placeholder UX.
+- Current state: the repo now has the Expo Router app shell, Clerk auth screens, Convex schema/functions for core product data, localized content plumbing, persistent local play state, and playable Classic / Quick Play flows. The biggest remaining gaps are auth-gated gameplay, Convex-backed wallet/session wiring in the client, Rapid Fire, recap/history depth, admin tooling, and release hardening.
 
 ## Architecture
 1. [x] Replace the current tab-only shell with Expo Router groups: `app/(public)` for landing/how-to-play, `app/(auth)` for sign-in/sign-up/forgot-password, `app/(app)` for home/play/store/profile, and modal routes for rules, theme picker, lobby settings, and game recap.
@@ -12,14 +13,14 @@
 4. [x] Use `Convex` as the system of record for authenticated data: user profile mirror, token wallet balance, wallet transactions, promo codes/redemptions, persisted game history, rapid-fire stats, feature flags, and normalized question content.
 5. [x] Preserve `React Query` only for non-Convex async integrations later; do not use it for Convex-backed domain data. Convex hooks become the default for app data reads/writes.
 6. [x] Introduce feature-first folders under `features/`: `auth`, `content`, `lobby`, `gameplay`, `wallet`, `promo`, `profile`, `settings`, and `shared`. Keep presentational components in `components/ui` and shared hooks/utilities in `lib/`.
-7. [x] Expand the current constants theme into semantic design tokens with 4 light palettes (Blue, Orange, Green, Red) plus a Dark mode, landscape-required layouts for all mobile game screens, and landscape-optimized board layouts on tablets. All text must remain legible across every palette. Non-game screens remain portrait-friendly.
+7. [ ] Expand the current constants theme into semantic design tokens with 4 light palettes (Blue, Orange, Green, Red) plus a Dark mode, landscape-required layouts for all mobile game screens, and landscape-optimized board layouts on tablets. All text must remain legible across every palette. Non-game screens remain portrait-friendly. _(Palettes, theming, and landscape game layouts are in place, but native orientation is still globally locked in `app/_layout.tsx`, so non-game portrait-friendly behavior is not finished.)_
 
 ## Domain Model And Backend
 - [x] Normalize [constants/questions.json](/Users/mikhail/Documents/CURSOR%20CODES/In%20Progress/doubledown/constants/questions.json) into one-question-per-record seed data. The current grouped `questionAndanswer` shape is not suitable as the long-term source of truth.
 - Convex tables:
   - [x] `users`: Clerk-linked profile mirror, preferences, last active timestamp.
   - [x] `categories`: id, slug, title, theme group, artwork, enabled flag.
-  - [x] `questions`: category ref, prompt, answer, point value, difficulty tier, tags, locale, status. _([ ] hidden_multiplier for Overtime Surge)_
+  - [x] `questions`: category ref, prompt, answer, point value, difficulty tier, tags, locale, status. _(The schema now also includes `hiddenMultiplier` and `isOvertimeSurge` fields.)_
   - [x] `game_sessions`: mode, config snapshot, seed, started/ended timestamps, winning team, persisted only for signed-in or opted-in users.
   - [x] `game_participants`: session ref, team id, player name, hot-seat eligibility, final score stats.
   - [x] `rapid_fire_runs`: user ref, selected categories, score, answer accuracy, duration.
@@ -28,15 +29,18 @@
   - [x] `promo_codes`: code, reward type, reward amount, usage cap, active window, backend-only metadata.
   - [x] `promo_redemptions`: code ref, user ref, redeemed-at, resulting transaction ref.
   - [x] `feature_flags`: rollout toggles for unreleased modes or mechanics.
-  - [ ] `device_question_history`: device id, question ref, asked-at timestamp. Used to enforce cross-session no-repeat question selection.
+  - [x] `device_question_history`: device id, question ref, asked-at timestamp. Used to enforce cross-session no-repeat question selection.
 - Convex functions:
   - [x] `users.getCurrentProfile`, `users.upsertOnFirstSignIn`
   - [x] `content.listPlayableCategories`, `content.getModeQuestionPool`
-  - [ ] `wallet.getBalance`, `wallet.grantStarterBalance`, `wallet.reserveGameEntry`, `wallet.consumeEntry`, `wallet.refundEntry`
-  - [ ] `promo.redeemCode`
-  - [ ] `content.getUnaskedQuestions` — returns questions not yet in `device_question_history` for a given device; falls back to full pool if pool is exhausted
+  - [x] `wallet.getBalance`, `wallet.grantStarterBalance`, `wallet.reserveGameEntry`, `wallet.consumeEntry`, `wallet.refundEntry`
+  - [x] `promo.redeemCode`
+  - [x] `content.getUnaskedQuestions` — returns questions not yet in `device_question_history` for a given device; falls back to full pool if pool is exhausted
+  - [x] `content.recordAskedQuestions`
+  - [x] `devices.registerInstallation`
+  - [x] `sessions.saveCompletedSession`, `sessions.listRecentSessions`
+  - [x] `users.updatePreferences`
   - [ ] `admin.generateTokens`, `admin.listPromoCodes`, `admin.setTokenCap` — backend functions powering the token administration portal
-  - [ ] `sessions.saveCompletedSession`, `sessions.listRecentSessions`
   - [ ] `rapidFire.startRun`, `rapidFire.submitRun`, `rapidFire.listHistory`
 - [x] Add an internal seed/import path for question content. v1 uses JSON-driven imports only; no in-app CMS.
 
@@ -53,21 +57,22 @@
   - [x] Classic: fixed 36-cell board from selected categories, wagers enabled.
   - [x] Quick Play: same engine with smaller board and faster defaults.
   - [ ] Random: 36 questions selected by randomizer animation, wagers disabled. _(mode route, random draw, and wager disablement are done; randomizer animation still open)_
-  - [ ] Rumble: 36 questions; 3+ teams or individuals, 30s deliberation, 15s primary answer, 15s steal.
+  - [ ] Rumble: 36 questions; 3+ teams or individuals, 30s deliberation, 15s primary answer, 15s steal. _(Mode selection, 3-4 team setup, and rumble-specific turn ownership exist, but timer/rule fidelity and complete UX still need work.)_
+  - [ ] Team setup: each team supports separate member names (no shared-name fallback), and player-level naming must be preserved through gameplay, recap, and saved session records.
   - [ ] Rapid Fire: player selects 5 topics; 10 random questions drawn from the question bank. 25s per question, then 5s answer-reveal window. Token cost configurable, per-run stat persistence for signed-in users.
-  - [ ] Hot Seat: only available when player names are entered; disables lifelines during the turn. Hot Seat opponent has 15s to answer.
+  - [ ] Hot Seat: only available when player names are entered; disables lifelines during the turn. Hot Seat opponent has 15s to answer. _(Scheduling and persistence state exist, but the player-name gating and full rule enforcement are still open.)_
   - [ ] Overtime Surge: one question per game has a hidden multiplier. If the losing team answers it correctly and takes the lead, the old winning team must immediately pick from the 3 remaining topics on the board and get it right to reclaim victory.
   - [ ] Manual score adjustment: ±50 buttons displayed to the left and right of each team's score at all times during a game. Emits a `ManualScoreAdjustment` event into the score log.
 - [ ] Account requirement: an account is required to play any game mode. This prevents free-token abuse (download → claim → delete cycle). Device ID is also recorded so starter token eligibility is bound to the device even across reinstalls.
-- [ ] Offline behavior: signed-in users can play offline; completed sessions queue locally and sync when connectivity returns. The app must enforce authentication before entering any game lobby.
+- [ ] Offline behavior: signed-in users can play offline; completed sessions queue locally and sync when connectivity returns. The app must enforce authentication before entering any game lobby. _(The install ID helper and offline queue utilities exist, but they are not yet wired into the play/session sync flow.)_
 
 ## Delivery Phases
 1. [x] Foundation: replace template routes, wire Clerk + Convex providers, create app shell, theme system, env contracts, and feature folder structure.
 2. [x] Content layer: normalize question data, create Convex schema/functions, add seed import tooling, expose category/question queries, and build artwork/category cards from current assets.
 3. [x] Gameplay MVP: implement lobby builder, team/player setup, board rendering, deterministic game reducer, timers, scorekeeping, used-question tracking, Classic and Quick Play.
-4. [ ] Advanced modes: add Random, Rumble, Rapid Fire, Wager flow, Hot Seat, lifelines, overtime surge, recap screen, and local persistence/resume. _(Wager flow, lifeline setup/display, and local persistence/resume are done; remaining modes and recap depth still open)_
-5. [ ] Account and progression: add Clerk auth screens (required for all game access), profile sync, device ID binding for starter tokens, history, rapid-fire stats, and saved preferences. _(Clerk auth screens and profile mirror are done; auth-gated gameplay, device binding, history, rapid-fire stats, and saved preferences still open)_
-6. [ ] Economy without payments: implement wallet ledger, device-bound starter token grants, game entry spends/refunds, promo code redemption, store UI with disabled “coming soon” purchase bundles, compliance-safe copy, and the online admin token portal (generate, list, cap tokens).
+4. [ ] Advanced modes: add Random, Rumble, Rapid Fire, Wager flow, Hot Seat, lifelines, overtime surge, recap screen, and local persistence/resume. _(Wager flow, local persistence/resume, Random mode routing, and parts of Rumble / Hot Seat state are done; Rapid Fire, lifeline behavior, overtime surge, animation polish, and recap depth are still open.)_
+5. [ ] Account and progression: add Clerk auth screens (required for all game access), profile sync, device ID binding for starter tokens, history, rapid-fire stats, and saved preferences. _(Clerk auth screens, the Convex user/profile schema, and preference mutation exist; auth-gated gameplay, device registration wiring, synced history, rapid-fire stats, and persisted settings still need client integration.)_
+6. [ ] Economy without payments: implement wallet ledger, device-bound starter token grants, game entry spends/refunds, promo code redemption, store UI with disabled “coming soon” purchase bundles, compliance-safe copy, and the online admin token portal (generate, list, cap tokens). _(Wallet, promo, and session backend mutations plus pure tests are in place, but the app still uses local token mutations and a mock redeem/store flow.)_
 7. [ ] Hardening and release prep: crash/error tracking, analytics events, accessibility pass, tablet/phone QA, performance tuning, CI, and app-store submission checklist.
 
 ## Tests And Acceptance

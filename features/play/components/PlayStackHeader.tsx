@@ -11,6 +11,7 @@ import { usePlayStore } from '@/store/play';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI.colors;
+const QUICKFIRE_TOKEN_ART = require('../../../assets/QF logo.png');
 
 function formatTokens(n: number, locale: string) {
   return n.toLocaleString(locale, { maximumFractionDigits: 0 });
@@ -99,6 +100,7 @@ export function PlayStackHeader({ title, onBackPress }: PlayStackHeaderProps) {
           value={formatted}
           rowDirection={rowDir}
           variant="softUi"
+          artworkSource={QUICKFIRE_TOKEN_ART}
           onPress={() => router.push('/(app)/store')}
           accessibilityLabel={`${t('common.tokens')}: ${formatted}`}
         />
@@ -129,8 +131,8 @@ const styles = StyleSheet.create({
   },
   titleText: {
     fontFamily: FONTS.uiBold,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 18,
+    lineHeight: 22,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     textAlign: 'center',

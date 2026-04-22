@@ -4,9 +4,12 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Modal } from 'react-native';
 
 import AppHubScreen from '@/app/(app)/index';
+import { FONTS } from '@/constants';
 import { usePlayStore } from '@/store/play';
 
 const mockPush = jest.fn();
+const mockUseAuth = jest.fn(() => ({ isSignedIn: true }));
+const mockIsAuthDisabled = jest.fn(() => false);
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({
@@ -49,8 +52,8 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'home.secondaryStore': 'Store',
         'play.mode.classic': 'Classic',
         'play.mode.classicCopy': 'Full board, wagers, six topics.',
-        'play.mode.quick': 'Quick Play',
-        'play.mode.quickCopy': 'Shorter game, fewer topics.',
+        'play.mode.quick': 'QuickFire',
+        'play.mode.quickCopy': 'Five topics, faster round, same team flow.',
         'play.mode.random': 'Random',
         'play.mode.randomCopy': 'Random questions each turn.',
         'play.mode.rumble': 'Rumble',
@@ -62,6 +65,14 @@ jest.mock('@/lib/i18n/useI18n', () => ({
   }),
 }));
 
+jest.mock('@clerk/clerk-expo', () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
+jest.mock('@/lib/authMode', () => ({
+  isAuthDisabled: () => mockIsAuthDisabled(),
+}));
+
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
@@ -69,13 +80,15 @@ jest.mock('@expo/vector-icons', () => ({
 describe('AppHubScreen', () => {
   beforeEach(() => {
     mockPush.mockClear();
+    mockUseAuth.mockReturnValue({ isSignedIn: true });
+    mockIsAuthDisabled.mockReturnValue(false);
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
   });
 
   it('starts quick play directly from the home mode choices', () => {
     render(<AppHubScreen />);
 
-    fireEvent.press(screen.getByLabelText('Quick Play'));
+    fireEvent.press(screen.getByLabelText('QuickFire'));
 
     expect(usePlayStore.getState().session?.mode).toBe('quickPlay');
     expect(usePlayStore.getState().session?.step).toBe('quick-play-length');
@@ -92,6 +105,91 @@ describe('AppHubScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/play/team-setup');
   });
 
+  it('shows the token cost under each game mode', () => {
+    render(<AppHubScreen />);
+
+    expect(screen.getByTestId('home-mode-token-cost-quickPlay')).toHaveTextContent('5-8 TOKENS');
+    expect(screen.getByTestId('home-mode-token-cost-classic')).toHaveTextContent('10 TOKENS');
+    expect(screen.getByTestId('home-mode-token-cost-random')).toHaveTextContent('10 TOKENS');
+    expect(screen.getByTestId('home-mode-token-cost-rumble')).toHaveTextContent('10 TOKENS');
+  });
+
+  it('shows three people for rumble', () => {
+    render(<AppHubScreen />);
+
+    expect(screen.getByTestId('home-rumble-person-1')).toBeTruthy();
+    expect(screen.getByTestId('home-rumble-person-2')).toBeTruthy();
+    expect(screen.getByTestId('home-rumble-person-3')).toBeTruthy();
+  });
+
+  it('prompts to continue or start new when a session is already in progress', () => {
+    usePlayStore.getState().ensureDraft();
+    const current = usePlayStore.getState().session;
+    usePlayStore.setState({
+      session: current
+        ? {
+            ...current,
+            mode: 'classic',
+            step: 'board',
+          }
+        : null,
+    });
+
+    render(<AppHubScreen />);
+
+    fireEvent.press(screen.getByLabelText('QuickFire'));
+
+    expect(screen.getByText('Continue or start fresh?')).toBeTruthy();
+    expect(screen.getByText('Continue Game')).toBeTruthy();
+    expect(screen.getByText('New Game')).toBeTruthy();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('continues the current game route from the resume prompt', () => {
+    usePlayStore.getState().ensureDraft();
+    const current = usePlayStore.getState().session;
+    usePlayStore.setState({
+      session: current
+        ? {
+            ...current,
+            mode: 'classic',
+            step: 'board',
+          }
+        : null,
+    });
+
+    render(<AppHubScreen />);
+
+    fireEvent.press(screen.getByLabelText('QuickFire'));
+    fireEvent.press(screen.getByLabelText('Continue Game'));
+
+    expect(mockPush).toHaveBeenCalledWith('/play/board');
+    expect(usePlayStore.getState().session?.mode).toBe('classic');
+  });
+
+  it('starts a fresh game from the resume prompt with the selected mode', () => {
+    usePlayStore.getState().ensureDraft();
+    const current = usePlayStore.getState().session;
+    usePlayStore.setState({
+      session: current
+        ? {
+            ...current,
+            mode: 'classic',
+            step: 'board',
+          }
+        : null,
+    });
+
+    render(<AppHubScreen />);
+
+    fireEvent.press(screen.getByLabelText('QuickFire'));
+    fireEvent.press(screen.getByLabelText('New Game'));
+
+    expect(mockPush).toHaveBeenCalledWith('/play/quick-length');
+    expect(usePlayStore.getState().session?.mode).toBe('quickPlay');
+    expect(usePlayStore.getState().session?.step).toBe('quick-play-length');
+  });
+
   it('keeps the home mode choices in one horizontal row', () => {
     render(<AppHubScreen />);
 
@@ -101,13 +199,43 @@ describe('AppHubScreen', () => {
     });
   });
 
+  it('uses the brand raised surface treatment for mode choices', () => {
+    render(<AppHubScreen />);
+
+    expect(screen.getByTestId('home-mode-card-quickPlay')).toHaveStyle({
+      backgroundColor: '#FFFFFF',
+      borderTopWidth: 2,
+      borderTopColor: 'rgba(255, 255, 255, 0.78)',
+      borderBottomWidth: 3,
+      borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+      shadowColor: 'rgba(51, 51, 51, 0.15)',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 4,
+    });
+    expect(screen.getByTestId('home-mode-card-title-quickPlay')).toHaveStyle({
+      color: '#333333',
+      fontFamily: FONTS.uiBold,
+      fontSize: 18,
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+    });
+    expect(screen.getByTestId('home-mode-card-copy-quickPlay')).toHaveStyle({
+      color: 'rgba(51, 51, 51, 0.58)',
+      fontFamily: FONTS.ui,
+      fontSize: 12,
+      letterSpacing: 0.15,
+    });
+  });
+
   it('opens a small explanation when tapping the mode info icon', () => {
     render(<AppHubScreen />);
 
-    fireEvent.press(screen.getByLabelText('Quick Play info'));
+    fireEvent.press(screen.getByLabelText('QuickFire info'));
 
     expect(mockPush).not.toHaveBeenCalled();
-    expect(screen.getByText('Shorter game, fewer topics.')).toBeTruthy();
+    expect(screen.getByText('Five topics, faster round, same team flow.')).toBeTruthy();
   });
 
   it('keeps the mode explanation out of the native modal portal', () => {
@@ -119,5 +247,29 @@ describe('AppHubScreen', () => {
 
     expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
     expect(screen.getByText('Random questions each turn.')).toBeTruthy();
+  });
+
+  it('routes signed-out players to sign-in instead of opening a game lobby', () => {
+    mockUseAuth.mockReturnValue({ isSignedIn: false });
+
+    render(<AppHubScreen />);
+
+    fireEvent.press(screen.getByLabelText('QuickFire'));
+
+    expect(usePlayStore.getState().session).toBeNull();
+    expect(mockPush).toHaveBeenCalledWith('/(auth)/sign-in');
+  });
+
+  it('lets signed-out players start a game when auth is disabled', () => {
+    mockUseAuth.mockReturnValue({ isSignedIn: false });
+    mockIsAuthDisabled.mockReturnValue(true);
+
+    render(<AppHubScreen />);
+
+    fireEvent.press(screen.getByLabelText('QuickFire'));
+
+    expect(usePlayStore.getState().session?.mode).toBe('quickPlay');
+    expect(usePlayStore.getState().session?.step).toBe('quick-play-length');
+    expect(mockPush).toHaveBeenCalledWith('/play/quick-length');
   });
 });

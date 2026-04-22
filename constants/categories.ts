@@ -91,4 +91,5 @@ export const FALLBACK_CATEGORIES = RAW_CATEGORIES.map((c) => ({
   id: c.id,
   slug: slugify(c.name),
   title: c.name,
+  illustration: c.name === '21st Century' ? require('@/assets/21st-century.png') : undefined,
 }));

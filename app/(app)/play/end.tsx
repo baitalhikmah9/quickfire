@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 import { BORDER_RADIUS, FONT_SIZES, SPACING, FONTS } from '@/constants';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
+import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
@@ -11,7 +12,7 @@ export default function PlayEndScreen() {
   const router = useRouter();
   const colors = useTheme();
   const { getTextStyle, t } = useI18n();
-  const { session, resetSession, ensureDraft } = usePlayStore();
+  const { session, resetSession, ensureDraft, reopenLastResolvedTurn } = usePlayStore();
 
   if (!session) {
     return <PlayScaffold title={t('play.matchComplete')}><Text>{t('play.sessionCleared')}</Text></PlayScaffold>;
@@ -68,6 +69,16 @@ export default function PlayEndScreen() {
       </View>
 
       <View style={styles.actions}>
+        {session.lastResolvedTurn ? (
+          <Button
+            title={t('play.reviewLastAnswer')}
+            variant="secondary"
+            onPress={() => {
+              reopenLastResolvedTurn();
+              router.replace('/play/answer');
+            }}
+          />
+        ) : null}
         <Button
           title={t('play.backToHome')}
           variant="secondary"
@@ -91,10 +102,12 @@ export default function PlayEndScreen() {
 
 const styles = StyleSheet.create({
   winnerCard: {
-    borderWidth: 1,
+    borderWidth: 0,
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.xl,
     alignItems: 'center',
+    ...SOFT_SURFACE_STYLES.face,
+    ...SOFT_SURFACE_STYLES.raised,
   },
   winnerLabel: {
     fontSize: FONT_SIZES.sm,
@@ -111,12 +124,14 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   teamRow: {
-    borderWidth: 1,
+    borderWidth: 0,
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    ...SOFT_SURFACE_STYLES.face,
+    ...SOFT_SURFACE_STYLES.raised,
   },
   teamName: {
     fontSize: FONT_SIZES.lg,

@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import type {
+  AnswerReviewState,
   BonusChallengeState,
   CategoryOption,
   GameConfig,
   GameMode,
   GameSessionState,
+  HotSeatState,
   LifelineRuntimeState,
   OvertimeState,
   PlayRouteStep,
@@ -105,11 +107,15 @@ const questionCardSchema = z.object({
   categoryName: z.string().min(1),
   prompt: z.string(),
   answer: z.string(),
+  promptImageUrl: z.string().optional(),
+  answerImageUrl: z.string().optional(),
   pointValue: z.number(),
   locale: supportedLocaleSchema,
   resolvedFromFallback: z.boolean(),
   used: z.boolean(),
   boardSide: z.enum(['left', 'right']).optional(),
+  rumbleFirstTeamId: z.string().optional(),
+  rumbleSecondTeamId: z.string().optional(),
 });
 
 const categoryOptionSchema = z.object({
@@ -169,6 +175,26 @@ const bonusChallengeSchema = z.object({
   question: questionCardSchema.optional(),
 });
 
+const hotSeatParticipantSchema = z.object({
+  teamId: z.string().min(1),
+  playerName: z.string().min(1),
+});
+
+const hotSeatChallengeSchema = z.object({
+  id: z.string().min(1),
+  triggerAfterQuestion: z.number().int().min(1),
+  answeringTeamId: z.string().min(1),
+  participants: z.array(hotSeatParticipantSchema).min(1),
+  question: questionCardSchema.optional(),
+  completed: z.boolean(),
+});
+
+const hotSeatStateSchema = z.object({
+  completedQuestionCount: z.number().int().min(0),
+  challenges: z.array(hotSeatChallengeSchema),
+  activeChallenge: hotSeatChallengeSchema.optional(),
+});
+
 const overtimeStateSchema = z.object({
   topics: z.array(z.string()),
   leadingTeamBanned: z.string().optional(),
@@ -188,6 +214,13 @@ const rapidFireStateSchema = z.object({
   seed: z.string().min(1),
   runStartedAt: z.number(),
   correctCount: z.number().optional(),
+});
+
+const answerReviewStateSchema = z.object({
+  question: questionCardSchema,
+  awardedTeamId: z.string().nullable().optional(),
+  pointsAwarded: z.number().optional(),
+  revealedAt: z.number(),
 });
 
 const persistedGameSessionSchema = z.object({
@@ -214,6 +247,8 @@ const persistedGameSessionSchema = z.object({
   overtime: overtimeStateSchema.optional(),
   scoreEvents: z.array(scoreEventSchema).default([]),
   lifelineRuntime: lifelineRuntimeStateSchema.optional(),
+  hotSeat: hotSeatStateSchema.optional(),
+  lastResolvedTurn: answerReviewStateSchema.optional(),
 });
 
 export interface PersistedGameSessionState {
@@ -240,6 +275,8 @@ export interface PersistedGameSessionState {
   overtime?: OvertimeState;
   scoreEvents: ScoreEvent[];
   lifelineRuntime?: LifelineRuntimeState;
+  hotSeat?: HotSeatState;
+  lastResolvedTurn?: AnswerReviewState;
 }
 
 export interface PersistedPlayState {
@@ -345,6 +382,33 @@ export function serializeGameSession(
           ),
         }
       : session.lifelineRuntime,
+    hotSeat: session.hotSeat
+      ? {
+          ...session.hotSeat,
+          challenges: session.hotSeat.challenges.map((challenge) => ({
+            ...challenge,
+            participants: challenge.participants.map((participant) => ({ ...participant })),
+            question: challenge.question ? serializeQuestionCard(challenge.question) : undefined,
+          })),
+          activeChallenge: session.hotSeat.activeChallenge
+            ? {
+                ...session.hotSeat.activeChallenge,
+                participants: session.hotSeat.activeChallenge.participants.map((participant) => ({
+                  ...participant,
+                })),
+                question: session.hotSeat.activeChallenge.question
+                  ? serializeQuestionCard(session.hotSeat.activeChallenge.question)
+                  : undefined,
+              }
+            : undefined,
+        }
+      : session.hotSeat,
+    lastResolvedTurn: session.lastResolvedTurn
+      ? {
+          ...session.lastResolvedTurn,
+          question: serializeQuestionCard(session.lastResolvedTurn.question),
+        }
+      : session.lastResolvedTurn,
   };
 }
 
@@ -372,6 +436,8 @@ export function deserializeGameSession(
     overtime: session.overtime as OvertimeState | undefined,
     scoreEvents: session.scoreEvents as ScoreEvent[],
     lifelineRuntime: session.lifelineRuntime as LifelineRuntimeState | undefined,
+    hotSeat: session.hotSeat as HotSeatState | undefined,
+    lastResolvedTurn: session.lastResolvedTurn as AnswerReviewState | undefined,
   };
 }
 

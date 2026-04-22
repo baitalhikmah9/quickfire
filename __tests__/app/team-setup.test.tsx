@@ -59,6 +59,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'play.playerPlaceholder': `Player ${values?.count ?? ''}`,
         'play.removeLastPlayerLink': 'Remove last player',
         'play.removeTeamMemberA11y': 'Remove a team member',
+        'play.rumblePartyCountTitle': 'Parties',
         'play.setupIncompleteHint': 'Enter all names to continue',
         'play.teamNamePlaceholder': 'Team name',
         'play.teamSetupTitle': 'Team Setup',
@@ -108,5 +109,28 @@ describe('TeamSetupScreen', () => {
 
     expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
     expect(screen.getByText('Wagers are a risky way to try and sabotage the other team!')).toBeTruthy();
+  });
+
+  it('shows rumble party controls but hides wager and hot seat controls', () => {
+    usePlayStore.getState().setMode('rumble');
+
+    render(<TeamSetupScreen />);
+
+    expect(screen.getByText('Parties')).toBeTruthy();
+    expect(screen.getByText('3')).toBeTruthy();
+    expect(screen.queryByText('Hot Seat')).toBeNull();
+    expect(screen.queryByText('Wager')).toBeNull();
+  });
+
+  it('uses distinct controls for adding and removing players', () => {
+    render(<TeamSetupScreen />);
+
+    const addControls = screen.getAllByLabelText('Add a team member');
+    fireEvent.press(addControls[0]);
+
+    const addControl = screen.getAllByLabelText('Add a team member')[0];
+    const removeControl = screen.getByLabelText('Remove a team member');
+
+    expect(addControl.props.style).not.toEqual(removeControl.props.style);
   });
 });

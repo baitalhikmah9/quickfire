@@ -10,20 +10,23 @@ import {
 } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useAuth } from '@clerk/clerk-expo';
+import { Redirect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, BORDER_RADIUS, TYPE_SCALE, FONTS, LAYOUT } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { PillCollapsibleSection } from '@/components/PillCollapsibleSection';
 import { HubTokenChip } from '@/components/HubTokenChip';
+import { STORE_BUNDLES, type StoreBundle } from '@/features/play/storeBundles';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
+import { isAuthDisabled } from '@/lib/authMode';
 import { usePlayStore } from '@/store/play';
 import { HOME_SOFT_UI } from '@/themes';
-import type { TranslationKey } from '@/lib/i18n/messages/en';
 
 const T = HOME_SOFT_UI;
+const COMPACT_BUNDLES_ROW_MAX_WIDTH = 584;
 
 /** Raised plastic tile shadow tier. */
 function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill' | 'card'): any {
@@ -47,51 +50,6 @@ function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill' 
 
 
 
-type BundleDef = {
-  id: string;
-  nameKey: TranslationKey;
-  tokens: number;
-  bonus?: number;
-  priceLabel: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  featured?: boolean;
-};
-
-const BUNDLES: BundleDef[] = [
-  {
-    id: 'b50',
-    nameKey: 'store.packQuick',
-    tokens: 50,
-    priceLabel: '$0.99',
-    icon: 'flash-outline',
-  },
-  {
-    id: 'b250',
-    nameKey: 'store.packValue',
-    tokens: 250,
-    bonus: 10,
-    priceLabel: '$4.99',
-    icon: 'layers-outline',
-  },
-  {
-    id: 'b600',
-    nameKey: 'store.packPro',
-    tokens: 600,
-    bonus: 50,
-    priceLabel: '$9.99',
-    icon: 'star-outline',
-    featured: true,
-  },
-  {
-    id: 'b1500',
-    nameKey: 'store.packMega',
-    tokens: 1500,
-    bonus: 200,
-    priceLabel: '$19.99',
-    icon: 'trophy-outline',
-  },
-];
-
 const VOUCHER_CODES: Record<string, number> = {
   DOUBLE: 10,
   WELCOME: 5,
@@ -107,7 +65,7 @@ function BundleCard({
   isFeatured = false,
   isFirst = false,
 }: {
-  bundle: BundleDef;
+  bundle: StoreBundle;
   onPress: () => void;
   isFeatured?: boolean;
   isFirst?: boolean;
@@ -117,7 +75,6 @@ function BundleCard({
   const textMuted = T.colors.textMuted;
   const shadowHex = T.colors.shadowStrong;
   const accentGlow = T.colors.accentGlow;
-  const blueAccent = '#6D8EB1'; // From image for first card
 
   return (
     <View style={styles.bundleCardWrapper}>
@@ -156,8 +113,8 @@ function BundleCard({
         <View 
           style={[
             styles.buyButton, 
-            styles.plasticFace, 
-            { backgroundColor: isFirst ? blueAccent : accentGlow }
+            styles.plasticFace,
+            { backgroundColor: accentGlow }
           ]}
         >
           <Text style={styles.buyButtonText}>BUY</Text>
@@ -168,6 +125,8 @@ function BundleCard({
 }
 
 export default function StoreScreen() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const authDisabled = isAuthDisabled();
   const { direction, t, uiLocale } = useI18n();
   const rowDir = getRowDirection(direction);
   const router = useRouter();
@@ -182,6 +141,14 @@ export default function StoreScreen() {
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
   const shadowHex = T.colors.shadowStrong;
+
+  if (!isLoaded && !authDisabled) {
+    return null;
+  }
+
+  if (!isSignedIn && !authDisabled) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
 
 
 
@@ -202,7 +169,7 @@ export default function StoreScreen() {
   }, [grantTokens, t, voucherCode]);
 
   const onBuyBundle = useCallback(
-    (bundle: BundleDef) => {
+    (bundle: StoreBundle) => {
       const total = bundle.tokens + (bundle.bonus ?? 0);
       grantTokens(total);
     },
@@ -225,23 +192,34 @@ export default function StoreScreen() {
     >
       <ScreenContent fullWidth style={styles.viewport}>
         <View style={styles.header}>
-          <Pressable
-            onPress={handleBack}
-            style={({ pressed }) => [
-              styles.backButton,
-              {
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
-          >
-            <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={28} color={textPrimary} />
-          </Pressable>
-          <Text style={[styles.title, { color: textPrimary }]}>STORE</Text>
-          <View style={styles.balanceChip}>
-            <Ionicons name="radio-outline" size={16} color={textPrimary} style={{ marginRight: 6 }} />
-            <Text style={[styles.balanceText, { color: textPrimary }]}>
-              BALANCE: {formattedTokens} TOKENS
-            </Text>
+          <View style={styles.headerSide}>
+            <Pressable
+              onPress={handleBack}
+              style={({ pressed }) => [
+                styles.backButton,
+                styles.plasticFace,
+                { backgroundColor: surface },
+                styles.raisedButtonDepth,
+                {
+                  opacity: pressed ? 0.9 : 1,
+                  transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                },
+              ]}
+            >
+              <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
+            </Pressable>
+          </View>
+          <View style={styles.headerCenter}>
+            <Text style={[styles.title, { color: textPrimary }]}>STORE</Text>
+          </View>
+          <View style={[styles.headerSide, styles.headerSideRight]}>
+            <HubTokenChip
+              label={t('common.tokens')}
+              value={formattedTokens}
+              rowDirection={rowDir}
+              variant="softUi"
+              accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
+            />
           </View>
         </View>
 
@@ -249,10 +227,10 @@ export default function StoreScreen() {
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator
         >
           <View style={styles.bundlesContainer}>
-            {BUNDLES.map((bundle, index) => (
+            {STORE_BUNDLES.map((bundle, index) => (
               <BundleCard
                 key={bundle.id}
                 bundle={bundle}
@@ -324,135 +302,165 @@ const styles = StyleSheet.create({
     paddingHorizontal: LAYOUT.screenGutter,
     paddingBottom: SPACING.xxl,
     gap: SPACING.lg,
+    alignItems: 'center',
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.lg,
+    justifyContent: 'space-between',
+    width: '100%',
+    minHeight: 72,
+    paddingVertical: SPACING.md,
+  },
+  headerSide: {
+    width: 116,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  headerSideRight: {
+    alignItems: 'flex-end',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   backButton: {
-    position: 'absolute',
-    left: 0,
-    top: SPACING.lg,
-    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  raisedButtonDepth: {
+    shadowColor: 'rgba(51, 51, 51, 0.15)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
   title: {
     fontFamily: FONTS.displayBold,
     fontSize: 42,
     letterSpacing: 2,
-    marginBottom: SPACING.xs,
+    marginBottom: 0,
   },
-  balanceChip: {
+  balanceCornerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.03)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
     borderRadius: 16,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 6,
   },
-  balanceText: {
+  balanceCornerIcon: {
+    marginRight: 4,
+  },
+  balanceCornerText: {
     fontFamily: FONTS.uiBold,
-    fontSize: 14,
-    letterSpacing: 0.5,
-  },
-  scrollContent: {
-    paddingHorizontal: LAYOUT.screenGutter,
-    paddingBottom: SPACING.xxl,
-    alignItems: 'center',
+    fontSize: 11,
+    letterSpacing: 0.4,
   },
   bundlesContainer: {
     flexDirection: 'row',
-    gap: SPACING.lg,
-    justifyContent: 'center',
+    flexWrap: 'nowrap',
+    gap: 6,
+    justifyContent: 'space-between',
     width: '100%',
-    paddingVertical: SPACING.xl,
+    maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,
+    alignSelf: 'center',
+    paddingVertical: SPACING.md,
   },
   bundleCardWrapper: {
-    width: 160,
+    flexBasis: '19%',
+    minWidth: 0,
+    flexGrow: 1,
+    flexShrink: 1,
   },
   bundleCard: {
-    borderRadius: 32,
-    padding: SPACING.lg,
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
     alignItems: 'center',
-    minHeight: 220,
+    minHeight: 140,
     justifyContent: 'space-between',
   },
   bundleAmount: {
     fontFamily: FONTS.displayBold,
-    fontSize: 32,
+    fontSize: 18,
     textAlign: 'center',
   },
   bundleLabel: {
     fontFamily: FONTS.uiBold,
-    fontSize: 12,
-    letterSpacing: 1,
-    marginTop: -8,
+    fontSize: 8,
+    letterSpacing: 0.5,
+    marginTop: -4,
   },
   bundleBonus: {
     fontFamily: FONTS.ui,
-    fontSize: 11,
-    marginTop: 4,
+    fontSize: 8,
+    marginTop: 1,
   },
   bundleBonusSpacer: {
-    height: 18,
+    height: 10,
   },
   bundlePrice: {
     fontFamily: FONTS.displayBold,
-    fontSize: 20,
-    marginTop: SPACING.md,
-    marginBottom: SPACING.md,
+    fontSize: 14,
+    marginTop: 4,
+    marginBottom: 6,
   },
   buyButton: {
     alignSelf: 'stretch',
-    height: 40,
-    borderRadius: 20,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buyButtonText: {
     fontFamily: FONTS.uiBold,
-    fontSize: 12,
+    fontSize: 8,
     color: '#FFFFFF',
-    letterSpacing: 1,
+    letterSpacing: 0.4,
   },
   redeemSection: {
     width: '100%',
-    maxWidth: 600,
-    marginTop: SPACING.xl,
+    maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,
+    marginTop: SPACING.lg,
     alignItems: 'center',
   },
   redeemTitle: {
     fontFamily: FONTS.uiBold,
-    fontSize: 14,
-    letterSpacing: 1.5,
-    marginBottom: SPACING.md,
+    fontSize: 12,
+    letterSpacing: 1.2,
+    marginBottom: SPACING.sm,
   },
   redeemCard: {
     flexDirection: 'row',
     alignSelf: 'stretch',
-    borderRadius: 32,
-    padding: SPACING.md,
+    borderRadius: 24,
+    padding: SPACING.sm,
     alignItems: 'center',
-    gap: SPACING.md,
+    gap: SPACING.sm,
   },
   redeemInput: {
     flex: 1,
-    height: 48,
-    borderRadius: 24,
-    paddingHorizontal: SPACING.lg,
+    height: 40,
+    borderRadius: 20,
+    paddingHorizontal: SPACING.md,
     fontFamily: FONTS.ui,
-    fontSize: 14,
+    fontSize: 12,
     backgroundColor: '#FFFFFF',
   },
   applyButton: {
-    height: 48,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: 24,
+    height: 40,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   applyButtonText: {
     fontFamily: FONTS.uiBold,
-    fontSize: 12,
+    fontSize: 10,
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
