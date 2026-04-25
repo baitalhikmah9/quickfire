@@ -36,7 +36,7 @@ const es = withEnglishFallback({
   'profile.changeThemeDescription': 'Personaliza la apariencia de la app',
   'store.purchaseTitle': 'Compra paquetes de fichas',
   'store.demoTitle': 'Modo demo activo',
-  'play.hubTitle': 'Jugar Double Down',
+  'play.hubTitle': 'Jugar QuickFire',
   'play.startNewGame': 'Empezar partida nueva',
   'play.resumeCurrentMatch': 'Reanudar partida actual',
   'play.chooseModeTitle': 'Elige un modo',
@@ -50,4 +50,3 @@ const es = withEnglishFallback({
 });
 
 export default es;
-

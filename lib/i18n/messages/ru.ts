@@ -26,7 +26,7 @@ const ru = withEnglishFallback({
   'home.tagline': 'Современная викторина',
   'profile.changeTheme': 'Сменить тему',
   'store.purchaseTitle': 'Купить наборы токенов',
-  'play.hubTitle': 'Играть в Double Down',
+  'play.hubTitle': 'Играть в QuickFire',
   'play.startNewGame': 'Начать новую игру',
   'play.resumeCurrentMatch': 'Продолжить матч',
   'play.chooseModeTitle': 'Выберите режим',
@@ -38,4 +38,3 @@ const ru = withEnglishFallback({
 });
 
 export default ru;
-

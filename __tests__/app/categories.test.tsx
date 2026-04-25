@@ -156,6 +156,23 @@ describe('CategorySelectionScreen', () => {
     expect(hasNearbyColumnLayout(titleNode)).toBe(true);
   });
 
+  it('gives each topic tile a taller card and larger artwork so the logo uses more of the available space', () => {
+    render(<CategorySelectionScreen />);
+
+    const category = usePlayStore.getState().session?.availableCategories[0];
+
+    expect(category).toBeDefined();
+
+    const topicCard = screen.getByLabelText(`Select ${category!.title}`);
+    const cardStyle = getResolvedStyle(topicCard);
+    const logoWrap = screen.getByTestId(`topic-logo-wrap-${category!.slug}`);
+    const logoWrapStyle = StyleSheet.flatten(logoWrap.props.style);
+
+    expect(cardStyle.minHeight).toBeGreaterThanOrEqual(140);
+    expect(logoWrapStyle.width).toBeGreaterThanOrEqual(84);
+    expect(logoWrapStyle.height).toBeGreaterThanOrEqual(72);
+  });
+
   it('adds one random unselected topic per press', () => {
     render(<CategorySelectionScreen />);
 

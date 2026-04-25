@@ -50,12 +50,26 @@ const DEFAULT_BONUS: BonusChallengeState = {
   multiplier: 2,
 };
 
-const MIN_RUMBLE_TEAMS = 3;
-const MAX_RUMBLE_TEAMS = 4;
+const SUPPORTED_RUMBLE_TEAM_COUNTS = [2, 3, 4, 6] as const;
+const DEFAULT_RUMBLE_TEAM_COUNT = 2;
 const MAX_HOT_SEAT_ROUNDS = 5;
+const RUMBLE_QUESTIONS_PER_DIFFICULTY = 12;
+const RUMBLE_DIFFICULTY_COUNT = 3;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function isSupportedRumbleTeamCount(count: number): count is typeof SUPPORTED_RUMBLE_TEAM_COUNTS[number] {
+  return SUPPORTED_RUMBLE_TEAM_COUNTS.includes(count as typeof SUPPORTED_RUMBLE_TEAM_COUNTS[number]);
+}
+
+function getNearestSupportedRumbleTeamCount(count: number): number {
+  return SUPPORTED_RUMBLE_TEAM_COUNTS.reduce((nearest, option) => {
+    const nearestDistance = Math.abs(nearest - count);
+    const optionDistance = Math.abs(option - count);
+    return optionDistance <= nearestDistance ? option : nearest;
+  }, DEFAULT_RUMBLE_TEAM_COUNT);
 }
 
 function createDefaultTeam(index: number): TeamState {
@@ -79,13 +93,17 @@ function cloneTeam(team: TeamState, index: number): TeamState {
 }
 
 function normalizeTeamsForMode(mode: GameMode, teams: TeamState[]): TeamState[] {
-  const maxTeams = mode === 'rumble' ? MAX_RUMBLE_TEAMS : 2;
-  const minTeams = mode === 'rumble' ? MIN_RUMBLE_TEAMS : 2;
+  const desiredCount =
+    mode === 'rumble'
+      ? isSupportedRumbleTeamCount(teams.length)
+        ? teams.length
+        : DEFAULT_RUMBLE_TEAM_COUNT
+      : 2;
   const normalized = (teams.length ? teams : DEFAULT_TEAMS)
-    .slice(0, maxTeams)
+    .slice(0, desiredCount)
     .map(cloneTeam);
 
-  while (normalized.length < minTeams) {
+  while (normalized.length < desiredCount) {
     normalized.push(createDefaultTeam(normalized.length));
   }
 
@@ -198,20 +216,64 @@ function withScores(teams: TeamState[]): { teams: TeamState[]; scores: Record<st
   };
 }
 
-function buildBalancedTeamSequence(teamIds: string[], length: number, offset: number): string[] {
-  const sequence: string[] = [];
-  let cursor = offset;
+function shuffleItems<T>(items: T[]): T[] {
+  const shuffled = [...items];
 
-  while (sequence.length < length) {
-    sequence.push(teamIds[cursor % teamIds.length]);
-    cursor += 1;
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    const current = shuffled[index]!;
+    shuffled[index] = shuffled[swapIndex]!;
+    shuffled[swapIndex] = current;
   }
 
-  return sequence;
+  return shuffled;
 }
 
-function assignRumbleQuestionParties(board: QuestionCard[], teams: TeamState[]): QuestionCard[] {
-  if (teams.length < MIN_RUMBLE_TEAMS) return board;
+function buildBalancedTeamSequence(teamIds: string[], repeats: number): string[] {
+  const sequence: string[] = [];
+
+  for (let repeat = 0; repeat < repeats; repeat += 1) {
+    sequence.push(...shuffleItems(teamIds));
+  }
+
+  return shuffleItems(sequence);
+}
+
+function getRumbleValidationError(board: QuestionCard[], teamCount: number): string | null {
+  if (!isSupportedRumbleTeamCount(teamCount)) {
+    return 'Rumble supports 2, 3, 4, or 6 teams.';
+  }
+
+  const byPointValue = new Map<number, QuestionCard[]>();
+
+  for (const question of board) {
+    const questions = byPointValue.get(question.pointValue) ?? [];
+    questions.push(question);
+    byPointValue.set(question.pointValue, questions);
+  }
+
+  if (byPointValue.size !== RUMBLE_DIFFICULTY_COUNT) {
+    return 'Rumble requires exactly 12 easy, 12 medium, and 12 hard questions.';
+  }
+
+  for (const questions of byPointValue.values()) {
+    if (
+      questions.length !== RUMBLE_QUESTIONS_PER_DIFFICULTY ||
+      questions.length % teamCount !== 0
+    ) {
+      return 'Rumble questions cannot be balanced for this team count.';
+    }
+  }
+
+  return null;
+}
+
+function assignRumbleQuestionParties(
+  board: QuestionCard[],
+  teams: TeamState[]
+): { ok: true; board: QuestionCard[] } | { ok: false; error: string } {
+  const validationError = getRumbleValidationError(board, teams.length);
+  if (validationError) return { ok: false, error: validationError };
 
   const teamIds = teams.map((team) => team.id);
   const byPointValue = new Map<number, QuestionCard[]>();
@@ -225,16 +287,16 @@ function assignRumbleQuestionParties(board: QuestionCard[], teams: TeamState[]):
   const assignments = new Map<string, Pick<QuestionCard, 'rumbleFirstTeamId' | 'rumbleSecondTeamId'>>();
 
   for (const questions of byPointValue.values()) {
-    const firstTeams = buildBalancedTeamSequence(teamIds, questions.length, 0);
-    const secondTeams = buildBalancedTeamSequence(teamIds, questions.length, 1);
+    const shuffledQuestions = shuffleItems(questions);
+    const repeatsPerTeam = questions.length / teamIds.length;
+    const firstTeams = buildBalancedTeamSequence(teamIds, repeatsPerTeam);
+    const secondTeamOrder = shuffleItems(teamIds);
+    const secondOffset = 1 + Math.floor(Math.random() * (teamIds.length - 1));
 
-    questions.forEach((question, index) => {
+    shuffledQuestions.forEach((question, index) => {
       const firstTeamId = firstTeams[index]!;
-      let secondTeamId = secondTeams[index]!;
-      if (secondTeamId === firstTeamId) {
-        const firstIndex = teamIds.indexOf(firstTeamId);
-        secondTeamId = teamIds[(firstIndex + 1) % teamIds.length]!;
-      }
+      const firstIndex = secondTeamOrder.indexOf(firstTeamId);
+      const secondTeamId = secondTeamOrder[(firstIndex + secondOffset) % secondTeamOrder.length]!;
 
       assignments.set(question.id, {
         rumbleFirstTeamId: firstTeamId,
@@ -243,10 +305,13 @@ function assignRumbleQuestionParties(board: QuestionCard[], teams: TeamState[]):
     });
   }
 
-  return board.map((question) => ({
-    ...question,
-    ...assignments.get(question.id),
-  }));
+  return {
+    ok: true,
+    board: board.map((question) => ({
+      ...question,
+      ...assignments.get(question.id),
+    })),
+  };
 }
 
 function getHotSeatPlayerName(team: TeamState, index: number): string {
@@ -509,7 +574,7 @@ export const usePlayStore = create<PlayStore>()(
           if (!state.session) return state;
 
           const desiredCount =
-            state.session.mode === 'rumble' ? clamp(count, MIN_RUMBLE_TEAMS, MAX_RUMBLE_TEAMS) : 2;
+            state.session.mode === 'rumble' ? getNearestSupportedRumbleTeamCount(count) : 2;
           const teams = state.session.teams.slice(0, desiredCount).map(cloneTeam);
 
           while (teams.length < desiredCount) {
@@ -691,6 +756,9 @@ export const usePlayStore = create<PlayStore>()(
         if (state.tokens < remainingTokenCost) {
           return { ok: false, error: 'You need more tokens to start a new game.' };
         }
+        if (session.mode === 'rumble' && !isSupportedRumbleTeamCount(session.teams.length)) {
+          return { ok: false, error: 'Rumble supports 2, 3, 4, or 6 teams.' };
+        }
         const teams = normalizeTeamsForMode(session.mode, session.teams).map((team) => ({
           ...team,
           score: 0,
@@ -700,8 +768,12 @@ export const usePlayStore = create<PlayStore>()(
           session.selectedCategoryIds,
           session.contentLocaleChain
         );
-        const board =
-          session.mode === 'rumble' ? assignRumbleQuestionParties(rawBoard, teams) : rawBoard;
+        const rumbleAssignment =
+          session.mode === 'rumble' ? assignRumbleQuestionParties(rawBoard, teams) : null;
+        if (rumbleAssignment && !rumbleAssignment.ok) {
+          return { ok: false, error: rumbleAssignment.error };
+        }
+        const board = rumbleAssignment ? rumbleAssignment.board : rawBoard;
         const hotSeat = isHotSeatAvailable(session.mode)
           ? buildHotSeatState(teams, session.config.hotSeatRounds ?? 0)
           : undefined;

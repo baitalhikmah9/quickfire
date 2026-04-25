@@ -26,7 +26,7 @@ const id = withEnglishFallback({
   'home.tagline': 'Malam trivia modern',
   'profile.changeTheme': 'Ubah tema',
   'store.purchaseTitle': 'Beli paket token',
-  'play.hubTitle': 'Mainkan Double Down',
+  'play.hubTitle': 'Mainkan QuickFire',
   'play.startNewGame': 'Mulai game baru',
   'play.resumeCurrentMatch': 'Lanjutkan pertandingan',
   'play.chooseModeTitle': 'Pilih mode',
@@ -38,4 +38,3 @@ const id = withEnglishFallback({
 });
 
 export default id;
-

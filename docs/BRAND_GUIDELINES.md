@@ -71,6 +71,18 @@ This style is the reference “raised back-button” treatment and should be reu
 - **Orientation:** Landscape-first on phone for this flow (match game orientation strategy).
 - **Alignment:** Vertical axis centered for hero and primary CTA; status anchored bottom-center unless a pattern dictates otherwise.
 
+## Header Instructions (Settings Pages)
+
+Use these rules for settings-style screens such as theme/language pickers so future edits stay visually consistent:
+
+- **Header container:** Keep the top header row flat on the canvas (no raised white card shell behind the full header row unless explicitly required by the design for that page).
+- **Header height & spacing:** Use a compact row around `72` height with balanced horizontal padding and a centered title.
+- **Back control shape:** Use a **rounded square / squircle** back button (not circular). Current reference is `44x44` with radius around `14`.
+- **Back control treatment:** Back button itself should use the standard raised surface treatment (white face, top lip, subtle bottom edge, soft charcoal shadow, pressed opacity/scale behavior).
+- **Header iconography:** Keep thin-stroke chevrons and charcoal icon color on light surfaces.
+- **Title style:** Uppercase label with display weight, centered between back button and a mirrored spacer for optical balance.
+- **Cross-page consistency:** Theme picker, app language picker, and trivia language picker headers should follow the same geometry and interaction feel unless a deliberate exception is documented.
+
 ## Implementation note
 
 `constants/theme.ts` may still list earlier token names (e.g. blue-forward `background`). When touching home/lobby screens, prefer tokens or local styles that match **canvas, surface, and charcoal text** above, and update shared tokens when migrating surfaces wholesale.

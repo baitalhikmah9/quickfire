@@ -36,7 +36,7 @@ const ar = withEnglishFallback({
   'profile.changeThemeDescription': 'خصص مظهر التطبيق',
   'store.purchaseTitle': 'اشترِ باقات الرموز',
   'store.demoTitle': 'وضع العرض التجريبي',
-  'play.hubTitle': 'العب Double Down',
+  'play.hubTitle': 'العب QuickFire',
   'play.startNewGame': 'ابدأ لعبة جديدة',
   'play.resumeCurrentMatch': 'استئناف المباراة الحالية',
   'play.chooseModeTitle': 'اختر وضعاً',
@@ -50,4 +50,3 @@ const ar = withEnglishFallback({
 })
 
 export default ar;
-

@@ -1,19 +1,19 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
+  Image,
   View,
   Text,
-  Image,
   StyleSheet,
   useWindowDimensions,
   type ViewStyle,
-  type TextStyle,
 } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { QuickFireTitleLogo } from '@/components/QuickFireTitleLogo';
 import { FONTS, SPACING, LAYOUT } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { HubTokenChip } from '@/components/HubTokenChip';
@@ -27,7 +27,6 @@ import type { GameMode, PlayRouteStep } from '@/features/shared';
 import type { TranslationKey } from '@/lib/i18n/messages/en';
 
 const T = HOME_SOFT_UI;
-const QUICKFIRE_MODE_ART = require('../../assets/QF logo.png');
 
 type ModeDef = {
   id: GameMode;
@@ -229,46 +228,6 @@ export default function AppHubScreen() {
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
 
-  const logoWordmarkStyle: TextStyle = {
-    fontFamily: FONTS.displayBold,
-    fontSize: compact ? 30 : 44,
-    letterSpacing: compact ? -1.2 : -1.8,
-    color: textPrimary,
-    textAlign: 'center',
-    textTransform: 'none',
-  };
-
-  const logoCaplineStyle: TextStyle = {
-    fontFamily: FONTS.ui,
-    fontSize: compact ? 11 : 13,
-    letterSpacing: compact ? 3 : 4.2,
-    color: textPrimary,
-    textAlign: 'center',
-    marginTop: 4,
-    textTransform: 'uppercase',
-  };
-
-  const headerSquircle = (icon: keyof typeof Ionicons.glyphMap, onPress: () => void, a11y: string) => (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={a11y}
-      style={({ pressed }) => [
-        styles.headerSquircleInner,
-        styles.plasticFace,
-        {
-          backgroundColor: surface,
-          borderRadius: 99,
-          opacity: pressed ? 0.94 : 1,
-          transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-        },
-        brandRaisedSurfaceShadow('header'),
-      ]}
-    >
-      <Ionicons name={icon} size={T.layout.iconHeaderSize} color={textPrimary} />
-    </Pressable>
-  );
-
   return (
     <SafeAreaView
       collapsable={false}
@@ -291,20 +250,29 @@ export default function AppHubScreen() {
             </View>
 
             <View style={styles.headerLogoWrap} pointerEvents="none">
-              <Text style={logoWordmarkStyle} numberOfLines={1} adjustsFontSizeToFit>
-                {t('home.logoWordmark')}
-              </Text>
-              <Text style={logoCaplineStyle} numberOfLines={1}>
-                {t('home.logoCapline')}
-              </Text>
+              <QuickFireTitleLogo
+                width={compact ? 172 : 220}
+                testID="home-brand-logo"
+                containerStyle={styles.headerLogoImageWrap}
+              />
             </View>
 
             <View style={[styles.headerEdge, styles.headerEdgeTrailing]}>
-              {headerSquircle(
-                'settings-outline',
-                () => router.push('/(app)/profile'),
-                t('profile.preferences')
-              )}
+              <Pressable
+                onPress={() => router.push('/(app)/profile')}
+                accessibilityRole="button"
+                accessibilityLabel={t('profile.preferences')}
+                style={({ pressed }) => [
+                  styles.settingsImageButton,
+                  { opacity: pressed ? 0.92 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
+                ]}
+              >
+                <Image
+                  source={require('../../assets/QF Settings button.png')}
+                  style={styles.settingsImage}
+                  resizeMode="contain"
+                />
+              </Pressable>
             </View>
           </View>
 
@@ -347,17 +315,6 @@ export default function AppHubScreen() {
                         size={modeIconSize * 0.74}
                         color={textPrimary}
                         compact={compact}
-                      />
-                    ) : mode.id === 'quickPlay' ? (
-                      <Image
-                        source={QUICKFIRE_MODE_ART}
-                        style={[
-                          styles.quickFireModeArt,
-                          compact && styles.quickFireModeArtCompact,
-                          { marginBottom: compact ? 4 : 10 },
-                        ]}
-                        resizeMode="contain"
-                        testID="home-quickfire-mode-art"
                       />
                     ) : (
                       <Ionicons
@@ -593,6 +550,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: SPACING.xs,
   },
+  headerLogoImageWrap: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   /** Home hub: token chip sits on the outer edge (play header uses default `flex-end`). */
   hubTokenLeading: {
     alignSelf: 'flex-start',
@@ -604,6 +566,16 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  settingsImageButton: {
+    width: 52,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsImage: {
+    width: '100%',
+    height: '100%',
   },
   modeGrid: {
     alignSelf: 'stretch',
@@ -706,16 +678,6 @@ const styles = StyleSheet.create({
   rumblePersonRight: {
     right: 0,
     bottom: 0,
-  },
-  quickFireModeArt: {
-    width: 64,
-    height: 64,
-    transform: [{ scale: 1.35 }],
-  },
-  quickFireModeArtCompact: {
-    width: 52,
-    height: 52,
-    transform: [{ scale: 1.35 }],
   },
   infoModalRoot: {
     ...StyleSheet.absoluteFillObject,

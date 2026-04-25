@@ -44,7 +44,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'common.back': 'Back',
         'common.tokens': 'Tokens',
         'play.quickLengthTitle': 'Set Quick Play Length',
-        'play.quickLengthSubtitle': 'Choose how many topics to play.',
+        'play.quickLengthSubtitle': 'Choose how many topics Quick Play should use before team setup.',
         'play.quickLength.option3': '3 Topics',
         'play.quickLength.option3Copy': 'Balanced quick-play experience.',
         'play.quickLength.option4': '4 Topics',

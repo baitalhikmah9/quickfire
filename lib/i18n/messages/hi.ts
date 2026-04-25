@@ -26,7 +26,7 @@ const hi = withEnglishFallback({
   'home.tagline': 'आधुनिक ट्रिविया नाइट',
   'profile.changeTheme': 'थीम बदलें',
   'store.purchaseTitle': 'टोकन पैक खरीदें',
-  'play.hubTitle': 'Double Down खेलें',
+  'play.hubTitle': 'QuickFire खेलें',
   'play.startNewGame': 'नया गेम शुरू करें',
   'play.resumeCurrentMatch': 'वर्तमान मैच जारी रखें',
   'play.chooseModeTitle': 'मोड चुनें',
@@ -38,4 +38,3 @@ const hi = withEnglishFallback({
 });
 
 export default hi;
-

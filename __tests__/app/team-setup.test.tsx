@@ -59,7 +59,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'play.playerPlaceholder': `Player ${values?.count ?? ''}`,
         'play.removeLastPlayerLink': 'Remove last player',
         'play.removeTeamMemberA11y': 'Remove a team member',
-        'play.rumblePartyCountTitle': 'Parties',
+        'play.rumblePartyCountTitle': 'Number of teams',
         'play.setupIncompleteHint': 'Enter all names to continue',
         'play.teamNamePlaceholder': 'Team name',
         'play.teamSetupTitle': 'Team Setup',
@@ -111,15 +111,24 @@ describe('TeamSetupScreen', () => {
     expect(screen.getByText('Wagers are a risky way to try and sabotage the other team!')).toBeTruthy();
   });
 
-  it('shows rumble party controls but hides wager and hot seat controls', () => {
+  it('shows the rumble team-count selector but hides wager and hot seat controls', () => {
     usePlayStore.getState().setMode('rumble');
 
     render(<TeamSetupScreen />);
 
-    expect(screen.getByText('Parties')).toBeTruthy();
-    expect(screen.getByText('3')).toBeTruthy();
+    expect(screen.getByText('Number of teams')).toBeTruthy();
+    for (const option of ['2', '3', '4', '6']) {
+      expect(screen.getByText(option)).toBeTruthy();
+    }
+    expect(screen.getByLabelText('2 teams').props.accessibilityState).toMatchObject({ selected: true });
     expect(screen.queryByText('Hot Seat')).toBeNull();
     expect(screen.queryByText('Wager')).toBeNull();
+
+    fireEvent.press(screen.getByLabelText('6 teams'));
+
+    expect(usePlayStore.getState().session?.teams).toHaveLength(6);
+    expect(screen.getByLabelText('6 teams').props.accessibilityState).toMatchObject({ selected: true });
+    expect(screen.getByLabelText('2 teams').props.accessibilityState).toMatchObject({ selected: false });
   });
 
   it('uses distinct controls for adding and removing players', () => {

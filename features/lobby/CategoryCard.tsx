@@ -45,6 +45,7 @@ export function CategoryCard({
     const surface = T.colors.surface;
     const textPrimary = T.colors.textPrimary;
     const accentColor = T.colors.resumeAccent;
+    const isActive = Boolean(isSelected);
 
     return (
         <View style={[styles.cardWrapper, style]}>
@@ -55,20 +56,20 @@ export function CategoryCard({
                     {
                         backgroundColor: surface,
                         opacity: pressed ? 0.94 : 1,
-                        transform: (pressed || isSelected) 
-                            ? [{ scale: 0.98 }, { translateY: isSelected ? 2 : 0 }] 
+                        transform: (pressed || isActive) 
+                            ? [{ scale: 0.98 }, { translateY: isActive ? 2 : 0 }] 
                             : [{ scale: 1 }, { translateY: 0 }],
                         
                         // Raised surface treatment
                         borderTopWidth: 2,
-                        borderTopColor: isSelected ? accentColor : 'rgba(255, 255, 255, 0.78)',
-                        borderBottomWidth: isSelected ? 2.5 : 4,
-                        borderBottomColor: isSelected ? accentColor : 'rgba(0, 0, 0, 0.1)',
-                        borderLeftWidth: isSelected ? 2.5 : 0,
-                        borderRightWidth: isSelected ? 2.5 : 0,
-                        borderColor: isSelected ? accentColor : 'transparent',
+                        borderTopColor: isActive ? accentColor : 'rgba(255, 255, 255, 0.78)',
+                        borderBottomWidth: isActive ? 2.5 : 4,
+                        borderBottomColor: isActive ? accentColor : 'rgba(0, 0, 0, 0.1)',
+                        borderLeftWidth: isActive ? 2.5 : 0,
+                        borderRightWidth: isActive ? 2.5 : 0,
+                        borderColor: isActive ? accentColor : 'transparent',
                         
-                        ...getCardShadow(isSelected),
+                        ...getCardShadow(isActive),
                     },
                 ]}
             >
@@ -115,7 +116,7 @@ export function CategoryCard({
                 </Pressable>
 
                 {/* Selection Indicator */}
-                {isSelected && (
+                {isActive && (
                     <View style={styles.selectionBadge}>
                         <Ionicons name="checkmark-circle" size={20} color="#FFF" />
                     </View>
@@ -125,12 +126,12 @@ export function CategoryCard({
                 <View style={styles.titleOverlay}>
                     <View style={[
                         styles.titlePill,
-                        { backgroundColor: isSelected ? accentColor : 'rgba(255, 255, 255, 0.95)' }
+                        { backgroundColor: isActive ? accentColor : 'rgba(255, 255, 255, 0.95)' }
                     ]}>
                         <Text 
                             style={[
                                 styles.titleText, 
-                                { color: isSelected ? '#FFF' : textPrimary }
+                                { color: isActive ? '#FFF' : textPrimary }
                             ]} 
                             numberOfLines={1}
                         >
@@ -264,7 +265,6 @@ const styles = StyleSheet.create({
         height: '100%',
     },
 });
-
 
 
 

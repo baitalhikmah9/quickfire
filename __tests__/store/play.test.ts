@@ -168,34 +168,36 @@ describe('usePlayStore', () => {
     expect(usePlayStore.getState().session?.mode).toBe('rumble');
   });
 
-  it('lets rumble use three to four parties while keeping wagers and hot seat off', () => {
+  it('lets rumble use only two, three, four, or six teams while keeping wagers and hot seat off', () => {
     usePlayStore.getState().setMode('rumble');
 
     let session = usePlayStore.getState().session;
-    expect(session?.teams).toHaveLength(3);
+    expect(session?.teams).toHaveLength(2);
 
-    usePlayStore.getState().setTeamCount(4);
-    session = usePlayStore.getState().session;
-    expect(session?.teams).toHaveLength(4);
-    expect(session?.config.teams).toHaveLength(4);
-    expect(session?.config.wagerEnabled).toBe(false);
-    expect(session?.config.hotSeatEnabled).toBe(false);
-    expect(session?.config.hotSeatRounds).toBe(0);
-
-    usePlayStore.getState().setTeamCount(2);
-    session = usePlayStore.getState().session;
-    expect(session?.teams).toHaveLength(3);
+    for (const count of [3, 4, 6]) {
+      usePlayStore.getState().setTeamCount(count);
+      session = usePlayStore.getState().session;
+      expect(session?.teams).toHaveLength(count);
+      expect(session?.config.teams).toHaveLength(count);
+      expect(session?.config.wagerEnabled).toBe(false);
+      expect(session?.config.hotSeatEnabled).toBe(false);
+      expect(session?.config.hotSeatRounds).toBe(0);
+    }
 
     usePlayStore.getState().setTeamCount(5);
     session = usePlayStore.getState().session;
-    expect(session?.teams).toHaveLength(4);
+    expect(session?.teams).toHaveLength(6);
+
+    usePlayStore.getState().setTeamCount(1);
+    session = usePlayStore.getState().session;
+    expect(session?.teams).toHaveLength(2);
   });
 
-  it('assigns rumble questions to first and second answer parties', () => {
+  it('assigns rumble questions evenly by team, answer order, and difficulty', () => {
     usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
     const store = usePlayStore.getState();
     store.setMode('rumble');
-    usePlayStore.getState().setTeamCount(4);
+    usePlayStore.getState().setTeamCount(6);
     const categories = usePlayStore.getState().session?.availableCategories.slice(0, 6) ?? [];
 
     for (const category of categories) {
@@ -216,6 +218,7 @@ describe('usePlayStore', () => {
     );
 
     for (const questions of Object.values(byPointValue)) {
+      expect(questions).toHaveLength(12);
       const firstCounts = questions.reduce<Record<string, number>>((counts, question) => {
         counts[question.rumbleFirstTeamId!] = (counts[question.rumbleFirstTeamId!] ?? 0) + 1;
         return counts;
@@ -226,21 +229,52 @@ describe('usePlayStore', () => {
       }, {});
 
       expect(firstCounts).toEqual({
-        team_1: 3,
-        team_2: 3,
-        team_3: 3,
-        team_4: 3,
+        team_1: 2,
+        team_2: 2,
+        team_3: 2,
+        team_4: 2,
+        team_5: 2,
+        team_6: 2,
       });
       expect(secondCounts).toEqual({
-        team_1: 3,
-        team_2: 3,
-        team_3: 3,
-        team_4: 3,
+        team_1: 2,
+        team_2: 2,
+        team_3: 2,
+        team_4: 2,
+        team_5: 2,
+        team_6: 2,
       });
       for (const question of questions) {
         expect(question.rumbleSecondTeamId).not.toBe(question.rumbleFirstTeamId);
       }
     }
+  });
+
+  it('rejects rumble board start when the team count is unsupported', () => {
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
+    const store = usePlayStore.getState();
+    store.setMode('rumble');
+    const session = usePlayStore.getState().session!;
+    const categories = session.availableCategories.slice(0, 6);
+
+    usePlayStore.setState({
+      session: {
+        ...session,
+        teams: session.teams.concat(
+          { id: 'team_3', name: 'Team 3', playerNames: ['Player 1'], score: 0, wagersUsed: 0 },
+          { id: 'team_4', name: 'Team 4', playerNames: ['Player 1'], score: 0, wagersUsed: 0 },
+          { id: 'team_5', name: 'Team 5', playerNames: ['Player 1'], score: 0, wagersUsed: 0 }
+        ),
+        selectedCategoryIds: categories.map((category) => category.slug),
+      },
+    });
+
+    const result = usePlayStore.getState().startBoard();
+
+    expect(result).toEqual({
+      ok: false,
+      error: 'Rumble supports 2, 3, 4, or 6 teams.',
+    });
   });
 
   it('hydrates token balance from storage', async () => {

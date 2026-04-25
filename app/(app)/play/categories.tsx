@@ -238,7 +238,10 @@ export default function CategorySelectionScreen() {
                         </View>
                       ) : null}
                       <View style={styles.topicPillInner}>
-                        <View style={styles.pillImageWrap}>
+                        <View
+                          testID={`topic-logo-wrap-${category.slug}`}
+                          style={styles.pillImageWrap}
+                        >
                           {imageSource ? (
                             <Image
                               source={imageSource}
@@ -403,16 +406,16 @@ const styles = StyleSheet.create({
   },
   topicPill: {
     width: '23%',
-    minHeight: 116,
+    minHeight: 148,
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
   },
   topicPillInner: {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
     width: '100%',
     flexGrow: 1,
   },
@@ -436,16 +439,16 @@ const styles = StyleSheet.create({
   },
   topicTitle: {
     fontFamily: FONTS.uiBold,
-    fontSize: 10,
-    lineHeight: 12,
+    fontSize: 11,
+    lineHeight: 14,
     textAlign: 'center',
     letterSpacing: 0.2,
-    minHeight: 24,
+    minHeight: 28,
   },
   pillImageWrap: {
-    width: 68,
-    height: 56,
-    borderRadius: 14,
+    width: 88,
+    height: 74,
+    borderRadius: 18,
     backgroundColor: 'rgba(0,0,0,0.02)',
     position: 'relative',
     alignItems: 'center',

@@ -42,12 +42,19 @@ export default function LanguagePickerScreen() {
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
   const shadowHex = T.colors.shadowStrong;
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(app)/profile');
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
-      <View style={[styles.header, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'header')]}>
+      <View style={styles.header}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={handleBack}
           style={({ pressed }) => [
             styles.headerSquircleInner,
             styles.plasticFace,
@@ -95,7 +102,7 @@ export default function LanguagePickerScreen() {
                       transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
                     },
                     neumorphicLift3D(shadowHex, 'card'),
-                    selected && { shadowColor: '#FFB347', shadowOpacity: 0.3 },
+                    selected && styles.rowSelected,
                   ]}
                   onPress={() => setUiLocale(locale)}
                 >
@@ -108,7 +115,7 @@ export default function LanguagePickerScreen() {
                     </Text>
                   </View>
                   {selected ? (
-                    <Ionicons name="checkmark-circle" size={24} color="#FFB347" />
+                    <Ionicons name="checkmark-circle" size={24} color={textPrimary} />
                   ) : (
                    <View style={styles.unselectedIndicator} />
                   )}
@@ -138,14 +145,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
     zIndex: 10,
   },
   headerSquircleInner: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -188,8 +193,8 @@ const styles = StyleSheet.create({
     right: -4,
     bottom: -4,
     borderRadius: 36,
-    backgroundColor: '#FFB347',
-    opacity: 0.15,
+    backgroundColor: '#333333',
+    opacity: 0.07,
   },
   row: {
     width: 220,
@@ -200,6 +205,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: SPACING.md,
+  },
+  rowSelected: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(51, 51, 51, 0.2)',
   },
   labelBlock: {
     flex: 1,

@@ -47,8 +47,7 @@ const AMBER_GLOW: ViewStyle = {
 const PLASTIC_FACE: ViewStyle = {
   ...SOFT_SURFACE_FACE,
 };
-const MIN_RUMBLE_PARTIES = 3;
-const MAX_RUMBLE_PARTIES = 4;
+const RUMBLE_TEAM_COUNT_OPTIONS = [2, 3, 4, 6] as const;
 const MAX_WAGERS_PER_TEAM = 9;
 const MAX_HOT_SEAT_ROUNDS = 5;
 
@@ -236,16 +235,48 @@ export default function TeamSetupScreen() {
       <View style={[stackStyle, { gap }]}>
         {rumbleMode ? (
           <View style={[styles.centerCard, shortScreen && styles.centerCardTight, { padding: cardPad }]}>
-            <Text style={[styles.centerCardTitle, { fontSize: centerTitleSize }, getTextStyle(undefined, 'display', 'center')]}>
-              {t('play.rumblePartyCountTitle')}
-            </Text>
-            {renderStepper(
-              session.teams.length,
-              () => setTeamCount(session.teams.length - 1),
-              () => setTeamCount(session.teams.length + 1),
-              session.teams.length <= MIN_RUMBLE_PARTIES,
-              session.teams.length >= MAX_RUMBLE_PARTIES
-            )}
+            <View style={styles.rumbleCountInlineRow}>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.centerCardTitle,
+                  styles.rumbleCountInlineTitle,
+                  { fontSize: centerTitleSize },
+                  getTextStyle(undefined, 'display', 'center'),
+                ]}
+              >
+                {t('play.rumblePartyCountTitle')}
+              </Text>
+              <View style={styles.rumbleCountRow}>
+                {RUMBLE_TEAM_COUNT_OPTIONS.map((count) => {
+                  const selected = session.teams.length === count;
+                  return (
+                    <Pressable
+                      key={count}
+                      onPress={() => setTeamCount(count)}
+                      style={({ pressed }) => [
+                        styles.rumbleCountButton,
+                        selected && styles.rumbleCountButtonSelected,
+                        pressed && styles.rumbleCountButtonPressed,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${count} teams`}
+                      accessibilityState={{ selected }}
+                    >
+                      <Text
+                        style={[
+                          styles.rumbleCountText,
+                          selected && styles.rumbleCountTextSelected,
+                          getTextStyle(undefined, 'displayBold', 'center'),
+                        ]}
+                      >
+                        {count}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
           </View>
         ) : null}
 
@@ -323,6 +354,7 @@ export default function TeamSetupScreen() {
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
+      <View style={styles.rumbleCenterSlot}>{centerColumn}</View>
       <View style={styles.rumbleTeamGrid}>
         {session.teams.map((team) => (
           <View key={team.id} style={styles.rumbleTeamSlot}>
@@ -330,7 +362,6 @@ export default function TeamSetupScreen() {
           </View>
         ))}
       </View>
-      <View style={styles.rumbleCenterSlot}>{centerColumn}</View>
     </ScrollView>
   ) : (
     <>
@@ -506,6 +537,48 @@ const styles = StyleSheet.create({
   rumbleCenterSlot: {
     alignSelf: 'stretch',
   },
+  rumbleCountRow: {
+    flexDirection: 'row',
+    gap: SPACING.xs,
+    justifyContent: 'center',
+    flexWrap: 'nowrap',
+  },
+  rumbleCountInlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    width: '100%',
+    flexWrap: 'nowrap',
+  },
+  rumbleCountInlineTitle: {
+    width: 'auto',
+    flexShrink: 1,
+  },
+  rumbleCountButton: {
+    minWidth: 44,
+    minHeight: 40,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(51,51,51,0.12)',
+  },
+  rumbleCountButtonSelected: {
+    backgroundColor: T.textPrimary,
+    borderColor: T.textPrimary,
+  },
+  rumbleCountButtonPressed: {
+    transform: [{ scale: 0.98 }],
+  },
+  rumbleCountText: {
+    color: T.textPrimary,
+    fontSize: FONT_SIZES.md,
+  },
+  rumbleCountTextSelected: {
+    color: T.surface,
+  },
   teamCard: {
     flex: 1,
     backgroundColor: T.surface,
@@ -562,40 +635,39 @@ const styles = StyleSheet.create({
     color: T.textPrimary,
   },
   teamLinksRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.lg,
+    width: '100%',
+    flexDirection: 'column',
+    gap: SPACING.sm,
     marginTop: SPACING.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
     flexShrink: 0,
   },
   teamLinksRowTight: {
     marginTop: SPACING.xs,
-    gap: SPACING.md,
+    gap: SPACING.xs,
   },
   playerActionButton: {
-    minHeight: 32,
-    borderRadius: 8,
+    minHeight: 40,
+    borderRadius: 12,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
+    paddingVertical: SPACING.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
   playerActionPressed: {
     transform: [{ scale: 0.98 }],
   },
   addPlayerAction: {
     backgroundColor: T.textPrimary,
-    flexGrow: 1,
-    flexBasis: 116,
+    borderWidth: 1,
+    borderColor: T.textPrimary,
   },
   removePlayerAction: {
     backgroundColor: 'rgba(0,0,0,0.03)',
     borderWidth: 1,
     borderColor: 'rgba(51,51,51,0.14)',
-    flexGrow: 0,
-    flexBasis: 140,
   },
   addPlayerActionText: {
     fontSize: FONT_SIZES.xs,

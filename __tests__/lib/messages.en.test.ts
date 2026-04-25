@@ -14,7 +14,15 @@ describe('English mode copy', () => {
       'The app draws each question for you. Wagers and Hot Seat stay off.'
     );
     expect(en['play.mode.rumbleCopy']).toBe(
-      '3 or 4 parties. Each question assigns a first answer and a steal party.'
+      '2, 3, 4, or 6 teams. Each question assigns a first answer and a steal team.'
+    );
+  });
+
+  it('keeps quick mode labelled as Quick Play instead of rebranding the mode', () => {
+    expect(en['play.mode.quick']).toBe('Quick Play');
+    expect(en['play.quickLengthTitle']).toBe('Set Quick Play Length');
+    expect(en['play.quickLengthSubtitle']).toBe(
+      'Choose how many topics Quick Play should use before team setup.'
     );
   });
 });

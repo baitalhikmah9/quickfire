@@ -52,8 +52,8 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'home.secondaryStore': 'Store',
         'play.mode.classic': 'Classic',
         'play.mode.classicCopy': 'Full board, wagers, six topics.',
-        'play.mode.quick': 'QuickFire',
-        'play.mode.quickCopy': 'Five topics, faster round, same team flow.',
+        'play.mode.quick': 'Quick Play',
+        'play.mode.quickCopy': 'Pick 3, 4, or 5 topics for a faster match with wagers and Hot Seat.',
         'play.mode.random': 'Random',
         'play.mode.randomCopy': 'Random questions each turn.',
         'play.mode.rumble': 'Rumble',
@@ -77,18 +77,22 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
 
+jest.mock('expo-image', () => ({
+  Image: 'Image',
+}));
+
 describe('AppHubScreen', () => {
   beforeEach(() => {
     mockPush.mockClear();
     mockUseAuth.mockReturnValue({ isSignedIn: true });
     mockIsAuthDisabled.mockReturnValue(false);
-    usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
   });
 
   it('starts quick play directly from the home mode choices', () => {
     render(<AppHubScreen />);
 
-    fireEvent.press(screen.getByLabelText('QuickFire'));
+    fireEvent.press(screen.getByLabelText('Quick Play'));
 
     expect(usePlayStore.getState().session?.mode).toBe('quickPlay');
     expect(usePlayStore.getState().session?.step).toBe('quick-play-length');
@@ -137,7 +141,7 @@ describe('AppHubScreen', () => {
 
     render(<AppHubScreen />);
 
-    fireEvent.press(screen.getByLabelText('QuickFire'));
+    fireEvent.press(screen.getByLabelText('Quick Play'));
 
     expect(screen.getByText('Continue or start fresh?')).toBeTruthy();
     expect(screen.getByText('Continue Game')).toBeTruthy();
@@ -160,7 +164,7 @@ describe('AppHubScreen', () => {
 
     render(<AppHubScreen />);
 
-    fireEvent.press(screen.getByLabelText('QuickFire'));
+    fireEvent.press(screen.getByLabelText('Quick Play'));
     fireEvent.press(screen.getByLabelText('Continue Game'));
 
     expect(mockPush).toHaveBeenCalledWith('/play/board');
@@ -182,7 +186,7 @@ describe('AppHubScreen', () => {
 
     render(<AppHubScreen />);
 
-    fireEvent.press(screen.getByLabelText('QuickFire'));
+    fireEvent.press(screen.getByLabelText('Quick Play'));
     fireEvent.press(screen.getByLabelText('New Game'));
 
     expect(mockPush).toHaveBeenCalledWith('/play/quick-length');
@@ -197,6 +201,13 @@ describe('AppHubScreen', () => {
       flexDirection: 'row',
       flexWrap: 'nowrap',
     });
+  });
+
+  it('shows the QuickFire logo image in the home header title area', () => {
+    render(<AppHubScreen />);
+
+    expect(screen.getByTestId('home-brand-logo')).toBeTruthy();
+    expect(screen.queryByText('DoubleDown')).toBeNull();
   });
 
   it('uses the brand raised surface treatment for mode choices', () => {
@@ -227,15 +238,18 @@ describe('AppHubScreen', () => {
       fontSize: 12,
       letterSpacing: 0.15,
     });
+    expect(screen.queryByTestId('home-quickfire-mode-art')).toBeNull();
   });
 
   it('opens a small explanation when tapping the mode info icon', () => {
     render(<AppHubScreen />);
 
-    fireEvent.press(screen.getByLabelText('QuickFire info'));
+    fireEvent.press(screen.getByLabelText('Quick Play info'));
 
     expect(mockPush).not.toHaveBeenCalled();
-    expect(screen.getByText('Five topics, faster round, same team flow.')).toBeTruthy();
+    expect(
+      screen.getByText('Pick 3, 4, or 5 topics for a faster match with wagers and Hot Seat.')
+    ).toBeTruthy();
   });
 
   it('keeps the mode explanation out of the native modal portal', () => {
@@ -254,7 +268,7 @@ describe('AppHubScreen', () => {
 
     render(<AppHubScreen />);
 
-    fireEvent.press(screen.getByLabelText('QuickFire'));
+    fireEvent.press(screen.getByLabelText('Quick Play'));
 
     expect(usePlayStore.getState().session).toBeNull();
     expect(mockPush).toHaveBeenCalledWith('/(auth)/sign-in');
@@ -266,7 +280,7 @@ describe('AppHubScreen', () => {
 
     render(<AppHubScreen />);
 
-    fireEvent.press(screen.getByLabelText('QuickFire'));
+    fireEvent.press(screen.getByLabelText('Quick Play'));
 
     expect(usePlayStore.getState().session?.mode).toBe('quickPlay');
     expect(usePlayStore.getState().session?.step).toBe('quick-play-length');

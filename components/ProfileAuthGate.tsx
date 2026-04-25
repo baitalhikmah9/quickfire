@@ -3,11 +3,10 @@ import { View, Text, StyleSheet, ScrollView, type ViewStyle } from 'react-native
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, FONTS, LAYOUT } from '@/constants';
-import { PillCollapsibleSection } from '@/components/PillCollapsibleSection';
+import { SPACING, FONTS } from '@/constants';
 import { HubTokenChip } from '@/components/HubTokenChip';
+import { QuickFireTitleLogo } from '@/components/QuickFireTitleLogo';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { usePlayStore } from '@/store/play';
 import { HOME_SOFT_UI } from '@/themes';
@@ -46,13 +45,11 @@ function formatTokens(n: number) {
 
 export function ProfileAuthGate() {
   const router = useRouter();
-  const colors = useTheme();
-  const { direction, getTextStyle, t } = useI18n();
+  const { direction, t } = useI18n();
   const tokens = usePlayStore((s) => s.tokens);
   const headerDir: ViewStyle['flexDirection'] = direction === 'rtl' ? 'row-reverse' : 'row';
   const rowDir = getRowDirection(direction);
 
-  const canvas = T.colors.canvas;
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
@@ -83,17 +80,7 @@ export function ProfileAuthGate() {
     >
       <View style={[styles.topBar, { flexDirection: headerDir }]}>
         <View style={styles.topBarTitleOverlay} pointerEvents="none">
-          <Text
-            style={[
-              styles.topBarTitle,
-              { color: textPrimary },
-            ]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-          >
-            {t('common.appName').toUpperCase()}
-          </Text>
+          <QuickFireTitleLogo width={168} testID="profile-auth-brand-logo" />
         </View>
 
         <View style={[styles.headerSide, styles.backHeaderHit]}>
@@ -211,12 +198,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  topBarTitle: {
-    fontFamily: FONTS.displayBold,
-    fontSize: 20,
-    letterSpacing: -0.5,
-    textAlign: 'center',
   },
   headerSide: {
     minWidth: 100,

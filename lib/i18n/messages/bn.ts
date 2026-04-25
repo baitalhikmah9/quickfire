@@ -26,7 +26,7 @@ const bn = withEnglishFallback({
   'home.tagline': 'আধুনিক ট্রিভিয়া নাইট',
   'profile.changeTheme': 'থিম পরিবর্তন করুন',
   'store.purchaseTitle': 'টোকেন প্যাক কিনুন',
-  'play.hubTitle': 'Double Down খেলুন',
+  'play.hubTitle': 'QuickFire খেলুন',
   'play.startNewGame': 'নতুন গেম শুরু করুন',
   'play.resumeCurrentMatch': 'বর্তমান ম্যাচ চালিয়ে যান',
   'play.chooseModeTitle': 'একটি মোড বেছে নিন',
@@ -38,4 +38,3 @@ const bn = withEnglishFallback({
 });
 
 export default bn;
-

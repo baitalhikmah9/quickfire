@@ -3,7 +3,7 @@ import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { BORDER_RADIUS, FONT_SIZES, SPACING } from '@/constants';
+import { BORDER_RADIUS, FONTS, SPACING } from '@/constants';
 import {
   SUPPORTED_LOCALES,
   contentLocalePriorityToArray,
@@ -12,21 +12,44 @@ import {
 } from '@/lib/i18n/config';
 import { getChevronName } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
 import { useLocaleStore } from '@/store/locale';
+import { HOME_SOFT_UI } from '@/themes';
 
 const SELECTABLE_CONTENT_LOCALES = SUPPORTED_LOCALES.filter((locale) =>
   isNonEnglishContentLocale(locale)
 );
+const T = HOME_SOFT_UI;
+
+function neumorphicLift3D(shadowColor: string, tier: 'header' | 'card'): any {
+  const m = tier === 'header' ? { h: 4, op: 0.12, r: 10, el: 6 } : { h: 8, op: 0.12, r: 20, el: 10 };
+  return {
+    shadowColor,
+    shadowOffset: { width: 0, height: m.h },
+    shadowOpacity: m.op,
+    shadowRadius: m.r,
+    elevation: m.el,
+  };
+}
 
 export default function ContentLanguagesPickerScreen() {
   const router = useRouter();
-  const colors = useTheme();
   const { direction, getLocaleName, getTextStyle, t } = useI18n();
   const contentLocales = useLocaleStore((state) => state.contentLocales);
   const setContentLocales = useLocaleStore((state) => state.setContentLocales);
   const moveContentLocale = useLocaleStore((state) => state.moveContentLocale);
   const selected = contentLocalePriorityToArray(contentLocales);
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+  const shadowHex = T.colors.shadowStrong;
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(app)/profile');
+  };
 
   const toggleLocale = (locale: NonEnglishContentLocale) => {
     if (selected.includes(locale)) {
@@ -42,58 +65,51 @@ export default function ContentLanguagesPickerScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background, flex: 1 }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={[styles.closeText, { color: colors.textOnBackground }, getTextStyle()]}>
-            {t('common.close')}
-          </Text>
+        <Pressable
+          onPress={handleBack}
+          style={({ pressed }) => [
+            styles.backButton,
+            styles.plasticFace,
+            {
+              backgroundColor: surface,
+              opacity: pressed ? 0.94 : 1,
+              transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+            },
+            neumorphicLift3D(shadowHex, 'header'),
+          ]}
+        >
+          <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
         </Pressable>
         <Text
           style={[
             styles.title,
-            { color: colors.textOnBackground },
+            { color: textPrimary },
             getTextStyle(undefined, 'display', 'center'),
           ]}
         >
-          {t('settings.triviaLanguagesTitle')}
+          {t('settings.triviaLanguagesTitle').toUpperCase()}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <View style={styles.body}>
-        <View style={styles.introRow}>
-          <Text
-            style={[
-              styles.description,
-              { color: colors.textSecondaryOnBackground },
-              getTextStyle(),
-            ]}
-          >
-            {t('settings.triviaLanguagesDescription')}
-          </Text>
-          <View style={[styles.noteCard, { backgroundColor: `${colors.primary}10`, borderColor: `${colors.primary}22` }]}>
-            <Text style={[styles.noteText, { color: colors.text }, getTextStyle()]}>
-              {t('settings.triviaLanguageHelp')}
-            </Text>
-          </View>
-        </View>
+        <Text
+          style={[
+            styles.description,
+            { color: textMuted },
+            getTextStyle(),
+          ]}
+        >
+          {t('settings.triviaLanguagesDescription')}
+        </Text>
 
-        {selected.length === 0 ? (
-          <Text
-            style={[
-              styles.emptyText,
-              { color: colors.textSecondaryOnBackground },
-              getTextStyle(),
-            ]}
-          >
-            {t('settings.noneSelected')}
-          </Text>
-        ) : (
+        {selected.length > 0 ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator
-            contentContainerStyle={styles.pickScroller}
+            contentContainerStyle={styles.selectedScrollerRow}
           >
             {selected.map((locale, index) => (
               <View
@@ -102,16 +118,16 @@ export default function ContentLanguagesPickerScreen() {
                   styles.selectedRow,
                   styles.pickCard,
                   {
-                    backgroundColor: colors.cardBackground,
-                    borderColor: colors.primary,
+                    backgroundColor: surface,
+                    borderColor: 'rgba(51,51,51,0.14)',
                   },
                 ]}
               >
                 <View style={styles.labelBlock}>
-                  <Text style={[styles.primaryLabel, { color: colors.text }, getTextStyle(locale, 'bodySemibold', 'start')]}>
+                  <Text style={[styles.primaryLabel, { color: textPrimary }, getTextStyle(locale, 'bodySemibold', 'start')]}>
                     {getLocaleName(locale, 'native')}
                   </Text>
-                  <Text style={[styles.secondaryLabel, { color: colors.textSecondary }, getTextStyle()]}>
+                  <Text style={[styles.secondaryLabel, { color: textMuted }, getTextStyle()]}>
                     {t('common.priorityLabel', { count: index + 1 })}
                   </Text>
                 </View>
@@ -120,7 +136,7 @@ export default function ContentLanguagesPickerScreen() {
                     onPress={() => index > 0 && moveContentLocale(index as 0 | 1 | 2, (index - 1) as 0 | 1 | 2)}
                     disabled={index === 0}
                   >
-                    <Ionicons name="arrow-up" size={18} color={index === 0 ? colors.disabled : colors.textSecondary} />
+                    <Ionicons name="arrow-up" size={18} color={index === 0 ? 'rgba(51,51,51,0.32)' : textMuted} />
                   </Pressable>
                   <Pressable
                     onPress={() =>
@@ -132,20 +148,20 @@ export default function ContentLanguagesPickerScreen() {
                     <Ionicons
                       name="arrow-down"
                       size={18}
-                      color={index === selected.length - 1 ? colors.disabled : colors.textSecondary}
+                      color={index === selected.length - 1 ? 'rgba(51,51,51,0.32)' : textMuted}
                     />
                   </Pressable>
                 </View>
               </View>
             ))}
           </ScrollView>
-        )}
+        ) : null}
 
         <View style={styles.sectionHeader}>
           <Text
             style={[
               styles.sectionTitle,
-              { color: colors.textOnBackground },
+              { color: textPrimary },
               getTextStyle(undefined, 'bodySemibold', 'start'),
             ]}
           >
@@ -154,7 +170,7 @@ export default function ContentLanguagesPickerScreen() {
           <Text
             style={[
               styles.sectionMeta,
-              { color: colors.textSecondaryOnBackground },
+              { color: textMuted },
               getTextStyle(),
             ]}
           >
@@ -163,10 +179,9 @@ export default function ContentLanguagesPickerScreen() {
         </View>
 
         <ScrollView
-          horizontal
           style={styles.localeScroller}
-          showsHorizontalScrollIndicator
-          contentContainerStyle={styles.pickScroller}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.localeGrid}
         >
           {SELECTABLE_CONTENT_LOCALES.map((locale) => {
             const isSelected = selected.includes(locale);
@@ -179,26 +194,28 @@ export default function ContentLanguagesPickerScreen() {
                   styles.row,
                   styles.pickCard,
                   {
-                    backgroundColor: colors.cardBackground,
-                    borderColor: isSelected ? colors.primary : colors.border,
+                    backgroundColor: surface,
+                    borderColor: isSelected ? 'rgba(51,51,51,0.22)' : 'rgba(51,51,51,0.12)',
                     opacity: disabled ? 0.5 : 1,
                   },
+                  styles.plasticFace,
+                  neumorphicLift3D(shadowHex, 'card'),
                 ]}
                 onPress={() => toggleLocale(locale)}
                 disabled={disabled}
               >
                 <View style={styles.labelBlock}>
-                  <Text style={[styles.primaryLabel, { color: colors.text }, getTextStyle(locale, 'bodySemibold', 'start')]}>
+                  <Text style={[styles.primaryLabel, { color: textPrimary }, getTextStyle(locale, 'bodySemibold', 'start')]}>
                     {getLocaleName(locale, 'native')}
                   </Text>
-                  <Text style={[styles.secondaryLabel, { color: colors.textSecondary }, getTextStyle()]}>
+                  <Text style={[styles.secondaryLabel, { color: textMuted }, getTextStyle()]}>
                     {getLocaleName(locale, 'english')}
                   </Text>
                 </View>
                 {isSelected ? (
-                  <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                  <Ionicons name="checkmark-circle" size={22} color={textPrimary} />
                 ) : (
-                  <Ionicons name={getChevronName(direction)} size={18} color={colors.textSecondary} />
+                  <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
                 )}
               </Pressable>
             );
@@ -209,21 +226,23 @@ export default function ContentLanguagesPickerScreen() {
               styles.row,
               styles.pickCard,
               {
-                backgroundColor: colors.cardBackground,
-                borderColor: colors.border,
+                backgroundColor: surface,
+                borderColor: 'rgba(51,51,51,0.12)',
                 opacity: 0.8,
               },
+              styles.plasticFace,
+              neumorphicLift3D(shadowHex, 'card'),
             ]}
           >
             <View style={styles.labelBlock}>
-              <Text style={[styles.primaryLabel, { color: colors.text }, getTextStyle(undefined, 'bodySemibold', 'start')]}>
+              <Text style={[styles.primaryLabel, { color: textPrimary }, getTextStyle(undefined, 'bodySemibold', 'start')]}>
                 {t('common.english')}
               </Text>
-              <Text style={[styles.secondaryLabel, { color: colors.textSecondary }, getTextStyle()]}>
+              <Text style={[styles.secondaryLabel, { color: textMuted }, getTextStyle()]}>
                 {t('settings.englishFallback')}
               </Text>
             </View>
-            <Ionicons name="lock-closed" size={18} color={colors.textSecondary} />
+            <Ionicons name="lock-closed" size={18} color={textMuted} />
           </View>
         </ScrollView>
       </View>
@@ -232,20 +251,19 @@ export default function ContentLanguagesPickerScreen() {
 }
 
 const styles = StyleSheet.create({
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  },
   safeArea: {
     flex: 1,
-    minHeight: 0,
   },
   body: {
     flex: 1,
-    padding: SPACING.lg,
-    gap: SPACING.md,
-    minHeight: 0,
-  },
-  introRow: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-    alignItems: 'stretch',
+    padding: SPACING.xl,
+    gap: SPACING.lg,
   },
   pickScroller: {
     flexDirection: 'row',
@@ -253,52 +271,53 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     paddingVertical: SPACING.xs,
   },
+  selectedScrollerRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: SPACING.md,
+    paddingVertical: SPACING.xs,
+  },
   localeScroller: {
     flex: 1,
-    minHeight: 0,
+  },
+  localeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'stretch',
+    gap: SPACING.md,
+    paddingVertical: SPACING.xs,
   },
   pickCard: {
     width: 220,
     flexShrink: 0,
   },
   header: {
-    minHeight: 56,
+    height: 72,
     paddingHorizontal: SPACING.lg,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  headerSpacer: {
-    width: 48,
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  closeText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
+  headerSpacer: {
+    width: 44,
   },
   title: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: '700',
+    fontSize: 20,
+    fontFamily: FONTS.displayBold,
+    letterSpacing: 0.8,
   },
   description: {
-    flex: 1,
-    fontSize: FONT_SIZES.sm,
+    fontSize: 14,
+    fontFamily: FONTS.ui,
     lineHeight: 20,
-    minWidth: 0,
-  },
-  noteCard: {
-    flex: 1,
-    minWidth: 0,
-    borderWidth: 1,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-  },
-  noteText: {
-    fontSize: FONT_SIZES.sm,
-    lineHeight: 20,
-  },
-  emptyText: {
-    fontSize: FONT_SIZES.sm,
-    lineHeight: 20,
+    maxWidth: 720,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -306,15 +325,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '700',
+    fontSize: 14,
+    fontFamily: FONTS.uiSemibold,
   },
   sectionMeta: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: 13,
+    fontFamily: FONTS.ui,
   },
   row: {
     borderWidth: 1,
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: BORDER_RADIUS.xl,
     padding: SPACING.md,
     flexDirection: 'row',
     alignItems: 'center',
@@ -323,7 +343,7 @@ const styles = StyleSheet.create({
   },
   selectedRow: {
     borderWidth: 1,
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: BORDER_RADIUS.xl,
     padding: SPACING.md,
     flexDirection: 'row',
     alignItems: 'center',
@@ -334,12 +354,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   primaryLabel: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '700',
+    fontSize: 15,
+    fontFamily: FONTS.uiSemibold,
     marginBottom: 4,
   },
   secondaryLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: 13,
+    fontFamily: FONTS.ui,
   },
   priorityActions: {
     flexDirection: 'row',

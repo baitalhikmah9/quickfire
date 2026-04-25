@@ -30,7 +30,7 @@ const ur = withEnglishFallback({
   'home.tagline': 'جدید ٹریویا نائٹ',
   'profile.changeTheme': 'تھیم تبدیل کریں',
   'store.purchaseTitle': 'ٹوکن پیک خریدیں',
-  'play.hubTitle': 'Double Down کھیلیں',
+  'play.hubTitle': 'QuickFire کھیلیں',
   'play.startNewGame': 'نیا کھیل شروع کریں',
   'play.resumeCurrentMatch': 'موجودہ میچ دوبارہ شروع کریں',
   'play.chooseModeTitle': 'موڈ منتخب کریں',
@@ -42,4 +42,3 @@ const ur = withEnglishFallback({
 });
 
 export default ur;
-

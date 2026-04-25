@@ -92,20 +92,10 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'home.logoCapline': 'TRIVIA',
         'home.logoWordmark': 'DoubleDown',
         'profile.accuracy': 'Accuracy',
-        'profile.activityClassic': 'Classic Arena',
-        'profile.activityDefeat': 'Defeat',
-        'profile.activityHoursAgo': `${params?.count} hrs ago`,
-        'profile.activityMinsAgo': `${params?.count} mins ago`,
-        'profile.activityQuick': 'Quick Play Blitz',
-        'profile.activityRankUp': 'Rank Up',
-        'profile.activityRumble': 'Rumble Match',
-        'profile.activityVictory': 'Victory',
         'profile.bestStreak': 'Best Streak',
         'profile.memberSince': `Member since ${params?.date}`,
         'profile.preferences': 'Preferences',
         'profile.rankBadgeRival': 'Rival',
-        'profile.recentActivity': 'Recent Activity',
-        'profile.tokenDelta': `${params?.sign}${params?.count} DD`,
         'profile.viewAnalytics': 'View Detailed Analytics',
         'profile.winRate': 'Win Rate',
         'settings.accountAuthTitle': 'Account & auth',
@@ -146,6 +136,9 @@ describe('ProfileScreen settings', () => {
     expect(screen.getByText('Theme selection')).toBeTruthy();
     expect(screen.getByText('Languages (up to 3)')).toBeTruthy();
     expect(screen.getByText('No trivia languages selected')).toBeTruthy();
+    expect(screen.queryByText('WIN RATE')).toBeNull();
+    expect(screen.queryByText('BEST STREAK')).toBeNull();
+    expect(screen.queryByText('ACCURACY')).toBeNull();
   });
 
   it('stays usable in guest mode when auth is disabled', () => {

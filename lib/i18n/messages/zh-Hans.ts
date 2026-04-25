@@ -26,7 +26,7 @@ const zhHans = withEnglishFallback({
   'home.tagline': '现代知识问答之夜',
   'profile.changeTheme': '更改主题',
   'store.purchaseTitle': '购买代币包',
-  'play.hubTitle': '开始玩 Double Down',
+  'play.hubTitle': '开始玩 QuickFire',
   'play.startNewGame': '开始新游戏',
   'play.resumeCurrentMatch': '继续当前对局',
   'play.chooseModeTitle': '选择模式',
@@ -38,4 +38,3 @@ const zhHans = withEnglishFallback({
 });
 
 export default zhHans;
-

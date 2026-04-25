@@ -597,27 +597,6 @@ export default function PlayAnswerScreen() {
                     },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.originalQuestionEyebrow,
-                      { color: BRAND_SUBTLE_TEXT },
-                      getTextStyle(undefined, 'body', 'center'),
-                    ]}
-                  >
-                    {t('play.originalQuestion')}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.originalQuestionText,
-                      { color: BRAND_SUBTLE_TEXT },
-                      getTextStyle(undefined, 'body', 'center'),
-                    ]}
-                    numberOfLines={3}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.8}
-                  >
-                    {currentQuestion.prompt}
-                  </Text>
                   {currentQuestion.answerImageUrl ? (
                     <Image
                       source={{ uri: currentQuestion.answerImageUrl }}
@@ -625,18 +604,6 @@ export default function PlayAnswerScreen() {
                       contentFit="contain"
                     />
                   ) : null}
-                  <Text
-                    style={[
-                      styles.answerEyebrow,
-                      {
-                        color: BRAND_SUBTLE_TEXT,
-                        marginBottom: layoutDensity.answerEyebrowMarginBottom,
-                      },
-                      getTextStyle(undefined, 'body', 'center'),
-                    ]}
-                  >
-                    {t('play.correctAnswer')}
-                  </Text>
                   <Text
                     style={[
                       styles.answerText,
@@ -723,17 +690,6 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
   },
-  originalQuestionEyebrow: {
-    fontSize: FONT_SIZES.xs,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  originalQuestionText: {
-    fontSize: FONT_SIZES.sm,
-    lineHeight: 18,
-    marginBottom: SPACING.md,
-  },
   answerImage: {
     width: '100%',
     height: 160,
@@ -754,12 +710,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     ...SOFT_SURFACE_FACE,
     ...softSurfaceLift(),
-  },
-  answerEyebrow: {
-    fontSize: 9,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    textAlign: 'center',
   },
   answerText: {
     fontWeight: '700',
