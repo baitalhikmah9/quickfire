@@ -64,7 +64,7 @@ export default function TeamSetupScreen() {
   const shortScreen = windowHeight < 700;
   const landscape = windowWidth > windowHeight;
   const viewportScale = Math.max(0.82, Math.min(1.08, Math.min(windowWidth / 860, windowHeight / 620)));
-  const { getTextStyle, t } = useI18n();
+  const { direction, getTextStyle, t } = useI18n();
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
   const [hotSeatInfoOpen, setHotSeatInfoOpen] = useState(false);
 
@@ -415,6 +415,34 @@ export default function TeamSetupScreen() {
     <PlayScaffold
       title={t('play.teamSetupTitle')}
       onBack={() => router.replace('/(app)/')}
+      customHeader={
+        <View style={styles.teamSetupHeader} accessibilityRole="header">
+          <Pressable
+            onPress={() => router.replace('/(app)/')}
+            style={({ pressed }) => [
+              styles.headerBackButton,
+              PLASTIC_FACE,
+              neumorphicLift(T.shadowStrong, 'header'),
+              pressed && styles.headerBackButtonPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.back')}
+          >
+            <Ionicons
+              name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'}
+              size={20}
+              color={T.textPrimary}
+            />
+          </Pressable>
+          <Text
+            numberOfLines={1}
+            style={[styles.teamSetupHeaderTitle, getTextStyle(undefined, 'displayBold', 'center')]}
+          >
+            {t('play.teamSetupTitle').toUpperCase()}
+          </Text>
+          <View style={styles.headerMirrorSpacer} />
+        </View>
+      }
       bodyScrollEnabled={false}
       bodyFrame={false}
       backgroundColor={T.canvas}
@@ -453,6 +481,39 @@ export default function TeamSetupScreen() {
 }
 
 const styles = StyleSheet.create({
+  teamSetupHeader: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.sm,
+  },
+  headerBackButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: T.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerBackButtonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  teamSetupHeaderTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: FONTS.displayBold,
+    color: T.textPrimary,
+    fontSize: FONT_SIZES.md,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    paddingHorizontal: SPACING.sm,
+  },
+  headerMirrorSpacer: {
+    width: 44,
+    height: 44,
+  },
   bodyFill: {
     flex: 1,
     minHeight: 0,

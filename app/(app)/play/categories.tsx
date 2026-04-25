@@ -1,11 +1,11 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, type ImageStyle } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { SPACING, FONTS } from '@/constants';
+import { SPACING, FONTS, FONT_SIZES } from '@/constants';
 import { getCategoryPictureSource } from '@/constants/categoryPictures';
 import { getModeCategoryCount } from '@/features/play/data';
 import type { GameMode } from '@/features/shared';
@@ -29,7 +29,7 @@ export default function CategorySelectionScreen() {
   const insets = useSafeAreaInsets();
   const categoryScrollRef = useRef<ScrollView | null>(null);
   const categoryOffsetsRef = useRef<Record<string, number>>({});
-  const { t } = useI18n();
+  const { direction, getTextStyle, t } = useI18n();
   const session = usePlayStore((state) => state.session);
   const ensureDraft = usePlayStore((state) => state.ensureDraft);
   const toggleCategory = usePlayStore((state) => state.toggleCategory);
@@ -101,37 +101,45 @@ export default function CategorySelectionScreen() {
       contentSafeAreaHorizontal
       customHeader={
         isLoading ? null : (
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeft}>
-              <Pressable
-                onPress={() => router.push('/play/team-setup')}
-                accessibilityRole="button"
-                accessibilityLabel="Back to team setup"
-                style={({ pressed }) => [
-                  styles.backButton,
-                  styles.surfaceRaised,
-                  SOFT_SURFACE_STYLES.face,
-                  SOFT_SURFACE_STYLES.raised,
-                  { opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <Ionicons name="chevron-back" size={20} color={textPrimary} />
-              </Pressable>
-              <View style={styles.counterCardHeader}>
-                <Text style={[styles.counterTextHeader, { color: textPrimary }]}>
-                  {selectedCount}/{required}
-                </Text>
+          <View style={styles.headerWrap}>
+            <View style={styles.headerRow}>
+              <View style={styles.headerLeftCluster}>
+                <Pressable
+                  onPress={() => router.push('/play/team-setup')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to team setup"
+                  style={({ pressed }) => [
+                    styles.backButton,
+                    styles.surfaceRaised,
+                    SOFT_SURFACE_STYLES.face,
+                    SOFT_SURFACE_STYLES.raised,
+                    pressed && styles.backButtonPressed,
+                  ]}
+                >
+                  <Ionicons
+                    name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'}
+                    size={20}
+                    color={textPrimary}
+                  />
+                </Pressable>
+                <View style={styles.counterCardHeader}>
+                  <Text style={[styles.counterTextHeader, { color: textPrimary }]}>
+                    {selectedCount}/{required}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <Text
-              style={[styles.mainTitle, { color: textPrimary }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.72}
-            >
-              {t('play.pickTopicsTitle')}
-            </Text>
-            <View style={styles.headerAction}>
+              <Text
+                style={[
+                  styles.mainTitle,
+                  { color: textPrimary },
+                  getTextStyle(undefined, 'displayBold', 'center'),
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.72}
+              >
+                {t('play.pickTopicsTitle').toUpperCase()}
+              </Text>
               <Pressable
                 onPress={onSelectRandom}
                 disabled={selectedCount >= required}
@@ -148,7 +156,10 @@ export default function CategorySelectionScreen() {
                   },
                 ]}
               >
-                <Text style={styles.randomTopicText} numberOfLines={2}>
+                <Text
+                  style={[styles.randomTopicText, getTextStyle(undefined, 'bodySemibold', 'center')]}
+                  numberOfLines={2}
+                >
                   Choose a random topic
                 </Text>
               </Pressable>
@@ -172,23 +183,38 @@ export default function CategorySelectionScreen() {
                 <Text style={styles.selectedStripEmpty}>Selected topics appear here.</Text>
               ) : (
                 selectedCategories.map((category) => (
-                  <Pressable
-                    key={category.slug}
-                    onPress={() => scrollToCategory(category.slug)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Jump to ${category.title}`}
-                    style={({ pressed }) => [
-                      styles.selectedTopicChip,
-                      styles.surfaceRaised,
-                      SOFT_SURFACE_STYLES.face,
-                      SOFT_SURFACE_STYLES.raised,
-                      { opacity: pressed ? 0.8 : 1 },
-                    ]}
-                  >
-                    <Text style={styles.selectedTopicChipText} numberOfLines={1}>
-                      {category.title.toUpperCase()}
-                    </Text>
-                  </Pressable>
+                  <View key={category.slug} style={styles.selectedTopicChipWrap}>
+                    <Pressable
+                      onPress={() => scrollToCategory(category.slug)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Jump to ${category.title}`}
+                      style={({ pressed }) => [
+                        styles.selectedTopicChip,
+                        styles.surfaceRaised,
+                        SOFT_SURFACE_STYLES.face,
+                        SOFT_SURFACE_STYLES.raised,
+                        { opacity: pressed ? 0.8 : 1 },
+                      ]}
+                    >
+                      <Text style={styles.selectedTopicChipText} numberOfLines={1}>
+                        {category.title.toUpperCase()}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => toggleCategory(category.slug)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${category.title}`}
+                      style={({ pressed }) => [
+                        styles.selectedTopicRemoveButton,
+                        styles.surfaceRaised,
+                        SOFT_SURFACE_STYLES.face,
+                        SOFT_SURFACE_STYLES.raised,
+                        { opacity: pressed ? 0.85 : 1 },
+                      ]}
+                    >
+                      <Ionicons name="close" size={12} color="#333333" />
+                    </Pressable>
+                  </View>
                 ))
               )}
             </ScrollView>
@@ -238,30 +264,36 @@ export default function CategorySelectionScreen() {
                         </View>
                       ) : null}
                       <View style={styles.topicPillInner}>
-                        <View
-                          testID={`topic-logo-wrap-${category.slug}`}
-                          style={styles.pillImageWrap}
-                        >
-                          {imageSource ? (
-                            <Image
-                              source={imageSource}
-                              style={styles.categoryThumb}
-                              contentFit="contain"
-                              transition={200}
-                            />
-                          ) : (
-                            <Ionicons name={iconName} size={28} color={textPrimary} />
-                          )}
+                        <View style={styles.topicImageArea}>
+                          <View
+                            testID={`topic-logo-wrap-${category.slug}`}
+                            style={styles.pillImageWrap}
+                          >
+                            {imageSource ? (
+                              <Image
+                                source={imageSource}
+                                style={styles.categoryThumb as ImageStyle}
+                                contentFit="contain"
+                                transition={200}
+                              />
+                            ) : (
+                              <Ionicons name={iconName} size={28} color={textPrimary} />
+                            )}
+                          </View>
                         </View>
 
-                        <Text
-                          style={[styles.topicTitle, { color: textPrimary }]}
-                          numberOfLines={2}
-                          adjustsFontSizeToFit
-                          minimumFontScale={0.72}
-                        >
-                          {category.title.toUpperCase()}
-                        </Text>
+                        <View style={styles.topicTitleBar}>
+                          <View style={styles.topicTitleInner}>
+                            <Text
+                              style={[styles.topicTitle, { color: textPrimary }]}
+                              numberOfLines={2}
+                              adjustsFontSizeToFit
+                              minimumFontScale={0.72}
+                            >
+                              {category.title.toUpperCase()}
+                            </Text>
+                          </View>
+                        </View>
                       </View>
                     </Pressable>
                   );
@@ -272,13 +304,11 @@ export default function CategorySelectionScreen() {
         </View>
       )}
 
-      {isLoading ? null : (
+      {isLoading || selectedCount !== required ? null : (
         <View style={[styles.floatingActionPanel, { bottom: Math.max(insets.bottom, SPACING.lg) }]}>
           <Pressable
-            disabled={selectedCount !== required}
             accessibilityRole="button"
             accessibilityLabel={t('play.startBoard')}
-            accessibilityState={{ disabled: selectedCount !== required }}
             onPress={() => {
               const result = startBoard();
               if (result.ok) {
@@ -295,7 +325,7 @@ export default function CategorySelectionScreen() {
               SOFT_SURFACE_STYLES.raised,
               {
                 backgroundColor: '#FFFFFF',
-                opacity: selectedCount !== required ? 0.4 : pressed ? 0.92 : 1,
+                  opacity: pressed ? 0.92 : 1,
               },
             ]}
           >
@@ -310,30 +340,33 @@ export default function CategorySelectionScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerWrap: {
+    width: '100%',
+    gap: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
   headerRow: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.sm,
+  },
+  headerLeftCluster: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    paddingVertical: SPACING.lg,
-    width: '100%',
-  },
-  headerLeft: {
     flexShrink: 0,
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  headerAction: {
-    flexShrink: 0,
-    alignItems: 'flex-end',
   },
   mainTitle: {
     flex: 1,
     fontFamily: FONTS.displayBold,
-    fontSize: 28,
+    fontSize: FONT_SIZES.md,
     textAlign: 'center',
-    letterSpacing: -0.5,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
     minWidth: 0,
+    paddingHorizontal: SPACING.sm,
   },
   randomTopicBtn: {
     backgroundColor: '#FFFFFF',
@@ -344,6 +377,7 @@ const styles = StyleSheet.create({
     maxWidth: 112,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   randomTopicText: {
     fontFamily: FONTS.uiBold,
@@ -354,8 +388,13 @@ const styles = StyleSheet.create({
   backButton: {
     width: 44,
     height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  backButtonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
   surfaceRaised: {
     backgroundColor: '#FFFFFF',
@@ -382,9 +421,26 @@ const styles = StyleSheet.create({
   selectedTopicChip: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
+    paddingTop: 14,
     borderRadius: 14,
     maxWidth: 180,
+  },
+  selectedTopicChipWrap: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  selectedTopicRemoveButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+    backgroundColor: '#FFFFFF',
   },
   selectedTopicChipText: {
     fontFamily: FONTS.uiBold,
@@ -407,17 +463,44 @@ const styles = StyleSheet.create({
   topicPill: {
     width: '23%',
     minHeight: 148,
+    height: 164,
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    overflow: 'hidden',
   },
   topicPillInner: {
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
+    gap: 0,
     width: '100%',
-    flexGrow: 1,
+    flex: 1,
+  },
+  topicImageArea: {
+    width: '100%',
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  topicTitleBar: {
+    width: '100%',
+    minHeight: 44,
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(51,51,51,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+  },
+  topicTitleInner: {
+    width: '100%',
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   topicPillSelected: {
     backgroundColor: '#FFFBF5',
@@ -443,21 +526,23 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     textAlign: 'center',
     letterSpacing: 0.2,
-    minHeight: 28,
+    minHeight: 24,
+    width: '100%',
+    alignSelf: 'center',
   },
   pillImageWrap: {
-    width: 88,
-    height: 74,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.02)',
-    position: 'relative',
+    width: 128,
+    height: 104,
+    maxWidth: '100%',
+    borderRadius: 14,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   categoryThumb: {
     width: '100%',
     height: '100%',
-    opacity: 0.95,
+    opacity: 1,
   },
   counterRow: {
     paddingVertical: SPACING.sm,

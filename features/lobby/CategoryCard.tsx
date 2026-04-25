@@ -104,6 +104,22 @@ export function CategoryCard({
                     />
                 </View>
 
+                {/* Bottom strip like the reference sketch */}
+                <View style={[
+                    styles.titleBar,
+                    { backgroundColor: isActive ? accentColor : 'rgba(255, 255, 255, 0.96)' }
+                ]}>
+                    <Text
+                        style={[
+                            styles.titleText,
+                            { color: isActive ? '#FFF' : textPrimary }
+                        ]}
+                        numberOfLines={2}
+                    >
+                        {title.toUpperCase()}
+                    </Text>
+                </View>
+
                 {/* Info Icon - Glass style */}
                 <Pressable
                     onPress={onInfoPress}
@@ -121,24 +137,6 @@ export function CategoryCard({
                         <Ionicons name="checkmark-circle" size={20} color="#FFF" />
                     </View>
                 )}
-
-                {/* Floating Title Pill */}
-                <View style={styles.titleOverlay}>
-                    <View style={[
-                        styles.titlePill,
-                        { backgroundColor: isActive ? accentColor : 'rgba(255, 255, 255, 0.95)' }
-                    ]}>
-                        <Text 
-                            style={[
-                                styles.titleText, 
-                                { color: isActive ? '#FFF' : textPrimary }
-                            ]} 
-                            numberOfLines={1}
-                        >
-                            {title.toUpperCase()}
-                        </Text>
-                    </View>
-                </View>
 
                 {/* Flag Badge */}
                 <View style={styles.flagContainer}>
@@ -177,7 +175,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     imageContainer: {
-        ...StyleSheet.absoluteFillObject,
+        flex: 1,
         backgroundColor: '#F1F5F9',
     },
     fullImage: {
@@ -195,6 +193,15 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: '50%',
+    },
+    titleBar: {
+        minHeight: 44,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(0,0,0,0.08)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingVertical: 8,
     },
     infoIcon: {
         position: 'absolute',
@@ -220,30 +227,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    titleOverlay: {
-        position: 'absolute',
-        bottom: 10,
-        left: 0,
-        right: 0,
-        alignItems: 'center',
-        paddingHorizontal: 8,
-    },
-    titlePill: {
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 12,
-        maxWidth: '100%',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
     titleText: {
-        fontSize: 9,
+        fontSize: 10,
         fontFamily: FONTS.displayBold,
         textAlign: 'center',
-        letterSpacing: 0.5,
+        letterSpacing: 0.4,
+        lineHeight: 12,
+        width: '100%',
     },
     flagContainer: {
         position: 'absolute',

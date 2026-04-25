@@ -7,8 +7,8 @@
 ## Settings
 
 - [x] no need for win rate, best streak, accuracy
-- [ ] recent activity is fine if it doesn't impact the performance or complicate things. im not against it but idk if it adds a lot
-- [ ] I see the theme section, just if u can have the other options available to change thru lmk
+- [x] recent activity is fine if it doesn't impact the performance or complicate things. im not against it but idk if it adds a lot
+- [x] I see the theme section, just if u can have the other options available to change thru lmk
 
 ## Topic select
 

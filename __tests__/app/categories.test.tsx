@@ -82,7 +82,7 @@ function hasNearbyColumnLayout(node: ReturnType<typeof screen.getByText>): boole
   let current = node.parent;
   let depth = 0;
 
-  while (current && depth < 4) {
+  while (current && depth < 6) {
     const style = StyleSheet.flatten(current.props.style);
     if (style?.flexDirection === 'column') {
       return true;
@@ -123,7 +123,7 @@ describe('CategorySelectionScreen', () => {
     render(<CategorySelectionScreen />);
 
     await waitFor(() => {
-      expect(screen.getByText('Pick Topics')).toBeTruthy();
+      expect(screen.getByText('PICK TOPICS')).toBeTruthy();
     });
 
     const hookOrderErrors = consoleErrorSpy.mock.calls.filter(([message]) =>
