@@ -99,6 +99,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'profile.viewAnalytics': 'View Detailed Analytics',
         'profile.winRate': 'Win Rate',
         'settings.accountAuthTitle': 'Account & auth',
+        'settings.appLanguageTitle': 'App Language',
         'settings.languagesUpToThreeTitle': 'Languages (up to 3)',
         'settings.noTriviaLanguagesSelected': 'No trivia languages selected',
         'settings.themeSelectionTitle': 'Theme selection',
@@ -128,12 +129,11 @@ describe('ProfileScreen settings', () => {
     });
   });
 
-  it('includes account/auth, theme selection, and up-to-three language settings', () => {
+  it('includes theme, app language, and up-to-three language settings', () => {
     render(<ProfileScreen />);
 
-    expect(screen.getByText('Account & auth')).toBeTruthy();
-    expect(screen.getByText('pilot@example.com')).toBeTruthy();
     expect(screen.getByText('Theme selection')).toBeTruthy();
+    expect(screen.getByText('App Language')).toBeTruthy();
     expect(screen.getByText('Languages (up to 3)')).toBeTruthy();
     expect(screen.getByText('No trivia languages selected')).toBeTruthy();
     expect(screen.queryByText('WIN RATE')).toBeNull();
@@ -149,8 +149,8 @@ describe('ProfileScreen settings', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('Account & auth')).toBeTruthy();
-    expect(screen.getAllByText('PLAYER').length).toBeGreaterThan(0);
+    expect(screen.getByText('Theme selection')).toBeTruthy();
+    expect(screen.getByText('App Language')).toBeTruthy();
     expect(screen.queryByText('Sign Out')).toBeNull();
   });
 });

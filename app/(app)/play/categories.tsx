@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     height: 120,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
+    overflow: 'hidden',
   },
   topicTitleBar: {
     width: '100%',
@@ -531,10 +531,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   pillImageWrap: {
-    width: 128,
-    height: 104,
-    maxWidth: '100%',
-    borderRadius: 14,
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',

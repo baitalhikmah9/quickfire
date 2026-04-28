@@ -5,8 +5,10 @@ import {
   StyleSheet,
   LayoutAnimation,
   Platform,
+  type ImageSourcePropType,
   type ViewStyle,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, FONTS } from '@/constants';
@@ -31,7 +33,10 @@ function pillPalette(tone: PillTone): { face: string; depth: string } {
 }
 
 export type PillCollapsibleSectionProps = {
-  icon: keyof typeof Ionicons.glyphMap;
+  /** Vector icon when `iconImage` is not set. */
+  icon?: keyof typeof Ionicons.glyphMap;
+  /** Raster header art (e.g. branded wager / hot seat marks). */
+  iconImage?: ImageSourcePropType;
   title: string;
   kicker: string;
   tone: PillTone;
@@ -46,7 +51,8 @@ export type PillCollapsibleSectionProps = {
  * 3D pill header + bordered body card (hub / how-to-play mechanic blocks).
  */
 export const PillCollapsibleSection = memo(function PillCollapsibleSection({
-  icon,
+  icon = 'help-outline',
+  iconImage,
   title,
   kicker,
   tone,
@@ -88,7 +94,16 @@ export const PillCollapsibleSection = memo(function PillCollapsibleSection({
       />
       <View style={[styles.pill3dFace, { backgroundColor: face }]}>
         <View style={[styles.pillHeaderRow, { flexDirection: rowDir }]}>
-          <Ionicons name={icon} size={22} color="#FFFFFF" accessibilityIgnoresInvertColors />
+          {iconImage ? (
+            <Image
+              source={iconImage}
+              style={styles.pillHeaderImage}
+              contentFit="contain"
+              accessibilityIgnoresInvertColors
+            />
+          ) : (
+            <Ionicons name={icon} size={22} color="#FFFFFF" accessibilityIgnoresInvertColors />
+          )}
           <Text style={styles.pillTitle} numberOfLines={1}>
             {title}
           </Text>
@@ -186,6 +201,10 @@ const styles = StyleSheet.create({
   pillHeaderRow: {
     alignItems: 'center',
     gap: SPACING.sm,
+  },
+  pillHeaderImage: {
+    width: 26,
+    height: 26,
   },
   pillTitle: {
     flex: 1,

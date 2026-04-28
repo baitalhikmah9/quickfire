@@ -13,6 +13,10 @@ import {
   getGameTokenCost,
   normalizeQuickPlayTopicCount,
 } from '@/features/play/tokenCosts';
+import {
+  canRevealRumbleAnswer,
+  groupRumbleQuestionsByValueBucket,
+} from '@/features/play/rumble';
 import type {
   AnswerReviewState,
   BonusChallengeState,
@@ -54,7 +58,6 @@ const SUPPORTED_RUMBLE_TEAM_COUNTS = [2, 3, 4, 6] as const;
 const DEFAULT_RUMBLE_TEAM_COUNT = 2;
 const MAX_HOT_SEAT_ROUNDS = 5;
 const RUMBLE_QUESTIONS_PER_DIFFICULTY = 12;
-const RUMBLE_DIFFICULTY_COUNT = 3;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -244,19 +247,12 @@ function getRumbleValidationError(board: QuestionCard[], teamCount: number): str
     return 'Rumble supports 2, 3, 4, or 6 teams.';
   }
 
-  const byPointValue = new Map<number, QuestionCard[]>();
-
-  for (const question of board) {
-    const questions = byPointValue.get(question.pointValue) ?? [];
-    questions.push(question);
-    byPointValue.set(question.pointValue, questions);
+  const byValueBucket = groupRumbleQuestionsByValueBucket(board);
+  if (!byValueBucket) {
+    return 'Rumble requires exactly 12 questions in each 100, 200, and 300 value bucket.';
   }
 
-  if (byPointValue.size !== RUMBLE_DIFFICULTY_COUNT) {
-    return 'Rumble requires exactly 12 easy, 12 medium, and 12 hard questions.';
-  }
-
-  for (const questions of byPointValue.values()) {
+  for (const questions of byValueBucket.values()) {
     if (
       questions.length !== RUMBLE_QUESTIONS_PER_DIFFICULTY ||
       questions.length % teamCount !== 0
@@ -276,17 +272,17 @@ function assignRumbleQuestionParties(
   if (validationError) return { ok: false, error: validationError };
 
   const teamIds = teams.map((team) => team.id);
-  const byPointValue = new Map<number, QuestionCard[]>();
-
-  for (const question of board) {
-    const questions = byPointValue.get(question.pointValue) ?? [];
-    questions.push(question);
-    byPointValue.set(question.pointValue, questions);
+  const byValueBucket = groupRumbleQuestionsByValueBucket(board);
+  if (!byValueBucket) {
+    return {
+      ok: false,
+      error: 'Rumble requires exactly 12 questions in each 100, 200, and 300 value bucket.',
+    };
   }
 
   const assignments = new Map<string, Pick<QuestionCard, 'rumbleFirstTeamId' | 'rumbleSecondTeamId'>>();
 
-  for (const questions of byPointValue.values()) {
+  for (const questions of byValueBucket.values()) {
     const shuffledQuestions = shuffleItems(questions);
     const repeatsPerTeam = questions.length / teamIds.length;
     const firstTeams = buildBalancedTeamSequence(teamIds, repeatsPerTeam);
@@ -428,7 +424,7 @@ interface PlayStore {
   startBoard: () => { ok: boolean; error?: string };
   selectQuestion: (question: QuestionCard) => void;
   cancelCurrentQuestion: () => void;
-  revealAnswer: () => void;
+  revealAnswer: () => { ok: boolean; error?: string };
   awardStandardQuestion: (teamId: string | null) => void;
   continueAfterStandardQuestion: () => void;
   adjustScoreByPoints: (teamId: string, delta: number, note?: string) => void;
@@ -478,7 +474,9 @@ function mergePersistedPlayState(
   };
 }
 
-export const usePlayStore = create<PlayStore>()(
+/** Keeps one store instance across Metro Fast Refresh so play state + navigation guards stay consistent. */
+function createPlayStore() {
+  return create<PlayStore>()(
   persist(
     (set, get) => ({
       tokens: 5,
@@ -489,6 +487,12 @@ export const usePlayStore = create<PlayStore>()(
       },
 
       ensureDraft: () => {
+        // Avoid persisting default tokens/session before rehydrate — child screens use
+        // useLayoutEffect and can run before AppHydration's hydrate() effect, which would
+        // overwrite AsyncStorage with the initial token balance (see zustand persist setState → setItem).
+        if (!usePlayStore.persist.hasHydrated()) {
+          return;
+        }
         if (!get().session) {
           set({ session: createDraftSession() });
         }
@@ -843,7 +847,13 @@ export const usePlayStore = create<PlayStore>()(
           };
         }),
 
-      revealAnswer: () =>
+      revealAnswer: () => {
+        const session = get().session;
+        if (!session) return { ok: false, error: 'No session found.' };
+
+        const rumbleReveal = canRevealRumbleAnswer(session);
+        if (!rumbleReveal.ok) return rumbleReveal;
+
         set((state) => {
           if (!state.session) return state;
           return {
@@ -853,7 +863,9 @@ export const usePlayStore = create<PlayStore>()(
               phase: 'answerLock',
             },
           };
-        }),
+        });
+        return { ok: true };
+      },
 
       awardStandardQuestion: (teamId) =>
         set((state) => {
@@ -863,6 +875,18 @@ export const usePlayStore = create<PlayStore>()(
           const session = state.session;
           const multiplier = session.bonus.active ? session.bonus.multiplier : 1;
           const points = currentQuestion.pointValue * multiplier;
+          const rumbleAssignedTeamIds = [
+            currentQuestion.rumbleFirstTeamId,
+            currentQuestion.rumbleSecondTeamId,
+          ];
+
+          if (
+            session.mode === 'rumble' &&
+            teamId !== null &&
+            !rumbleAssignedTeamIds.includes(teamId)
+          ) {
+            return state;
+          }
 
           let teams = session.teams.map((t) => ({ ...t }));
 
@@ -1212,12 +1236,25 @@ export const usePlayStore = create<PlayStore>()(
         mergePersistedPlayState(persistedState, currentState as PlayStore),
     }
   )
-);
+  );
+}
+
+type PlayStoreApi = ReturnType<typeof createPlayStore>;
+
+const playStoreSingletonHolder = globalThis as typeof globalThis & {
+  __DOUBLEPLAY_USE_PLAY_STORE__?: PlayStoreApi;
+};
+
+export const usePlayStore =
+  playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__ ??
+  (playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__ = createPlayStore());
 
 export function usePlayHydration() {
   const hydrate = usePlayStore((state) => state.hydrate);
 
   useEffect(() => {
-    void hydrate();
+    void hydrate().then(() => {
+      usePlayStore.getState().ensureDraft();
+    });
   }, [hydrate]);
 }

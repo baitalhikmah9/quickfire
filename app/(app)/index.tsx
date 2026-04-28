@@ -163,7 +163,7 @@ export default function AppHubScreen() {
       case 'question':
         return '/play/question';
       case 'answer':
-        return '/play/answer';
+        return '/play/question';
       case 'end':
         return '/play/end';
       default:

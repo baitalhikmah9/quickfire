@@ -143,7 +143,7 @@ export default function GameRecapModal() {
                 title="Review Last Answer"
                 onPress={() => {
                   reopenLastResolvedTurn();
-                  router.replace('/play/answer');
+                  router.replace('/play/question');
                 }}
               />
             </View>

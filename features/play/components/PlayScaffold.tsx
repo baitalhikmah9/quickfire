@@ -1,6 +1,14 @@
 import { ReactNode } from 'react';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  useWindowDimensions,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { SPACING, BORDER_RADIUS, FONT_SIZES, LAYOUT } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -54,6 +62,8 @@ interface PlayScaffoldProps {
    * When `contentSafeAreaHorizontal` + `bodyEdgeToEdge`, only horizontal safe-area gutters wrap the footer.
    */
   footerBare?: boolean;
+  /** Merged onto the column that wraps header chrome + body (e.g. zero bottom inset for a flush CTA on phones). */
+  chromeColumnStyle?: StyleProp<ViewStyle>;
 }
 
 export function PlayScaffold({
@@ -74,6 +84,7 @@ export function PlayScaffold({
   contentSafeAreaHorizontal = false,
   footerAboveBody = false,
   footerBare = false,
+  chromeColumnStyle,
 }: PlayScaffoldProps) {
   const colors = useTheme();
   const shellBackground = backgroundColor ?? colors.background;
@@ -152,8 +163,7 @@ export function PlayScaffold({
 
   const paddedColumnStyles = bodyEdgeToEdge
     ? [
-        styles.content,
-        styles.chromeColumn,
+        styles.edgeChromeWrap,
         {
           paddingLeft: padLeft,
           paddingRight: padRight,
@@ -216,7 +226,7 @@ export function PlayScaffold({
     >
       <ScreenContent fullWidth style={styles.screenInner}>
         <View style={styles.fitRoot}>
-          <View style={paddedColumnStyles}>{main}</View>
+          <View style={[paddedColumnStyles, chromeColumnStyle]}>{main}</View>
           {footerPlacementAbove ? footerShell : null}
           {bodyEdgeToEdge ? (
             <View
@@ -263,13 +273,13 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xs,
     minHeight: 0,
   },
-  /** Top chrome only — body is a sibling (`edgeBodySlot`) for full horizontal bleed. */
-  chromeColumn: {
+  /** Top chrome only — body is a sibling (`edgeBodySlot`). Single vertical inset (no stacked wrappers). */
+  edgeChromeWrap: {
     flexGrow: 0,
     flexShrink: 0,
-    paddingTop: 0,
-    paddingBottom: SPACING.sm,
     minHeight: 0,
+    width: '100%',
+    paddingVertical: SPACING.md,
   },
   /** Keeps team strip / footer from collapsing when the board body fights for height. */
   footerSlotFixed: {

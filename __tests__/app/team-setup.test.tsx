@@ -60,6 +60,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'play.removeLastPlayerLink': 'Remove last player',
         'play.removeTeamMemberA11y': 'Remove a team member',
         'play.rumblePartyCountTitle': 'Number of teams',
+        'play.teamsLabel': 'Teams',
         'play.setupIncompleteHint': 'Enter all names to continue',
         'play.teamNamePlaceholder': 'Team name',
         'play.teamSetupTitle': 'Team Setup',
@@ -85,12 +86,13 @@ jest.mock('@expo/vector-icons', () => ({
 }));
 
 describe('TeamSetupScreen', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockBack.mockClear();
     mockCanGoBack.mockClear();
     mockPush.mockClear();
     mockReplace.mockClear();
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
+    await usePlayStore.getState().hydrate();
     usePlayStore.getState().ensureDraft();
   });
 
@@ -116,7 +118,7 @@ describe('TeamSetupScreen', () => {
 
     render(<TeamSetupScreen />);
 
-    expect(screen.getByText('Number of teams')).toBeTruthy();
+    expect(screen.getByText('TEAMS')).toBeTruthy();
     for (const option of ['2', '3', '4', '6']) {
       expect(screen.getByText(option)).toBeTruthy();
     }

@@ -111,8 +111,9 @@ function hasMinHeightZeroInAncestorChain(node: ReactTestInstance, maxDepth = 4):
 }
 
 describe('CategorySelectionScreen', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
+    await usePlayStore.getState().hydrate();
     usePlayStore.getState().ensureDraft();
   });
 
@@ -169,8 +170,18 @@ describe('CategorySelectionScreen', () => {
     const logoWrapStyle = StyleSheet.flatten(logoWrap.props.style);
 
     expect(cardStyle.minHeight).toBeGreaterThanOrEqual(140);
-    expect(logoWrapStyle.width).toBeGreaterThanOrEqual(84);
-    expect(logoWrapStyle.height).toBeGreaterThanOrEqual(72);
+    const logoW = logoWrapStyle.width;
+    if (typeof logoW === 'number') {
+      expect(logoW).toBeGreaterThanOrEqual(84);
+    } else {
+      expect(logoW).toBe('100%');
+    }
+    const logoH = logoWrapStyle.height;
+    if (typeof logoH === 'number') {
+      expect(logoH).toBeGreaterThanOrEqual(72);
+    } else {
+      expect(logoH).toBe('100%');
+    }
   });
 
   it('adds one random unselected topic per press', () => {

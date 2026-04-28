@@ -8,10 +8,12 @@ import { useRouter } from 'expo-router';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { BORDER_RADIUS, FONT_SIZES, LAYOUT, SPACING } from '@/constants';
 import { FONTS } from '@/constants/theme';
-import { getCategoryBoardAccent, getCategoryPictureSource } from '@/constants/categoryPictures';
+import { getCategoryPictureSource } from '@/constants/categoryPictures';
 import { getRandomRemainingQuestion } from '@/features/play/data';
 import type { GameConfig, LifelineId, QuestionCard } from '@/features/shared';
+import { PlayMatchTopBar } from '@/features/play/components/PlayMatchTopBar';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
+import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -20,6 +22,9 @@ import { usePlayStore } from '@/store/play';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
+
+/** Topic art is a portrait tile: same width as the layout cap, extra height for the illustration. */
+const TOPIC_ART_HEIGHT_RATIO = 1.18;
 
 interface BoardRow {
   pointValue: number;
@@ -88,6 +93,44 @@ function getGridColumnCount(mode: string, categoryCount: number): number {
   return 3;
 }
 
+/** Keeps each topic column wide enough for rails + art + gaps — drops from 3→2→1 cols on narrow widths. */
+function clampGridColumns(
+  preferredCols: number,
+  innerWidth: number,
+  gridGap: number,
+  categoryCount: number
+): number {
+  if (categoryCount <= 0) return 1;
+  const rowPadding = gridGap * 2;
+  const usableRow = Math.max(0, innerWidth - rowPadding);
+  /** Minimum space per topic cell before we reduce column count (rails + scaled-down image + gaps). */
+  const MIN_CELL = 168;
+  let cols = Math.min(preferredCols, categoryCount);
+  while (cols > 1) {
+    const cell = (usableRow - gridGap * (cols - 1)) / cols;
+    if (cell >= MIN_CELL) break;
+    cols -= 1;
+  }
+  return Math.max(1, cols);
+}
+
+function computeTopicFit(
+  innerWidth: number,
+  m: BoardMetrics,
+  cols: number
+): { topicImageSize: number; railWidth: number; artGap: number } {
+  const rowPadding = m.gridGap * 2;
+  const usableRow = Math.max(0, innerWidth - rowPadding);
+  const safeCols = Math.max(1, cols);
+  const cellWidth = (usableRow - m.gridGap * (safeCols - 1)) / safeCols;
+  const railW = Math.min(62, Math.max(44, Math.round(cellWidth * 0.26)));
+  const artGap = Math.min(m.topicArtGap, Math.max(4, Math.round(cellWidth * 0.045)));
+  const reserved = railW * 2 + artGap * 2 + 14;
+  const maxImg = Math.floor(cellWidth - reserved);
+  const topicImageSize = Math.max(48, Math.min(m.topicImageSize, maxImg));
+  return { topicImageSize, railWidth: railW, artGap };
+}
+
 function lifelineGlyph(id: LifelineId): keyof typeof Ionicons.glyphMap {
   switch (id) {
     case 'callAFriend':
@@ -149,6 +192,15 @@ type BoardMetrics = {
   scoreFont: number;
   lifelineIcon: number;
   lifelineIconBox: number;
+  /** Square topic illustration — rails align to this height cluster (title sits below). */
+  topicImageSize: number;
+  /** Horizontal gap between point rail and central image. */
+  topicArtGap: number;
+  /** Vertical gap between stacked point pills. */
+  pointRailGap: number;
+  /** Bottom inset so brand raised-tile shadow (y=4) is not clipped by parent overflow. */
+  pointRailClipBleed: number;
+  topicTitleFont: number;
 };
 
 function getBoardMetrics(screenHeight: number, screenWidth: number): BoardMetrics {
@@ -158,11 +210,16 @@ function getBoardMetrics(screenHeight: number, screenWidth: number): BoardMetric
     gridGap: micro ? 8 : compact ? 12 : 20,
     cellBorder: micro ? 1 : 2,
     innerGap: micro ? 2 : compact ? 6 : 10,
-    tileFont: micro ? 11 : compact ? 13 : 15,
+    tileFont: micro ? 13 : compact ? 14 : 16,
     titleOnImage: micro ? 8 : compact ? 9 : 11,
     scoreFont: micro ? 14 : compact ? 16 : 18,
     lifelineIcon: micro ? 10 : compact ? 12 : 14,
     lifelineIconBox: micro ? 18 : compact ? 20 : 24,
+    topicImageSize: micro ? 100 : compact ? 116 : 132,
+    topicArtGap: micro ? 8 : compact ? 12 : 14,
+    pointRailGap: micro ? 8 : compact ? 10 : 12,
+    pointRailClipBleed: micro ? 6 : 8,
+    topicTitleFont: micro ? 12 : compact ? 13 : 14,
   };
 }
 
@@ -303,8 +360,9 @@ export default function PlayBoardScreen() {
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
   const selectorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [randomSelectorState, setRandomSelectorState] = useState<'idle' | 'rolling'>('idle');
-
-  const metrics = useMemo(() => getBoardMetrics(height, width), [height, width]);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
+  const [hotSeatInfoOpen, setHotSeatInfoOpen] = useState(false);
 
   // Notch detection: Blank side is the one with smaller safe area insets.
   const isLeftBlank = insets.left <= insets.right;
@@ -380,8 +438,25 @@ export default function PlayBoardScreen() {
   }, [clearSelectorTimeout, session?.step, showWagerSelector, startRandomSelection]);
 
   const grouped = useMemo(() => (session ? groupBoardTrivia(session) : []), [session]);
-  const gridColumnCount = getGridColumnCount(session?.mode ?? 'classic', grouped.length);
+  const metrics = useMemo(() => getBoardMetrics(height, width), [height, width]);
+  const padXEarly = Math.max(insets.left, LAYOUT.screenGutter) + Math.max(insets.right, LAYOUT.screenGutter);
+  const innerWidthEarly = Math.max(0, width - padXEarly);
+  const preferredGridCols = useMemo(
+    () => getGridColumnCount(session?.mode ?? 'classic', grouped.length),
+    [session?.mode, grouped.length]
+  );
+  const gridColumnCount = useMemo(
+    () =>
+      grouped.length === 0
+        ? preferredGridCols
+        : clampGridColumns(preferredGridCols, innerWidthEarly, metrics.gridGap, grouped.length),
+    [preferredGridCols, innerWidthEarly, metrics.gridGap, grouped.length]
+  );
   const gridRows = useMemo(() => chunkColumns(grouped, gridColumnCount), [grouped, gridColumnCount]);
+  const topicFit = useMemo(
+    () => computeTopicFit(innerWidthEarly, metrics, gridColumnCount),
+    [innerWidthEarly, metrics, gridColumnCount]
+  );
 
   const padX = Math.max(insets.left, LAYOUT.screenGutter) + Math.max(insets.right, LAYOUT.screenGutter);
   const innerWidth = Math.max(0, width - padX);
@@ -430,6 +505,8 @@ export default function PlayBoardScreen() {
     ]);
   };
 
+  const toggleExitModal = () => setShowExitModal((prev) => !prev);
+
   if (!session) {
     return <PlayScaffold title={t('common.loading')}><Text>{t('common.loading')}</Text></PlayScaffold>;
   }
@@ -440,322 +517,180 @@ export default function PlayBoardScreen() {
 
   const renderTile = (column: CategoryColumn, question: QuestionCard) => {
     const used = session.usedQuestionIds.has(question.id);
-    const surface = T.colors.surface;
-    const textPrimary = T.colors.textPrimary;
     const textMuted = T.colors.textMuted;
-
     return (
-      <View style={styles.tileWrapper}>
-
-         <Pressable
-            style={({ pressed }) => [
-                styles.pointTile,
-                PLASTIC_FACE,
-                {
-                    backgroundColor: surface,
-                    opacity: used ? 0.45 : (pressed ? 0.94 : 1),
-                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-                },
-                !used && neumorphicLift3D('tile'),
-            ]}
-            onPress={() => {
-                if (used) return;
-                selectQuestion(question);
-                router.replace('/play/question');
-            }}
-            disabled={used}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: used }}
-            accessibilityLabel={`${question.pointValue} points`}
+      <Pressable
+        style={({ pressed }) => [
+          styles.topicPointPill,
+          topicFit.railWidth <= 52 && styles.topicPointPillTight,
+          SOFT_SURFACE_FACE,
+          softSurfaceLift(),
+          {
+            opacity: used ? 0.45 : pressed ? 0.9 : 1,
+            transform: pressed && !used ? [{ scale: 0.97 }] : [{ scale: 1 }],
+          },
+        ]}
+        onPress={() => {
+          if (used) return;
+          selectQuestion(question);
+          router.replace('/play/question');
+        }}
+        disabled={used}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: used }}
+        accessibilityLabel={`${question.pointValue} points`}
+      >
+        <Text
+          style={[
+            styles.topicPointPillText,
+            {
+              fontSize: metrics.tileFont,
+              color: used ? textMuted : T.colors.textPrimary,
+              textDecorationLine: used ? 'line-through' : 'none',
+              opacity: used ? 0.55 : 1,
+            },
+          ]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
         >
-            <Text
-            style={[
-                styles.pointTileText,
-                {
-                    fontSize: metrics.tileFont,
-                    color: used ? textMuted : textPrimary,
-                    textDecorationLine: used ? 'line-through' : 'none',
-                    opacity: used ? 0.5 : 1,
-                },
-            ]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-            >
-            {question.pointValue}
-            </Text>
-        </Pressable>
-      </View>
+          {question.pointValue}
+        </Text>
+      </Pressable>
     );
   };
 
   const categoryCell = (column: (typeof grouped)[0]) => {
     const picture = getCategoryPictureSource(column.categoryId);
-    const surface = T.colors.surface;
     const textPrimary = T.colors.textPrimary;
-    const textMuted = T.colors.textMuted;
-    const compact = height < 560;
-    const accent = getCategoryBoardAccent(column.categoryId);
+    const imgW = topicFit.topicImageSize;
+    const imgH = Math.round(imgW * TOPIC_ART_HEIGHT_RATIO);
 
     return (
       <View key={column.categoryId} style={styles.categoryBlock}>
-        <View style={styles.categoryTriplet}>
-          {/* Left Column */}
-          <View style={styles.railColumn}>
-            {!compact && <Text style={[styles.playableLabel, { color: textMuted }]}>PLAYABLE</Text>}
-            <View style={[styles.tileRail, { gap: metrics.innerGap }]}>
-                {column.rows.map((row) => (
-                    <View key={`L-${row.pointValue}`} style={styles.tileRailSlot}>
-                        {renderTile(column, row.left)}
-                    </View>
-                ))}
-            </View>
+        <View style={[styles.topicArtRow, { gap: topicFit.artGap }]}>
+          <View
+            style={[
+              styles.topicPointRail,
+              { width: topicFit.railWidth, gap: metrics.pointRailGap, paddingBottom: metrics.pointRailClipBleed },
+            ]}
+          >
+            {column.rows.map((row) => (
+              <View key={`L-${row.pointValue}`}>{renderTile(column, row.left)}</View>
+            ))}
           </View>
 
-          {/* Central Card */}
-          <View style={styles.centralCardWrapper}>
+          <View style={styles.topicCenterBlock}>
             <Pressable
-                style={({ pressed }) => [
-                styles.pictureFrame,
-                PLASTIC_FACE,
+              style={({ pressed }) => [
+                styles.topicImageFrame,
                 {
-                    backgroundColor: surface,
-                    opacity: pressed ? 0.96 : 1,
-                    transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                  width: imgW,
+                  height: imgH,
+                  opacity: pressed ? 0.96 : 1,
+                  transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
                 },
+                PLASTIC_FACE,
                 neumorphicLift3D('card'),
-                ]}
-                onPress={() => {
-                  const next = column.rows
-                    .flatMap((row) => [row.left, row.right])
-                    .find((candidate) => !session.usedQuestionIds.has(candidate.id));
-                  if (!next) return;
-                  selectQuestion(next);
-                  router.replace('/play/question');
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={column.categoryName}
+              ]}
+              onPress={() => {
+                const next = column.rows
+                  .flatMap((row) => [row.left, row.right])
+                  .find((candidate) => !session.usedQuestionIds.has(candidate.id));
+                if (!next) return;
+                selectQuestion(next);
+                router.replace('/play/question');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={column.categoryName}
             >
-                <View style={[styles.pictureInner, { backgroundColor: `${accent}14` }]}>
+              <View style={styles.topicImageInner}>
                 {picture ? (
-                    <Image
-                      source={picture}
-                      style={styles.pictureImage}
-                      contentFit="contain"
-                      transition={120}
-                    />
+                  <Image
+                    source={picture}
+                    style={styles.topicImageFill}
+                    contentFit="contain"
+                    transition={120}
+                  />
                 ) : (
-                    <View style={styles.pictureFallbackFill}>
-                        <Ionicons name="image-outline" size={24} color="rgba(51, 51, 51, 0.1)" />
-                    </View>
+                  <View style={styles.pictureFallbackFill}>
+                    <Ionicons name="image-outline" size={24} color="rgba(15, 23, 42, 0.15)" />
+                  </View>
                 )}
-                </View>
-                <View style={styles.categoryTitleContainer}>
-                    <Text
-                        style={[
-                            styles.categoryTitleText,
-                            { color: textPrimary, fontSize: compact ? 9 : 10 },
-                        ]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.8}
-                    >
-                        {column.categoryName.toUpperCase()}
-                    </Text>
-                </View>
+              </View>
             </Pressable>
+
+            <View style={styles.topicTitleRow}>
+              <Text
+                style={[
+                  styles.topicTitleText,
+                  {
+                    color: textPrimary,
+                    fontSize: metrics.topicTitleFont,
+                    lineHeight: Math.round(metrics.topicTitleFont * 1.35),
+                  },
+                ]}
+                numberOfLines={2}
+                adjustsFontSizeToFit
+                minimumFontScale={0.82}
+              >
+                {column.categoryName.toUpperCase()}
+              </Text>
+            </View>
           </View>
 
-          {/* Right Column */}
-          <View style={styles.railColumn}>
-            {!compact && <Text style={[styles.playableLabel, { color: textMuted }]}>PLAYABLE</Text>}
-            <View style={[styles.tileRail, { gap: metrics.innerGap }]}>
-                {column.rows.map((row) => (
-                    <View key={`R-${row.pointValue}`} style={styles.tileRailSlot}>
-                        {renderTile(column, row.right)}
-                    </View>
-                ))}
-            </View>
+          <View
+            style={[
+              styles.topicPointRail,
+              { width: topicFit.railWidth, gap: metrics.pointRailGap, paddingBottom: metrics.pointRailClipBleed },
+            ]}
+          >
+            {column.rows.map((row) => (
+              <View key={`R-${row.pointValue}`}>{renderTile(column, row.right)}</View>
+            ))}
           </View>
         </View>
       </View>
     );
   };
 
-  const logoWordmarkStyle: any = {
-    fontFamily: FONTS.displayBold,
-    fontSize: layoutTuning.narrow ? 22 : T.typography.logoWordmark.fontSize,
-    letterSpacing: T.typography.logoWordmark.letterSpacing,
-    color: T.colors.textPrimary,
-    textAlign: 'center',
-    textTransform: 'none',
-  };
-
-  const logoCaplineStyle: any = {
-    fontFamily: FONTS.ui,
-    fontSize: layoutTuning.narrow ? 10 : T.typography.logoCapline.fontSize,
-    letterSpacing: layoutTuning.narrow ? 2.5 : T.typography.logoCapline.letterSpacing,
-    color: T.colors.textPrimary,
-    textAlign: 'center',
-    marginTop: 2,
-    textTransform: 'uppercase',
-  };
-
   const boardHeader = (
-    <View
-      style={[
-        styles.headerSideBar,
-        {
-          [blankSide]: 0,
-          paddingTop: Math.max(insets.top, 16),
-          paddingBottom: Math.max(insets.bottom, 16),
-          width: sidebarWidth,
-          borderRightWidth: blankSide === 'left' ? StyleSheet.hairlineWidth : 0,
-          borderLeftWidth: blankSide === 'right' ? StyleSheet.hairlineWidth : 0,
-          borderColor: 'rgba(0,0,0,0.05)',
-        },
-      ]}
-    >
-        <Pressable
-            onPress={leaveMatch}
-            accessibilityRole="button"
-            accessibilityLabel={t('play.boardExit')}
-            style={({ pressed }) => [
-                styles.headerSquircleInner,
-                PLASTIC_FACE,
-                {
-                    backgroundColor: T.colors.surface,
-                    borderRadius: 99,
-                    opacity: pressed ? 0.94 : 1,
-                    transform: pressed ? [{ scale: 0.94 }] : [{ scale: 1 }],
-                },
-                neumorphicLift3D('header'),
-            ]}
-        >
-            <Ionicons name="log-out-outline" size={24} color={T.colors.textPrimary} />
-        </Pressable>
-    </View>
+    <PlayMatchTopBar
+      session={session}
+      onLogoPress={toggleExitModal}
+      onWagerInfoPress={session.config.wagerEnabled ? () => setWagerInfoOpen(true) : undefined}
+      onHotSeatInfoPress={() => setHotSeatInfoOpen(true)}
+    />
   );
 
   const footerPadBottom = height < 520 ? 2 : SPACING.xs;
   const footerCompact = innerWidth < 560;
   const activeTeam = session?.teams.find((team) => team.id === activeTeamId) ?? null;
 
-  const boardFooter = (
-    <View style={[styles.footerStripOuter, { paddingBottom: footerPadBottom }]}>
-        <View
-          style={[
-            styles.footerRow,
-            { flexDirection: footerRowDir, gap: SPACING.md },
-          ]}
-        >
-          {session.teams.map((team, teamIndex) => {
-            const slots = lifelineSlotsForTeam(team.id, session.config);
-            const isCurrentTurn = Boolean(session.currentTeamId && team.id === session.currentTeamId);
-            const a11yLabel = [
-              team.name,
-              t('common.points', { count: team.score }),
-              t('play.boardLifelines'),
-              isCurrentTurn ? t('play.boardCurrentTurnA11y') : '',
-            ]
-              .filter(Boolean)
-              .join(', ');
+  /** Full-screen modals must not be children of PlayScaffold’s horizontal inset; we apply safe area on the board content instead. */
+  const bodyPadLeft = Math.max(insets.left, LAYOUT.screenGutter);
+  const bodyPadRight = Math.max(insets.right, LAYOUT.screenGutter);
 
-            return (
-              <Pressable
-                key={team.id}
-                onPress={() => setActiveTeamId(team.id)}
-                style={[
-                  styles.scoreCard,
-                  PLASTIC_FACE,
-                  {
-                      backgroundColor: T.colors.surface,
-                      opacity: isCurrentTurn ? 1 : 0.85,
-                      transform: isCurrentTurn ? [{ scale: 1 }] : [{ scale: 0.96 }],
-                  },
-                  neumorphicLift3D('score'),
-                ]}
-                accessibilityState={isCurrentTurn ? { selected: true } : undefined}
-                accessibilityRole="button"
-                accessibilityLabel={`${a11yLabel}. Open team details`}
-                hitSlop={8}
-              >
-                  {isCurrentTurn && (
-                      <View style={[styles.turnIndicator, { backgroundColor: T.colors.accentGlow || '#FFB411' }]} />
-                  )}
-
-                  <View style={styles.scoreContent}>
-                      <View style={styles.scoreIdentity}>
-                          <Text
-                            style={[
-                                styles.scoreTeamName,
-                                { color: T.colors.textPrimary },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {team.name.toUpperCase()}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.scoreValue,
-                              {
-                                color: T.colors.textPrimary,
-                                fontSize: metrics.scoreFont + 4,
-                              },
-                            ]}
-                            numberOfLines={1}
-                            adjustsFontSizeToFit
-                          >
-                            {team.score}
-                          </Text>
-                      </View>
-
-                      <View
-                        style={[styles.lifelineStack, { flexDirection: footerRowDir }]}
-                      >
-                        {slots.map((id, i) => (
-                          <View
-                            key={`${team.id}-${id}-${i}`}
-                            style={[
-                              styles.scoreLifelineIcon,
-                              {
-                                width: metrics.lifelineIconBox + 2,
-                                height: metrics.lifelineIconBox + 2,
-                                backgroundColor: isCurrentTurn ? 'rgba(51, 51, 51, 0.05)' : 'rgba(0,0,0,0.02)',
-                              },
-                            ]}
-                          >
-                            <Ionicons name={lifelineGlyph(id)} size={metrics.lifelineIcon + 2} color={T.colors.textPrimary} />
-                          </View>
-                        ))}
-                      </View>
-                  </View>
-              </Pressable>
-            );
-          })}
-        </View>
-    </View>
-  );
+  const boardFooter = null;
 
   return (
     <>
-      <PlayScaffold
+    <PlayScaffold
         title={t('play.questionBoardTitle')}
         backgroundColor={T.colors.canvas}
-        customHeader={<View />}
+        customHeader={boardHeader}
         onBack={leaveMatch}
         showHud={false}
         session={session}
-        footer={boardFooter}
+        footer={null}
         footerBare
         footerDense
         footerAboveBody
         bodyScrollEnabled={false}
         bodyFrame={false}
         bodyEdgeToEdge
-        contentSafeAreaHorizontal
+        contentSafeAreaHorizontal={false}
       >
-      {boardHeader}
       {wager && !showWagerSelector ? (
         <View
           style={[
@@ -764,7 +699,8 @@ export default function PlayBoardScreen() {
               backgroundColor: `${colors.secondary}15`,
               borderColor: `${colors.secondary}40`,
               paddingVertical: SPACING.sm,
-              paddingHorizontal: SPACING.md,
+              paddingLeft: bodyPadLeft + SPACING.md,
+              paddingRight: bodyPadRight + SPACING.md,
               borderWidth: 1,
             },
           ]}
@@ -783,20 +719,22 @@ export default function PlayBoardScreen() {
         </View>
       ) : null}
 
-      <View style={{ flex: 1, [blankSide === 'left' ? 'paddingLeft' : 'paddingRight']: sidebarWidth }}>
-        <ScrollView
-            style={[styles.gridScroll, { backgroundColor: T.colors.canvas }]}
-            contentContainerStyle={[
-            styles.gridScrollContent,
-            {
-                paddingBottom: Math.max(insets.bottom, SPACING.sm) + SPACING.md,
-            },
-            ]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
-            bounces
-        >
+      <ScrollView
+        style={[styles.gridScroll, { backgroundColor: T.colors.canvas }]}
+        contentContainerStyle={[
+          styles.gridScrollContent,
+          {
+            paddingLeft: bodyPadLeft + metrics.gridGap,
+            paddingRight: bodyPadRight + metrics.gridGap,
+            gap: metrics.gridGap,
+            paddingBottom: Math.max(insets.bottom, SPACING.sm) + SPACING.md,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        bounces
+      >
         {showWagerSelector ? (
           <RandomQuestionSelector
             title={t('play.wagerSelectorTitle')}
@@ -828,18 +766,11 @@ export default function PlayBoardScreen() {
             onAction={() => startRandomSelection('random')}
           />
         ) : (
-          <View style={styles.gridBleed}>
+          <>
             {gridRows.map((row, ri) => (
               <View
                 key={`row-${ri}`}
-                style={[
-                  styles.gridRow,
-                  {
-                    gap: metrics.gridGap,
-                    paddingHorizontal: metrics.gridGap,
-                    marginBottom: metrics.gridGap,
-                  },
-                ]}
+                style={[styles.gridRow, { gap: metrics.gridGap }]}
               >
                 {row.map((col) => categoryCell(col))}
                 {row.length < gridColumnCount
@@ -849,10 +780,42 @@ export default function PlayBoardScreen() {
                   : null}
               </View>
             ))}
-          </View>
+          </>
         )}
-        </ScrollView>
-      </View>
+      </ScrollView>
+      {showExitModal && (
+        <View style={styles.modalRoot} accessibilityViewIsModal>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowExitModal(false)}
+          />
+          <View style={[styles.modalCard, PLASTIC_FACE]}>
+             <Text style={styles.modalTitle}>EXIT GAME?</Text>
+             <Text style={styles.modalBody}>Are you sure you want to exit the current match?</Text>
+             <View style={styles.modalButtonsRow}>
+                <Pressable 
+                    onPress={leaveMatch}
+                    style={({ pressed }) => [
+                        styles.exitConfirmButton,
+                        { opacity: pressed ? 0.8 : 1 }
+                    ]}
+                >
+                    <Text style={styles.exitConfirmButtonText}>EXIT GAME</Text>
+                </Pressable>
+                <Pressable 
+                    onPress={() => setShowExitModal(false)}
+                    style={({ pressed }) => [
+                        styles.exitCancelButton,
+                        { opacity: pressed ? 0.8 : 1 }
+                    ]}
+                >
+                    <Text style={styles.exitCancelButtonText}>CANCEL</Text>
+                </Pressable>
+             </View>
+          </View>
+        </View>
+      )}
+
       {activeTeam ? (
         <View style={styles.teamModalRoot} accessibilityViewIsModal>
           <Pressable
@@ -897,6 +860,29 @@ export default function PlayBoardScreen() {
             >
               <Text style={styles.teamModalCloseText}>{t('common.close')}</Text>
             </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      <WagerInfoModal visible={wagerInfoOpen} onClose={() => setWagerInfoOpen(false)} />
+
+      {hotSeatInfoOpen ? (
+        <View accessibilityViewIsModal style={styles.hotSeatInfoOverlay} testID="board-hot-seat-info-overlay">
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setHotSeatInfoOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+          />
+          <View style={[styles.hotSeatInfoCard, PLASTIC_FACE, neumorphicLift3D('card')]}>
+            <Text
+              style={[styles.modalTitle, { color: T.colors.textPrimary }, getTextStyle(undefined, 'display', 'center')]}
+            >
+              {t('play.hotSeatInfoTitle')}
+            </Text>
+            <Text style={[styles.modalBody, { color: T.colors.textMuted }, getTextStyle()]}>
+              {t('play.hotSeatInfoBody')}
+            </Text>
           </View>
         </View>
       ) : null}
@@ -1105,15 +1091,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gridScrollContent: {
-    paddingTop: 0,
-    paddingBottom: SPACING.md,
-  },
-  gridBleed: {
+    flexGrow: 1,
     width: '100%',
+    minWidth: 0,
+    paddingTop: 0,
   },
   gridRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    justifyContent: 'center',
     width: '100%',
   },
   gridCellSpacer: {
@@ -1122,70 +1108,70 @@ const styles = StyleSheet.create({
   categoryBlock: {
     flex: 1,
     minWidth: 0,
+    maxWidth: '100%',
   },
-  categoryTriplet: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
-    gap: 8,
-  },
-  railColumn: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  playableLabel: {
-    fontSize: 7,
-    fontFamily: FONTS.uiBold,
-    letterSpacing: 0.5,
-    opacity: 0.6,
-  },
-  tileRail: {
+  /** Illustration + category title — grows to full width between rails; stretches vertically with the rail column (topicArtRow alignItems stretch). */
+  topicCenterBlock: {
+    flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'flex-start',
+    alignSelf: 'stretch',
+    minWidth: 0,
+    minHeight: 0,
+    gap: SPACING.xs,
   },
-  tileRailSlot: {
-    width: 54,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tileWrapper: {
-    position: 'relative',
+  /** Rails + illustration — side rails fixed width; center flexes horizontally and stretches to row height. */
+  topicArtRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
     width: '100%',
-    height: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+  },
+  topicPointRail: {
+    flexShrink: 0,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+    minHeight: 1,
+  },
+  topicPointPill: {
+    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: Platform.OS === 'android' ? 10 : 11,
+    paddingHorizontal: 12,
+    minHeight: 42,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
   },
-
-  pointTile: {
-    width: '85%',
-    height: '85%',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  topicPointPillTight: {
+    paddingHorizontal: 7,
+    minHeight: 38,
+    paddingVertical: Platform.OS === 'android' ? 8 : 9,
   },
-  pointTileText: {
+  topicPointPillText: {
     fontFamily: FONTS.displayBold,
     textAlign: 'center',
+    letterSpacing: -0.25,
   },
-  centralCardWrapper: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 8,
-  },
-  pictureFrame: {
-    width: '100%',
-    aspectRatio: 0.75,
+  topicImageFrame: {
+    flexShrink: 0,
     borderRadius: 20,
     overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    alignSelf: 'center',
+    flexGrow: 0,
   },
-  pictureInner: {
+  topicImageInner: {
     flex: 1,
-    padding: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pictureImage: {
+  topicImageFill: {
     width: '100%',
     height: '100%',
   },
@@ -1195,23 +1181,98 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
   },
-  categoryTitleContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 4,
-    paddingVertical: 6,
+  topicTitleRow: {
+    flex: 1,
+    minHeight: 0,
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.88)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(51,51,51,0.05)',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xs,
+    alignSelf: 'stretch',
+    width: '100%',
+    maxWidth: '100%',
   },
-  categoryTitleText: {
+  topicTitleText: {
     fontFamily: FONTS.displayBold,
-    fontSize: 10,
     textAlign: 'center',
-    letterSpacing: -0.2,
+    letterSpacing: 0.35,
+    textTransform: 'uppercase',
+  },
+  hotSeatInfoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 55,
+    elevation: 55,
+    backgroundColor: 'rgba(250, 249, 246, 0.4)',
+    justifyContent: 'center',
+    padding: SPACING.lg,
+  },
+  hotSeatInfoCard: {
+    borderRadius: 42,
+    backgroundColor: T.colors.surface,
+    padding: SPACING.xl,
+    maxWidth: 340,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  modalRoot: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalCard: {
+    width: '90%',
+    maxWidth: 340,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    gap: SPACING.lg,
+  },
+  modalTitle: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 22,
+    color: '#333333',
+    textAlign: 'center',
+  },
+  modalBody: {
+    fontFamily: FONTS.ui,
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    width: '100%',
+  },
+  exitConfirmButton: {
+    flex: 1,
+    backgroundColor: '#FF3B30',
+    borderRadius: 16,
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+  },
+  exitConfirmButtonText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  exitCancelButton: {
+    flex: 1,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 16,
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+  },
+  exitCancelButtonText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 14,
+    color: '#333333',
   },
   randomSelectorShell: {
     flex: 1,

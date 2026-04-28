@@ -5,12 +5,15 @@ import {
   TextInput,
   ScrollView,
   StyleSheet,
+  Platform,
   useWindowDimensions,
   type ViewStyle,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
+import { QuickFireTitleLogo } from '@/components/QuickFireTitleLogo';
 import { Button } from '@/components/ui/Button';
 import { FONT_SIZES, FONTS, SPACING } from '@/constants';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
@@ -51,6 +54,38 @@ const RUMBLE_TEAM_COUNT_OPTIONS = [2, 3, 4, 6] as const;
 const MAX_WAGERS_PER_TEAM = 9;
 const MAX_HOT_SEAT_ROUNDS = 5;
 
+const WAGER_CARD_ICON = require('@/assets/wager.png');
+const HOT_SEAT_CARD_ICON = require('@/assets/hot seat.png');
+
+/** Scales rumble team-setup panel so it fits phone landscape and narrow web widths. */
+function getRumbleTeamSetupDensity(windowWidth: number, windowHeight: number) {
+  const shortSide = Math.min(windowWidth, windowHeight);
+  const tight = shortSide < 400;
+  const micro = shortSide < 360;
+  const horizontalGutter = micro ? 10 : tight ? 14 : 18;
+
+  return {
+    horizontalGutter,
+    panelPadH: micro ? SPACING.sm : tight ? SPACING.sm + 2 : SPACING.md,
+    panelPadV: micro ? SPACING.sm : SPACING.md,
+    panelGap: tight ? SPACING.sm : SPACING.md,
+    panelRadius: tight ? 14 : 18,
+    panelMaxWidth: Math.min(620, Math.max(260, windowWidth - horizontalGutter * 2)),
+    cardHeadingSize: micro ? FONT_SIZES.xs : tight ? FONT_SIZES.sm : FONT_SIZES.md,
+    nameMinH: micro ? 36 : tight ? 40 : 46,
+    nameFontSize: tight ? FONT_SIZES.sm : FONT_SIZES.md,
+    namePadH: tight ? SPACING.sm : SPACING.md,
+    gridRowGap: micro ? 6 : tight ? SPACING.xs : SPACING.sm,
+    gridColGap: micro ? 6 : tight ? SPACING.xs : SPACING.sm,
+    /** Perfect circles for 2 / 3 / 4 / 6 (guide). */
+    countSize: micro ? 36 : tight ? 40 : 44,
+    countGap: micro ? SPACING.xs : tight ? SPACING.sm : SPACING.md,
+    countFontSize: tight ? FONT_SIZES.sm : FONT_SIZES.md,
+    editIcon: micro ? 12 : tight ? 13 : 15,
+    /** Air between name grid and count row (guide: generous). */
+    nameToCountGap: micro ? SPACING.sm : tight ? SPACING.md : SPACING.lg,
+  };
+}
 
 function hotSeatRoundsFromConfig(team: GameSessionState['config']): number {
   if (team.hotSeatRounds !== undefined) return team.hotSeatRounds;
@@ -63,6 +98,10 @@ export default function TeamSetupScreen() {
   const compact = windowHeight < 520 || windowWidth < 340;
   const shortScreen = windowHeight < 700;
   const landscape = windowWidth > windowHeight;
+  const shortSide = Math.min(windowWidth, windowHeight);
+  /** Phones / mobile web narrow view — hug Continue CTA with no extra strip padding. */
+  const tightContinueStrip =
+    Platform.OS === 'ios' || Platform.OS === 'android' || shortSide < 560;
   const viewportScale = Math.max(0.82, Math.min(1.08, Math.min(windowWidth / 860, windowHeight / 620)));
   const { direction, getTextStyle, t } = useI18n();
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
@@ -102,6 +141,17 @@ export default function TeamSetupScreen() {
   const stepperValueSize = Math.round((shortScreen ? 18 : compact ? 20 : 24) * viewportScale);
   const cardPad = Math.round((shortScreen ? SPACING.sm : SPACING.md) * viewportScale);
   const centerTitleSize = Math.round((shortScreen ? FONT_SIZES.md : FONT_SIZES.lg) * viewportScale);
+  const centerIconSize = Math.round((shortScreen ? 52 : 64) * viewportScale);
+
+  const teamSetupLogoWidth = Math.min(
+    200,
+    Math.max(96, Math.round(Math.min(windowWidth, 700) * 0.28))
+  );
+
+  const rumbleDensity = useMemo(
+    () => getRumbleTeamSetupDensity(windowWidth, windowHeight),
+    [windowWidth, windowHeight]
+  );
 
   const renderStepper = useCallback(
     (value: number, onMinus: () => void, onPlus: () => void, minusDisabled: boolean, plusDisabled: boolean) => (
@@ -227,61 +277,142 @@ export default function TeamSetupScreen() {
     );
   };
 
+  const rumbleTeamsPanel = useMemo(() => {
+    if (!session || !rumbleMode) return null;
+
+    const d = rumbleDensity;
+    /** Guide: 2–3 teams use a single column; 4+ use a 2-column grid (e.g. 2×2 for 4, 3×2 for 6). */
+    const stackNamesVertically = session.teams.length <= 3;
+
+    return (
+      <View
+        style={[
+          styles.rumblePanel,
+          {
+            maxWidth: d.panelMaxWidth,
+            paddingHorizontal: d.panelPadH,
+            paddingTop: tightContinueStrip ? SPACING.xs : d.panelPadV,
+            paddingBottom: tightContinueStrip ? SPACING.xs : d.panelPadV,
+            gap: d.panelGap,
+            borderRadius: d.panelRadius,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.rumbleCardHeading,
+            { fontSize: d.cardHeadingSize },
+            getTextStyle(undefined, 'displayBold', 'center'),
+          ]}
+        >
+          {t('play.teamsLabel').toUpperCase()}
+        </Text>
+
+        <View
+          style={[
+            styles.rumbleNamesGrid,
+            { rowGap: d.gridRowGap, columnGap: d.gridColGap },
+            stackNamesVertically && styles.rumbleNamesGridStacked,
+          ]}
+        >
+          {session.teams.map((team) => (
+            <View
+              key={team.id}
+              style={[
+                styles.rumbleNameRow,
+                { minHeight: d.nameMinH },
+                stackNamesVertically && styles.rumbleNameRowFull,
+              ]}
+            >
+              <View style={styles.editableInputWrap}>
+                <TextInput
+                  value={team.name}
+                  onChangeText={(value) => updateTeamName(team.id, value)}
+                  style={[
+                    styles.rumbleNameInput,
+                    styles.inputWithEditIcon,
+                    {
+                      minHeight: d.nameMinH,
+                      fontSize: d.nameFontSize,
+                      paddingHorizontal: d.namePadH,
+                      borderRadius: d.nameMinH / 2,
+                    },
+                    getTextStyle(),
+                  ]}
+                  placeholder={t('play.teamNamePlaceholder')}
+                  placeholderTextColor={T.textMuted}
+                  accessibilityLabel={t('play.teamNamePlaceholder')}
+                  numberOfLines={1}
+                />
+                <View style={styles.editIconWrap} pointerEvents="none" accessible={false}>
+                  <Ionicons name="create-outline" size={d.editIcon} color={T.textMuted} />
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View
+          style={[
+            styles.rumblePanelCountRow,
+            {
+              gap: d.countGap,
+              paddingTop: tightContinueStrip ? SPACING.xs : d.nameToCountGap,
+            },
+          ]}
+        >
+          {RUMBLE_TEAM_COUNT_OPTIONS.map((count) => {
+            const selected = session.teams.length === count;
+            return (
+              <Pressable
+                key={count}
+                onPress={() => setTeamCount(count)}
+                style={({ pressed }) => [
+                  styles.rumbleCountButton,
+                  {
+                    width: d.countSize,
+                    height: d.countSize,
+                    borderRadius: d.countSize / 2,
+                  },
+                  selected && styles.rumbleCountButtonSelected,
+                  pressed && styles.rumbleCountButtonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`${count} teams`}
+                accessibilityState={{ selected }}
+              >
+                <Text
+                  style={[
+                    styles.rumbleCountText,
+                    { fontSize: d.countFontSize },
+                    selected && styles.rumbleCountTextSelected,
+                    getTextStyle(undefined, 'displayBold', 'center'),
+                  ]}
+                >
+                  {count}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    );
+  }, [rumbleDensity, session, rumbleMode, getTextStyle, setTeamCount, t, tightContinueStrip, updateTeamName]);
+
   const centerColumn = useMemo(() => {
     if (!session) return null;
     const stackStyle = landscape ? styles.centerStackLandscape : styles.centerStackPortrait;
     const gap = shortScreen ? SPACING.sm : SPACING.md;
     return (
       <View style={[stackStyle, { gap }]}>
-        {rumbleMode ? (
-          <View style={[styles.centerCard, shortScreen && styles.centerCardTight, { padding: cardPad }]}>
-            <View style={styles.rumbleCountInlineRow}>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.centerCardTitle,
-                  styles.rumbleCountInlineTitle,
-                  { fontSize: centerTitleSize },
-                  getTextStyle(undefined, 'display', 'center'),
-                ]}
-              >
-                {t('play.rumblePartyCountTitle')}
-              </Text>
-              <View style={styles.rumbleCountRow}>
-                {RUMBLE_TEAM_COUNT_OPTIONS.map((count) => {
-                  const selected = session.teams.length === count;
-                  return (
-                    <Pressable
-                      key={count}
-                      onPress={() => setTeamCount(count)}
-                      style={({ pressed }) => [
-                        styles.rumbleCountButton,
-                        selected && styles.rumbleCountButtonSelected,
-                        pressed && styles.rumbleCountButtonPressed,
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${count} teams`}
-                      accessibilityState={{ selected }}
-                    >
-                      <Text
-                        style={[
-                          styles.rumbleCountText,
-                          selected && styles.rumbleCountTextSelected,
-                          getTextStyle(undefined, 'displayBold', 'center'),
-                        ]}
-                      >
-                        {count}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-        ) : null}
-
         {hotSeatAvailable ? (
           <View style={[styles.centerCard, shortScreen && styles.centerCardTight, { padding: cardPad }]}>
+            <Image
+              source={HOT_SEAT_CARD_ICON}
+              style={{ width: centerIconSize, height: centerIconSize }}
+              contentFit="contain"
+              accessible={false}
+            />
             <Text style={[styles.centerCardTitle, { fontSize: centerTitleSize }, getTextStyle(undefined, 'display', 'center')]}>
               {t('play.hotSeatTitle')}
             </Text>
@@ -300,6 +431,12 @@ export default function TeamSetupScreen() {
 
         {wagerEnabled ? (
           <View style={[styles.centerCard, shortScreen && styles.centerCardTight, { padding: cardPad }]}>
+            <Image
+              source={WAGER_CARD_ICON}
+              style={{ width: centerIconSize, height: centerIconSize }}
+              contentFit="contain"
+              accessible={false}
+            />
             <Text style={[styles.centerCardTitle, { fontSize: centerTitleSize }, getTextStyle(undefined, 'display', 'center')]}>
               {t('play.wagerCardTitle')}
             </Text>
@@ -325,7 +462,6 @@ export default function TeamSetupScreen() {
     session,
     wagerEnabled,
     hotSeatAvailable,
-    rumbleMode,
     hotSeatRounds,
     renderStepper,
     setTeamCount,
@@ -337,6 +473,7 @@ export default function TeamSetupScreen() {
     shortScreen,
     cardPad,
     centerTitleSize,
+    centerIconSize,
   ]);
 
   if (!session) {
@@ -347,21 +484,23 @@ export default function TeamSetupScreen() {
     );
   }
 
+  const rumbleGutter = Math.max(SPACING.xs, rumbleDensity.horizontalGutter - 4);
+
   const teamSetupBody = rumbleMode ? (
     <ScrollView
-      style={styles.rumbleScroll}
-      contentContainerStyle={[styles.rumbleScrollContent, shortScreen && styles.rumbleScrollContentTight]}
-      showsVerticalScrollIndicator={false}
+      style={styles.rumbleScrollOuter}
+      contentContainerStyle={[
+        styles.rumbleScrollContentContainer,
+        tightContinueStrip && styles.rumbleScrollContentContainerTight,
+        {
+          paddingHorizontal: rumbleGutter,
+          alignItems: 'center',
+        },
+      ]}
       keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
     >
-      <View style={styles.rumbleCenterSlot}>{centerColumn}</View>
-      <View style={styles.rumbleTeamGrid}>
-        {session.teams.map((team) => (
-          <View key={team.id} style={styles.rumbleTeamSlot}>
-            {teamCard(team)}
-          </View>
-        ))}
-      </View>
+      {rumbleTeamsPanel}
     </ScrollView>
   ) : (
     <>
@@ -385,7 +524,7 @@ export default function TeamSetupScreen() {
     <View style={styles.fixedViewportLayout}>
       <View style={styles.cardsViewport}>{teamSetupBody}</View>
 
-      <View style={styles.floatingButtonWrap}>
+      <View style={[styles.floatingButtonWrap, tightContinueStrip && styles.floatingButtonWrapTight]}>
         <Button
           title={t('common.continue').toUpperCase()}
           onPress={() => router.push('/play/categories')}
@@ -430,22 +569,31 @@ export default function TeamSetupScreen() {
           >
             <Ionicons
               name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'}
-              size={20}
+              size={18}
               color={T.textPrimary}
             />
+            <Text style={styles.headerBackLabel}>{t('common.back')}</Text>
           </Pressable>
-          <Text
-            numberOfLines={1}
-            style={[styles.teamSetupHeaderTitle, getTextStyle(undefined, 'displayBold', 'center')]}
-          >
-            {t('play.teamSetupTitle').toUpperCase()}
-          </Text>
+          <View style={styles.headerTitleBlock}>
+            <QuickFireTitleLogo
+              width={teamSetupLogoWidth}
+              testID="team-setup-brand-logo"
+              containerStyle={styles.headerLogoWrap}
+            />
+            <Text
+              numberOfLines={1}
+              style={[styles.teamSetupHeaderTitle, getTextStyle(undefined, 'displayBold', 'center')]}
+            >
+              {t('play.teamSetupTitle').toUpperCase()}
+            </Text>
+          </View>
           <View style={styles.headerMirrorSpacer} />
         </View>
       }
       bodyScrollEnabled={false}
       bodyFrame={false}
       backgroundColor={T.canvas}
+      chromeColumnStyle={tightContinueStrip ? { paddingBottom: 0 } : undefined}
     >
       <WagerInfoModal visible={wagerInfoOpen} onClose={() => setWagerInfoOpen(false)} />
 
@@ -482,26 +630,44 @@ export default function TeamSetupScreen() {
 
 const styles = StyleSheet.create({
   teamSetupHeader: {
-    minHeight: 72,
+    minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: SPACING.sm,
   },
-  headerBackButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: T.surface,
+  headerTitleBlock: {
+    flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: SPACING.xs,
+  },
+  headerLogoWrap: {
+    alignItems: 'center',
+  },
+  headerBackButton: {
+    minWidth: 88,
+    height: 44,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: 14,
+    backgroundColor: T.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  headerBackLabel: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 14,
+    color: T.textPrimary,
   },
   headerBackButtonPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.98 }],
   },
   teamSetupHeaderTitle: {
-    flex: 1,
+    width: '100%',
     textAlign: 'center',
     fontFamily: FONTS.displayBold,
     color: T.textPrimary,
@@ -511,7 +677,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
   },
   headerMirrorSpacer: {
-    width: 44,
+    width: 88,
     height: 44,
   },
   bodyFill: {
@@ -577,6 +743,69 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
   },
+  rumbleScrollOuter: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+    width: '100%',
+  },
+  rumbleScrollContentContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+    paddingVertical: SPACING.xs,
+  },
+  /** Phone / narrow: no vertical inset or flex stretch — panel height follows content. */
+  rumbleScrollContentContainerTight: {
+    flexGrow: 0,
+    justifyContent: 'flex-start',
+    paddingVertical: 0,
+  },
+  rumblePanel: {
+    width: '100%',
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(51,51,51,0.06)',
+    ...PLASTIC_FACE,
+    ...neumorphicLift(T.shadowStrong, 'card'),
+  },
+  /** Single in-card title (guide): "TEAMS" only; count selector implies team count. */
+  rumbleCardHeading: {
+    fontFamily: FONTS.displayBold,
+    letterSpacing: 1.2,
+    color: T.textPrimary,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  rumbleNamesGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  rumbleNamesGridStacked: {
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
+  },
+  rumbleNameRow: {
+    width: '48.8%',
+  },
+  rumbleNameRowFull: {
+    width: '100%',
+  },
+  rumbleNameInput: {
+    width: '100%',
+    borderWidth: 0,
+    /* Pill + slightly stronger fill (guide: light grey bars) */
+    backgroundColor: 'rgba(0,0,0,0.045)',
+    color: T.textPrimary,
+    fontFamily: FONTS.ui,
+  },
+  rumblePanelCountRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   rumbleScrollContent: {
     gap: SPACING.md,
     paddingBottom: SPACING.md,
@@ -598,28 +827,7 @@ const styles = StyleSheet.create({
   rumbleCenterSlot: {
     alignSelf: 'stretch',
   },
-  rumbleCountRow: {
-    flexDirection: 'row',
-    gap: SPACING.xs,
-    justifyContent: 'center',
-    flexWrap: 'nowrap',
-  },
-  rumbleCountInlineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-    width: '100%',
-    flexWrap: 'nowrap',
-  },
-  rumbleCountInlineTitle: {
-    width: 'auto',
-    flexShrink: 1,
-  },
   rumbleCountButton: {
-    minWidth: 44,
-    minHeight: 40,
-    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: T.surface,
@@ -809,10 +1017,14 @@ const styles = StyleSheet.create({
   floatingButtonWrap: {
     width: '100%',
     alignItems: 'center',
-    paddingTop: SPACING.sm,
+    paddingTop: SPACING.xs,
     paddingBottom: SPACING.xs,
-    gap: 4,
+    gap: 2,
     flexShrink: 0,
+  },
+  floatingButtonWrapTight: {
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   footerInner: {
     width: '100%',
@@ -821,16 +1033,20 @@ const styles = StyleSheet.create({
   },
   continueBtn: {
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 320,
+    minHeight: 32,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
     backgroundColor: T.surface,
-    borderRadius: 32,
+    borderRadius: 24,
     ...PLASTIC_FACE,
     ...neumorphicLift(T.shadowStrong, 'pill'),
   },
   continueBtnText: {
     color: T.textPrimary,
     fontFamily: FONTS.displayBold,
-    letterSpacing: 2,
+    fontSize: 15,
+    letterSpacing: 1.1,
   },
   footerHint: {
     marginTop: -SPACING.xs,

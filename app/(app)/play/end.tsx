@@ -75,7 +75,7 @@ export default function PlayEndScreen() {
             variant="secondary"
             onPress={() => {
               reopenLastResolvedTurn();
-              router.replace('/play/answer');
+              router.replace('/play/question');
             }}
           />
         ) : null}

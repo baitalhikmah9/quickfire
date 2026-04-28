@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { act, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type { GameConfig, GameSessionState, QuestionCard } from '@/features/shared';
 
 import PlayQuestionScreen from '@/app/(app)/play/question';
@@ -41,12 +41,16 @@ jest.mock('@/lib/i18n/useI18n', () => ({
       const messages: Record<string, string> = {
         'common.back': 'Back',
         'common.loading': 'Loading',
-        'play.questionLanguage': 'Question language',
         'play.rumbleWaiting': 'Teams appear after 30 seconds.',
         'play.rumbleFirstWindow': `${values?.team ?? 'Team'} answers now.`,
-        'play.rumbleSecondWindow': `${values?.team ?? 'Team'} joins. Answer by 60 seconds.`,
+        'play.rumbleTransitionWindow': 'Next team appears at 76 seconds.',
+        'play.rumbleSecondWindow': `${values?.team ?? 'Team'} answers now. Round ends at 90 seconds.`,
+        'play.rumbleRoundEnded': 'Round ended.',
         'play.showAnswer': 'Show Answer',
         'play.hotSeatActiveTitle': 'Hot Seat',
+        'play.nextTurn': 'Next Turn',
+        'play.whoGetsPoints': 'Who gets the points?',
+        'play.pointsAwarded': 'Points awarded.',
       };
       return messages[key] ?? key;
     },
@@ -157,7 +161,7 @@ describe('PlayQuestionScreen', () => {
     jest.restoreAllMocks();
   });
 
-  it('switches rumble status after the first 30-second window and again at the 60-second mark', () => {
+  it('switches rumble status across the 31, 61, 76, and 90 second windows', () => {
     const question = createQuestion({
       id: 'q-rumble',
       canonicalKey: 'science:200:rumble',
@@ -175,6 +179,8 @@ describe('PlayQuestionScreen', () => {
     render(<PlayQuestionScreen />);
 
     expect(screen.getByText('TEAMS APPEAR AFTER 30 SECONDS.')).toBeTruthy();
+    expect(screen.queryByText('[BETA]')).toBeNull();
+    expect(screen.queryByText('[GAMMA]')).toBeNull();
 
     jest.spyOn(Date, 'now').mockReturnValue(1_031_000);
     act(() => {
@@ -182,16 +188,83 @@ describe('PlayQuestionScreen', () => {
     });
 
     expect(screen.getByText('BETA ANSWERS NOW.')).toBeTruthy();
+    expect(screen.getByText('[BETA]')).toBeTruthy();
+    expect(screen.queryByText('[GAMMA]')).toBeNull();
 
-    jest.spyOn(Date, 'now').mockReturnValue(1_046_000);
+    jest.spyOn(Date, 'now').mockReturnValue(1_061_000);
+    act(() => {
+      jest.advanceTimersByTime(30_000);
+    });
+
+    expect(screen.getByText('NEXT TEAM APPEARS AT 76 SECONDS.')).toBeTruthy();
+    expect(screen.getByText('[BETA]')).toBeTruthy();
+    expect(screen.queryByText('[GAMMA]')).toBeNull();
+
+    jest.spyOn(Date, 'now').mockReturnValue(1_076_000);
     act(() => {
       jest.advanceTimersByTime(15_000);
     });
 
-    expect(screen.getByText('GAMMA JOINS. ANSWER BY 60 SECONDS.')).toBeTruthy();
+    expect(screen.getByText('GAMMA ANSWERS NOW. ROUND ENDS AT 90 SECONDS.')).toBeTruthy();
+    expect(screen.getByText('[GAMMA]')).toBeTruthy();
+
+    jest.spyOn(Date, 'now').mockReturnValue(1_090_000);
+    act(() => {
+      jest.advanceTimersByTime(14_000);
+    });
+
+    expect(screen.getByText('ROUND ENDED.')).toBeTruthy();
   });
 
-  it('shows a scrollable question body with language metadata and prompt imagery for dense prompts', () => {
+  it('keeps show answer unavailable until the second rumble team is revealed and blocks it after 90 seconds', () => {
+    const question = createQuestion({
+      id: 'q-rumble',
+      canonicalKey: 'science:200:rumble',
+      rumbleFirstTeamId: 'team_2',
+      rumbleSecondTeamId: 'team_3',
+    });
+
+    usePlayStore.setState({
+      session: createSession({
+        currentQuestion: question,
+        board: [question],
+      }),
+    });
+
+    render(<PlayQuestionScreen />);
+
+    fireEvent.press(screen.getByText('SHOW ANSWER'));
+    expect(mockReplace).not.toHaveBeenCalledWith('/play/answer');
+
+    jest.spyOn(Date, 'now').mockReturnValue(1_076_000);
+    act(() => {
+      jest.advanceTimersByTime(76_000);
+    });
+
+    fireEvent.press(screen.getByText('SHOW ANSWER'));
+    expect(mockReplace).not.toHaveBeenCalledWith('/play/answer');
+    expect(screen.getByText('Who gets the points?')).toBeTruthy();
+    expect(screen.getByText('42')).toBeTruthy();
+
+    mockReplace.mockClear();
+    act(() => {
+      usePlayStore.setState({
+        session: createSession({
+          currentQuestion: question,
+          board: [question],
+        }),
+      });
+    });
+    jest.spyOn(Date, 'now').mockReturnValue(1_090_000);
+    act(() => {
+      jest.advanceTimersByTime(14_000);
+    });
+
+    fireEvent.press(screen.getByText('SHOW ANSWER'));
+    expect(mockReplace).not.toHaveBeenCalledWith('/play/answer');
+  });
+
+  it('shows a scrollable question body with prompt imagery for dense prompts', () => {
     const question = createQuestion({
       id: 'q-locale',
       canonicalKey: 'history:400:locale',
@@ -230,9 +303,91 @@ describe('PlayQuestionScreen', () => {
     render(<PlayQuestionScreen />);
 
     expect(screen.getByTestId('question-content-scroll')).toBeTruthy();
-    expect(screen.getByTestId('question-language-chip')).toHaveTextContent(
-      'Question language: العربية (Arabic)'
-    );
     expect(screen.getByTestId('question-prompt-image')).toBeTruthy();
+  });
+
+  it('lets unrevealed mobile questions wrap instead of shrinking to one unreadable line', () => {
+    const prompt = 'Which tragic hero is known for thee of jealousy?';
+    const question = createQuestion({
+      id: 'q-mobile-readable',
+      canonicalKey: 'literature:200:mobile-readable',
+      categoryName: 'Shakespeare',
+      prompt,
+    });
+
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'classic',
+        currentQuestion: question,
+        board: [question],
+        config: {
+          mode: 'classic',
+          teams: [
+            { id: 'team_1', name: 'Alpha', playerNames: ['Ava'] },
+            { id: 'team_2', name: 'Beta', playerNames: ['Ben'] },
+          ],
+          categories: ['literature'],
+          contentLocaleChain: ['en'],
+          quickPlayTopicCount: 3,
+          hotSeatEnabled: false,
+          wagerEnabled: false,
+          wagersPerTeam: 0,
+        },
+        teams: [
+          { id: 'team_1', name: 'Alpha', playerNames: ['Ava'], score: 0, wagersUsed: 0 },
+          { id: 'team_2', name: 'Beta', playerNames: ['Ben'], score: 0, wagersUsed: 0 },
+        ],
+        scores: { team_1: 0, team_2: 0 },
+      }),
+    });
+
+    render(<PlayQuestionScreen />);
+
+    expect(screen.getByText(prompt).props.numberOfLines).toBe(3);
+    expect(screen.getByText(prompt).props.minimumFontScale).toBe(0.72);
+  });
+
+  it('keeps the next-turn action docked after points are assigned in the embedded answer flow', () => {
+    const question = createQuestion({
+      id: 'q-next-turn-dock',
+      canonicalKey: 'literature:200:next-turn-dock',
+      categoryName: 'Shakespeare',
+      prompt: 'Which tragic hero is known for thee of jealousy?',
+      answer: 'Othello',
+    });
+
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'classic',
+        step: 'answer',
+        phase: 'scoring',
+        lastAwardedTeamId: 'team_1',
+        currentQuestion: question,
+        board: [question],
+        config: {
+          mode: 'classic',
+          teams: [
+            { id: 'team_1', name: 'Alpha', playerNames: ['Ava'] },
+            { id: 'team_2', name: 'Beta', playerNames: ['Ben'] },
+          ],
+          categories: ['literature'],
+          contentLocaleChain: ['en'],
+          quickPlayTopicCount: 3,
+          hotSeatEnabled: false,
+          wagerEnabled: false,
+          wagersPerTeam: 0,
+        },
+        teams: [
+          { id: 'team_1', name: 'Alpha', playerNames: ['Ava'], score: 200, wagersUsed: 0 },
+          { id: 'team_2', name: 'Beta', playerNames: ['Ben'], score: 0, wagersUsed: 0 },
+        ],
+        scores: { team_1: 200, team_2: 0 },
+      }),
+    });
+
+    render(<PlayQuestionScreen />);
+
+    expect(screen.getByTestId('question-answer-next-turn-dock')).toBeTruthy();
+    expect(screen.getByText('NEXT TURN')).toBeTruthy();
   });
 });

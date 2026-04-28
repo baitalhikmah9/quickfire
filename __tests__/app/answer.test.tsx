@@ -34,6 +34,10 @@ jest.mock('expo-image', () => ({
   Image: 'Image',
 }));
 
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: 'Ionicons',
+}));
+
 jest.mock('@/lib/i18n/useI18n', () => ({
   useI18n: () => ({
     direction: 'ltr',
@@ -82,6 +86,8 @@ function createQuestion(
     resolvedFromFallback: overrides.resolvedFromFallback ?? false,
     used: overrides.used ?? false,
     boardSide: overrides.boardSide,
+    rumbleFirstTeamId: overrides.rumbleFirstTeamId,
+    rumbleSecondTeamId: overrides.rumbleSecondTeamId,
   };
 }
 
@@ -154,7 +160,7 @@ describe('PlayAnswerScreen', () => {
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
   });
 
-  it('shows the answer content without the extra original-question and correct-answer labels', () => {
+  it('shows the correct-answer kicker, omits the original-question label, and renders the answer', () => {
     const question = createQuestion({
       id: 'q-answer',
       canonicalKey: 'science:200:answer',
@@ -172,7 +178,51 @@ describe('PlayAnswerScreen', () => {
     render(<PlayAnswerScreen />);
 
     expect(screen.queryByText('Original Question')).toBeNull();
-    expect(screen.queryByText('Correct Answer')).toBeNull();
+    expect(screen.getByText('CORRECT ANSWER')).toBeTruthy();
     expect(screen.getByText('42')).toBeTruthy();
+  });
+
+  it('limits rumble result marking to the first-picked team, second-picked team, and neither', () => {
+    const question = createQuestion({
+      id: 'q-rumble-answer',
+      canonicalKey: 'science:200:rumble-answer',
+      rumbleFirstTeamId: 'team_2',
+      rumbleSecondTeamId: 'team_3',
+    });
+
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'rumble',
+        config: {
+          mode: 'rumble',
+          teams: [
+            { id: 'team_1', name: 'Alpha', playerNames: ['Ava'] },
+            { id: 'team_2', name: 'Beta', playerNames: ['Ben'] },
+            { id: 'team_3', name: 'Gamma', playerNames: ['Gia'] },
+          ],
+          categories: ['science'],
+          contentLocaleChain: ['en'],
+          quickPlayTopicCount: 3,
+          hotSeatEnabled: false,
+          wagerEnabled: false,
+          wagersPerTeam: 0,
+        },
+        teams: [
+          { id: 'team_1', name: 'Alpha', playerNames: ['Ava'], score: 0, wagersUsed: 0 },
+          { id: 'team_2', name: 'Beta', playerNames: ['Ben'], score: 0, wagersUsed: 0 },
+          { id: 'team_3', name: 'Gamma', playerNames: ['Gia'], score: 0, wagersUsed: 0 },
+        ],
+        scores: { team_1: 0, team_2: 0, team_3: 0 },
+        currentQuestion: question,
+        board: [question],
+      }),
+    });
+
+    render(<PlayAnswerScreen />);
+
+    expect(screen.queryByText('Alpha')).toBeNull();
+    expect(screen.getByText('Beta')).toBeTruthy();
+    expect(screen.getByText('Gamma')).toBeTruthy();
+    expect(screen.getByText('Neither Team')).toBeTruthy();
   });
 });

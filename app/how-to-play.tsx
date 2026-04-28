@@ -13,6 +13,9 @@ import { getRowDirection } from '@/lib/i18n/direction';
 import type { SupportedLocale } from '@/lib/i18n/config';
 import type { TranslationKey } from '@/lib/i18n/messages/en';
 
+const WAGER_SECTION_ART = require('@/assets/wager.png');
+const HOT_SEAT_SECTION_ART = require('@/assets/hot seat.png');
+
 const MODE_ROWS: { labelKey: TranslationKey; bodyKey: TranslationKey }[] = [
   { labelKey: 'play.mode.classic', bodyKey: 'play.mode.classicCopy' },
   { labelKey: 'play.mode.quick', bodyKey: 'play.mode.quickCopy' },
@@ -116,7 +119,7 @@ export default function HowToPlayScreen() {
           </PillCollapsibleSection>
 
           <PillCollapsibleSection
-            icon="trending-up-outline"
+            iconImage={WAGER_SECTION_ART}
             title={t('howToPlay.sectionWagers')}
             kicker={t('howToPlay.kickerWagers')}
             tone="secondary"
@@ -127,7 +130,7 @@ export default function HowToPlayScreen() {
           </PillCollapsibleSection>
 
           <PillCollapsibleSection
-            icon="flame-outline"
+            iconImage={HOT_SEAT_SECTION_ART}
             title={t('howToPlay.sectionHotSeat')}
             kicker={t('howToPlay.kickerHotSeat')}
             tone="tertiary"

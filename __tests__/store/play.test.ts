@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { GameConfig, GameSessionState, QuestionCard } from '@/features/shared';
 import { serializeGameSession } from '@/store/gameSessionPersistence';
 
@@ -43,6 +43,8 @@ function createQuestion(overrides: Partial<QuestionCard> & Pick<QuestionCard, 'i
     resolvedFromFallback: overrides.resolvedFromFallback ?? false,
     used: overrides.used ?? false,
     boardSide: overrides.boardSide,
+    rumbleFirstTeamId: overrides.rumbleFirstTeamId,
+    rumbleSecondTeamId: overrides.rumbleSecondTeamId,
   };
 }
 
@@ -135,10 +137,15 @@ function seedPlayStorage(tokens: number, session: GameSessionState | null) {
   );
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   mockStorage.clear();
   jest.clearAllMocks();
   usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
+  await usePlayStore.getState().hydrate();
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
 });
 
 describe('usePlayStore', () => {
@@ -248,6 +255,116 @@ describe('usePlayStore', () => {
         expect(question.rumbleSecondTeamId).not.toBe(question.rumbleFirstTeamId);
       }
     }
+  });
+
+  it('assigns rumble questions evenly across 100, 200, and 300 value buckets', () => {
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
+    const store = usePlayStore.getState();
+    store.setMode('rumble');
+    usePlayStore.getState().setTeamCount(6);
+    const categories = usePlayStore.getState().session?.availableCategories.slice(0, 6) ?? [];
+
+    for (const category of categories) {
+      usePlayStore.getState().toggleCategory(category.slug);
+    }
+
+    const result = usePlayStore.getState().startBoard();
+
+    expect(result).toMatchObject({ ok: true });
+    const session = usePlayStore.getState().session!;
+    const bucketFor = (pointValue: number) => pointValue / 2;
+    const byBucket = session.board.reduce<Record<number, typeof session.board>>(
+      (groups, question) => {
+        const bucket = bucketFor(question.pointValue);
+        groups[bucket] = groups[bucket] ?? [];
+        groups[bucket].push(question);
+        return groups;
+      },
+      {}
+    );
+
+    expect(Object.keys(byBucket).sort()).toEqual(['100', '200', '300']);
+
+    for (const questions of Object.values(byBucket)) {
+      const firstCounts = questions.reduce<Record<string, number>>((counts, question) => {
+        counts[question.rumbleFirstTeamId!] = (counts[question.rumbleFirstTeamId!] ?? 0) + 1;
+        return counts;
+      }, {});
+      const secondCounts = questions.reduce<Record<string, number>>((counts, question) => {
+        counts[question.rumbleSecondTeamId!] = (counts[question.rumbleSecondTeamId!] ?? 0) + 1;
+        return counts;
+      }, {});
+
+      expect(firstCounts).toEqual({
+        team_1: 2,
+        team_2: 2,
+        team_3: 2,
+        team_4: 2,
+        team_5: 2,
+        team_6: 2,
+      });
+      expect(secondCounts).toEqual(firstCounts);
+    }
+  });
+
+  it('rejects rumble answer reveal before the second team appears and after the round ends', () => {
+    jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    const question = createQuestion({
+      id: 'q-rumble',
+      canonicalKey: 'science:200:rumble',
+      rumbleFirstTeamId: 'team_1',
+      rumbleSecondTeamId: 'team_2',
+    });
+
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'rumble',
+        config: {
+          mode: 'rumble',
+          teams: [
+            { id: 'team_1', name: 'Alpha', playerNames: ['Ava'] },
+            { id: 'team_2', name: 'Beta', playerNames: ['Ben'] },
+          ],
+          categories: ['science'],
+          contentLocaleChain: ['en'],
+          quickPlayTopicCount: 3,
+          hotSeatEnabled: false,
+          wagerEnabled: false,
+          wagersPerTeam: 0,
+        },
+        currentQuestion: question,
+        board: [question],
+        step: 'question',
+        phase: 'questionReveal',
+        timerStartedAt: 1_000_000,
+      }),
+    });
+
+    expect(usePlayStore.getState().revealAnswer()).toEqual({
+      ok: false,
+      error: 'The second Rumble team has not been revealed yet.',
+    });
+    expect(usePlayStore.getState().session?.step).toBe('question');
+
+    jest.spyOn(Date, 'now').mockReturnValue(1_076_000);
+    expect(usePlayStore.getState().revealAnswer()).toEqual({ ok: true });
+    expect(usePlayStore.getState().session?.step).toBe('answer');
+
+    usePlayStore.setState({
+      session: {
+        ...usePlayStore.getState().session!,
+        step: 'question',
+        phase: 'questionReveal',
+        timerStartedAt: 1_000_000,
+      },
+    });
+    jest.spyOn(Date, 'now').mockReturnValue(1_090_000);
+
+    expect(usePlayStore.getState().revealAnswer()).toEqual({
+      ok: false,
+      error: 'The Rumble round has ended.',
+    });
+    expect(usePlayStore.getState().session?.step).toBe('question');
   });
 
   it('rejects rumble board start when the team count is unsupported', () => {

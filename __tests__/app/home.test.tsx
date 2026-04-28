@@ -82,11 +82,12 @@ jest.mock('expo-image', () => ({
 }));
 
 describe('AppHubScreen', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockPush.mockClear();
     mockUseAuth.mockReturnValue({ isSignedIn: true });
     mockIsAuthDisabled.mockReturnValue(false);
     usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
+    await usePlayStore.getState().hydrate();
   });
 
   it('starts quick play directly from the home mode choices', () => {
