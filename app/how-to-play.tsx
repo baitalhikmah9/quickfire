@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SPACING, BORDER_RADIUS, FONTS, TYPE_SCALE, LAYOUT } from '@/constants';
+import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { ScreenContent } from '@/components/ScreenContent';
 import { PillCollapsibleSection } from '@/components/PillCollapsibleSection';
 import { useTheme } from '@/lib/hooks/useTheme';
@@ -129,16 +130,18 @@ export default function HowToPlayScreen() {
             <Text style={[styles.paragraph, { color: colors.textSecondary }]}>{t('howToPlay.wagersBody')}</Text>
           </PillCollapsibleSection>
 
-          <PillCollapsibleSection
-            iconImage={HOT_SEAT_SECTION_ART}
-            title={t('howToPlay.sectionHotSeat')}
-            kicker={t('howToPlay.kickerHotSeat')}
-            tone="tertiary"
-            cardBackground={colors.cardBackground}
-            rowDir={rowDir}
-          >
-            <Text style={[styles.paragraph, { color: colors.textSecondary }]}>{t('howToPlay.hotSeatBody')}</Text>
-          </PillCollapsibleSection>
+          {SHOW_HOT_SEAT_UI ? (
+            <PillCollapsibleSection
+              iconImage={HOT_SEAT_SECTION_ART}
+              title={t('howToPlay.sectionHotSeat')}
+              kicker={t('howToPlay.kickerHotSeat')}
+              tone="tertiary"
+              cardBackground={colors.cardBackground}
+              rowDir={rowDir}
+            >
+              <Text style={[styles.paragraph, { color: colors.textSecondary }]}>{t('howToPlay.hotSeatBody')}</Text>
+            </PillCollapsibleSection>
+          ) : null}
 
           <PillCollapsibleSection
             icon="flash-outline"

@@ -96,21 +96,17 @@ describe('TeamSetupScreen', () => {
     usePlayStore.getState().ensureDraft();
   });
 
-  it('opens setup help panels without mounting native modal portals', () => {
+  it('opens wager setup help without mounting native modal portals', () => {
     render(<TeamSetupScreen />);
 
     expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
 
-    fireEvent.press(screen.getByText('What is Hot Seat?'));
-
-    expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
-    expect(screen.getByText('One player from each team answers solo in the Hot Seat round.')).toBeTruthy();
-
-    fireEvent.press(screen.getByLabelText('Close'));
     fireEvent.press(screen.getByText('What is Wager?'));
 
     expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
     expect(screen.getByText('Wagers are a risky way to try and sabotage the other team!')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Close'));
   });
 
   it('shows the rumble team-count selector but hides wager and hot seat controls', () => {
@@ -118,7 +114,7 @@ describe('TeamSetupScreen', () => {
 
     render(<TeamSetupScreen />);
 
-    expect(screen.getByText('TEAMS')).toBeTruthy();
+    expect(screen.getByText('NUMBER OF TEAMS')).toBeTruthy();
     for (const option of ['2', '3', '4', '6']) {
       expect(screen.getByText(option)).toBeTruthy();
     }

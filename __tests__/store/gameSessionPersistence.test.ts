@@ -190,6 +190,13 @@ describe('gameSessionPersistence', () => {
     expect(restored?.lifelineRuntime?.perTeam.team_1.answerRewardsPointMultiplier).toBe(0.5);
   });
 
+  it('preserves config.entryTokenCharge through serialization (avoids double charge on resume)', () => {
+    const session = createSession();
+    session.config = { ...session.config, entryTokenCharge: 7 };
+    const restored = deserializeGameSession(serializeGameSession(session));
+    expect(restored?.config.entryTokenCharge).toBe(7);
+  });
+
   it('defaults scoreEvents when legacy persisted session omits them', () => {
     const serialized = JSON.parse(JSON.stringify(serializeGameSession(createSession()))) as Record<
       string,

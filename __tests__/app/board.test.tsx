@@ -79,8 +79,17 @@ jest.mock('@expo/vector-icons', () => ({
 }));
 
 jest.mock('@/features/play/components/PlayScaffold', () => ({
-  PlayScaffold: ({ children, footer }: { children: React.ReactNode; footer?: React.ReactNode }) => (
+  PlayScaffold: ({
+    children,
+    customHeader,
+    footer,
+  }: {
+    children: React.ReactNode;
+    customHeader?: React.ReactNode;
+    footer?: React.ReactNode;
+  }) => (
     <>
+      {customHeader}
       {children}
       {footer}
     </>
@@ -224,5 +233,51 @@ describe('PlayBoardScreen', () => {
     expect(screen.getByTestId('random-question-selector')).toBeTruthy();
     expect(screen.getByText('Random Question Select')).toBeTruthy();
     expect(screen.getByText('Alpha is drawing a random question for Beta.')).toBeTruthy();
+  });
+
+  it('shows every rumble team name and score in the match header', () => {
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'rumble',
+        config: {
+          mode: 'rumble',
+          teams: [
+            { id: 'team_1', name: 'Alpha', playerNames: ['Ava'] },
+            { id: 'team_2', name: 'Beta', playerNames: ['Ben'] },
+            { id: 'team_3', name: 'Gamma', playerNames: ['Gia'] },
+            { id: 'team_4', name: 'Delta', playerNames: ['Dee'] },
+          ],
+          categories: ['science'],
+          contentLocaleChain: ['en'],
+          quickPlayTopicCount: 3,
+          hotSeatEnabled: false,
+          wagerEnabled: false,
+          wagersPerTeam: 0,
+        },
+        teams: [
+          { id: 'team_1', name: 'Alpha', playerNames: ['Ava'], score: 10, wagersUsed: 0 },
+          { id: 'team_2', name: 'Beta', playerNames: ['Ben'], score: 20, wagersUsed: 0 },
+          { id: 'team_3', name: 'Gamma', playerNames: ['Gia'], score: 30, wagersUsed: 0 },
+          { id: 'team_4', name: 'Delta', playerNames: ['Dee'], score: 40, wagersUsed: 0 },
+        ],
+        scores: {
+          team_1: 10,
+          team_2: 20,
+          team_3: 30,
+          team_4: 40,
+        },
+      }),
+    });
+
+    render(<PlayBoardScreen />);
+
+    expect(screen.getByText('Alpha')).toBeTruthy();
+    expect(screen.getByText('Beta')).toBeTruthy();
+    expect(screen.getByText('Gamma')).toBeTruthy();
+    expect(screen.getByText('Delta')).toBeTruthy();
+    expect(screen.getByText('10')).toBeTruthy();
+    expect(screen.getByText('20')).toBeTruthy();
+    expect(screen.getByText('30')).toBeTruthy();
+    expect(screen.getByText('40')).toBeTruthy();
   });
 });

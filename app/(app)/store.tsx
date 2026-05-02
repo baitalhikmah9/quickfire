@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -127,7 +127,7 @@ function BundleCard({
 export default function StoreScreen() {
   const { isLoaded, isSignedIn } = useAuth();
   const authDisabled = isAuthDisabled();
-  const { direction, t, uiLocale } = useI18n();
+  const { direction, t } = useI18n();
   const rowDir = getRowDirection(direction);
   const router = useRouter();
   const tokens = usePlayStore((state) => state.tokens);
@@ -240,6 +240,10 @@ export default function StoreScreen() {
             ))}
           </View>
 
+          <Text style={[styles.tokenBalanceHint, { color: textMuted }]}>
+            {t('store.typicalGameTokensHint')}
+          </Text>
+
           <View style={styles.redeemSection}>
             <Text style={[styles.redeemTitle, { color: textPrimary }]}>REDEEM CODE</Text>
             <View style={[styles.redeemCard, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'header')]}>
@@ -344,6 +348,16 @@ const styles = StyleSheet.create({
     fontSize: 42,
     letterSpacing: 2,
     marginBottom: 0,
+  },
+  tokenBalanceHint: {
+    width: '100%',
+    maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,
+    marginTop: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
+    fontFamily: FONTS.ui,
+    fontSize: 11,
+    lineHeight: 15,
+    textAlign: 'center',
   },
   balanceCornerCard: {
     flexDirection: 'row',

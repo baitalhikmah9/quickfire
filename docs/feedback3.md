@@ -1,9 +1,9 @@
 # Feedback 3 - Implementation Checklist
 
 ## Feature: Rumble Mode UI Cleanup
-- [ ] Remove top cluttered controls for theme/lifeline switching in Rumble (lifelines are not used in this mode).
-- [ ] Replace top display with a simpler header showing each team name (small text) and score.
-- [ ] Keep Rumble UI trimmed to only gameplay-critical elements.
+- [x] Remove top cluttered controls for theme/lifeline switching in Rumble (lifelines are not used in this mode).
+- [x] Replace top display with a simpler header showing each team name (small text) and score.
+- [x] Keep Rumble UI trimmed to only gameplay-critical elements.
 
 ## Feature: Rumble Round Timing and Flow
 - [x] Implement question flow timeline:
@@ -40,17 +40,12 @@
 - [x] Add validation: if strict fairness cannot be met for current configuration, fail early with a clear error.
 
 ## Feature: Question Select Screen Layout Polish
-- [ ] Align question cards/boxes level with the related icon row.
-- [ ] Reduce question box height to create a tighter, more level layout.
-- [ ] Increase image/icon visual size so cards and imagery match target mockup.
-- [ ] Apply final spacing and alignment pass after reference image is received/confirmed.
+- [x] Align question cards/boxes level with the related icon row.
+- [x] Reduce question box height to create a tighter, more level layout.
+- [x] Increase image/icon visual size so cards and imagery match target mockup.
+- [x] Apply final spacing and alignment pass after reference image is received/confirmed.
 
 ## Feature: Tokens, Coupons, and Store
 - [ ] Implement token system UX and logic end-to-end.
 - [ ] Add coupon/code redemption flow (including free-token codes).
 - [ ] Finish store surface and connect it to token balances and redemptions.
-
-## Feature: Release Readiness / Pilot Distribution
-- [ ] Prepare a build/release candidate suitable for external feedback.
-- [ ] Share with pilot users and gather structured feedback.
-- [ ] Prepare a "free permanent access" path for selected community/youth groups.

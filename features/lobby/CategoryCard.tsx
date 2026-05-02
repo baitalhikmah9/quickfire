@@ -114,7 +114,6 @@ export function CategoryCard({
                             styles.titleText,
                             { color: isActive ? '#FFF' : textPrimary }
                         ]}
-                        numberOfLines={2}
                     >
                         {title.toUpperCase()}
                     </Text>
@@ -169,13 +168,13 @@ const styles = StyleSheet.create({
     },
     card: {
         width: '100%',
-        aspectRatio: 0.78, // Slightly taller for more image impact
         borderRadius: 24,
         backgroundColor: '#FFF',
         overflow: 'hidden',
     },
     imageContainer: {
-        flex: 1,
+        width: '100%',
+        aspectRatio: 0.95,
         backgroundColor: '#F1F5F9',
     },
     fullImage: {
@@ -195,13 +194,13 @@ const styles = StyleSheet.create({
         height: '50%',
     },
     titleBar: {
-        minHeight: 44,
+        flexShrink: 0,
         borderTopWidth: 1,
         borderTopColor: 'rgba(0,0,0,0.08)',
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 10,
-        paddingVertical: 8,
+        paddingVertical: 10,
     },
     infoIcon: {
         position: 'absolute',

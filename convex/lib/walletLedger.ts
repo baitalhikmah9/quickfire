@@ -4,8 +4,18 @@
 
 export type ReservationStatus = 'reserved' | 'consumed' | 'refunded';
 
+export const STARTER_GRANT_AMOUNT = 100;
+
 export function isStarterGrantDuplicate(existingIdempotencyKeys: Set<string>, key: string): boolean {
   return existingIdempotencyKeys.has(key);
+}
+
+export function applyStarterGrantToBalance(
+  balance: number,
+  alreadyGranted: boolean
+): { granted: boolean; balance: number } {
+  if (alreadyGranted) return { granted: false, balance };
+  return { granted: true, balance: balance + STARTER_GRANT_AMOUNT };
 }
 
 export function tryReserveFromBalance(

@@ -2,8 +2,10 @@ import { mutation, query, type QueryCtx } from './_generated/server';
 import { v } from 'convex/values';
 import {
   applyRefundToBalance,
+  applyStarterGrantToBalance,
   canConsumeReservation,
   canRefundReservation,
+  STARTER_GRANT_AMOUNT,
   tryReserveFromBalance,
 } from './lib/walletLedger';
 import { ensureWalletDoc } from './lib/ensureWallet';
@@ -12,8 +14,6 @@ import {
   requireUser,
 } from './lib/auth';
 import { ensureCanonicalPurchaserAccountForUser } from './lib/purchaserAccounts';
-
-const STARTER_GRANT = 5;
 
 async function resolvePurchaserAccountId(
   ctx: QueryCtx,
@@ -123,10 +123,11 @@ export const grantStarterBalance = mutation({
     }
 
     const now = Date.now();
+    const starterGrant = applyStarterGrantToBalance(wallet.balance, false);
     await ctx.db.insert('wallet_transactions', {
       walletId: wallet._id,
       type: 'starter_grant',
-      amount: STARTER_GRANT,
+      amount: STARTER_GRANT_AMOUNT,
       createdAt: now,
       status: 'posted',
       source: 'system',
@@ -134,9 +135,9 @@ export const grantStarterBalance = mutation({
       metadata: { deviceId: args.deviceId },
     });
 
-    await ctx.db.patch(wallet._id, { balance: wallet.balance + STARTER_GRANT });
+    await ctx.db.patch(wallet._id, { balance: starterGrant.balance });
     const updated = await ctx.db.get(wallet._id);
-    return { granted: true, balance: updated?.balance ?? wallet.balance + STARTER_GRANT };
+    return { granted: true, balance: updated?.balance ?? starterGrant.balance };
   },
 });
 

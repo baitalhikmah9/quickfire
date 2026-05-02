@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { BORDER_RADIUS, FONT_SIZES, LAYOUT, SPACING } from '@/constants';
+import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { FONTS } from '@/constants/theme';
 import { getCategoryPictureSource } from '@/constants/categoryPictures';
 import { getRandomRemainingQuestion } from '@/features/play/data';
@@ -103,8 +104,8 @@ function clampGridColumns(
   if (categoryCount <= 0) return 1;
   const rowPadding = gridGap * 2;
   const usableRow = Math.max(0, innerWidth - rowPadding);
-  /** Minimum space per topic cell before we reduce column count (rails + scaled-down image + gaps). */
-  const MIN_CELL = 168;
+  /** Minimum space per topic cell before we reduce column count — must fit long category titles. */
+  const MIN_CELL = 200;
   let cols = Math.min(preferredCols, categoryCount);
   while (cols > 1) {
     const cell = (usableRow - gridGap * (cols - 1)) / cols;
@@ -123,7 +124,7 @@ function computeTopicFit(
   const usableRow = Math.max(0, innerWidth - rowPadding);
   const safeCols = Math.max(1, cols);
   const cellWidth = (usableRow - m.gridGap * (safeCols - 1)) / safeCols;
-  const railW = Math.min(62, Math.max(44, Math.round(cellWidth * 0.26)));
+  const railW = Math.min(58, Math.max(36, Math.round(cellWidth * 0.22)));
   const artGap = Math.min(m.topicArtGap, Math.max(4, Math.round(cellWidth * 0.045)));
   const reserved = railW * 2 + artGap * 2 + 14;
   const maxImg = Math.floor(cellWidth - reserved);
@@ -460,6 +461,8 @@ export default function PlayBoardScreen() {
 
   const padX = Math.max(insets.left, LAYOUT.screenGutter) + Math.max(insets.right, LAYOUT.screenGutter);
   const innerWidth = Math.max(0, width - padX);
+  const bodyPadLeft = Math.max(insets.left, LAYOUT.screenGutter);
+  const bodyPadRight = Math.max(insets.right, LAYOUT.screenGutter);
 
   /** Tighter rails + scroll on small landscape phones so columns and footer are not clipped. */
   const layoutTuning = useMemo(() => {
@@ -510,6 +513,9 @@ export default function PlayBoardScreen() {
   if (!session) {
     return <PlayScaffold title={t('common.loading')}><Text>{t('common.loading')}</Text></PlayScaffold>;
   }
+
+  const activeTeam =
+    activeTeamId == null ? undefined : session.teams.find((team) => team.id === activeTeamId);
 
   const wager = session.wager;
   const remaining = session.board.filter((question) => !session.usedQuestionIds.has(question.id));
@@ -621,21 +627,21 @@ export default function PlayBoardScreen() {
             </Pressable>
 
             <View style={styles.topicTitleRow}>
-              <Text
-                style={[
-                  styles.topicTitleText,
-                  {
-                    color: textPrimary,
-                    fontSize: metrics.topicTitleFont,
-                    lineHeight: Math.round(metrics.topicTitleFont * 1.35),
-                  },
-                ]}
-                numberOfLines={2}
-                adjustsFontSizeToFit
-                minimumFontScale={0.82}
-              >
-                {column.categoryName.toUpperCase()}
-              </Text>
+                <Text
+                  style={[
+                    styles.topicTitleText,
+                    {
+                      color: textPrimary,
+                      fontSize: metrics.topicTitleFont,
+                      lineHeight: Math.round(metrics.topicTitleFont * 1.35),
+                    },
+                  ]}
+                  numberOfLines={2}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                >
+                  {column.categoryName.toUpperCase()}
+                </Text>
             </View>
           </View>
 
@@ -659,23 +665,13 @@ export default function PlayBoardScreen() {
       session={session}
       onLogoPress={toggleExitModal}
       onWagerInfoPress={session.config.wagerEnabled ? () => setWagerInfoOpen(true) : undefined}
-      onHotSeatInfoPress={() => setHotSeatInfoOpen(true)}
+      onHotSeatInfoPress={SHOW_HOT_SEAT_UI ? () => setHotSeatInfoOpen(true) : undefined}
     />
   );
 
-  const footerPadBottom = height < 520 ? 2 : SPACING.xs;
-  const footerCompact = innerWidth < 560;
-  const activeTeam = session?.teams.find((team) => team.id === activeTeamId) ?? null;
-
-  /** Full-screen modals must not be children of PlayScaffold’s horizontal inset; we apply safe area on the board content instead. */
-  const bodyPadLeft = Math.max(insets.left, LAYOUT.screenGutter);
-  const bodyPadRight = Math.max(insets.right, LAYOUT.screenGutter);
-
-  const boardFooter = null;
-
   return (
-    <>
-    <PlayScaffold
+    <View style={[styles.rootContainer, { backgroundColor: T.colors.canvas }]}>
+      <PlayScaffold
         title={t('play.questionBoardTitle')}
         backgroundColor={T.colors.canvas}
         customHeader={boardHeader}
@@ -691,98 +687,100 @@ export default function PlayBoardScreen() {
         bodyEdgeToEdge
         contentSafeAreaHorizontal={false}
       >
-      {wager && !showWagerSelector ? (
-        <View
-          style={[
-            styles.banner,
+        {wager && !showWagerSelector ? (
+          <View
+            style={[
+              styles.banner,
+              {
+                backgroundColor: `${colors.secondary}15`,
+                borderColor: `${colors.secondary}40`,
+                paddingVertical: SPACING.sm,
+                paddingLeft: bodyPadLeft + SPACING.md,
+                paddingRight: bodyPadRight + SPACING.md,
+                borderWidth: 1,
+              },
+            ]}
+          >
+            <Text style={[styles.bannerTitle, { color: colors.text }, getTextStyle(undefined, 'bodyBold', 'start')]}>
+              {t('play.wagerModeTitle')}
+            </Text>
+            <Text style={[styles.bannerCopy, { color: colors.textSecondary }, getTextStyle()]} numberOfLines={2}>
+              {t('play.wagerModeBody', {
+                wageringTeam:
+                  session.teams.find((team) => team.id === wager.wageringTeamId)?.name ?? t('common.teamOne'),
+                targetTeam:
+                  session.teams.find((team) => team.id === wager.targetTeamId)?.name ?? t('common.teamTwo'),
+              })}
+            </Text>
+          </View>
+        ) : null}
+
+        <ScrollView
+          style={[styles.gridScroll, { backgroundColor: T.colors.canvas }]}
+          contentContainerStyle={[
+            styles.gridScrollContent,
             {
-              backgroundColor: `${colors.secondary}15`,
-              borderColor: `${colors.secondary}40`,
-              paddingVertical: SPACING.sm,
-              paddingLeft: bodyPadLeft + SPACING.md,
-              paddingRight: bodyPadRight + SPACING.md,
-              borderWidth: 1,
+              paddingLeft: bodyPadLeft + metrics.gridGap,
+              paddingRight: bodyPadRight + metrics.gridGap,
+              gap: metrics.gridGap,
+              paddingBottom: Math.max(insets.bottom, SPACING.sm) + SPACING.md,
             },
           ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+          bounces
         >
-          <Text style={[styles.bannerTitle, { color: colors.text }, getTextStyle(undefined, 'bodyBold', 'start')]}>
-            {t('play.wagerModeTitle')}
-          </Text>
-          <Text style={[styles.bannerCopy, { color: colors.textSecondary }, getTextStyle()]} numberOfLines={2}>
-            {t('play.wagerModeBody', {
-              wageringTeam:
-                session.teams.find((team) => team.id === wager.wageringTeamId)?.name ?? t('common.teamOne'),
-              targetTeam:
-                session.teams.find((team) => team.id === wager.targetTeamId)?.name ?? t('common.teamTwo'),
-            })}
-          </Text>
-        </View>
-      ) : null}
+          {showWagerSelector ? (
+            <RandomQuestionSelector
+              title={t('play.wagerSelectorTitle')}
+              body={t('play.wagerSelectorBody', {
+                wageringTeam:
+                  session.teams.find((team) => team.id === wager?.wageringTeamId)?.name ??
+                  t('common.teamOne'),
+                targetTeam:
+                  session.teams.find((team) => team.id === wager?.targetTeamId)?.name ??
+                  t('common.teamTwo'),
+              })}
+              isRolling
+            />
+          ) : session.mode === 'random' ? (
+            <RandomQuestionSelector
+              title={
+                randomSelectorState === 'rolling'
+                  ? t('play.randomSelectorRollingTitle')
+                  : t('play.randomSelectorIdleTitle')
+              }
+              body={
+                randomSelectorState === 'rolling'
+                  ? t('play.randomSelectorRollingBody')
+                  : t('play.randomSelectorIdleBody')
+              }
+              actionLabel={remaining.length ? t('play.randomSelectorAction') : t('play.noQuestionsLeft')}
+              disabled={!remaining.length}
+              isRolling={randomSelectorState === 'rolling'}
+              onAction={() => startRandomSelection('random')}
+            />
+          ) : (
+            <>
+              {gridRows.map((row, ri) => (
+                <View
+                  key={`row-${ri}`}
+                  style={[styles.gridRow, { gap: metrics.gridGap }]}
+                >
+                  {row.map((col) => categoryCell(col))}
+                  {row.length < gridColumnCount
+                    ? Array.from({ length: gridColumnCount - row.length }).map((_, ei) => (
+                        <View key={`empty-${ri}-${ei}`} style={styles.gridCellSpacer} />
+                      ))
+                    : null}
+                </View>
+              ))}
+            </>
+          )}
+        </ScrollView>
+      </PlayScaffold>
 
-      <ScrollView
-        style={[styles.gridScroll, { backgroundColor: T.colors.canvas }]}
-        contentContainerStyle={[
-          styles.gridScrollContent,
-          {
-            paddingLeft: bodyPadLeft + metrics.gridGap,
-            paddingRight: bodyPadRight + metrics.gridGap,
-            gap: metrics.gridGap,
-            paddingBottom: Math.max(insets.bottom, SPACING.sm) + SPACING.md,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled
-        bounces
-      >
-        {showWagerSelector ? (
-          <RandomQuestionSelector
-            title={t('play.wagerSelectorTitle')}
-            body={t('play.wagerSelectorBody', {
-              wageringTeam:
-                session.teams.find((team) => team.id === wager?.wageringTeamId)?.name ??
-                t('common.teamOne'),
-              targetTeam:
-                session.teams.find((team) => team.id === wager?.targetTeamId)?.name ??
-                t('common.teamTwo'),
-            })}
-            isRolling
-          />
-        ) : session.mode === 'random' ? (
-          <RandomQuestionSelector
-            title={
-              randomSelectorState === 'rolling'
-                ? t('play.randomSelectorRollingTitle')
-                : t('play.randomSelectorIdleTitle')
-            }
-            body={
-              randomSelectorState === 'rolling'
-                ? t('play.randomSelectorRollingBody')
-                : t('play.randomSelectorIdleBody')
-            }
-            actionLabel={remaining.length ? t('play.randomSelectorAction') : t('play.noQuestionsLeft')}
-            disabled={!remaining.length}
-            isRolling={randomSelectorState === 'rolling'}
-            onAction={() => startRandomSelection('random')}
-          />
-        ) : (
-          <>
-            {gridRows.map((row, ri) => (
-              <View
-                key={`row-${ri}`}
-                style={[styles.gridRow, { gap: metrics.gridGap }]}
-              >
-                {row.map((col) => categoryCell(col))}
-                {row.length < gridColumnCount
-                  ? Array.from({ length: gridColumnCount - row.length }).map((_, ei) => (
-                      <View key={`empty-${ri}-${ei}`} style={styles.gridCellSpacer} />
-                    ))
-                  : null}
-              </View>
-            ))}
-          </>
-        )}
-      </ScrollView>
       {showExitModal && (
         <View style={styles.modalRoot} accessibilityViewIsModal>
           <Pressable
@@ -866,7 +864,7 @@ export default function PlayBoardScreen() {
 
       <WagerInfoModal visible={wagerInfoOpen} onClose={() => setWagerInfoOpen(false)} />
 
-      {hotSeatInfoOpen ? (
+      {SHOW_HOT_SEAT_UI && hotSeatInfoOpen ? (
         <View accessibilityViewIsModal style={styles.hotSeatInfoOverlay} testID="board-hot-seat-info-overlay">
           <Pressable
             style={StyleSheet.absoluteFill}
@@ -886,9 +884,9 @@ export default function PlayBoardScreen() {
           </View>
         </View>
       ) : null}
-      </PlayScaffold>
-    </>
+    </View>
   );
+
 }
 
 const styles = StyleSheet.create({
@@ -1185,8 +1183,9 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: SPACING.xs,
+    paddingTop: 2,
     alignSelf: 'stretch',
     width: '100%',
     maxWidth: '100%',
@@ -1196,12 +1195,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.35,
     textTransform: 'uppercase',
+    width: '100%',
+    flexShrink: 1,
+  },
+  rootContainer: {
+    flex: 1,
   },
   hotSeatInfoOverlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 55,
     elevation: 55,
-    backgroundColor: 'rgba(250, 249, 246, 0.4)',
+    backgroundColor: 'rgba(51, 51, 51, 0.45)',
     justifyContent: 'center',
     padding: SPACING.lg,
   },
@@ -1218,7 +1222,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(51, 51, 51, 0.45)',
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,

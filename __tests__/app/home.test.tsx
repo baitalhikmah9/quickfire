@@ -53,7 +53,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'play.mode.classic': 'Classic',
         'play.mode.classicCopy': 'Full board, wagers, six topics.',
         'play.mode.quick': 'Quick Play',
-        'play.mode.quickCopy': 'Pick 3, 4, or 5 topics for a faster match with wagers and Hot Seat.',
+        'play.mode.quickCopy': 'Pick 3, 4, or 5 topics for a faster match with wagers.',
         'play.mode.random': 'Random',
         'play.mode.randomCopy': 'Random questions each turn.',
         'play.mode.rumble': 'Rumble',
@@ -249,7 +249,7 @@ describe('AppHubScreen', () => {
 
     expect(mockPush).not.toHaveBeenCalled();
     expect(
-      screen.getByText('Pick 3, 4, or 5 topics for a faster match with wagers and Hot Seat.')
+      screen.getByText('Pick 3, 4, or 5 topics for a faster match with wagers.')
     ).toBeTruthy();
   });
 

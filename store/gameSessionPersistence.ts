@@ -159,6 +159,8 @@ const gameConfigSchema = z.object({
   wagerEnabled: z.boolean(),
   overtimeThreshold: z.number().optional(),
   boardSize: z.number().optional(),
+  /** Must persist so `startBoard` does not re-charge after rehydrate (resume / Continue Game). */
+  entryTokenCharge: z.number().optional(),
 });
 
 const wagerStateSchema = z.object({

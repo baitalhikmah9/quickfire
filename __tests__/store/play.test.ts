@@ -26,6 +26,10 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   default: mockAsyncStorage,
 }));
 
+jest.mock('@/constants/featureFlags', () => ({
+  SHOW_HOT_SEAT_UI: true,
+}));
+
 const { usePlayStore } = require('@/store/play') as typeof import('@/store/play');
 
 const STORAGE_KEY = 'doubledown-play-store-v1';
@@ -307,7 +311,7 @@ describe('usePlayStore', () => {
     }
   });
 
-  it('rejects rumble answer reveal before the second team appears and after the round ends', () => {
+  it('rejects rumble answer reveal before the second team appears and allows reveal after the round ends', () => {
     jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
     const question = createQuestion({
       id: 'q-rumble',
@@ -360,11 +364,8 @@ describe('usePlayStore', () => {
     });
     jest.spyOn(Date, 'now').mockReturnValue(1_090_000);
 
-    expect(usePlayStore.getState().revealAnswer()).toEqual({
-      ok: false,
-      error: 'The Rumble round has ended.',
-    });
-    expect(usePlayStore.getState().session?.step).toBe('question');
+    expect(usePlayStore.getState().revealAnswer()).toEqual({ ok: true });
+    expect(usePlayStore.getState().session?.step).toBe('answer');
   });
 
   it('rejects rumble board start when the team count is unsupported', () => {

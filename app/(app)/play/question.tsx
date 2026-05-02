@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { BORDER_RADIUS, SPACING, FONTS } from '@/constants';
+import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import {
   RUMBLE_FIRST_TEAM_REVEAL_SECONDS,
@@ -245,7 +246,7 @@ export default function PlayQuestionScreen() {
   }
 
   const q = session.currentQuestion;
-  const hotSeatChallenge = session.hotSeat?.activeChallenge;
+  const hotSeatChallenge = SHOW_HOT_SEAT_UI ? session.hotSeat?.activeChallenge : undefined;
   const timeStr = `${Math.floor(seconds / 60)
     .toString()
     .padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
@@ -275,7 +276,7 @@ export default function PlayQuestionScreen() {
             });
   const canShowAnswer =
     !isRumbleQuestion ||
-    (seconds >= RUMBLE_SECOND_TEAM_REVEAL_SECONDS && seconds < RUMBLE_ROUND_END_SECONDS);
+    seconds >= RUMBLE_SECOND_TEAM_REVEAL_SECONDS;
   const hotSeatNames = hotSeatChallenge?.participants
     .map((participant) => participant.playerName)
     .join(' vs ');
@@ -314,7 +315,7 @@ export default function PlayQuestionScreen() {
       <View style={styles.metaDivider} />
       <Text
         style={[styles.metaPillSegment, styles.metaPillTopic]}
-        numberOfLines={1}
+        numberOfLines={2}
         adjustsFontSizeToFit
         minimumFontScale={0.75}
       >
@@ -383,7 +384,7 @@ export default function PlayQuestionScreen() {
           compact
           onLogoPress={leaveMatch}
           onWagerInfoPress={session.config.wagerEnabled ? () => setWagerInfoOpen(true) : undefined}
-          onHotSeatInfoPress={openHotSeatInfo}
+          onHotSeatInfoPress={SHOW_HOT_SEAT_UI ? openHotSeatInfo : undefined}
         />
       </View>
 
@@ -461,7 +462,12 @@ export default function PlayQuestionScreen() {
                 <Text style={styles.hotSeatNames}>{hotSeatNames}</Text>
               </View>
             ) : null}
-            <Text style={[styles.topicText, { color: BRAND.charcoal }]}>
+            <Text
+              style={[styles.topicText, { color: BRAND.charcoal }]}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
               {`Topic: ${q.categoryName}`.toUpperCase()}
             </Text>
             <Text style={[styles.pointsText, { color: BRAND.charcoal + '88' }]}>

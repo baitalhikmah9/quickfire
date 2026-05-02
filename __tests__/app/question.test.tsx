@@ -216,7 +216,7 @@ describe('PlayQuestionScreen', () => {
     expect(screen.getByText('ROUND ENDED.')).toBeTruthy();
   });
 
-  it('keeps show answer unavailable until the second rumble team is revealed and blocks it after 90 seconds', () => {
+  it('keeps show answer unavailable until the second rumble team is revealed and keeps it available after 90 seconds', () => {
     const question = createQuestion({
       id: 'q-rumble',
       canonicalKey: 'science:200:rumble',
@@ -261,7 +261,8 @@ describe('PlayQuestionScreen', () => {
     });
 
     fireEvent.press(screen.getByText('SHOW ANSWER'));
-    expect(mockReplace).not.toHaveBeenCalledWith('/play/answer');
+    expect(screen.getByText('Who gets the points?')).toBeTruthy();
+    expect(screen.getByText('42')).toBeTruthy();
   });
 
   it('shows a scrollable question body with prompt imagery for dense prompts', () => {

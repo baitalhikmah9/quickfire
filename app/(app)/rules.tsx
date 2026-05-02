@@ -3,6 +3,7 @@ import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SPACING, FONT_SIZES } from '@/constants';
+import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { useTheme } from '@/lib/hooks/useTheme';
 
 export default function RulesModal() {
@@ -24,19 +25,23 @@ export default function RulesModal() {
             Before a question is revealed, the current team can wager. Multipliers: 0.5x, 1.5x, or 2x.
             Correct answers multiply points; incorrect answers deduct.
           </Text>
-          <Text style={[styles.sectionTitle, styles.spacedSectionTitle, { color: colors.textOnBackground }]}>
-            Hot Seat
-          </Text>
-          <Text style={[styles.body, { color: colors.textSecondaryOnBackground }]}>
-            One player from each team answers solo. Requires player names. 30-second timer. Lifelines
-            disabled during Hot Seat.
-          </Text>
+          {SHOW_HOT_SEAT_UI ? (
+            <>
+              <Text style={[styles.sectionTitle, styles.spacedSectionTitle, { color: colors.textOnBackground }]}>
+                Hot Seat
+              </Text>
+              <Text style={[styles.body, { color: colors.textSecondaryOnBackground }]}>
+                One player from each team answers solo. Requires player names. 30-second timer. Lifelines
+                disabled during Hot Seat.
+              </Text>
+            </>
+          ) : null}
         </View>
         <View style={styles.column}>
           <Text style={[styles.sectionTitle, { color: colors.textOnBackground }]}>Lifelines</Text>
           <Text style={[styles.body, { color: colors.textSecondaryOnBackground }]}>
             Call a Friend, Discard (skip), Answer Rewards. 3 per team per game (configurable). Not
-            available during Hot Seat or Wager turns.
+            available during{SHOW_HOT_SEAT_UI ? ' Hot Seat or' : ''} Wager turns.
           </Text>
           <Text style={[styles.sectionTitle, styles.spacedSectionTitle, { color: colors.textOnBackground }]}>
             Overtime Surge

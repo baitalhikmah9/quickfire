@@ -174,11 +174,7 @@ export default function CategorySelectionScreen() {
       ) : (
         <View style={styles.contentRoot}>
           <View style={styles.selectedStrip}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.selectedStripContent}
-            >
+            <View style={styles.selectedStripContent}>
               {selectedCategories.length === 0 ? (
                 <Text style={styles.selectedStripEmpty}>Selected topics appear here.</Text>
               ) : (
@@ -196,7 +192,12 @@ export default function CategorySelectionScreen() {
                         { opacity: pressed ? 0.8 : 1 },
                       ]}
                     >
-                      <Text style={styles.selectedTopicChipText} numberOfLines={1}>
+                      <Text
+                        style={styles.selectedTopicChipText}
+                        numberOfLines={2}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.7}
+                      >
                         {category.title.toUpperCase()}
                       </Text>
                     </Pressable>
@@ -217,7 +218,7 @@ export default function CategorySelectionScreen() {
                   </View>
                 ))
               )}
-            </ScrollView>
+            </View>
           </View>
 
           <View style={styles.gridContainer}>
@@ -288,7 +289,7 @@ export default function CategorySelectionScreen() {
                               style={[styles.topicTitle, { color: textPrimary }]}
                               numberOfLines={2}
                               adjustsFontSizeToFit
-                              minimumFontScale={0.72}
+                              minimumFontScale={0.7}
                             >
                               {category.title.toUpperCase()}
                             </Text>
@@ -404,12 +405,15 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     marginBottom: SPACING.lg,
   },
-  selectedStripContent: {
-    paddingHorizontal: 4,
+   selectedStripContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: SPACING.md,
     gap: SPACING.sm,
-    paddingBottom: 8, // space for shadow
+    paddingBottom: 8,
     minHeight: 44,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   selectedStripEmpty: {
     fontFamily: FONTS.uiSemibold,
@@ -420,14 +424,19 @@ const styles = StyleSheet.create({
   },
   selectedTopicChip: {
     backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingTop: 10,
     borderRadius: 14,
-    maxWidth: 180,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   selectedTopicChipWrap: {
     position: 'relative',
+    flexGrow: 1,
+    minWidth: 100,
+    maxWidth: '48%',
     justifyContent: 'center',
   },
   selectedTopicRemoveButton: {
@@ -447,6 +456,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#333333',
     letterSpacing: 0.3,
+    textAlign: 'center',
   },
   gridContainer: {
     flex: 1,
@@ -462,12 +472,10 @@ const styles = StyleSheet.create({
   },
   topicPill: {
     width: '23%',
-    minHeight: 148,
-    height: 164,
+    minHeight: 164,
     justifyContent: 'center',
     paddingVertical: 0,
     paddingHorizontal: 0,
-    overflow: 'hidden',
   },
   topicPillInner: {
     flexDirection: 'column',
@@ -487,18 +495,18 @@ const styles = StyleSheet.create({
   topicTitleBar: {
     width: '100%',
     minHeight: 44,
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 0,
     backgroundColor: 'rgba(255,255,255,0.96)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(51,51,51,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   topicTitleInner: {
     width: '100%',
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -526,9 +534,9 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     textAlign: 'center',
     letterSpacing: 0.2,
-    minHeight: 24,
     width: '100%',
     alignSelf: 'center',
+    flexShrink: 1,
   },
   pillImageWrap: {
     width: '100%',

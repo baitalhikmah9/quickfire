@@ -338,7 +338,7 @@ This order minimizes rework: backend contracts land before UI, state serializati
 ## Assumptions And Defaults
 - Existing Expo app remains landscape-first.
 - Real-money purchases remain out of scope.
-- Starter grant default is 5 tokens unless product copy already says otherwise.
+- Starter grant default is 100 tokens unless product copy already says otherwise.
 - Game entry default is 1 token per Classic, Quick Play, Random, Rumble, and Rapid Fire run until Convex config changes it.
 - Device binding is best-effort: SecureStore install ID plus Clerk account binding blocks normal abuse, but Android uninstall persistence is not guaranteed.
 - Admin web app is part of this repo but deployed separately from the mobile app.

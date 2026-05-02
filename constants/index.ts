@@ -1,3 +1,4 @@
+export { SHOW_HOT_SEAT_UI } from './featureFlags';
 export { API_ENDPOINTS } from './legacy';
 export {
   COLORS,

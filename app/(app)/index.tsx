@@ -229,167 +229,169 @@ export default function AppHubScreen() {
   const textMuted = T.colors.textMuted;
 
   return (
-    <SafeAreaView
-      collapsable={false}
-      edges={['top', 'bottom', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor: canvas }]}
-    >
-      <ScreenContent fullWidth style={styles.viewport}>
-        <View style={[styles.pageColumn, hubHorizontalInset]}>
-          <View style={[styles.headerBar, compact && styles.headerBarCompact]}>
-            <View style={[styles.headerEdge, styles.headerEdgeLeading]}>
-              <HubTokenChip
-                label={t('common.tokens')}
-                value={formattedTokens}
-                rowDirection={rowDir}
-                variant="softUi"
-                outerStyle={styles.hubTokenLeading}
-                onPress={() => router.push('/(app)/store')}
-                accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
-              />
+    <View style={[styles.rootContainer, { backgroundColor: canvas }]}>
+      <SafeAreaView
+        collapsable={false}
+        edges={['top', 'bottom', 'left', 'right']}
+        style={styles.safeArea}
+      >
+        <ScreenContent fullWidth style={styles.viewport}>
+          <View style={[styles.pageColumn, hubHorizontalInset]}>
+            <View style={[styles.headerBar, compact && styles.headerBarCompact]}>
+              <View style={[styles.headerEdge, styles.headerEdgeLeading]}>
+                <HubTokenChip
+                  label={t('common.tokens')}
+                  value={formattedTokens}
+                  rowDirection={rowDir}
+                  variant="softUi"
+                  outerStyle={styles.hubTokenLeading}
+                  onPress={() => router.push('/(app)/store')}
+                  accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
+                />
+              </View>
+
+              <View style={styles.headerLogoWrap} pointerEvents="none">
+                <QuickFireTitleLogo
+                  width={compact ? 172 : 220}
+                  testID="home-brand-logo"
+                  containerStyle={styles.headerLogoImageWrap}
+                />
+              </View>
+
+              <View style={[styles.headerEdge, styles.headerEdgeTrailing]}>
+                <Pressable
+                  onPress={() => router.push('/(app)/profile')}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('profile.preferences')}
+                  style={({ pressed }) => [
+                    styles.settingsImageButton,
+                    { opacity: pressed ? 0.92 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
+                  ]}
+                >
+                  <Image
+                    source={require('../../assets/QF Settings button.png')}
+                    style={styles.settingsImage}
+                    resizeMode="contain"
+                  />
+                </Pressable>
+              </View>
             </View>
 
-            <View style={styles.headerLogoWrap} pointerEvents="none">
-              <QuickFireTitleLogo
-                width={compact ? 172 : 220}
-                testID="home-brand-logo"
-                containerStyle={styles.headerLogoImageWrap}
-              />
-            </View>
-
-            <View style={[styles.headerEdge, styles.headerEdgeTrailing]}>
-              <Pressable
-                onPress={() => router.push('/(app)/profile')}
-                accessibilityRole="button"
-                accessibilityLabel={t('profile.preferences')}
-                style={({ pressed }) => [
-                  styles.settingsImageButton,
-                  { opacity: pressed ? 0.92 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
+            <View style={styles.mainFill}>
+              <View
+                testID="home-mode-row"
+                style={[
+                  styles.modeGrid,
+                  { flexDirection: rowDir, flexWrap: 'nowrap', gap: modeGap },
                 ]}
               >
-                <Image
-                  source={require('../../assets/QF Settings button.png')}
-                  style={styles.settingsImage}
-                  resizeMode="contain"
-                />
-              </Pressable>
-            </View>
-          </View>
-
-          <View style={styles.mainFill}>
-            <View
-              testID="home-mode-row"
-              style={[
-                styles.modeGrid,
-                { flexDirection: rowDir, flexWrap: 'nowrap', gap: modeGap },
-              ]}
-            >
-              {HOME_MODES.map((mode) => (
-                <View key={mode.id} style={styles.modeTileContainer}>
-                  {(() => {
-                    const minimumCost = minimumTokenCostForMode(mode.id);
-                    const canAffordMode = tokens >= minimumCost;
-                    return (
-                  <Pressable
-                    onPress={() => onSelectMode(mode.id)}
-                    disabled={!canAffordMode}
-                    accessibilityRole="button"
-                    accessibilityLabel={t(mode.titleKey)}
-                    accessibilityHint={`${t(mode.copyKey)} ${getHomeModeTokenCostLabel(mode.id)} ${t('common.tokens')}.`}
-                    accessibilityState={{ disabled: !canAffordMode }}
-                    testID={`home-mode-card-${mode.id}`}
-                    style={({ pressed }) => [
-                      styles.modeTile,
-                      styles.plasticFace,
-                      {
-                        backgroundColor: surface,
-                        borderRadius: 44,
-                        opacity: !canAffordMode ? 0.45 : pressed ? 0.94 : 1,
-                        transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-                      },
-                      brandRaisedSurfaceShadow('hero'),
-                    ]}
-                  >
-                    {mode.id === 'rumble' ? (
-                      <RumblePeopleIcon
-                        size={modeIconSize * 0.74}
-                        color={textPrimary}
-                        compact={compact}
-                      />
-                    ) : (
+                {HOME_MODES.map((mode) => (
+                  <View key={mode.id} style={styles.modeTileContainer}>
+                    {(() => {
+                      const minimumCost = minimumTokenCostForMode(mode.id);
+                      const canAffordMode = tokens >= minimumCost;
+                      return (
+                        <Pressable
+                          onPress={() => onSelectMode(mode.id)}
+                          disabled={!canAffordMode}
+                          accessibilityRole="button"
+                          accessibilityLabel={t(mode.titleKey)}
+                          accessibilityHint={`${t(mode.copyKey)} ${getHomeModeTokenCostLabel(mode.id)} ${t('common.tokens')}.`}
+                          accessibilityState={{ disabled: !canAffordMode }}
+                          testID={`home-mode-card-${mode.id}`}
+                          style={({ pressed }) => [
+                            styles.modeTile,
+                            styles.plasticFace,
+                            {
+                              backgroundColor: surface,
+                              borderRadius: 44,
+                              opacity: !canAffordMode ? 0.45 : pressed ? 0.94 : 1,
+                              transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                            },
+                            brandRaisedSurfaceShadow('hero'),
+                          ]}
+                        >
+                          {mode.id === 'rumble' ? (
+                            <RumblePeopleIcon
+                              size={modeIconSize * 0.74}
+                              color={textPrimary}
+                              compact={compact}
+                            />
+                          ) : (
+                            <Ionicons
+                              name={mode.icon}
+                              size={modeIconSize * 0.74}
+                              color={textPrimary}
+                              style={{ marginBottom: compact ? 4 : 10 }}
+                            />
+                          )}
+                          <Text
+                            testID={`home-mode-card-title-${mode.id}`}
+                            style={[
+                              styles.modeTileLabel,
+                              compact && styles.modeTileLabelCompact,
+                              { color: textPrimary },
+                            ]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            {t(mode.titleKey).toUpperCase()}
+                          </Text>
+                          <Text
+                            testID={`home-mode-card-copy-${mode.id}`}
+                            style={[
+                              styles.modeTileCopy,
+                              compact && styles.modeTileCopyCompact,
+                              { color: textMuted },
+                            ]}
+                            numberOfLines={2}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.82}
+                          >
+                            {t(mode.copyKey)}
+                          </Text>
+                          <View style={styles.modeTileCostRow}>
+                            <Ionicons name="diamond" size={compact ? 9 : 11} color={textPrimary} />
+                            <Text
+                              testID={`home-mode-token-cost-${mode.id}`}
+                              style={[
+                                styles.modeTileCostText,
+                                compact && styles.modeTileCostTextCompact,
+                                { color: textPrimary },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {`${getHomeModeTokenCostLabel(mode.id)} ${t('common.tokens').toUpperCase()}`}
+                            </Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })()}
+                    <Pressable
+                      onPress={() => openModeInfo(mode.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t(mode.titleKey)} info`}
+                      style={({ pressed }) => [
+                        styles.modeInfoButton,
+                        {
+                          opacity: pressed ? 0.82 : 1,
+                          transform: pressed ? [{ scale: 0.94 }] : [{ scale: 1 }],
+                        },
+                      ]}
+                    >
                       <Ionicons
-                        name={mode.icon}
-                        size={modeIconSize * 0.74}
+                        name="information-circle-outline"
+                        size={modeInfoIconSize}
                         color={textPrimary}
-                        style={{ marginBottom: compact ? 4 : 10 }}
                       />
-                    )}
-                    <Text
-                      testID={`home-mode-card-title-${mode.id}`}
-                      style={[
-                        styles.modeTileLabel,
-                        compact && styles.modeTileLabelCompact,
-                        { color: textPrimary },
-                      ]}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                    >
-                      {t(mode.titleKey).toUpperCase()}
-                    </Text>
-                    <Text
-                      testID={`home-mode-card-copy-${mode.id}`}
-                      style={[
-                        styles.modeTileCopy,
-                        compact && styles.modeTileCopyCompact,
-                        { color: textMuted },
-                      ]}
-                      numberOfLines={2}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.82}
-                    >
-                      {t(mode.copyKey)}
-                    </Text>
-                    <View style={styles.modeTileCostRow}>
-                      <Ionicons name="diamond" size={compact ? 9 : 11} color={textPrimary} />
-                      <Text
-                        testID={`home-mode-token-cost-${mode.id}`}
-                        style={[
-                          styles.modeTileCostText,
-                          compact && styles.modeTileCostTextCompact,
-                          { color: textPrimary },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {`${getHomeModeTokenCostLabel(mode.id)} ${t('common.tokens').toUpperCase()}`}
-                      </Text>
-                    </View>
-                  </Pressable>
-                    );
-                  })()}
-                  <Pressable
-                    onPress={() => openModeInfo(mode.id)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t(mode.titleKey)} info`}
-                    style={({ pressed }) => [
-                      styles.modeInfoButton,
-                      {
-                        opacity: pressed ? 0.82 : 1,
-                        transform: pressed ? [{ scale: 0.94 }] : [{ scale: 1 }],
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name="information-circle-outline"
-                      size={modeInfoIconSize}
-                      color={textPrimary}
-                    />
-                  </Pressable>
-                </View>
-              ))}
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
             </View>
           </View>
-        </View>
-      </ScreenContent>
+        </ScreenContent>
+      </SafeAreaView>
 
       {activeMode ? (
         <View
@@ -487,11 +489,14 @@ export default function AppHubScreen() {
           </View>
         </View>
       ) : null}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+  },
   /** Light top lip + soft bottom edge — reads extruded on white squircles. */
   plasticFace: {
     borderTopWidth: 2,
@@ -686,7 +691,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.xl,
-    backgroundColor: 'rgba(250, 249, 246, 0.4)',
+    backgroundColor: 'rgba(51, 51, 51, 0.45)',
   },
   infoModalBackdrop: {
     ...StyleSheet.absoluteFillObject,

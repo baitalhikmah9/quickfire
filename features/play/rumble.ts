@@ -34,13 +34,6 @@ export function canRevealRumbleAnswer(
     };
   }
 
-  if (elapsedSeconds >= RUMBLE_ROUND_END_SECONDS) {
-    return {
-      ok: false,
-      error: 'The Rumble round has ended.',
-    };
-  }
-
   return { ok: true };
 }
 

@@ -40,6 +40,7 @@ import {
   serializeGameSession,
   serializeRapidFire,
 } from '@/store/gameSessionPersistence';
+import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { useLocaleStore } from '@/store/locale';
 
 const DEFAULT_TEAMS: TeamState[] = [
@@ -118,6 +119,7 @@ function isWagerAvailable(mode: GameMode): boolean {
 }
 
 function isHotSeatAvailable(mode: GameMode): boolean {
+  if (!SHOW_HOT_SEAT_UI) return false;
   return mode === 'classic' || mode === 'quickPlay';
 }
 
@@ -209,6 +211,19 @@ function syncConfig(session: GameSessionState): GameConfig {
     entryTokenCharge: cfg.entryTokenCharge ?? 0,
     hotSeatRounds,
     hotSeatEnabled: hotSeatRounds > 0,
+  };
+}
+
+/** Clears Hot Seat from persisted sessions when the product surface is disabled. */
+function stripHotSeatSurfaceWhenDisabled(session: GameSessionState): GameSessionState {
+  if (SHOW_HOT_SEAT_UI) return session;
+  return {
+    ...session,
+    hotSeat: undefined,
+    config: syncConfig({
+      ...session,
+      config: { ...session.config, hotSeatRounds: 0, hotSeatEnabled: false },
+    }),
   };
 }
 
@@ -456,10 +471,15 @@ function mergePersistedPlayState(
     };
   }
 
-  const nextSession =
+  const nextSessionRaw =
     partialState.session === undefined
       ? currentState.session
       : deserializeGameSession(partialState.session) ?? currentState.session;
+
+  const nextSession =
+    nextSessionRaw === null || nextSessionRaw === undefined
+      ? nextSessionRaw
+      : stripHotSeatSurfaceWhenDisabled(nextSessionRaw);
 
   const nextRapidFire =
     partialState.rapidFire === undefined
@@ -479,7 +499,7 @@ function createPlayStore() {
   return create<PlayStore>()(
   persist(
     (set, get) => ({
-      tokens: 5,
+      tokens: 100,
       session: null,
       rapidFire: null,
       hydrate: async () => {

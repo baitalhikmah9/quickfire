@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { QuickFireTitleLogo } from '@/components/QuickFireTitleLogo';
 import { Button } from '@/components/ui/Button';
 import { FONT_SIZES, FONTS, SPACING } from '@/constants';
+import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
@@ -102,7 +103,7 @@ export default function TeamSetupScreen() {
   /** Phones / mobile web narrow view — hug Continue CTA with no extra strip padding. */
   const tightContinueStrip =
     Platform.OS === 'ios' || Platform.OS === 'android' || shortSide < 560;
-  const viewportScale = Math.max(0.82, Math.min(1.08, Math.min(windowWidth / 860, windowHeight / 620)));
+  const viewportScale = Math.max(0.72, Math.min(1.08, Math.min(windowWidth / 860, windowHeight / 620)));
   const { direction, getTextStyle, t } = useI18n();
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
   const [hotSeatInfoOpen, setHotSeatInfoOpen] = useState(false);
@@ -127,7 +128,9 @@ export default function TeamSetupScreen() {
   );
 
   const wagerEnabled = session?.config.wagerEnabled ?? false;
-  const hotSeatAvailable = session ? session.mode === 'classic' || session.mode === 'quickPlay' : false;
+  const hotSeatAvailable = Boolean(
+    session && SHOW_HOT_SEAT_UI && (session.mode === 'classic' || session.mode === 'quickPlay')
+  );
   const rumbleMode = session?.mode === 'rumble';
   const hotSeatRounds = session ? hotSeatRoundsFromConfig(session.config) : 0;
 
@@ -140,8 +143,8 @@ export default function TeamSetupScreen() {
   const stepperBtn = Math.round((shortScreen ? 34 : compact ? 38 : 42) * viewportScale);
   const stepperValueSize = Math.round((shortScreen ? 18 : compact ? 20 : 24) * viewportScale);
   const cardPad = Math.round((shortScreen ? SPACING.sm : SPACING.md) * viewportScale);
-  const centerTitleSize = Math.round((shortScreen ? FONT_SIZES.md : FONT_SIZES.lg) * viewportScale);
-  const centerIconSize = Math.round((shortScreen ? 52 : 64) * viewportScale);
+  const centerTitleSize = Math.round((shortScreen ? 14 : FONT_SIZES.lg) * viewportScale);
+  const centerIconSize = Math.round((shortScreen ? 40 : 64) * viewportScale);
 
   const teamSetupLogoWidth = Math.min(
     200,
@@ -155,7 +158,7 @@ export default function TeamSetupScreen() {
 
   const renderStepper = useCallback(
     (value: number, onMinus: () => void, onPlus: () => void, minusDisabled: boolean, plusDisabled: boolean) => (
-      <View style={styles.stepperRow}>
+      <View style={[styles.stepperRow, { gap: shortScreen ? SPACING.md : SPACING.lg }]}>
         <Pressable
           style={({ pressed }) => [
             styles.stepperButton,
@@ -187,7 +190,7 @@ export default function TeamSetupScreen() {
         </Pressable>
       </View>
     ),
-    [getTextStyle, stepperBtn, stepperValueSize]
+    [getTextStyle, stepperBtn, stepperValueSize, shortScreen]
   );
 
   const teamCard = (team: GameSessionState['teams'][number]) => {
@@ -244,18 +247,6 @@ export default function TeamSetupScreen() {
         </View>
 
         <View style={[styles.teamLinksRow, shortScreen && styles.teamLinksRowTight]}>
-          <Pressable
-            onPress={() => addTeamMember(team.id)}
-            style={({ pressed }) => [
-              styles.playerActionButton,
-              styles.addPlayerAction,
-              pressed && styles.playerActionPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={t('play.addTeamMemberA11y')}
-          >
-            <Text style={[styles.addPlayerActionText, getTextStyle()]}>{t('play.addPlayerLink')}</Text>
-          </Pressable>
           {memberCount > 1 ? (
             <Pressable
               onPress={() => removeTeamMember(team.id)}
@@ -272,6 +263,18 @@ export default function TeamSetupScreen() {
               </Text>
             </Pressable>
           ) : null}
+          <Pressable
+            onPress={() => addTeamMember(team.id)}
+            style={({ pressed }) => [
+              styles.playerActionButton,
+              styles.addPlayerAction,
+              pressed && styles.playerActionPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={t('play.addTeamMemberA11y')}
+          >
+            <Text style={[styles.addPlayerActionText, getTextStyle()]}>{t('play.addPlayerLink')}</Text>
+          </Pressable>
         </View>
       </View>
     );
@@ -305,7 +308,7 @@ export default function TeamSetupScreen() {
             getTextStyle(undefined, 'displayBold', 'center'),
           ]}
         >
-          {t('play.teamsLabel').toUpperCase()}
+          {t('play.rumblePartyCountTitle').toUpperCase()}
         </Text>
 
         <View
@@ -401,12 +404,20 @@ export default function TeamSetupScreen() {
 
   const centerColumn = useMemo(() => {
     if (!session) return null;
-    const stackStyle = landscape ? styles.centerStackLandscape : styles.centerStackPortrait;
-    const gap = shortScreen ? SPACING.sm : SPACING.md;
+    const isBothCenter = hotSeatAvailable && wagerEnabled;
+    const stackStyle = landscape 
+      ? styles.centerStackLandscape 
+      : [styles.centerStackPortrait, isBothCenter && shortScreen && styles.centerStackPortraitCompact];
+    const gap = shortScreen ? SPACING.xs : SPACING.md;
     return (
       <View style={[stackStyle, { gap }]}>
         {hotSeatAvailable ? (
-          <View style={[styles.centerCard, shortScreen && styles.centerCardTight, { padding: cardPad }]}>
+          <View style={[
+            styles.centerCard, 
+            shortScreen && styles.centerCardTight, 
+            isBothCenter && shortScreen && styles.centerCardHalfWidth,
+            { padding: cardPad }
+          ]}>
             <Image
               source={HOT_SEAT_CARD_ICON}
               style={{ width: centerIconSize, height: centerIconSize }}
@@ -430,7 +441,12 @@ export default function TeamSetupScreen() {
         ) : null}
 
         {wagerEnabled ? (
-          <View style={[styles.centerCard, shortScreen && styles.centerCardTight, { padding: cardPad }]}>
+          <View style={[
+            styles.centerCard, 
+            shortScreen && styles.centerCardTight, 
+            isBothCenter && shortScreen && styles.centerCardHalfWidth,
+            { padding: cardPad }
+          ]}>
             <Image
               source={WAGER_CARD_ICON}
               style={{ width: centerIconSize, height: centerIconSize }}
@@ -464,7 +480,6 @@ export default function TeamSetupScreen() {
     hotSeatAvailable,
     hotSeatRounds,
     renderStepper,
-    setTeamCount,
     setHotSeatRounds,
     setWagersPerTeam,
     t,
@@ -503,7 +518,12 @@ export default function TeamSetupScreen() {
       {rumbleTeamsPanel}
     </ScrollView>
   ) : (
-    <>
+    <ScrollView
+      style={styles.cardsViewport}
+      contentContainerStyle={styles.teamSetupClassicScrollContent}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={Platform.OS !== 'web'}
+    >
       {landscape ? (
         <View style={[styles.landscapeRow, shortScreen && styles.landscapeRowTight]}>
           <View style={styles.teamCol}>{teamCard(session.teams[0])}</View>
@@ -517,12 +537,12 @@ export default function TeamSetupScreen() {
           <View style={styles.portraitCenterSlot}>{centerColumn}</View>
         </View>
       )}
-    </>
+    </ScrollView>
   );
 
   const mainContent = (
     <View style={styles.fixedViewportLayout}>
-      <View style={styles.cardsViewport}>{teamSetupBody}</View>
+      <View style={styles.cardsViewportSlot}>{teamSetupBody}</View>
 
       <View style={[styles.floatingButtonWrap, tightContinueStrip && styles.floatingButtonWrapTight]}>
         <Button
@@ -593,11 +613,14 @@ export default function TeamSetupScreen() {
       bodyScrollEnabled={false}
       bodyFrame={false}
       backgroundColor={T.canvas}
-      chromeColumnStyle={tightContinueStrip ? { paddingBottom: 0 } : undefined}
+      chromeColumnStyle={[
+        tightContinueStrip && { paddingBottom: 0 },
+        shortScreen && { paddingHorizontal: SPACING.xs }
+      ]}
     >
       <WagerInfoModal visible={wagerInfoOpen} onClose={() => setWagerInfoOpen(false)} />
 
-      {hotSeatInfoOpen ? (
+      {SHOW_HOT_SEAT_UI && hotSeatInfoOpen ? (
         <View accessibilityViewIsModal style={styles.modalOverlay} testID="hot-seat-info-overlay">
           <Pressable
             style={StyleSheet.absoluteFill}
@@ -630,11 +653,11 @@ export default function TeamSetupScreen() {
 
 const styles = StyleSheet.create({
   teamSetupHeader: {
-    minHeight: 96,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   headerTitleBlock: {
     flex: 1,
@@ -647,8 +670,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerBackButton: {
-    minWidth: 88,
-    height: 44,
+    minWidth: 80,
+    height: 38,
     paddingHorizontal: SPACING.sm,
     borderRadius: 14,
     backgroundColor: T.surface,
@@ -677,8 +700,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
   },
   headerMirrorSpacer: {
-    width: 88,
-    height: 44,
+    width: 80,
+    height: 38,
   },
   bodyFill: {
     flex: 1,
@@ -693,10 +716,22 @@ const styles = StyleSheet.create({
     minHeight: 0,
     minWidth: 0,
   },
+  /** Non-scroll body (rumble) sits here; classic uses inner ScrollView with same flex contract. */
+  cardsViewportSlot: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+  },
   cardsViewport: {
     flex: 1,
     minHeight: 0,
     minWidth: 0,
+  },
+  teamSetupClassicScrollContent: {
+    flexGrow: 1,
+    minWidth: 0,
+    justifyContent: 'flex-start',
+    paddingBottom: SPACING.xs,
   },
   landscapeRow: {
     flex: 1,
@@ -821,7 +856,6 @@ const styles = StyleSheet.create({
   },
   rumbleTeamSlot: {
     width: '48%',
-    minHeight: 180,
     flexGrow: 1,
   },
   rumbleCenterSlot: {
@@ -851,7 +885,7 @@ const styles = StyleSheet.create({
   teamCard: {
     flex: 1,
     backgroundColor: T.surface,
-    borderRadius: 36,
+    borderRadius: 24,
     minHeight: 0,
     ...PLASTIC_FACE,
     ...neumorphicLift(T.shadowStrong, 'card'),
@@ -860,7 +894,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.displayBold,
     color: T.textPrimary,
     paddingVertical: SPACING.xs,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
     borderWidth: 0,
     flexShrink: 0,
     textTransform: 'uppercase',
@@ -881,13 +915,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   teamTitleInputTight: {
-    marginBottom: SPACING.xs,
-    paddingVertical: 2,
+    marginBottom: 2,
+    paddingVertical: 1,
   },
   teamPlayerList: {
     flex: 1,
     minHeight: 0,
-    gap: SPACING.sm,
+    gap: SPACING.xs,
   },
   playerRowSlot: {
     flexShrink: 0,
@@ -907,17 +941,17 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'column',
     gap: SPACING.sm,
-    marginTop: SPACING.md,
+    marginTop: SPACING.lg,
     alignItems: 'stretch',
     justifyContent: 'flex-start',
     flexShrink: 0,
   },
   teamLinksRowTight: {
-    marginTop: SPACING.xs,
+    marginTop: SPACING.sm,
     gap: SPACING.xs,
   },
   playerActionButton: {
-    minHeight: 40,
+    minHeight: 34,
     borderRadius: 12,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
@@ -965,9 +999,19 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     paddingHorizontal: SPACING.sm,
   },
+  centerStackPortraitCompact: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+  },
+  centerCardHalfWidth: {
+    flex: 1,
+    paddingHorizontal: SPACING.xs,
+  },
   centerCard: {
     backgroundColor: T.surface,
-    borderRadius: 32,
+    borderRadius: 24,
     alignItems: 'center',
     gap: SPACING.xs,
     flexShrink: 0,
@@ -1018,12 +1062,12 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     paddingTop: SPACING.xs,
-    paddingBottom: SPACING.xs,
+    paddingBottom: 0,
     gap: 2,
     flexShrink: 0,
   },
   floatingButtonWrapTight: {
-    paddingTop: 0,
+    paddingTop: SPACING.xs,
     paddingBottom: 0,
   },
   footerInner: {
@@ -1034,7 +1078,7 @@ const styles = StyleSheet.create({
   continueBtn: {
     width: '100%',
     maxWidth: 320,
-    minHeight: 32,
+    minHeight: 44,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     backgroundColor: T.surface,
@@ -1049,7 +1093,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
   },
   footerHint: {
-    marginTop: -SPACING.xs,
+    marginTop: 0,
     opacity: 0.8,
   },
   modalOverlay: {
