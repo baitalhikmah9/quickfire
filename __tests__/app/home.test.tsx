@@ -39,7 +39,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'common.tokens': 'Tokens',
         'home.continueGame': 'Continue Game',
         'home.logoCapline': 'TRIVIA',
-        'home.logoWordmark': 'DoubleDown',
+        'home.logoWordmark': 'QuickFire',
         'home.newGame': 'New Game',
         'home.playTriviaA11yResume':
           'Play trivia. You have a game in progress; opens a choice to continue or start new.',
@@ -208,7 +208,7 @@ describe('AppHubScreen', () => {
     render(<AppHubScreen />);
 
     expect(screen.getByTestId('home-brand-logo')).toBeTruthy();
-    expect(screen.queryByText('DoubleDown')).toBeNull();
+    expect(screen.queryByText('QuickFire')).toBeNull();
   });
 
   it('uses the brand raised surface treatment for mode choices', () => {

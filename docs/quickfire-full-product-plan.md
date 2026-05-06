@@ -1,7 +1,7 @@
-# Double Down Full Product Plan
+# QuickFire Full Product Plan
 
 ## Summary
-- Build Double Down from the current Expo template in [docs/CODEBASE_MAP.md](/Users/mikhail/Documents/CURSOR%20CODES/In%20Progress/doubledown/docs/CODEBASE_MAP.md) into a full product with local-first gameplay, account-backed sync, token ledger, promo code redemption, and content expansion.
+- Build QuickFire from the current Expo template in [CODEBASE_MAP.md](CODEBASE_MAP.md) into a full product with local-first gameplay, account-backed sync, token ledger, promo code redemption, and content expansion.
 - Locked decisions: full product scope, `Clerk` for auth, `Convex` for backend/data, local shared-device multiplayer for v1, English-first release, real-money purchases deferred to a later phase.
 - Audit basis: checked against the current repo on 2026-04-21. `[x]` means the implementation exists in code; notes call out where the repo still has partial wiring or placeholder UX.
 - Current state: the repo now has the Expo Router app shell, Clerk auth screens, Convex schema/functions for core product data, localized content plumbing, persistent local play state, and playable Classic / Quick Play flows. The biggest remaining gaps are auth-gated gameplay, Convex-backed wallet/session wiring in the client, Rapid Fire, recap/history depth, admin tooling, and release hardening.
@@ -16,7 +16,7 @@
 7. [ ] Expand the current constants theme into semantic design tokens with 4 light palettes (Blue, Orange, Green, Red) plus a Dark mode, landscape-required layouts for all mobile game screens, and landscape-optimized board layouts on tablets. All text must remain legible across every palette. Non-game screens remain portrait-friendly. _(Palettes, theming, and landscape game layouts are in place, but native orientation is still globally locked in `app/_layout.tsx`, so non-game portrait-friendly behavior is not finished.)_
 
 ## Domain Model And Backend
-- [x] Normalize [constants/questions.json](/Users/mikhail/Documents/CURSOR%20CODES/In%20Progress/doubledown/constants/questions.json) into one-question-per-record seed data. The current grouped `questionAndanswer` shape is not suitable as the long-term source of truth.
+- [x] Normalize [../constants/questions.json](../constants/questions.json) into one-question-per-record seed data. The current grouped `questionAndanswer` shape is not suitable as the long-term source of truth.
 - Convex tables:
   - [x] `users`: Clerk-linked profile mirror, preferences, last active timestamp.
   - [x] `categories`: id, slug, title, theme group, artwork, enabled flag.
@@ -107,5 +107,5 @@
 - All game modes require authentication. There is no guest play path. Device ID is recorded at first launch and bound to starter token grants so reinstalling the app does not reset eligibility.
 - Real-money token purchases are out of scope for this implementation plan. The wallet/store data model is built now so StoreKit / Play Billing can plug in later. This is intentional because digital goods on iOS require in-app purchase handling and server coordination: https://developer.apple.com/app-store/review/guidelines/ and https://developer.apple.com/help/app-store-connect/configure-in-app-purchase-settings/overview-for-configuring-in-app-purchases/
 - v1 multiplayer means shared-device local sessions, not live remote rooms.
-- Existing files that will be heavily refactored first are [app/_layout.tsx](/Users/mikhail/Documents/CURSOR%20CODES/In%20Progress/doubledown/app/_layout.tsx), [app/(tabs)/_layout.tsx](/Users/mikhail/Documents/CURSOR%20CODES/In%20Progress/doubledown/app/%28tabs%29/_layout.tsx), [app/(tabs)/index.tsx](/Users/mikhail/Documents/CURSOR%20CODES/In%20Progress/doubledown/app/%28tabs%29/index.tsx), [app/(tabs)/profile.tsx](/Users/mikhail/Documents/CURSOR%20CODES/In%20Progress/doubledown/app/%28tabs%29/profile.tsx), and [store/auth.ts](/Users/mikhail/Documents/CURSOR%20CODES/In%20Progress/doubledown/store/auth.ts).
+- Existing files that will be heavily refactored first are [../app/_layout.tsx](../app/_layout.tsx), [../app/(tabs)/_layout.tsx](../app/(tabs)/_layout.tsx), [../app/(tabs)/index.tsx](../app/(tabs)/index.tsx), [../app/(tabs)/profile.tsx](../app/(tabs)/profile.tsx), and [../store/auth.ts](../store/auth.ts).
 - The current question JSON and two untracked category assets are treated as the initial content seed, not final production content governance.

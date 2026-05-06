@@ -1,5 +1,5 @@
 {
-  "name": "expo-rn-template",
+  "name": "quickfire",
   "version": "1.0.0",
   "description": "A reusable React Native template using Expo with TypeScript, navigation, and best practices",
   "main": "expo-router/entry",
@@ -8,6 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "build:web": "expo export --platform web",
+    "vercel-build": "bun run build:web",
     "build": "eas build",
     "test": "jest",
     "test:watch": "jest --watch",

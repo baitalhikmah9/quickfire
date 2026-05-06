@@ -90,7 +90,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'common.signOut': 'Sign Out',
         'common.tokens': 'Tokens',
         'home.logoCapline': 'TRIVIA',
-        'home.logoWordmark': 'DoubleDown',
+        'home.logoWordmark': 'QuickFire',
         'profile.accuracy': 'Accuracy',
         'profile.bestStreak': 'Best Streak',
         'profile.memberSince': `Member since ${params?.date}`,

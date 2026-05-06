@@ -32,7 +32,7 @@ jest.mock('@/constants/featureFlags', () => ({
 
 const { usePlayStore } = require('@/store/play') as typeof import('@/store/play');
 
-const STORAGE_KEY = 'doubledown-play-store-v1';
+const STORAGE_KEY = 'quickfire-play-store-v1';
 
 function createQuestion(overrides: Partial<QuestionCard> & Pick<QuestionCard, 'id' | 'canonicalKey'>): QuestionCard {
   return {

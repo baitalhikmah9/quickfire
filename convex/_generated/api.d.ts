@@ -8,10 +8,17 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
 import type * as content from "../content.js";
+import type * as devices from "../devices.js";
+import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as payments from "../payments.js";
+import type * as promo from "../promo.js";
 import type * as seed from "../seed.js";
+import type * as sessions from "../sessions.js";
 import type * as users from "../users.js";
+import type * as wallet from "../wallet.js";
 
 import type {
   ApiFromModules,
@@ -20,10 +27,17 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
   content: typeof content;
+  devices: typeof devices;
+  http: typeof http;
   "lib/auth": typeof lib_auth;
+  payments: typeof payments;
+  promo: typeof promo;
   seed: typeof seed;
+  sessions: typeof sessions;
   users: typeof users;
+  wallet: typeof wallet;
 }>;
 
 /**

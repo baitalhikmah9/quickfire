@@ -12,8 +12,8 @@ import {
   type SupportedLocale,
 } from '@/lib/i18n/config';
 
-const UI_LOCALE_STORAGE_KEY = 'doubledown-ui-locale';
-const CONTENT_LOCALE_STORAGE_KEY = 'doubledown-content-locales';
+const UI_LOCALE_STORAGE_KEY = 'quickfire-ui-locale';
+const CONTENT_LOCALE_STORAGE_KEY = 'quickfire-content-locales';
 
 interface LocaleStore {
   uiLocale: SupportedLocale;

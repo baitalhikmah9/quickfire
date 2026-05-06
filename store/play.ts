@@ -1243,7 +1243,7 @@ function createPlayStore() {
         }),
     }),
     {
-      name: 'doubledown-play-store-v1',
+      name: 'quickfire-play-store-v1',
       storage: createJSONStorage(() => AsyncStorage),
       version: 1,
       skipHydration: true,

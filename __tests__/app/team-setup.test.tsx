@@ -1,7 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { Modal } from 'react-native';
+import { Modal, Platform } from 'react-native';
 
 import TeamSetupScreen from '@/app/(app)/play/team-setup';
 import { usePlayStore } from '@/store/play';
@@ -96,14 +96,19 @@ describe('TeamSetupScreen', () => {
     usePlayStore.getState().ensureDraft();
   });
 
-  it('opens wager setup help without mounting native modal portals', () => {
+  it('opens wager setup help in a full-screen overlay', () => {
     render(<TeamSetupScreen />);
 
     expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
 
     fireEvent.press(screen.getByText('What is Wager?'));
 
-    expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
+    if (Platform.OS !== 'web') {
+      expect(screen.UNSAFE_queryByType(Modal)).not.toBeNull();
+    } else {
+      expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
+    }
+    expect(screen.getByTestId('wager-info-overlay')).toBeTruthy();
     expect(screen.getByText('Wagers are a risky way to try and sabotage the other team!')).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText('Close'));

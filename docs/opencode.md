@@ -1142,7 +1142,7 @@ The "recent activity" section is in `app/(app)/profile.tsx`, which seems to also
 90:         'common.signOut': 'Sign Out',
 91:         'common.tokens': 'Tokens',
 92:         'home.logoCapline': 'TRIVIA',
-93:         'home.logoWordmark': 'DoubleDown',
+93:         'home.logoWordmark': 'QuickFire',
 94:         'profile.accuracy': 'Accuracy',
 95:         'profile.activityClassic': 'Classic Arena',
 96:         'profile.activityDefeat': 'Defeat',

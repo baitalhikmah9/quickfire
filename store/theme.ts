@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import type { ThemePaletteId } from '@/constants/theme';
 import { PALETTES } from '@/constants/theme';
 
-const THEME_STORAGE_KEY = 'doubledown-theme-palette';
+const THEME_STORAGE_KEY = 'quickfire-theme-palette';
 
 interface ThemeStore {
   paletteId: ThemePaletteId;

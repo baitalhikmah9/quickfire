@@ -1,12 +1,12 @@
-# Product Requirements Document: Double Down
+# Product Requirements Document: QuickFire
 
-This Product Requirements Document (PRD) summarizes the features, mechanics, and design goals for the mobile trivia application "Double Down" (formerly known as "Trivianite"), as described in the provided video walkthrough.
+This Product Requirements Document (PRD) summarizes the features, mechanics, and design goals for the mobile trivia application "QuickFire" (formerly known as "Trivianite"), as described in the provided video walkthrough.
 
 ---
 
 ## 1. Project Overview
 
-Double Down is a competitive, multiplayer trivia mobile application inspired by the Arabic trivia game Seen Jeem. It allows teams and individual players to compete in various trivia modes using a strategic betting system ("Wagers") and specific player challenges ("Hot Seat").
+QuickFire is a competitive, multiplayer trivia mobile application inspired by the Arabic trivia game Seen Jeem. It allows teams and individual players to compete in various trivia modes using a strategic betting system ("Wagers") and specific player challenges ("Hot Seat").
 
 ---
 

@@ -102,6 +102,8 @@ export default function RootLayout() {
           <Stack.Screen name="how-to-play" />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(app)" options={{ headerShown: false }} />
+          <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+          <Stack.Screen name="admin" options={{ headerShown: false }} />
         </Stack>
       </Providers>
     </ErrorBoundary>

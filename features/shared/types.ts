@@ -1,5 +1,5 @@
 /**
- * Core domain types for Double Down.
+ * Core domain types for QuickFire.
  * Game engine, wallet, and content interfaces.
  */
 

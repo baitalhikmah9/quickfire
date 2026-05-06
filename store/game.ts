@@ -101,7 +101,7 @@ export const useGameStore = create<GameStore>()(
       resetSession: () => set({ session: null }),
     }),
     {
-      name: 'doubledown-legacy-game-store-v1',
+      name: 'quickfire-legacy-game-store-v1',
       storage: createJSONStorage(() => AsyncStorage),
       version: 1,
       skipHydration: true,

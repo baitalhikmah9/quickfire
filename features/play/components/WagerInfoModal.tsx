@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Modal, Platform, View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { FONT_SIZES, SPACING, FONTS } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -49,12 +49,8 @@ export function WagerInfoModal({ visible, onClose }: WagerInfoModalProps) {
     return null;
   }
 
-  return (
-    <View
-      accessibilityViewIsModal
-      style={styles.overlay}
-      testID="wager-info-overlay"
-    >
+  const body = (
+    <View accessibilityViewIsModal style={styles.overlay} testID="wager-info-overlay">
       <Pressable
         style={StyleSheet.absoluteFill}
         onPress={onClose}
@@ -62,7 +58,7 @@ export function WagerInfoModal({ visible, onClose }: WagerInfoModalProps) {
         accessibilityRole="button"
       />
       <View
-        style={[styles.card, { backgroundColor: T.surface }, neumorphicLift(T.shadowStrong, 'hero')]}
+        style={[styles.card, { backgroundColor: T.surface }, neumorphicLift(T.shadowStrong, 'header')]}
       >
         <ScrollView
           style={styles.scroll}
@@ -110,54 +106,72 @@ export function WagerInfoModal({ visible, onClose }: WagerInfoModalProps) {
             {t('play.wagerInfoWarning')}
           </Text>
         </ScrollView>
-
-
       </View>
     </View>
+  );
+
+  if (Platform.OS === 'web') {
+    return <View style={styles.webOverlayRoot}>{body}</View>;
+  }
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      {body}
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  /** Escapes padded `PlayScaffold` body — same pattern as `TopicColumnPickerModal`. */
+  webOverlayRoot: {
+    position: 'fixed' as 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 99999,
+  },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 50,
-    elevation: 50,
+    flex: 1,
     backgroundColor: 'rgba(51, 51, 51, 0.45)',
     justifyContent: 'center',
-    padding: SPACING.lg,
+    padding: SPACING.md,
+    zIndex: 50,
+    elevation: 50,
   },
   card: {
-    maxHeight: '85%',
-    borderRadius: 42,
+    maxHeight: '78%',
+    borderRadius: 28,
     overflow: 'hidden',
     ...PLASTIC_FACE,
   },
   scroll: {
-    maxHeight: 420,
+    maxHeight: 320,
   },
   scrollContent: {
-    padding: SPACING.xl,
-    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
   title: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontFamily: FONTS.displayBold,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.xs,
     textTransform: 'uppercase',
     textAlign: 'center',
   },
   para: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: SPACING.sm,
+    fontSize: FONT_SIZES.sm,
+    lineHeight: 18,
+    marginBottom: SPACING.xs,
     textAlign: 'center',
     fontFamily: FONTS.ui,
   },
   table: {
     borderWidth: 1,
-    borderRadius: 24,
-    marginTop: SPACING.md,
-    marginBottom: SPACING.md,
+    borderRadius: 14,
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.sm,
     overflow: 'hidden',
     backgroundColor: 'rgba(0,0,0,0.02)',
   },
@@ -172,16 +186,17 @@ const styles = StyleSheet.create({
   cell: {
     flex: 1,
     minWidth: 0,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
-    fontSize: 14,
+    paddingVertical: SPACING.xs + 2,
+    paddingHorizontal: SPACING.xs,
+    fontSize: FONT_SIZES.sm,
     textAlign: 'center',
     fontFamily: FONTS.uiSemibold,
   },
   headerCell: {
     fontFamily: FONTS.displayBold,
     textTransform: 'uppercase',
-    fontSize: 12,
+    fontSize: 10,
+    letterSpacing: 0.3,
   },
   cellPos: {
     color: '#16A34A',
@@ -192,12 +207,13 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.uiBold,
   },
   warning: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: FONT_SIZES.xs,
+    lineHeight: 15,
     fontStyle: 'italic',
     textAlign: 'center',
     fontFamily: FONTS.ui,
     opacity: 0.8,
+    marginTop: SPACING.xs,
   },
 
 });

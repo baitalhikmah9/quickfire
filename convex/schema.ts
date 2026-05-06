@@ -232,6 +232,10 @@ export default defineSchema({
     perUserLimit: v.optional(v.number()),
     active: v.optional(v.boolean()),
     metadata: v.optional(v.any()),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
+    createdByAdminUserId: v.optional(v.id('users')),
+    updatedByAdminUserId: v.optional(v.id('users')),
   }).index('by_code', ['code']),
 
   promo_redemptions: defineTable({

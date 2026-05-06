@@ -7,7 +7,7 @@ import type { OAuthStrategy } from '@clerk/types';
 /**
  * Google / Apple OAuth via Clerk SSO. Redirect returns to the app shell after session is created.
  */
-export function useClerkOAuthFlow() {
+export function useClerkOAuthFlow(redirectPath = '/(app)/') {
   const { startSSOFlow } = useSSO();
   const inFlight = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -25,7 +25,7 @@ export function useClerkOAuthFlow() {
       inFlight.current = true;
       setBusy(true);
       try {
-        const redirectUrl = Linking.createURL('/(app)/');
+        const redirectUrl = Linking.createURL(redirectPath);
         const { createdSessionId, setActive } = await startSSOFlow({
           strategy,
           redirectUrl,
@@ -43,7 +43,7 @@ export function useClerkOAuthFlow() {
         setBusy(false);
       }
     },
-    [startSSOFlow]
+    [redirectPath, startSSOFlow]
   );
 
   return { busy, signInWithOAuthStrategy };
