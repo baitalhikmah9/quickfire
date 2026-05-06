@@ -28,7 +28,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 
 const { useGameStore } = require('@/store/game') as typeof import('@/store/game');
 
-const STORAGE_KEY = 'doubledown-legacy-game-store-v1';
+const STORAGE_KEY = 'quickfire-legacy-game-store-v1';
 
 function createQuestion(overrides: Partial<QuestionCard> & Pick<QuestionCard, 'id' | 'canonicalKey'>): QuestionCard {
   return {

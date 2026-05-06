@@ -1,16 +1,16 @@
 {
   "expo": {
     "name": "QuickFire",
-    "slug": "double-down",
-    "scheme": "doubledown",
+    "slug": "quickfire",
+    "scheme": "quickfire",
     "version": "1.0.0",
     "orientation": "landscape",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/QF logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/QF logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": true,
@@ -19,14 +19,15 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/QF logo.png",
+        "backgroundColor": "#000000"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/general-knowledge.png",
-      "bundler": "metro"
+      "favicon": "./assets/QF logo.png",
+      "bundler": "metro",
+      "output": "static"
     },
     "plugins": [
       "expo-router",

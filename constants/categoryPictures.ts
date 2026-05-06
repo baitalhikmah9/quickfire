@@ -1,6 +1,6 @@
 /**
  * Category artwork URLs from TriviaApp `src/constants/database.js` (THEMED_CATEGORIES).
- * Double Down uses the same `categoryId` values as `constants/questions.json`.
+ * QuickFire uses the same `categoryId` values as `constants/questions.json`.
  */
 
 import type { ImageSource } from 'expo-image';

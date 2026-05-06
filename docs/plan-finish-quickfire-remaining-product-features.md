@@ -1,7 +1,7 @@
-# Plan: Finish Double Down Remaining Product Features
+# Plan: Finish QuickFire Remaining Product Features
 
 ## Summary
-Finish the unchecked scope in `docs/double-down-full-product-plan.md` in TDD-first slices. The remaining work breaks into backend integrity, auth/device/offline sync, advanced gameplay, economy/store/admin, profile/history, and release hardening.
+Finish the unchecked scope in `docs/quickfire-full-product-plan.md` in TDD-first slices. The remaining work breaks into backend integrity, auth/device/offline sync, advanced gameplay, economy/store/admin, profile/history, and release hardening.
 
 Locked decisions:
 - Device binding: pragmatic account + generated install ID stored with Expo SecureStore.
