@@ -9,9 +9,11 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as adminSignIn from "../adminSignIn.js";
 import type * as content from "../content.js";
 import type * as devices from "../devices.js";
 import type * as http from "../http.js";
+import type * as lib_adminSignInRateLimit from "../lib/adminSignInRateLimit.js";
 import type * as lib_adminValidation from "../lib/adminValidation.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_contentRules from "../lib/contentRules.js";
@@ -36,9 +38,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  adminSignIn: typeof adminSignIn;
   content: typeof content;
   devices: typeof devices;
   http: typeof http;
+  "lib/adminSignInRateLimit": typeof lib_adminSignInRateLimit;
   "lib/adminValidation": typeof lib_adminValidation;
   "lib/auth": typeof lib_auth;
   "lib/contentRules": typeof lib_contentRules;
