@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import { usePathname } from 'expo-router';
-import { Head } from 'expo-router/head';
+import Head from 'expo-router/head';
 import { canonicalUrlForPath } from '@/constants/site';
 
 const DEFAULT_TITLE = 'QuickFire — competitive trivia';
