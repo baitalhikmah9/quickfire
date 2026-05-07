@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { useFonts } from 'expo-font';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { WebSeoHead } from '@/components/WebSeoHead';
 import { Providers } from '@/lib/providers';
 import { useThemeStore } from '@/store/theme';
 import {
@@ -106,6 +107,7 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <Providers>
+        <WebSeoHead />
         <StatusBar
           style={paletteUsesLightStatusBarContent(paletteId) ? 'light' : 'dark'}
         />

@@ -12,7 +12,7 @@ import {
 import { Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, useSignIn } from '@clerk/clerk-expo';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { FONTS, LAYOUT, SPACING } from '@/constants/theme';
 import { HOME_SOFT_UI } from '@/themes';
@@ -32,6 +32,9 @@ export default function AdminSignInScreen() {
     api.users.getCurrentProfile,
     shouldLoadProfile ? {} : 'skip'
   );
+  const passwordSignInPreflight = useMutation(api.adminSignIn.passwordSignInPreflight);
+  const passwordSignInRecordFailure = useMutation(api.adminSignIn.passwordSignInRecordFailure);
+  const passwordSignInClearFailures = useMutation(api.adminSignIn.passwordSignInClearFailures);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,7 +79,7 @@ export default function AdminSignInScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={[styles.kicker, { color: textMuted }]}>ADMIN ACCESS</Text>
+            <Text style={styles.kicker}>ADMIN ACCESS</Text>
             <Text style={[styles.title, { color: textPrimary }]}>Switch account</Text>
             <Text style={[styles.subtitle, { color: textMuted }]}>
               {userProfile === null
@@ -113,14 +116,34 @@ export default function AdminSignInScreen() {
 
     try {
       setIsSubmitting(true);
-      const result = await signIn.create({ identifier, password });
-      if (result.status === 'complete' && result.createdSessionId) {
-        await setActive({ session: result.createdSessionId });
+      const gate = await passwordSignInPreflight({ identifier });
+      if (!gate.allowed) {
+        const minutes = Math.max(1, Math.ceil((gate.retryAfterMs ?? 0) / 60_000));
+        setError(
+          `Too many sign-in attempts for this account. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`
+        );
         return;
       }
-      setError('Additional verification is required for this account.');
+
+      try {
+        const result = await signIn.create({ identifier, password });
+        if (result.status === 'complete' && result.createdSessionId) {
+          await passwordSignInClearFailures({ identifier });
+          await setActive({ session: result.createdSessionId });
+          return;
+        }
+        setError('Additional verification is required for this account.');
+      } catch (e) {
+        try {
+          await passwordSignInRecordFailure({ identifier });
+        } catch {
+          // ignore duplicate-rate-limit errors; surface Clerk message
+        }
+        const message = e instanceof Error ? e.message : 'Invalid username or password.';
+        setError(message);
+      }
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Invalid username or password.';
+      const message = e instanceof Error ? e.message : 'Could not verify sign-in limits.';
       setError(message);
     } finally {
       setIsSubmitting(false);
@@ -136,87 +159,79 @@ export default function AdminSignInScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={[styles.kicker, { color: textMuted }]}>ADMIN ACCESS</Text>
-          <Text style={[styles.title, { color: textPrimary }]}>Sign in to operations</Text>
-          <Text style={[styles.subtitle, { color: textMuted }]}>
-            Use an authorized Clerk account. Admin permissions are verified again by Convex before
-            dashboard data or token actions are available.
-          </Text>
+          <Text style={styles.kicker}>ADMIN ACCESS</Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: textMuted }]}>USERNAME PASSWORD</Text>
-          <View style={styles.form}>
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: textMuted }]}>Username</Text>
-              <TextInput
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Username"
-                placeholderTextColor={textMuted}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="username"
-                textContentType="username"
-                style={[
-                  styles.input,
-                  styles.plasticFace,
-                  {
-                    backgroundColor: surface,
-                    color: textPrimary,
-                    shadowColor: shadowHex,
-                  },
-                ]}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: textMuted }]}>Password</Text>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Password"
-                placeholderTextColor={textMuted}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="password"
-                textContentType="password"
-                secureTextEntry
-                onSubmitEditing={() => void handleSignIn()}
-                style={[
-                  styles.input,
-                  styles.plasticFace,
-                  {
-                    backgroundColor: surface,
-                    color: textPrimary,
-                    shadowColor: shadowHex,
-                  },
-                ]}
-              />
-            </View>
-
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-
-            <Pressable
-              onPress={() => void handleSignIn()}
-              disabled={isSubmitting}
-              accessibilityRole="button"
-              style={({ pressed }) => [
-                styles.submitButton,
+        <View style={styles.form}>
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: textMuted }]}>Username</Text>
+            <TextInput
+              value={username}
+              onChangeText={setUsername}
+              placeholder="Username"
+              placeholderTextColor={textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="username"
+              textContentType="username"
+              style={[
+                styles.input,
                 styles.plasticFace,
                 {
-                  opacity: isSubmitting ? 0.65 : pressed ? 0.9 : 1,
-                  transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                  backgroundColor: surface,
+                  color: textPrimary,
+                  shadowColor: shadowHex,
                 },
               ]}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.submitText}>SIGN IN</Text>
-              )}
-            </Pressable>
+            />
           </View>
+
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: textMuted }]}>Password</Text>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor={textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="password"
+              textContentType="password"
+              secureTextEntry
+              onSubmitEditing={() => void handleSignIn()}
+              style={[
+                styles.input,
+                styles.plasticFace,
+                {
+                  backgroundColor: surface,
+                  color: textPrimary,
+                  shadowColor: shadowHex,
+                },
+              ]}
+            />
+          </View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <Pressable
+            onPress={() => void handleSignIn()}
+            disabled={isSubmitting}
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              styles.submitButton,
+              styles.plasticFace,
+              {
+                opacity: isSubmitting ? 0.65 : pressed ? 0.9 : 1,
+                transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+              },
+            ]}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitText}>SIGN IN</Text>
+            )}
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -245,8 +260,10 @@ const styles = StyleSheet.create({
   },
   kicker: {
     fontFamily: FONTS.uiBold,
-    fontSize: 12,
+    fontSize: 18,
+    lineHeight: 22,
     letterSpacing: 1.5,
+    color: '#000000',
   },
   title: {
     fontFamily: FONTS.displayBold,
@@ -258,9 +275,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.ui,
     fontSize: 15,
     lineHeight: 22,
-  },
-  section: {
-    gap: SPACING.lg,
   },
   form: {
     gap: SPACING.lg,
@@ -288,11 +302,6 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255, 255, 255, 0.78)',
     borderBottomWidth: StyleSheet.hairlineWidth * 2,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  sectionLabel: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 12,
-    letterSpacing: 1.5,
   },
   error: {
     fontFamily: FONTS.uiSemibold,

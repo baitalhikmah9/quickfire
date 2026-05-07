@@ -257,4 +257,10 @@ export default defineSchema({
     enabled: v.boolean(),
     value: v.optional(v.any()),
   }).index('by_key', ['key']),
+
+  /** Tracks failed admin password sign-ins per normalized identifier (sliding 1h window). */
+  admin_password_sign_in_rates: defineTable({
+    identifierKey: v.string(),
+    failureTimestamps: v.array(v.number()),
+  }).index('by_identifier_key', ['identifierKey']),
 });
