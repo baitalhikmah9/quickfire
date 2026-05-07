@@ -2,8 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { COLORS, FONTS, SPACING } from '@/constants/theme';
+import { BRAND_ADMIN_TABLE, BRAND_RAISED_SURFACE, COLORS, FONTS, SPACING } from '@/constants/theme';
 import { Link } from 'expo-router';
+import { HOME_SOFT_UI } from '@/themes';
+
+const SOFT = HOME_SOFT_UI.colors;
 
 function StatCard({
   label,
@@ -13,7 +16,7 @@ function StatCard({
   value: string | number;
 }) {
   return (
-    <View style={statStyles.card}>
+    <View style={[statStyles.card, BRAND_RAISED_SURFACE, { borderRadius: 18 }]}>
       <Text style={statStyles.value}>{value}</Text>
       <Text style={statStyles.label}>{label}</Text>
     </View>
@@ -34,7 +37,39 @@ export default function AdminIndexScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Overview</Text>
+      <View style={[styles.pageHeader, isCompact && styles.pageHeaderCompact]}>
+        <Text style={styles.heading}>Overview</Text>
+        <View style={[styles.headerActions, isCompact && styles.headerActionsCompact]}>
+          <Link href="/admin/promo-codes" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Create promo code. Coupons, account restrictions, and token rewards."
+              style={({ pressed }) => [
+                styles.headerAction,
+                BRAND_RAISED_SURFACE,
+                isCompact && styles.headerActionFlex,
+                pressed && styles.headerActionPressed,
+              ]}
+            >
+              <Text style={styles.headerActionLabel}>Promo codes</Text>
+            </Pressable>
+          </Link>
+          <Link href="/admin/wallets" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Manage wallets. Search accounts and adjust token balances."
+              style={({ pressed }) => [
+                styles.headerAction,
+                BRAND_RAISED_SURFACE,
+                isCompact && styles.headerActionFlex,
+                pressed && styles.headerActionPressed,
+              ]}
+            >
+              <Text style={styles.headerActionLabel}>Wallets</Text>
+            </Pressable>
+          </Link>
+        </View>
+      </View>
 
       <View style={[styles.statsRow, isCompact && styles.statsRowCompact]}>
         <StatCard label="Active Promo Codes" value={activePromos} />
@@ -81,10 +116,54 @@ const styles = StyleSheet.create({
   container: {
     gap: SPACING.lg,
   },
+  pageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.md,
+    flexWrap: 'wrap',
+  },
+  pageHeaderCompact: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
   heading: {
     fontFamily: FONTS.displayBold,
     fontSize: 24,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
+    flexShrink: 0,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    flexShrink: 0,
+  },
+  headerActionsCompact: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+  },
+  /** Matches docs/BRAND_GUIDELINES.md — standard raised button surface */
+  headerAction: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerActionPressed: {
+    opacity: 0.9,
+  },
+  headerActionFlex: {
+    flex: 1,
+  },
+  /** Functional labels: bold + all caps per brand typography table */
+  headerActionLabel: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 0.9,
+    color: SOFT.textPrimary,
+    textTransform: 'uppercase',
   },
   statsRow: {
     flexDirection: 'row',
@@ -94,11 +173,9 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    ...BRAND_RAISED_SURFACE,
+    borderRadius: 18,
     padding: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -109,7 +186,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: FONTS.uiSemibold,
     fontSize: 16,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
   },
   link: {
     fontFamily: FONTS.uiSemibold,
@@ -119,13 +196,13 @@ const styles = StyleSheet.create({
   empty: {
     fontFamily: FONTS.ui,
     fontSize: 14,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     paddingVertical: SPACING.md,
   },
   table: {
     gap: 1,
-    backgroundColor: COLORS.border,
-    borderRadius: 8,
+    backgroundColor: BRAND_ADMIN_TABLE.rowDivider,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   row: {
@@ -136,16 +213,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerRow: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BRAND_ADMIN_TABLE.headerBackground,
   },
   cell: {
     fontFamily: FONTS.ui,
     fontSize: 13,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
   },
   headerCell: {
     fontFamily: FONTS.uiSemibold,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     fontSize: 12,
   },
   cellType: {
@@ -164,22 +241,18 @@ const styles = StyleSheet.create({
 const statStyles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
     padding: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     minWidth: 0,
   },
   value: {
     fontFamily: FONTS.displayBold,
     fontSize: 28,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
     marginBottom: 4,
   },
   label: {
     fontFamily: FONTS.ui,
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
   },
 });

@@ -12,7 +12,8 @@ export type PromoFailure =
   | 'not_yet_active'
   | 'usage_cap'
   | 'per_user_cap'
-  | 'already_redeemed';
+  | 'already_redeemed'
+  | 'account_restricted';
 
 export type PromoEvaluation = { ok: true } | { ok: false; reason: PromoFailure };
 
@@ -40,5 +41,20 @@ export function evaluatePromoRedemption(input: {
 
 export function evaluateDuplicateRedemption(alreadyRedeemed: boolean): PromoEvaluation {
   if (alreadyRedeemed) return { ok: false, reason: 'already_redeemed' };
+  return { ok: true };
+}
+
+export function evaluatePromoAccountRestriction(input: {
+  redemptionScope?: string;
+  restrictedToUserId?: string;
+  currentUserId: string;
+}): PromoEvaluation {
+  if (
+    input.redemptionScope === 'account' &&
+    input.restrictedToUserId !== input.currentUserId
+  ) {
+    return { ok: false, reason: 'account_restricted' };
+  }
+
   return { ok: true };
 }

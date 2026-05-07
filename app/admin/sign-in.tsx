@@ -1,97 +1,244 @@
-import { useEffect } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { Redirect } from 'expo-router';
-import { useAuth } from '@clerk/clerk-expo';
-import { OAuthProviderButtons } from '@/components/OAuthProviderButtons';
-import { COLORS, FONTS, SPACING } from '@/constants/theme';
-import { useClerkOAuthFlow } from '@/lib/hooks/useClerkOAuthFlow';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth, useSignIn } from '@clerk/clerk-expo';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { FONTS, LAYOUT, SPACING } from '@/constants/theme';
+import { HOME_SOFT_UI } from '@/themes';
 
-function useWarmUpBrowser() {
-  useEffect(() => {
-    if (Platform.OS !== 'web') {
-      return;
-    }
-
-    void WebBrowser.warmUpAsync();
-    return () => {
-      void WebBrowser.coolDownAsync();
-    };
-  }, []);
-}
+const T = HOME_SOFT_UI;
 
 export default function AdminSignInScreen() {
-  useWarmUpBrowser();
-  const { isLoaded, isSignedIn } = useAuth();
-  const { busy, signInWithOAuthStrategy } = useClerkOAuthFlow('/admin');
+  const { isLoaded, isSignedIn, signOut } = useAuth();
+  const {
+    isLoaded: isSignInLoaded,
+    signIn,
+    setActive,
+  } = useSignIn();
+  /** Only when Clerk reports a session — avoids trapping signed-out users behind `authDisabled` (__DEV__) which stays true after signOut. */
+  const shouldLoadProfile = Platform.OS === 'web' && isLoaded && isSignedIn;
+  const userProfile = useQuery(
+    api.users.getCurrentProfile,
+    shouldLoadProfile ? {} : 'skip'
+  );
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  if (!isLoaded) {
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+  const shadowHex = T.colors.shadowStrong;
+
+  if (Platform.OS !== 'web') {
+    return <Redirect href="/(app)/" />;
+  }
+
+  if (!isLoaded || !isSignInLoaded) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={[styles.center, { backgroundColor: canvas }]}>
+        <ActivityIndicator size="large" color={textPrimary} />
       </View>
     );
   }
 
   if (isSignedIn) {
-    return <Redirect href="/admin" />;
+    if (userProfile === undefined) {
+      return (
+        <View style={[styles.center, { backgroundColor: canvas }]}>
+          <ActivityIndicator size="large" color={textPrimary} />
+        </View>
+      );
+    }
+    if (userProfile?.role === 'admin') {
+      return <Redirect href="/admin" />;
+    }
+
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text style={[styles.kicker, { color: textMuted }]}>ADMIN ACCESS</Text>
+            <Text style={[styles.title, { color: textPrimary }]}>Switch account</Text>
+            <Text style={[styles.subtitle, { color: textMuted }]}>
+              {userProfile === null
+                ? 'No QuickFire profile was found for this session. Sign out and sign in with an authorized admin account.'
+                : 'This signed-in account does not have admin permissions. Sign out to use a different account.'}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => void signOut()}
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              styles.submitButton,
+              styles.plasticFace,
+              {
+                opacity: pressed ? 0.9 : 1,
+                transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+              },
+            ]}
+          >
+            <Text style={styles.submitText}>SIGN OUT</Text>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    );
   }
 
+  const handleSignIn = async () => {
+    setError('');
+    const identifier = username.trim();
+    if (!identifier || !password) {
+      setError('Enter your username and password.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const result = await signIn.create({ identifier, password });
+      if (result.status === 'complete' && result.createdSessionId) {
+        await setActive({ session: result.createdSessionId });
+        return;
+      }
+      setError('Additional verification is required for this account.');
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Invalid username or password.';
+      setError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.panel}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
-          <Text style={styles.kicker}>ADMIN ACCESS</Text>
-          <Text style={styles.title}>Sign in to QuickFire operations</Text>
-          <Text style={styles.subtitle}>
-            Use an authorized Clerk account. Admin permissions are verified again by Convex
-            before dashboard data or token actions are available.
+          <Text style={[styles.kicker, { color: textMuted }]}>ADMIN ACCESS</Text>
+          <Text style={[styles.title, { color: textPrimary }]}>Sign in to operations</Text>
+          <Text style={[styles.subtitle, { color: textMuted }]}>
+            Use an authorized Clerk account. Admin permissions are verified again by Convex before
+            dashboard data or token actions are available.
           </Text>
         </View>
 
-        {busy ? (
-          <View style={styles.busy}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: textMuted }]}>USERNAME PASSWORD</Text>
+          <View style={styles.form}>
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: textMuted }]}>Username</Text>
+              <TextInput
+                value={username}
+                onChangeText={setUsername}
+                placeholder="Username"
+                placeholderTextColor={textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="username"
+                textContentType="username"
+                style={[
+                  styles.input,
+                  styles.plasticFace,
+                  {
+                    backgroundColor: surface,
+                    color: textPrimary,
+                    shadowColor: shadowHex,
+                  },
+                ]}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: textMuted }]}>Password</Text>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Password"
+                placeholderTextColor={textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="password"
+                textContentType="password"
+                secureTextEntry
+                onSubmitEditing={() => void handleSignIn()}
+                style={[
+                  styles.input,
+                  styles.plasticFace,
+                  {
+                    backgroundColor: surface,
+                    color: textPrimary,
+                    shadowColor: shadowHex,
+                  },
+                ]}
+              />
+            </View>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <Pressable
+              onPress={() => void handleSignIn()}
+              disabled={isSubmitting}
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.submitButton,
+                styles.plasticFace,
+                {
+                  opacity: isSubmitting ? 0.65 : pressed ? 0.9 : 1,
+                  transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                },
+              ]}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.submitText}>SIGN IN</Text>
+              )}
+            </Pressable>
           </View>
-        ) : (
-          <OAuthProviderButtons
-            onGooglePress={() => void signInWithOAuthStrategy('oauth_google')}
-            onApplePress={() => void signInWithOAuthStrategy('oauth_apple')}
-            googlePrimaryLabel="Continue with Google"
-            googleSecondaryLabel="Use your operator account"
-            applePrimaryLabel="Continue with Apple"
-            appleSecondaryLabel="Available for approved admin accounts"
-          />
-        )}
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: SPACING.xl,
-  },
-  panel: {
-    width: '100%',
-    maxWidth: 480,
-    alignSelf: 'center',
+    padding: LAYOUT.screenGutter,
+    paddingBottom: SPACING.xxl,
     gap: SPACING.xl,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    backgroundColor: COLORS.surface,
-    padding: SPACING.xl,
+    maxWidth: LAYOUT.contentMaxWidth + LAYOUT.screenGutter * 2,
+    alignSelf: 'center',
+    width: '100%',
   },
   header: {
     gap: SPACING.sm,
@@ -99,20 +246,71 @@ const styles = StyleSheet.create({
   kicker: {
     fontFamily: FONTS.uiBold,
     fontSize: 12,
-    letterSpacing: 1,
-    color: COLORS.primary,
+    letterSpacing: 1.5,
   },
   title: {
     fontFamily: FONTS.displayBold,
     fontSize: 28,
     lineHeight: 34,
-    color: COLORS.text,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontFamily: FONTS.ui,
     fontSize: 15,
     lineHeight: 22,
-    color: COLORS.mutedText,
+  },
+  section: {
+    gap: SPACING.lg,
+  },
+  form: {
+    gap: SPACING.lg,
+  },
+  field: {
+    gap: SPACING.sm,
+  },
+  label: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 1,
+  },
+  input: {
+    minHeight: 56,
+    borderRadius: 18,
+    paddingHorizontal: SPACING.lg,
+    fontFamily: FONTS.ui,
+    fontSize: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+  },
+  plasticFace: {
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  sectionLabel: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 1.5,
+  },
+  error: {
+    fontFamily: FONTS.uiSemibold,
+    fontSize: 13,
+    color: '#DC2626',
+  },
+  submitButton: {
+    minHeight: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0F172A',
+  },
+  submitText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 14,
+    letterSpacing: 1.2,
+    color: '#FFFFFF',
   },
   busy: {
     minHeight: 160,
@@ -123,6 +321,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
   },
 });

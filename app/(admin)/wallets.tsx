@@ -10,8 +10,12 @@ import {
 } from 'react-native';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { COLORS, FONTS, SPACING } from '@/constants/theme';
+import { AdminScreenHeader } from '@/components/admin/AdminScreenHeader';
+import { BRAND_ADMIN_TABLE, BRAND_RAISED_SURFACE, COLORS, FONTS, SPACING } from '@/constants/theme';
 import { Link } from 'expo-router';
+import { HOME_SOFT_UI } from '@/themes';
+
+const SOFT = HOME_SOFT_UI.colors;
 
 export default function WalletsScreen() {
   const { width } = useWindowDimensions();
@@ -29,7 +33,11 @@ export default function WalletsScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>Wallets</Text>
+      <AdminScreenHeader
+        title="Wallets"
+        fallbackHref="/admin"
+        backAccessibilityLabel="Back to admin overview"
+      />
 
       <View style={styles.panel}>
         <Text style={styles.panelTitle}>Search</Text>
@@ -42,7 +50,13 @@ export default function WalletsScreen() {
             placeholderTextColor={COLORS.disabled}
             onSubmitEditing={handleSearch}
           />
-          <Pressable style={styles.primaryButton} onPress={handleSearch}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryButton,
+              { opacity: pressed ? 0.9 : 1, transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }] },
+            ]}
+            onPress={handleSearch}
+          >
             <Text style={styles.primaryButtonText}>Search</Text>
           </Pressable>
         </View>
@@ -89,26 +103,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    padding: SPACING.lg,
     gap: SPACING.lg,
   },
-  heading: {
-    fontFamily: FONTS.displayBold,
-    fontSize: 24,
-    color: COLORS.text,
-  },
   panel: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    ...BRAND_RAISED_SURFACE,
+    borderRadius: 18,
     padding: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     gap: SPACING.md,
   },
   panelTitle: {
     fontFamily: FONTS.uiSemibold,
     fontSize: 16,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
   },
   searchRow: {
     flexDirection: 'row',
@@ -122,36 +128,36 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
+    borderColor: BRAND_ADMIN_TABLE.inputBorder,
+    borderRadius: 12,
     paddingVertical: 8,
     paddingHorizontal: 10,
     fontFamily: FONTS.ui,
     fontSize: 13,
-    color: COLORS.text,
-    backgroundColor: '#FAFAFA',
+    color: SOFT.textPrimary,
+    backgroundColor: BRAND_ADMIN_TABLE.inputBackground,
   },
   primaryButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    ...BRAND_RAISED_SURFACE,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
   },
   primaryButtonText: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 13,
-    color: '#FFFFFF',
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 1,
+    color: SOFT.textPrimary,
   },
   empty: {
     fontFamily: FONTS.ui,
     fontSize: 14,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     paddingVertical: SPACING.md,
   },
   table: {
     gap: 1,
-    backgroundColor: COLORS.border,
-    borderRadius: 8,
+    backgroundColor: BRAND_ADMIN_TABLE.rowDivider,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   row: {
@@ -163,16 +169,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerRow: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BRAND_ADMIN_TABLE.headerBackground,
   },
   cell: {
     fontFamily: FONTS.ui,
     fontSize: 13,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
   },
   headerCell: {
     fontFamily: FONTS.uiSemibold,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     fontSize: 12,
   },
   cellUser: {

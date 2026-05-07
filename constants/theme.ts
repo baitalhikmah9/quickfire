@@ -122,6 +122,32 @@ export const SPACING = {
   screenPadding: 20,
 };
 
+/**
+ * Standard raised control — docs/BRAND_GUIDELINES.md (“Standard button surface (raised)”).
+ * Use for admin chrome, settings-style actions, and cards that should read as molded white on cream.
+ */
+export const BRAND_RAISED_SURFACE = {
+  backgroundColor: '#FFFFFF',
+  borderRadius: 14,
+  borderTopWidth: 2,
+  borderTopColor: 'rgba(255, 255, 255, 0.78)',
+  borderBottomWidth: 3,
+  borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  shadowColor: 'rgba(51, 51, 51, 0.15)',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 1,
+  shadowRadius: 0,
+  elevation: 4,
+} as const;
+
+/** Table / list chrome on warm canvas (admin, settings-style lists) */
+export const BRAND_ADMIN_TABLE = {
+  rowDivider: 'rgba(51, 51, 51, 0.08)',
+  headerBackground: '#F5F3EE',
+  inputBackground: '#FFFCF8',
+  inputBorder: 'rgba(51, 51, 51, 0.12)',
+} as const;
+
 /** Soft, bubbly radii — cards and chrome read round / “sticker” cartoon */
 export const BORDER_RADIUS = {
   sm: 16,

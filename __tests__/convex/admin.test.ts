@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  derivePromoModeDefaults,
   derivePromoCodeStatus,
   validateCreatePromoCodeArgs,
   validateUpdatePromoCodeArgs,
@@ -7,6 +8,85 @@ import {
 } from '@/convex/lib/adminValidation';
 
 describe('adminValidation', () => {
+  describe('derivePromoModeDefaults', () => {
+    it('derives defaults for public single-use coupons', () => {
+      expect(derivePromoModeDefaults({ mode: 'public_single_use' })).toEqual({
+        ok: true,
+        usageCap: 1,
+        perUserLimit: 1,
+        redemptionScope: 'public',
+      });
+    });
+
+    it('derives defaults for public multi-use coupons', () => {
+      expect(derivePromoModeDefaults({ mode: 'public_multi_use', requestedUsageCap: 25 })).toEqual({
+        ok: true,
+        usageCap: 25,
+        perUserLimit: 1,
+        redemptionScope: 'public',
+      });
+    });
+
+    it('derives defaults for account single-use coupons', () => {
+      expect(
+        derivePromoModeDefaults({
+          mode: 'account_single_use',
+          restrictedToUserId: 'user_123',
+        })
+      ).toEqual({
+        ok: true,
+        usageCap: 1,
+        perUserLimit: 1,
+        redemptionScope: 'account',
+      });
+    });
+
+    it('derives defaults for account multi-use coupons', () => {
+      expect(
+        derivePromoModeDefaults({
+          mode: 'account_multi_use',
+          requestedUsageCap: 4,
+          restrictedToUserId: 'user_123',
+        })
+      ).toEqual({
+        ok: true,
+        usageCap: 4,
+        perUserLimit: 4,
+        redemptionScope: 'account',
+      });
+    });
+
+    it('rejects account modes without a restricted user', () => {
+      expect(derivePromoModeDefaults({ mode: 'account_single_use' })).toEqual({
+        ok: false,
+        reason: 'restricted_user_required',
+      });
+    });
+
+    it('rejects public modes with a restricted user', () => {
+      expect(
+        derivePromoModeDefaults({
+          mode: 'public_single_use',
+          restrictedToUserId: 'user_123',
+        })
+      ).toEqual({ ok: false, reason: 'restricted_user_not_allowed' });
+    });
+
+    it('rejects multi-use modes without a positive cap', () => {
+      expect(derivePromoModeDefaults({ mode: 'public_multi_use' })).toEqual({
+        ok: false,
+        reason: 'usage_cap_positive',
+      });
+      expect(
+        derivePromoModeDefaults({
+          mode: 'account_multi_use',
+          requestedUsageCap: 0,
+          restrictedToUserId: 'user_123',
+        })
+      ).toEqual({ ok: false, reason: 'usage_cap_positive' });
+    });
+  });
+
   describe('derivePromoCodeStatus', () => {
     it('returns active when promo is active, within window, and under cap', () => {
       expect(
@@ -70,6 +150,7 @@ describe('adminValidation', () => {
           normalizedCode: 'welcome2024',
           rewardAmount: 10,
           usageCap: 100,
+          mode: 'public_multi_use',
         })
       ).toEqual({ ok: true });
     });
@@ -80,6 +161,7 @@ describe('adminValidation', () => {
           normalizedCode: '',
           rewardAmount: 10,
           usageCap: 100,
+          mode: 'public_multi_use',
         })
       ).toEqual({ ok: false, reason: 'code_required' });
     });
@@ -90,6 +172,7 @@ describe('adminValidation', () => {
           normalizedCode: 'test',
           rewardAmount: 0,
           usageCap: 100,
+          mode: 'public_multi_use',
         })
       ).toEqual({ ok: false, reason: 'reward_amount_positive' });
     });
@@ -100,8 +183,20 @@ describe('adminValidation', () => {
           normalizedCode: 'test',
           rewardAmount: -5,
           usageCap: 100,
+          mode: 'public_multi_use',
         })
       ).toEqual({ ok: false, reason: 'reward_amount_positive' });
+    });
+
+    it('rejects fractional reward amounts', () => {
+      expect(
+        validateCreatePromoCodeArgs({
+          normalizedCode: 'test',
+          rewardAmount: 1.5,
+          usageCap: 100,
+          mode: 'public_multi_use',
+        })
+      ).toEqual({ ok: false, reason: 'reward_amount_integer' });
     });
 
     it('rejects negative usage cap', () => {
@@ -110,6 +205,7 @@ describe('adminValidation', () => {
           normalizedCode: 'test',
           rewardAmount: 10,
           usageCap: -1,
+          mode: 'public_multi_use',
         })
       ).toEqual({ ok: false, reason: 'usage_cap_nonnegative' });
     });

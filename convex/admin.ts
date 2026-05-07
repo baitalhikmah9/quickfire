@@ -4,7 +4,9 @@ import { requireAdmin } from './lib/auth';
 import { ensureWalletDoc } from './lib/ensureWallet';
 import { normalizePromoCode } from './lib/promoRules';
 import {
+  derivePromoModeDefaults,
   derivePromoCodeStatus,
+  isAccountPromoMode,
   validateCreatePromoCodeArgs,
   validateUpdatePromoCodeArgs,
   validateWalletAdjustment,
@@ -143,6 +145,9 @@ export const getPromoCode = query({
       .query('promo_redemptions')
       .withIndex('by_promo_code', (q) => q.eq('promoCodeId', args.promoCodeId))
       .collect();
+    const restrictedUser = promoCode.restrictedToUserId
+      ? await ctx.db.get(promoCode.restrictedToUserId)
+      : null;
 
     const enriched = await Promise.all(
       redemptions.map(async (redemption) => {
@@ -167,7 +172,19 @@ export const getPromoCode = query({
       })
     );
 
-    return { promoCode, redemptions: enriched };
+    return {
+      promoCode,
+      restrictedUser: restrictedUser
+        ? {
+            _id: restrictedUser._id,
+            email: restrictedUser.email,
+            name: restrictedUser.name,
+            clerkId: restrictedUser.clerkId,
+            canonicalPurchaserAccountId: restrictedUser.canonicalPurchaserAccountId,
+          }
+        : null,
+      redemptions: enriched,
+    };
   },
 });
 
@@ -180,7 +197,14 @@ export const createPromoCode = mutation({
     code: v.string(),
     rewardAmount: v.number(),
     usageCap: v.number(),
-    perUserLimit: v.optional(v.number()),
+    mode: v.optional(v.union(
+      v.literal('public_single_use'),
+      v.literal('public_multi_use'),
+      v.literal('account_single_use'),
+      v.literal('account_multi_use')
+    )),
+    restrictedToUserId: v.optional(v.id('users')),
+    restrictedToPurchaserAccountId: v.optional(v.string()),
     activeFrom: v.optional(v.number()),
     activeTo: v.optional(v.number()),
     metadata: v.optional(
@@ -198,9 +222,29 @@ export const createPromoCode = mutation({
       normalizedCode: normalized,
       rewardAmount: args.rewardAmount,
       usageCap: args.usageCap,
+      mode: args.mode,
     });
     if (!validation.ok) {
       throw new Error(validation.reason);
+    }
+
+    const mode = args.mode ?? 'public_multi_use';
+    const modeDefaults = derivePromoModeDefaults({
+      mode,
+      requestedUsageCap: args.usageCap,
+      restrictedToUserId: args.restrictedToUserId,
+    });
+    if (!modeDefaults.ok) {
+      throw new Error(modeDefaults.reason);
+    }
+
+    if (isAccountPromoMode(mode)) {
+      const restrictedUser = args.restrictedToUserId
+        ? await ctx.db.get(args.restrictedToUserId)
+        : null;
+      if (!restrictedUser) {
+        throw new Error('restricted_user_not_found');
+      }
     }
 
     const existing = await ctx.db
@@ -216,8 +260,12 @@ export const createPromoCode = mutation({
       code: normalized,
       rewardType: 'tokens',
       rewardAmount: args.rewardAmount,
-      usageCap: args.usageCap,
-      perUserLimit: args.perUserLimit ?? 1,
+      usageCap: modeDefaults.usageCap,
+      perUserLimit: modeDefaults.perUserLimit,
+      mode,
+      redemptionScope: modeDefaults.redemptionScope,
+      restrictedToUserId: args.restrictedToUserId,
+      restrictedToPurchaserAccountId: args.restrictedToPurchaserAccountId,
       active: true,
       usedCount: 0,
       activeFrom: args.activeFrom,

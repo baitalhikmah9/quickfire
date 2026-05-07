@@ -5,6 +5,23 @@ import { useSSO } from '@clerk/clerk-expo';
 import type { OAuthStrategy } from '@clerk/types';
 
 /**
+ * Clerk `redirectUrl` after OAuth. On native, Expo Linking encodes the scheme.
+ * On web, `Linking.createURL('/(app)/')` often yields a path the browser never uses
+ * (`/(app)` is a route group), and pathname / trailing-slash drift makes
+ * `expo-web-browser`'s popup handshake fail — the opener never gets `success`.
+ */
+function clerkOAuthRedirectUrl(redirectPath: string): string {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') {
+    return Linking.createURL(redirectPath);
+  }
+  const isDefaultAppShell =
+    redirectPath === '/(app)/' || redirectPath === '/(app)' || redirectPath === '/';
+  const path = isDefaultAppShell ? '/' : redirectPath.startsWith('/') ? redirectPath : `/${redirectPath}`;
+  const href = new URL(path, window.location.origin).href;
+  return href.replace(/\/$/, '');
+}
+
+/**
  * Google / Apple OAuth via Clerk SSO. Redirect returns to the app shell after session is created.
  */
 export function useClerkOAuthFlow(redirectPath = '/(app)/') {
@@ -25,7 +42,7 @@ export function useClerkOAuthFlow(redirectPath = '/(app)/') {
       inFlight.current = true;
       setBusy(true);
       try {
-        const redirectUrl = Linking.createURL(redirectPath);
+        const redirectUrl = clerkOAuthRedirectUrl(redirectPath);
         const { createdSessionId, setActive } = await startSSOFlow({
           strategy,
           redirectUrl,
