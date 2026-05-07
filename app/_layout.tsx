@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, AppState, Platform, StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -16,12 +16,29 @@ import {
 
 SplashScreen.preventAutoHideAsync();
 
+/** Stable reference for static layout groups — avoids navigation descriptor churn each render. */
+const ROOT_NESTED_STACK_SCREEN_OPTIONS = { headerShown: false };
+
 export default function RootLayout() {
   const paletteId = useThemeStore((state) => state.paletteId);
+  const rootStackScreenOptions = useMemo(
+    () => ({
+      headerShown: false,
+      contentStyle: {
+        flex: 1,
+        backgroundColor: PALETTES[paletteId].background,
+      },
+    }),
+    [paletteId]
+  );
 
   useEffect(() => {
     // Run after mount so a thrown error cannot abort the whole module (empty #root on web).
-    WebBrowser.maybeCompleteAuthSession();
+    // Web: Clerk may normalize the return URL (path/query); skip strict pathname equality so the
+    // popup can postMessage the opener and `openAuthSessionAsync` resolves with `success`.
+    WebBrowser.maybeCompleteAuthSession(
+      Platform.OS === 'web' ? { skipRedirectCheck: true } : {}
+    );
   }, []);
 
   const [loaded, error] = useFonts({
@@ -92,18 +109,13 @@ export default function RootLayout() {
         <StatusBar
           style={paletteUsesLightStatusBarContent(paletteId) ? 'light' : 'dark'}
         />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { flex: 1, backgroundColor: PALETTES[paletteId].background },
-          }}
-        >
+        <Stack screenOptions={rootStackScreenOptions}>
           <Stack.Screen name="index" />
           <Stack.Screen name="how-to-play" />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(app)" options={{ headerShown: false }} />
-          <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-          <Stack.Screen name="admin" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
+          <Stack.Screen name="(app)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
+          <Stack.Screen name="(admin)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
+          <Stack.Screen name="admin" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
         </Stack>
       </Providers>
     </ErrorBoundary>

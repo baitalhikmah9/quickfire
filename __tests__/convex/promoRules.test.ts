@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  evaluatePromoAccountRestriction,
   evaluateDuplicateRedemption,
   evaluatePromoRedemption,
   normalizePromoCode,
@@ -76,5 +77,34 @@ describe('promoRules', () => {
   it('flags duplicate redemption attempts', () => {
     expect(evaluateDuplicateRedemption(true)).toEqual({ ok: false, reason: 'already_redeemed' });
     expect(evaluateDuplicateRedemption(false)).toEqual({ ok: true });
+  });
+
+  it('rejects account-restricted promos for the wrong user', () => {
+    expect(
+      evaluatePromoAccountRestriction({
+        redemptionScope: 'account',
+        restrictedToUserId: 'user_allowed',
+        currentUserId: 'user_denied',
+      })
+    ).toEqual({ ok: false, reason: 'account_restricted' });
+  });
+
+  it('accepts account-restricted promos for the selected user', () => {
+    expect(
+      evaluatePromoAccountRestriction({
+        redemptionScope: 'account',
+        restrictedToUserId: 'user_allowed',
+        currentUserId: 'user_allowed',
+      })
+    ).toEqual({ ok: true });
+  });
+
+  it('accepts public promos without an account restriction', () => {
+    expect(
+      evaluatePromoAccountRestriction({
+        redemptionScope: 'public',
+        currentUserId: 'user_any',
+      })
+    ).toEqual({ ok: true });
   });
 });

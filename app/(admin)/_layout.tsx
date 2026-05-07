@@ -11,13 +11,18 @@ import {
 } from 'react-native';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { isAuthDisabled } from '@/lib/authMode';
-import { COLORS, FONTS, SPACING } from '@/constants/theme';
+import { BRAND_ADMIN_TABLE, BRAND_RAISED_SURFACE, COLORS, FONTS, SPACING } from '@/constants/theme';
+import { HOME_SOFT_UI } from '@/themes';
+
+const SOFT = HOME_SOFT_UI.colors;
 
 const NAV_ITEMS = [
   { label: 'Overview', href: '/admin' as const },
   { label: 'Promo Codes', href: '/admin/promo-codes' as const },
   { label: 'Wallets', href: '/admin/wallets' as const },
+  { label: 'Sign out', href: '/admin/sign-out' as const },
 ];
 
 function Sidebar({ pathname }: { pathname: string }) {
@@ -25,17 +30,24 @@ function Sidebar({ pathname }: { pathname: string }) {
 
   return (
     <View style={styles.sidebar}>
-      <Text style={styles.sidebarTitle}>QuickFire Admin</Text>
+      <View style={styles.sidebarBrand}>
+        <Text style={styles.sidebarWordmark}>QuickFire</Text>
+        <Text style={styles.sidebarCapline}>ADMIN</Text>
+      </View>
       <View style={styles.nav}>
         {NAV_ITEMS.map((item) => {
           const active =
             normalizedPathname === item.href || normalizedPathname.startsWith(item.href + '/');
           return (
             <Link key={item.href} href={item.href} asChild>
-              <Pressable style={[styles.navItem, active && styles.navItemActive]}>
-                <Text style={[styles.navItemText, active && styles.navItemTextActive]}>
-                  {item.label}
-                </Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.navItem,
+                  active ? styles.navItemActive : undefined,
+                  { opacity: pressed ? 0.88 : 1 },
+                ]}
+              >
+                <Text style={styles.navItemText}>{item.label}</Text>
               </Pressable>
             </Link>
           );
@@ -45,12 +57,13 @@ function Sidebar({ pathname }: { pathname: string }) {
   );
 }
 
-function ForbiddenScreen() {
+function AdminBackendUnavailableScreen() {
   return (
     <View style={styles.center}>
-      <Text style={styles.forbiddenTitle}>403 Forbidden</Text>
+      <Text style={styles.forbiddenTitle}>Admin backend unavailable</Text>
       <Text style={styles.forbiddenText}>
-        You do not have permission to access the admin dashboard.
+        Convex has not deployed the admin functions yet. Run the repo-local Convex
+        dev or deploy command before using this dashboard.
       </Text>
     </View>
   );
@@ -66,7 +79,18 @@ function AdminShell({ children }: { children: React.ReactNode }) {
       {isWide && <Sidebar pathname={pathname} />}
       <View style={styles.main}>
         <View style={styles.topBar}>
-          <Text style={styles.envLabel}>ADMIN</Text>
+          <View style={styles.envChip}>
+            <Text style={styles.envLabel}>ADMIN</Text>
+          </View>
+          <Link href="/admin/sign-out" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Sign out"
+              style={({ pressed }) => [styles.topBarSignOut, { opacity: pressed ? 0.82 : 1 }]}
+            >
+              <Text style={styles.topBarSignOutText}>Sign out</Text>
+            </Pressable>
+          </Link>
         </View>
         <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
           {children}
@@ -86,11 +110,7 @@ export function AdminAccessBoundary({ children }: { children: React.ReactNode })
   );
 
   if (Platform.OS !== 'web') {
-    return (
-      <View style={styles.center}>
-        <Text>Admin dashboard is available on web.</Text>
-      </View>
-    );
+    return <Redirect href="/(app)/" />;
   }
 
   if (!isLoaded && !authDisabled) {
@@ -104,18 +124,24 @@ export function AdminAccessBoundary({ children }: { children: React.ReactNode })
   if (userProfile === undefined) {
     return (
       <View style={styles.center}>
-        <Text>Loading...</Text>
+        <Text style={styles.mutedMessage}>Loading...</Text>
       </View>
     );
   }
 
-  if (userProfile && userProfile.role !== 'admin') {
-    return <ForbiddenScreen />;
+  if (userProfile === null) {
+    return <Redirect href="/admin/sign-in" />;
+  }
+
+  if (userProfile.role !== 'admin') {
+    return <Redirect href="/admin/sign-in" />;
   }
 
   return (
     <AdminShell>
-      {children}
+      <ErrorBoundary fallback={<AdminBackendUnavailableScreen />}>
+        {children}
+      </ErrorBoundary>
     </AdminShell>
   );
 }
@@ -127,6 +153,7 @@ export default function AdminLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="promo-codes" />
         <Stack.Screen name="wallets" />
+        <Stack.Screen name="sign-out" />
       </Stack>
     </AdminAccessBoundary>
   );
@@ -136,77 +163,106 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: 'row',
+    backgroundColor: SOFT.canvas,
   },
   sidebar: {
-    width: 220,
-    borderRightWidth: 1,
-    borderRightColor: COLORS.border,
-    backgroundColor: '#FAFAFA',
+    width: 228,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: BRAND_ADMIN_TABLE.rowDivider,
+    backgroundColor: SOFT.canvas,
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.md,
   },
-  sidebarTitle: {
-    fontFamily: FONTS.displayBold,
-    fontSize: 18,
-    color: COLORS.text,
+  sidebarBrand: {
     marginBottom: SPACING.lg,
+    gap: 4,
+  },
+  sidebarWordmark: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 20,
+    letterSpacing: -0.3,
+    color: SOFT.textPrimary,
+  },
+  sidebarCapline: {
+    fontFamily: FONTS.uiSemibold,
+    fontSize: 11,
+    letterSpacing: 3,
+    color: SOFT.textMuted,
   },
   nav: {
-    gap: 4,
+    gap: SPACING.sm,
   },
   navItem: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: BRAND_RAISED_SURFACE.borderRadius,
   },
   navItemActive: {
-    backgroundColor: COLORS.primary,
+    ...BRAND_RAISED_SURFACE,
   },
   navItemText: {
     fontFamily: FONTS.uiSemibold,
     fontSize: 14,
-    color: COLORS.text,
-  },
-  navItemTextActive: {
-    color: '#FFFFFF',
+    color: SOFT.textPrimary,
   },
   main: {
     flex: 1,
     flexDirection: 'column',
     minWidth: 0,
+    backgroundColor: SOFT.canvas,
   },
   topBar: {
-    height: 48,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: '#FFFFFF',
+    minHeight: 56,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: BRAND_ADMIN_TABLE.rowDivider,
+    backgroundColor: SOFT.canvas,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+  },
+  topBarSignOut: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  topBarSignOutText: {
+    fontFamily: FONTS.uiSemibold,
+    fontSize: 14,
+    color: SOFT.textPrimary,
+  },
+  envChip: {
+    ...BRAND_RAISED_SURFACE,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
   },
   envLabel: {
     fontFamily: FONTS.uiBold,
     fontSize: 11,
-    letterSpacing: 1,
-    color: COLORS.primary,
-    backgroundColor: '#E8F4FF',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    letterSpacing: 1.2,
+    color: SOFT.textPrimary,
   },
   content: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: SOFT.canvas,
   },
   contentContainer: {
     padding: SPACING.lg,
     gap: SPACING.lg,
+    flexGrow: 1,
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: SPACING.xl,
+    backgroundColor: SOFT.canvas,
+  },
+  mutedMessage: {
+    fontFamily: FONTS.ui,
+    fontSize: 15,
+    color: SOFT.textMuted,
   },
   forbiddenTitle: {
     fontFamily: FONTS.displayBold,
@@ -217,6 +273,8 @@ const styles = StyleSheet.create({
   forbiddenText: {
     fontFamily: FONTS.ui,
     fontSize: 14,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
+    textAlign: 'center',
+    maxWidth: 400,
   },
 });

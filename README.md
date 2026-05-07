@@ -4,14 +4,16 @@ Competitive multiplayer trivia — pick categories, split into teams, and outsco
 
 ## Features
 
-- **Expo Router** — file-based routing with auth and app route groups
+- **Expo Router** — file-based routing with auth, app, and admin route groups
 - **TypeScript** — full type safety with Zod validation
 - **Clerk Auth** — sign-in, sign-up, MFA; all game modes require authentication
-- **Convex Backend** — real-time database, queries, and mutations
-- **Zustand** — ephemeral UI state (auth, game session, theme)
+- **Convex Backend** — real-time database, queries, mutations, payments, wallets, promo codes
+- **Zustand** — ephemeral UI state (auth, game session, theme, locale)
 - **Theming** — 6 palettes, design tokens, runtime theme switching
 - **Gameplay** — lobby wizard, deterministic game-reducer phase machine, landscape board
-- **i18n & Locale** — category/question content separated for localization
+- **i18n & Locale** — 12 supported languages, RTL support, category/question content localization
+- **Economy** — virtual wallet, token store, promo code redemption
+- **Admin Dashboard** — manage promo codes and wallets
 - **Cross-platform** — iOS, Android, and web from one codebase
 
 ## Quick Start
@@ -48,33 +50,52 @@ app/
 │   ├── sign-in.tsx             # Login + MFA
 │   ├── sign-up.tsx             # Registration
 │   └── forgot-password.tsx     # Password reset (TODO)
-└── (app)/
-    ├── _layout.tsx              # Signed-in stack
-    ├── index.tsx                # App hub
-    ├── profile.tsx / store.tsx  # Profile & store surfaces
-    ├── create-game.tsx          # Multi-step game wizard
-    ├── game.tsx                 # Active gameplay (landscape)
-    ├── lobby-settings.tsx       # Lobby config
-    ├── rules.tsx / game-recap.tsx
-    ├── theme-picker.tsx
-    ├── language-picker.tsx / content-languages-picker.tsx
-    └── play/                    # Play flow (mode, categories, teams, board, Q&A, end)
-        ├── _layout.tsx
-        ├── index.tsx, mode.tsx, quick-length.tsx
-        ├── categories.tsx, team-setup.tsx, board.tsx
-        ├── question.tsx, answer.tsx, end.tsx
-        └── …
+├── (app)/
+│   ├── _layout.tsx              # Signed-in stack
+│   ├── index.tsx                # App hub
+│   ├── profile.tsx / store.tsx  # Profile & store surfaces
+│   ├── create-game.tsx          # Multi-step game wizard
+│   ├── game.tsx                 # Active gameplay (landscape)
+│   ├── lobby-settings.tsx       # Lobby config
+│   ├── rules.tsx / game-recap.tsx
+│   ├── theme-picker.tsx
+│   ├── language-picker.tsx / content-languages-picker.tsx
+│   └── play/                    # Play flow (mode, categories, teams, board, Q&A, end)
+│       ├── _layout.tsx
+│       ├── index.tsx, mode.tsx, quick-length.tsx
+│       ├── categories.tsx, team-setup.tsx, board.tsx
+│       ├── question.tsx, answer.tsx, end.tsx
+│       └── …
+├── (admin)/
+│   ├── _layout.tsx              # Admin layout
+│   ├── index.tsx                # Admin dashboard
+│   ├── promo-codes.tsx          # Promo code management
+│   └── wallets.tsx              # Wallet management
+└── admin/
+    ├── index.tsx                # Admin entry
+    ├── sign-in.tsx              # Admin sign-in
+    ├── promo-codes.tsx          # Promo code list
+    └── wallets.tsx              # Wallet list
 
 features/
 ├── gameplay/                    # Game reducer, Board component
 ├── lobby/                       # Lobby builder, step wizards, lifelines
-└── shared/                      # Shared types (GameMode, GameConfig, etc.)
+├── play/                        # Play flow components, data, styles
+├── shared/                      # Shared types (GameMode, GameConfig, etc.)
+├── auth/ / content/ / profile/  # Feature barrels
+├── settings/ / wallet/ / promo/ # Feature barrels
 
 convex/                          # Backend (schema, queries, mutations, seed)
-store/                           # Zustand stores (auth, game, theme)
-lib/                             # Providers, hooks (useTheme, useNotifications)
-components/                      # Reusable UI (Button, ErrorBoundary)
-constants/                       # Design tokens, theme, categories, questions
+├── lib/                         # Auth, admin, payments, wallet, promo helpers
+├── admin.ts / payments.ts       # Admin & payment endpoints
+├── promo.ts / wallet.ts         # Economy modules
+└── sessions.ts / devices.ts     # Session & device management
+
+store/                           # Zustand stores (auth, game, play, theme, locale)
+lib/                             # Providers, hooks, i18n (12 locales), navigation
+components/                      # Reusable UI (Button, Pressable, HeroSection, etc.)
+constants/                       # Design tokens, theme, categories, questions, feature flags
+themes/                          # Extended theme definitions
 types/                           # Shared TypeScript definitions
 ```
 
@@ -91,6 +112,7 @@ types/                           # Shared TypeScript definitions
 | react-native-screens | Native navigation |
 | expo-screen-orientation | Landscape lock during gameplay |
 | expo-secure-store | Secure persistence |
+| @tanstack/react-query | Data fetching |
 
 ## Environment Variables
 

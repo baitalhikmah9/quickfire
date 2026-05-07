@@ -113,20 +113,12 @@ export default function AppHubScreen() {
   const [activeModeInfo, setActiveModeInfo] = useState<GameMode | null>(null);
   const [pendingMode, setPendingMode] = useState<GameMode | null>(null);
 
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight } = useWindowDimensions();
   /** Tighter chrome when vertical space is limited (e.g. phone landscape). */
   const compact = windowHeight < 560;
 
   const rowDir = getRowDirection(direction);
   const formattedTokens = tokens.toLocaleString(uiLocale, { maximumFractionDigits: 0 });
-
-  const hubHorizontalInset = useMemo(
-    () => ({
-      paddingLeft: LAYOUT.screenGutter,
-      paddingRight: LAYOUT.screenGutter + Math.round(windowWidth * 0.04),
-    }),
-    [windowWidth]
-  );
 
   const modeGap = compact ? SPACING.md : SPACING.lg;
   const modeIconSize = compact ? 72 : 96;
@@ -236,7 +228,7 @@ export default function AppHubScreen() {
         style={styles.safeArea}
       >
         <ScreenContent fullWidth style={styles.viewport}>
-          <View style={[styles.pageColumn, hubHorizontalInset]}>
+          <View style={styles.pageColumn}>
             <View style={[styles.headerBar, compact && styles.headerBarCompact]}>
               <View style={[styles.headerEdge, styles.headerEdgeLeading]}>
                 <HubTokenChip
@@ -517,6 +509,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     minHeight: 0,
+    paddingHorizontal: LAYOUT.screenGutter,
   },
   mainFill: {
     flex: 1,
@@ -611,7 +604,7 @@ const styles = StyleSheet.create({
   modeInfoButton: {
     position: 'absolute',
     top: 8,
-    right: 8,
+    end: 8,
     zIndex: 3,
     width: 28,
     height: 28,

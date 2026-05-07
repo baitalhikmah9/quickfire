@@ -1,6 +1,10 @@
 import { mutation } from './_generated/server';
 import { v } from 'convex/values';
-import { evaluatePromoRedemption, normalizePromoCode } from './lib/promoRules';
+import {
+  evaluatePromoAccountRestriction,
+  evaluatePromoRedemption,
+  normalizePromoCode,
+} from './lib/promoRules';
 import { ensureWalletDoc } from './lib/ensureWallet';
 import { requireUser } from './lib/auth';
 import { ensureCanonicalPurchaserAccountForUser } from './lib/purchaserAccounts';
@@ -8,6 +12,7 @@ import { ensureCanonicalPurchaserAccountForUser } from './lib/purchaserAccounts'
 export const redeemCode = mutation({
   args: {
     code: v.string(),
+    clientRequestId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
@@ -33,6 +38,15 @@ export const redeemCode = mutation({
       .withIndex('by_user_promo', (q) => q.eq('userId', user._id).eq('promoCodeId', promo._id))
       .collect();
     const userRedemptionCount = userRedemptions.length;
+    const accountCheck = evaluatePromoAccountRestriction({
+      redemptionScope: promo.redemptionScope,
+      restrictedToUserId: promo.restrictedToUserId,
+      currentUserId: user._id,
+    });
+
+    if (!accountCheck.ok) {
+      return { success: false as const, error: accountCheck.reason };
+    }
 
     const promoCheck = evaluatePromoRedemption({
       active,
@@ -54,7 +68,14 @@ export const redeemCode = mutation({
     }
 
     const wallet = await ensureWalletDoc(ctx, purchaserAccount.appUserId, user._id);
-    const idempotencyKey = `promo:${user._id}:${promo._id}`;
+    if (perUserLimit > 1 && !args.clientRequestId?.trim()) {
+      return { success: false as const, error: 'idempotency_required' };
+    }
+
+    const idempotencyKey =
+      perUserLimit > 1
+        ? `promo:${user._id}:${promo._id}:${args.clientRequestId!.trim()}`
+        : `promo:${user._id}:${promo._id}`;
 
     const existingTx = await ctx.db
       .query('wallet_transactions')

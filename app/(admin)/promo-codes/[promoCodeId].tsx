@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, ScrollView } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { COLORS, FONTS, SPACING } from '@/constants/theme';
+import { AdminScreenHeader } from '@/components/admin/AdminScreenHeader';
+import { BRAND_ADMIN_TABLE, BRAND_RAISED_SURFACE, COLORS, FONTS, SPACING } from '@/constants/theme';
+import { HOME_SOFT_UI } from '@/themes';
+
+const SOFT = HOME_SOFT_UI.colors;
 
 export default function PromoCodeDetailScreen() {
   const { promoCodeId } = useLocalSearchParams<{ promoCodeId: string }>();
-  const router = useRouter();
   const promo = useQuery(api.admin.getPromoCode, { promoCodeId: promoCodeId as any });
   const deactivate = useMutation(api.admin.deactivatePromoCode);
 
@@ -36,46 +39,82 @@ export default function PromoCodeDetailScreen() {
 
   if (promo === undefined) {
     return (
-      <View style={styles.center}>
-        <Text>Loading...</Text>
-      </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+        <AdminScreenHeader
+          title="Promo code"
+          fallbackHref="/admin/promo-codes"
+          backAccessibilityLabel="Back to promo codes"
+        />
+        <View style={styles.center}>
+          <Text>Loading...</Text>
+        </View>
+      </ScrollView>
     );
   }
 
   if (promo === null) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Promo code not found.</Text>
-      </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+        <AdminScreenHeader
+          title="Promo code"
+          fallbackHref="/admin/promo-codes"
+          backAccessibilityLabel="Back to promo codes"
+        />
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Promo code not found.</Text>
+        </View>
+      </ScrollView>
     );
   }
 
-  const { promoCode, redemptions } = promo;
+  const { promoCode, redemptions, restrictedUser } = promo;
   const isActive = promoCode.active !== false;
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Pressable onPress={() => router.back()}>
-        <Text style={styles.backLink}>← Back to Promo Codes</Text>
-      </Pressable>
+      <AdminScreenHeader
+        title={promoCode.code}
+        fallbackHref="/admin/promo-codes"
+        backAccessibilityLabel="Back to promo codes"
+      />
 
       <View style={styles.panel}>
-        <View style={styles.panelHeader}>
-          <Text style={styles.heading}>{promoCode.code}</Text>
-          {isActive && (
+        {isActive ? (
+          <View style={styles.panelHeader}>
+            <View style={styles.panelHeaderSpacer} />
             <Pressable style={styles.dangerButton} onPress={() => setShowDisable(true)}>
               <Text style={styles.dangerButtonText}>Disable</Text>
             </Pressable>
-          )}
-        </View>
+          </View>
+        ) : null}
 
         <View style={styles.detailsGrid}>
+          <DetailItem label="Mode" value={formatPromoMode(promoCode.mode)} />
+          <DetailItem label="Scope" value={promoCode.redemptionScope ?? 'public'} />
           <DetailItem label="Reward Type" value={promoCode.rewardType} />
           <DetailItem label="Reward Amount" value={String(promoCode.rewardAmount)} />
           <DetailItem label="Usage Cap" value={String(promoCode.usageCap)} />
           <DetailItem label="Used Count" value={String(promoCode.usedCount ?? 0)} />
           <DetailItem label="Per-User Limit" value={String(promoCode.perUserLimit ?? 1)} />
           <DetailItem label="Active" value={isActive ? 'Yes' : 'No'} />
+          {restrictedUser && (
+            <DetailItem
+              label="Restricted Account"
+              value={
+                restrictedUser.email ??
+                restrictedUser.name ??
+                restrictedUser.clerkId ??
+                promoCode.restrictedToPurchaserAccountId ??
+                'Unknown'
+              }
+            />
+          )}
+          {promoCode.restrictedToPurchaserAccountId && (
+            <DetailItem
+              label="Restricted Purchaser ID"
+              value={promoCode.restrictedToPurchaserAccountId}
+            />
+          )}
         </View>
 
         {promoCode.metadata?.campaignName && (
@@ -158,12 +197,26 @@ function DetailItem({ label, value }: { label: string; value: string }) {
   );
 }
 
+function formatPromoMode(mode?: string) {
+  switch (mode) {
+    case 'public_single_use':
+      return 'Public Single-Use';
+    case 'public_multi_use':
+      return 'Public Multi-Use';
+    case 'account_single_use':
+      return 'Account Single-Use';
+    case 'account_multi_use':
+      return 'Account Multi-Use';
+    default:
+      return 'Public Multi-Use';
+  }
+}
+
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
   container: {
-    padding: SPACING.lg,
     gap: SPACING.lg,
   },
   center: {
@@ -171,23 +224,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: SPACING.xl,
+    minHeight: 120,
   },
-  backLink: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 13,
-    color: COLORS.primary,
-  },
-  heading: {
-    fontFamily: FONTS.displayBold,
-    fontSize: 24,
-    color: COLORS.text,
+  panelHeaderSpacer: {
+    flex: 1,
   },
   panel: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    ...BRAND_RAISED_SURFACE,
+    borderRadius: 18,
     padding: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     gap: SPACING.md,
   },
   panelHeader: {
@@ -198,7 +243,7 @@ const styles = StyleSheet.create({
   panelTitle: {
     fontFamily: FONTS.uiSemibold,
     fontSize: 16,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
   },
   detailsGrid: {
     flexDirection: 'row',
@@ -213,30 +258,30 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontFamily: FONTS.uiSemibold,
     fontSize: 11,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     marginBottom: 2,
   },
   detailValue: {
     fontFamily: FONTS.ui,
     fontSize: 14,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
   },
   formLabel: {
     fontFamily: FONTS.uiSemibold,
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     marginBottom: 4,
   },
   input: {
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
+    borderColor: BRAND_ADMIN_TABLE.inputBorder,
+    borderRadius: 12,
     paddingVertical: 8,
     paddingHorizontal: 10,
     fontFamily: FONTS.ui,
     fontSize: 13,
-    color: COLORS.text,
-    backgroundColor: '#FAFAFA',
+    color: SOFT.textPrimary,
+    backgroundColor: BRAND_ADMIN_TABLE.inputBackground,
   },
   errorText: {
     fontFamily: FONTS.ui,
@@ -249,15 +294,15 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   secondaryButton: {
-    backgroundColor: '#F3F4F6',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    ...BRAND_RAISED_SURFACE,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
   },
   secondaryButtonText: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 13,
-    color: COLORS.text,
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 0.8,
+    color: SOFT.textPrimary,
   },
   dangerButton: {
     backgroundColor: COLORS.error,
@@ -276,13 +321,13 @@ const styles = StyleSheet.create({
   empty: {
     fontFamily: FONTS.ui,
     fontSize: 14,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     paddingVertical: SPACING.md,
   },
   table: {
     gap: 1,
-    backgroundColor: COLORS.border,
-    borderRadius: 8,
+    backgroundColor: BRAND_ADMIN_TABLE.rowDivider,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   row: {
@@ -294,16 +339,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerRow: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BRAND_ADMIN_TABLE.headerBackground,
   },
   cell: {
     fontFamily: FONTS.ui,
     fontSize: 13,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
   },
   headerCell: {
     fontFamily: FONTS.uiSemibold,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     fontSize: 12,
   },
   cellUser: {

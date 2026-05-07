@@ -5,6 +5,7 @@ import { ConvexReactClient } from 'convex/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ActivityIndicator, View, Text, StyleSheet } from 'react-native';
 import { useThemeHydration } from '@/lib/hooks/useTheme';
+import { useConvexUserProfileSync } from '@/lib/hooks/useConvexUserProfileSync';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useGameHydration } from '@/store/game';
@@ -62,6 +63,7 @@ function ProvidersContent({ children }: { children: React.ReactNode }) {
 
 function AppHydration({ children }: { children: React.ReactNode }) {
   useThemeHydration();
+  useConvexUserProfileSync();
   usePlayHydration();
   useGameHydration();
   return <>{children}</>;

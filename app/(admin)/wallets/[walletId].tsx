@@ -7,14 +7,17 @@ import {
   Pressable,
   ScrollView,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { COLORS, FONTS, SPACING } from '@/constants/theme';
+import { AdminScreenHeader } from '@/components/admin/AdminScreenHeader';
+import { BRAND_ADMIN_TABLE, BRAND_RAISED_SURFACE, COLORS, FONTS, SPACING } from '@/constants/theme';
+import { HOME_SOFT_UI } from '@/themes';
+
+const SOFT = HOME_SOFT_UI.colors;
 
 export default function WalletDetailScreen() {
   const { walletId } = useLocalSearchParams<{ walletId: string }>();
-  const router = useRouter();
   const wallet = useQuery(api.admin.searchWallets, {
     query: walletId,
     limit: 1,
@@ -66,28 +69,48 @@ export default function WalletDetailScreen() {
 
   if (wallet === undefined) {
     return (
-      <View style={styles.center}>
-        <Text>Loading...</Text>
-      </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+        <AdminScreenHeader
+          title="Wallet"
+          fallbackHref="/admin/wallets"
+          backAccessibilityLabel="Back to wallets"
+        />
+        <View style={styles.center}>
+          <Text>Loading...</Text>
+        </View>
+      </ScrollView>
     );
   }
 
   if (!walletData) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Wallet not found.</Text>
-      </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+        <AdminScreenHeader
+          title="Wallet"
+          fallbackHref="/admin/wallets"
+          backAccessibilityLabel="Back to wallets"
+        />
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Wallet not found.</Text>
+        </View>
+      </ScrollView>
     );
   }
 
+  const walletTitle =
+    walletData.user?.email ?? walletData.user?.name ?? 'Wallet';
+  const walletTitleUppercase = !walletData.user?.email && !walletData.user?.name;
+
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Pressable onPress={() => router.back()}>
-        <Text style={styles.backLink}>← Back to Wallets</Text>
-      </Pressable>
+      <AdminScreenHeader
+        title={walletTitle}
+        uppercase={walletTitleUppercase}
+        fallbackHref="/admin/wallets"
+        backAccessibilityLabel="Back to wallets"
+      />
 
       <View style={styles.panel}>
-        <Text style={styles.heading}>Wallet</Text>
         <View style={styles.detailsGrid}>
           <DetailItem label="User" value={walletData.user?.email ?? walletData.user?.name ?? 'Unknown'} />
           <DetailItem label="Purchaser ID" value={walletData.wallet.purchaserAccountId ?? '-'} />
@@ -123,11 +146,15 @@ export default function WalletDetailScreen() {
         </View>
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         <Pressable
-          style={[styles.primaryButton, submitting && styles.disabledButton]}
+          style={({ pressed }) => [
+            styles.submitButton,
+            submitting && styles.disabledButton,
+            { opacity: pressed && !submitting ? 0.92 : 1 },
+          ]}
           onPress={handleAdjust}
           disabled={submitting}
         >
-          <Text style={styles.primaryButtonText}>
+          <Text style={styles.submitButtonText}>
             {submitting ? 'Applying...' : 'Apply Adjustment'}
           </Text>
         </Pressable>
@@ -178,7 +205,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    padding: SPACING.lg,
     gap: SPACING.lg,
   },
   center: {
@@ -186,29 +212,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: SPACING.xl,
-  },
-  backLink: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 13,
-    color: COLORS.primary,
-  },
-  heading: {
-    fontFamily: FONTS.displayBold,
-    fontSize: 24,
-    color: COLORS.text,
+    minHeight: 120,
   },
   panel: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    ...BRAND_RAISED_SURFACE,
+    borderRadius: 18,
     padding: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     gap: SPACING.md,
   },
   panelTitle: {
     fontFamily: FONTS.uiSemibold,
     fontSize: 16,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
   },
   detailsGrid: {
     flexDirection: 'row',
@@ -223,13 +238,13 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontFamily: FONTS.uiSemibold,
     fontSize: 11,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     marginBottom: 2,
   },
   detailValue: {
     fontFamily: FONTS.ui,
     fontSize: 14,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
   },
   formRow: {
     flexDirection: 'row',
@@ -241,50 +256,51 @@ const styles = StyleSheet.create({
   formLabel: {
     fontFamily: FONTS.uiSemibold,
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     marginBottom: 4,
   },
   input: {
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
+    borderColor: BRAND_ADMIN_TABLE.inputBorder,
+    borderRadius: 12,
     paddingVertical: 8,
     paddingHorizontal: 10,
     fontFamily: FONTS.ui,
     fontSize: 13,
-    color: COLORS.text,
-    backgroundColor: '#FAFAFA',
+    color: SOFT.textPrimary,
+    backgroundColor: BRAND_ADMIN_TABLE.inputBackground,
   },
   errorText: {
     fontFamily: FONTS.ui,
     fontSize: 13,
     color: COLORS.error,
   },
-  primaryButton: {
+  submitButton: {
     backgroundColor: COLORS.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     alignSelf: 'flex-start',
   },
   disabledButton: {
     opacity: 0.6,
   },
-  primaryButtonText: {
-    fontFamily: FONTS.uiSemibold,
+  submitButtonText: {
+    fontFamily: FONTS.uiBold,
     fontSize: 13,
+    letterSpacing: 0.6,
     color: '#FFFFFF',
   },
   empty: {
     fontFamily: FONTS.ui,
     fontSize: 14,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     paddingVertical: SPACING.md,
   },
   table: {
     gap: 1,
-    backgroundColor: COLORS.border,
-    borderRadius: 8,
+    backgroundColor: BRAND_ADMIN_TABLE.rowDivider,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   row: {
@@ -296,16 +312,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerRow: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BRAND_ADMIN_TABLE.headerBackground,
   },
   cell: {
     fontFamily: FONTS.ui,
     fontSize: 13,
-    color: COLORS.text,
+    color: SOFT.textPrimary,
   },
   headerCell: {
     fontFamily: FONTS.uiSemibold,
-    color: COLORS.mutedText,
+    color: SOFT.textMuted,
     fontSize: 12,
   },
   cellType: {
