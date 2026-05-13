@@ -135,18 +135,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(51, 51, 51, 0.45)',
     justifyContent: 'center',
+    alignItems: 'center',
     padding: SPACING.md,
     zIndex: 50,
     elevation: 50,
   },
   card: {
+    width: '100%',
+    maxWidth: 588,
     maxHeight: '78%',
     borderRadius: 28,
     overflow: 'hidden',
     ...PLASTIC_FACE,
   },
   scroll: {
-    maxHeight: 320,
+    maxHeight: 504,
   },
   scrollContent: {
     paddingHorizontal: SPACING.md,
@@ -180,18 +183,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     alignItems: 'stretch',
   },
-  tableHeaderRow: {
-    borderBottomWidth: 1,
-  },
   cell: {
     flex: 1,
     minWidth: 0,
     paddingVertical: SPACING.xs + 2,
     paddingHorizontal: SPACING.xs,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     textAlign: 'center',
     fontFamily: FONTS.uiSemibold,
   },
+  tableHeaderRow: {
+    borderBottomWidth: 1,
+  },
+
   headerCell: {
     fontFamily: FONTS.displayBold,
     textTransform: 'uppercase',
