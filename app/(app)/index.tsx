@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
+  Platform,
   View,
   Text,
   StyleSheet,
@@ -120,8 +121,10 @@ export default function AppHubScreen() {
   const rowDir = getRowDirection(direction);
   const formattedTokens = tokens.toLocaleString(uiLocale, { maximumFractionDigits: 0 });
 
-  const modeGap = compact ? SPACING.md : SPACING.lg;
-  const modeIconSize = compact ? 72 : 96;
+  const isWeb = Platform.OS === 'web';
+
+  const modeGap = compact ? SPACING.md : (isWeb ? 32 : SPACING.lg);
+  const modeIconSize = compact ? 70 : (isWeb ? 104 : 92);
   const modeInfoIconSize = compact ? 20 : 24;
   const minimumTokenCostForMode = useCallback(
     (mode: GameMode) => (mode === 'quickPlay' ? getGameTokenCost(mode, 3) : getGameTokenCost(mode)),
@@ -229,6 +232,7 @@ export default function AppHubScreen() {
       >
         <ScreenContent fullWidth style={styles.viewport}>
           <View style={styles.pageColumn}>
+            <View style={[styles.contentFrame, isWeb && { maxWidth: 1150 }]}>
             <View style={[styles.headerBar, compact && styles.headerBarCompact]}>
               <View style={[styles.headerEdge, styles.headerEdgeLeading]}>
                 <HubTokenChip
@@ -244,7 +248,7 @@ export default function AppHubScreen() {
 
               <View style={styles.headerLogoWrap} pointerEvents="none">
                 <QuickFireTitleLogo
-                  width={compact ? 172 : 220}
+                  width={compact ? 172 : (isWeb ? 280 : 220)}
                   testID="home-brand-logo"
                   containerStyle={styles.headerLogoImageWrap}
                 />
@@ -275,10 +279,11 @@ export default function AppHubScreen() {
                 style={[
                   styles.modeGrid,
                   { flexDirection: rowDir, flexWrap: 'nowrap', gap: modeGap },
+                  isWeb && { marginTop: 140 },
                 ]}
               >
                 {HOME_MODES.map((mode) => (
-                  <View key={mode.id} style={styles.modeTileContainer}>
+                  <View key={mode.id} style={[styles.modeTileContainer, isWeb && { aspectRatio: 0.75 }]}>
                     {(() => {
                       const minimumCost = minimumTokenCostForMode(mode.id);
                       const canAffordMode = tokens >= minimumCost;
@@ -314,7 +319,7 @@ export default function AppHubScreen() {
                               name={mode.icon}
                               size={modeIconSize * 0.74}
                               color={textPrimary}
-                              style={{ marginBottom: compact ? 4 : 10 }}
+                              style={{ marginBottom: compact ? 4 : (isWeb ? 14 : 10) }}
                             />
                           )}
                           <Text
@@ -323,6 +328,7 @@ export default function AppHubScreen() {
                               styles.modeTileLabel,
                               compact && styles.modeTileLabelCompact,
                               { color: textPrimary },
+                              isWeb && { fontSize: 19 },
                             ]}
                             numberOfLines={1}
                             adjustsFontSizeToFit
@@ -335,6 +341,7 @@ export default function AppHubScreen() {
                               styles.modeTileCopy,
                               compact && styles.modeTileCopyCompact,
                               { color: textMuted },
+                              isWeb && { fontSize: 13, lineHeight: 18 },
                             ]}
                             numberOfLines={2}
                             adjustsFontSizeToFit
@@ -343,13 +350,14 @@ export default function AppHubScreen() {
                             {t(mode.copyKey)}
                           </Text>
                           <View style={styles.modeTileCostRow}>
-                            <Ionicons name="diamond" size={compact ? 9 : 11} color={textPrimary} />
+                            <Ionicons name="diamond" size={compact ? 9 : (isWeb ? 13 : 11)} color={textPrimary} />
                             <Text
                               testID={`home-mode-token-cost-${mode.id}`}
                               style={[
                                 styles.modeTileCostText,
                                 compact && styles.modeTileCostTextCompact,
                                 { color: textPrimary },
+                                isWeb && { fontSize: 12, lineHeight: 15 },
                               ]}
                               numberOfLines={1}
                             >
@@ -381,6 +389,7 @@ export default function AppHubScreen() {
                 ))}
               </View>
             </View>
+          </View>
           </View>
         </ScreenContent>
       </SafeAreaView>
@@ -509,30 +518,39 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     minHeight: 0,
-    paddingHorizontal: LAYOUT.screenGutter,
+  },
+  /** Shared content frame — header and cards share one max-width + padding system. */
+  contentFrame: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 880,
+    alignSelf: 'center',
   },
   mainFill: {
     flex: 1,
     minWidth: 0,
     minHeight: 0,
     justifyContent: 'flex-start',
-    paddingTop: SPACING.xxl,
   },
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    paddingVertical: SPACING.sm,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.sm,
+    paddingHorizontal: 8,
     minHeight: 56,
     flexShrink: 0,
   },
   headerBarCompact: {
-    paddingVertical: SPACING.xs,
+    paddingTop: SPACING.xs,
+    paddingBottom: 2,
     minHeight: 48,
   },
   headerEdge: {
     flex: 1,
     minWidth: 0,
+    alignItems: 'center',
     justifyContent: 'center',
   },
   headerEdgeLeading: {
@@ -553,7 +571,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /** Home hub: token chip sits on the outer edge (play header uses default `flex-end`). */
+  /** Home hub: token chip — left-aligned, vertically centered via headerEdge justifyContent. */
   hubTokenLeading: {
     alignSelf: 'flex-start',
   },
@@ -576,17 +594,16 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   modeGrid: {
-    alignSelf: 'stretch',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 8,
-    marginTop: SPACING.xl,
+    marginTop: 36,
+    width: '100%',
   },
   modeTileContainer: {
     flex: 1,
-    aspectRatio: 0.85, // Taller for more presence
-    marginHorizontal: 2,
+    aspectRatio: 0.88,
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
@@ -596,7 +613,7 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.lg,
     overflow: 'hidden',
     zIndex: 1,
@@ -613,21 +630,21 @@ const styles = StyleSheet.create({
   },
   modeTileLabel: {
     fontFamily: FONTS.uiBold,
-    fontSize: 18,
+    fontSize: 16,
     letterSpacing: 1.2,
     textAlign: 'center',
     textTransform: 'uppercase',
     zIndex: 1,
   },
   modeTileLabelCompact: {
-    fontSize: 14,
+    fontSize: 12,
     letterSpacing: 1,
   },
   modeTileCopy: {
     marginTop: SPACING.xs,
     fontFamily: FONTS.ui,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 15,
     letterSpacing: 0.15,
     textAlign: 'center',
     zIndex: 1,
@@ -647,8 +664,8 @@ const styles = StyleSheet.create({
   },
   modeTileCostText: {
     fontFamily: FONTS.uiBold,
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 10,
+    lineHeight: 13,
     letterSpacing: 0.6,
     textAlign: 'center',
   },
@@ -692,7 +709,7 @@ const styles = StyleSheet.create({
   },
   infoModalCard: {
     width: '100%',
-    maxWidth: 280,
+    maxWidth: 520,
     padding: SPACING.lg,
     borderRadius: 42,
     gap: SPACING.md,
