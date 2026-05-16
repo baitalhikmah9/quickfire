@@ -11,7 +11,7 @@
 
 - [x] ~~Home screen makes the DD logo larger and pushes the game-mode row lower.~~
 - [x] ~~Home screen uses the provided custom token artwork instead of the generic token icon.~~
-- [x] ~~Product naming now uses QuickFire instead of Quick Play in the live UI copy.~~
+- [x] ~~Product naming now uses Backfire instead of Quick Play in the live UI copy.~~
 - [x] ~~Hot Seat is only available in Classic and Quick Play.~~
 - [x] ~~Rumble disables wager and Hot Seat.~~
 - [x] ~~Rumble question flow now shows timed answer windows, with teams appearing during the countdown.~~

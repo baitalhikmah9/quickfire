@@ -36,7 +36,7 @@ const fr = withEnglishFallback({
   'profile.changeThemeDescription': "Personnalisez l'apparence de l'application",
   'store.purchaseTitle': 'Acheter des packs de jetons',
   'store.demoTitle': 'Mode démo actif',
-  'play.hubTitle': 'Jouer à QuickFire',
+  'play.hubTitle': 'Jouer à Backfire',
   'play.startNewGame': 'Nouvelle partie',
   'play.resumeCurrentMatch': 'Reprendre la partie',
   'play.chooseModeTitle': 'Choisir un mode',

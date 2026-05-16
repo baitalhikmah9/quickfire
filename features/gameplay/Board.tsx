@@ -3,6 +3,7 @@ import { Pressable } from '@/components/ui/Pressable';
 import type { QuestionCard } from '@/features/shared';
 import { SPACING, FONTS } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
+import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
 
 const T = HOME_SOFT_UI;
 
@@ -42,6 +43,7 @@ function neumorphicLift3D(tier: 'pill' | 'card' | 'cell'): any {
 }
 
 export function Board({ questions, onSelectQuestion, selectedQuestionId }: BoardProps) {
+  const fontSizes = useResponsivePlayFontSizes();
   const grouped = groupByCategory(questions);
   const categories = Array.from(grouped.keys());
 
@@ -67,7 +69,17 @@ export function Board({ questions, onSelectQuestion, selectedQuestionId }: Board
         const sorted = [...items].sort((a, b) => a.pointValue - b.pointValue);
         return (
           <View key={catName} style={styles.categoryColumn}>
-            <Text style={[styles.categoryTitle, { color: textPrimary }]} numberOfLines={1}>
+            <Text
+              style={[
+                styles.categoryTitle,
+                {
+                  color: textPrimary,
+                  fontSize: fontSizes.categoryTitle,
+                  lineHeight: Math.round(fontSizes.categoryTitle * 1.2),
+                },
+              ]}
+              numberOfLines={2}
+            >
               {catName.toUpperCase()}
             </Text>
             <View style={styles.cells}>
@@ -95,7 +107,11 @@ export function Board({ questions, onSelectQuestion, selectedQuestionId }: Board
                       <Text
                         style={[
                           styles.cellText,
-                          { color: isUsed ? textMuted : textPrimary },
+                          {
+                            color: isUsed ? textMuted : textPrimary,
+                            fontSize: fontSizes.pointValue,
+                            lineHeight: Math.round(fontSizes.pointValue * 1.15),
+                          },
                         ]}
                       >
                         {isUsed ? '✕' : q.pointValue}

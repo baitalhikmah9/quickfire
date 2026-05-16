@@ -1,91 +1,98 @@
 /**
- * Category artwork URLs from TriviaApp `src/constants/database.js` (THEMED_CATEGORIES).
- * QuickFire uses the same `categoryId` values as `constants/questions.json`.
+ * Category artwork — local images from assets/topics/ with remote URL fallbacks
+ * for categories without a matching downloaded image.
  */
 
 import type { ImageSource } from 'expo-image';
 
-const LOCAL_S9 = require('../assets/capitals-and-cities.jpg');
+// ── Local images (require() for Metro bundler) ──────────────────────────
 
-export const CATEGORY_PICTURE_URIS: Record<string, string> = {
-  h1: 'https://i.postimg.cc/d312mFb2/19th-century.png',
-  h2: 'https://i.postimg.cc/9Fwgq3yZ/19th-century-europe.png',
-  h3: 'https://i.postimg.cc/G2Z7XqCj/20th-century.png',
-  h4: 'https://i.postimg.cc/7ZsNBm1n/21st-century.png',
-  h5: 'https://i.postimg.cc/pVC5YyJn/ancient-civilisations.png',
+const LOCAL: Record<string, ImageSource> = {
+  h1: require('../assets/topics/19th_cent.png'),
+  h2: require('../assets/topics/19th_cent_eu.png'),
+  h3: require('../assets/topics/20th_century.png'),
+  h4: require('../assets/topics/21st_cent.png'),
+  h5: require('../assets/topics/ancient_civilisations.png'),
+  h7: require('../assets/topics/cold_war.png'),
+  h8: require('../assets/topics/European_history.png'),
+  h11: require('../assets/topics/modern_middle_east.png'),
+  h12: require('../assets/topics/UK_history.png'),
+  h13: require('../assets/topics/american_history.png'),
+  g1: require('../assets/topics/ark-survival-evolved.png'),
+  g3: require('../assets/topics/dota.png'),
+  g5: require('../assets/topics/halo.png'),
+  g6: require('../assets/topics/LoL.png'),
+  g7: require('../assets/topics/minecraft.png'),
+  g8: require('../assets/topics/overwatch.png'),
+  g9: require('../assets/topics/RDR2.png'),
+  g11: require('../assets/topics/the-legend-of-zelda.png'),
+  pc1: require('../assets/topics/atla.png'),
+  pc2: require('../assets/topics/breaking_bad.png'),
+  pc3: require('../assets/topics/dexter.png'),
+  pc4: require('../assets/topics/DC.png'),
+  pc5: require('../assets/topics/disney.png'),
+  pc6: require('../assets/topics/dragon_ball.png'),
+  pc7: require('../assets/topics/friends.png'),
+  pc8: require('../assets/topics/game_of_thrones.png'),
+  pc9: require('../assets/topics/harry_potter.png'),
+  pc10: require('../assets/topics/himym.png'),
+  pc11: require('../assets/topics/James_bond.png'),
+  pc13: require('../assets/topics/mcu.png'),
+  pc14: require('../assets/topics/naruto.png'),
+  pc15: require('../assets/topics/one_piece.png'),
+  pc16: require('../assets/topics/PotC.png'),
+  pc17: require('../assets/topics/pokemon.png'),
+  pc18: require('../assets/topics/prison-break.png'),
+  pc20: require('../assets/topics/spongebob.png'),
+  pc23: require('../assets/topics/star wars.png'),
+  pc24: require('../assets/topics/stranger things.png'),
+  pc25: require('../assets/topics/big_bang_theory.png'),
+  pc26: require('../assets/topics/fast_and_furious.png'),
+  pc28: require('../assets/topics/the_office.png'),
+  s2: require('../assets/topics/cricket.png'),
+  s3: require('../assets/topics/f1.png'),
+  s5: require('../assets/topics/NBA.png'),
+  s7: require('../assets/topics/epl.png'),
+  s9: require('../assets/topics/ucl.png'),
+  s10: require('../assets/topics/UFC.png'),
+  s12: require('../assets/topics/world_cup.png'),
+  gen1: require('../assets/topics/corporations.png'),
+  gen2: require('../assets/topics/geography.png'),
+  gen3: require('../assets/topics/science.png'),
+  gen4: require('../assets/topics/UK.png'),
+};
+
+// ── Remote URL fallbacks for categories without a local image ──────────
+
+const FALLBACK_URIS: Record<string, string> = {
   h6: 'https://i.postimg.cc/7YGkmWrV/arab-history.png',
-  h7: 'https://i.postimg.cc/50B341zs/cold-war.png',
-  h8: 'https://i.postimg.cc/j53zd52b/european-history.png',
   h9: 'https://i.postimg.cc/J7JNW18H/south-asian-history.png',
   h10: 'https://i.postimg.cc/j5yLBSfy/middle-ages-europe.png',
-  h11: 'https://i.postimg.cc/htJ4HGWm/middle-eastern-history.png',
-  h12: 'https://i.postimg.cc/dQHYwK9s/uk-history.png',
-  h13: 'https://i.postimg.cc/rFB7wy07/us-history.png',
   h14: 'https://i.postimg.cc/261P51Gz/world-war-i.png',
   h15: 'https://i.postimg.cc/WprHfLfK/world-war-ii.png',
-  g1: 'https://i.postimg.cc/dQpJGYTw/ark-survival-evolved.png',
   g2: 'https://i.postimg.cc/1z73TN4F/call-of-duty.png',
-  g3: 'https://i.postimg.cc/3xn84DX0/dota.png',
   g4: 'https://i.postimg.cc/nhcZJcyc/grand-theft-auto.png',
-  g5: 'https://i.postimg.cc/Xq3mks3J/halo.png',
-  g6: 'https://i.postimg.cc/CM8MGpRG/league-of-legends.png',
-  g7: 'https://i.postimg.cc/DywYfJzh/minecraft.jpg',
-  g8: 'https://i.postimg.cc/63hYttJQ/overwatch.png',
-  g9: 'https://i.postimg.cc/gJGHMQwt/red-dead-redemption.png',
   g10: 'https://i.postimg.cc/gjnRQWGs/super-mario-bros.png',
-  g11: 'https://i.postimg.cc/HLYrFg2q/the-legend-of-zelda.png',
   g12: 'https://i.postimg.cc/x1SgZt47/the-witcher.png',
   g13: 'https://i.postimg.cc/9X6B4LCm/world-of-warcraft.png',
-  pc1: 'https://i.postimg.cc/dtQGZpgw/avatar-the-last-airbender.png',
-  pc2: 'https://i.postimg.cc/ryjrTgsQ/breaking-bad.png',
-  pc3: 'https://i.postimg.cc/FzCzLWk8/dexter.png',
-  pc4: 'https://i.postimg.cc/Dyty3bQV/dc.png',
-  pc5: 'https://i.postimg.cc/rwNmGw4B/disney.png',
-  pc6: 'https://i.postimg.cc/KzMhN0Vm/dragon-ball.png',
-  pc7: 'https://i.postimg.cc/XqPFb7Ls/friends.png',
-  pc8: 'https://i.postimg.cc/6q4qCVVd/game-of-thrones.png',
-  pc9: 'https://i.postimg.cc/mDvzX6gP/harry-potter.png',
-  pc10: 'https://i.postimg.cc/QCDNWLM6/how-i-met-your-mother.png',
-  pc11: 'https://i.postimg.cc/ZnJZ5rf7/james-bond.png',
   pc12: 'https://i.postimg.cc/mDsWmYGw/jurassic-park.png',
-  pc13: 'https://i.postimg.cc/yYQ3gTMR/marvel.png',
-  pc14: 'https://i.postimg.cc/x1mjfyn9/naruto.png',
-  pc15: 'https://i.postimg.cc/rsR31jh9/one-piece.png',
-  pc16: 'https://i.postimg.cc/28DNdRDD/pirates-of-the-caribbean.png',
-  pc17: 'https://i.postimg.cc/zGQdjKg0/pokemon.png',
-  pc18: 'https://i.postimg.cc/7hgRf6tx/prison-break.png',
-  pc20: 'https://i.postimg.cc/ZqxFBN49/spongebob-squarepants.png',
   pc21: 'https://i.postimg.cc/CKcnpsFx/squid-game.png',
   pc22: 'https://i.postimg.cc/T39c7s4w/star-trek.png',
-  pc23: 'https://i.postimg.cc/Twq2grPb/star-wars.png',
-  pc24: 'https://i.postimg.cc/k4jZ04YX/stranger-things.png',
-  pc25: 'https://i.postimg.cc/63yJ5nvR/the-big-bang-theory.png',
-  pc26: 'https://i.postimg.cc/HLKqPjrB/fast-furious.png',
   pc27: 'https://i.postimg.cc/X7KhWQzw/the-hunger-games.png',
-  pc28: 'https://i.postimg.cc/7L5m5VKr/the-office-us.png',
   pc29: 'https://i.postimg.cc/BvPBSvvK/the-simpsons.png',
   pc30: 'https://i.postimg.cc/0jkSw59C/shakespeare.png',
-  s2: 'https://i.postimg.cc/zBKmg504/cricket.png',
-  s3: 'https://i.postimg.cc/8PyYsjT5/formula-1.png',
-  s5: 'https://i.postimg.cc/W3brDbN0/nba.png',
   s6: 'https://i.postimg.cc/bY4T5kY6/nfl.png',
-  s7: 'https://i.postimg.cc/4NzzF0St/premier-league.png',
   s8: 'https://i.postimg.cc/rwVtZw4Q/tennis.png',
-  s10: 'https://i.postimg.cc/N0yFZ9jp/ufc.png',
   s11: 'https://i.postimg.cc/Pr3thXc4/which-player.png',
-  s12: 'https://i.postimg.cc/C5vVF7v7/world-cup.png',
-  gen1: 'https://i.postimg.cc/6QQbKKk0/corporations.png',
-  gen2: 'https://i.postimg.cc/hjSwfxQ0/geography.png',
-  gen3: 'https://i.postimg.cc/ncZkZZ7F/science.png',
-  gen4: 'https://i.postimg.cc/65jGSNhw/uk.png',
   gen5: 'https://i.postimg.cc/PxTxJ6Mg/usa.png',
 };
 
 export function getCategoryPictureSource(categoryId: string): ImageSource | null {
-  if (categoryId === 's9') {
-    return LOCAL_S9;
-  }
-  const uri = CATEGORY_PICTURE_URIS[categoryId];
+  // Local image takes precedence
+  if (LOCAL[categoryId]) return LOCAL[categoryId];
+
+  // Remote fallback
+  const uri = FALLBACK_URIS[categoryId];
   return uri ? { uri } : null;
 }
 

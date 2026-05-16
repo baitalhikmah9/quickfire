@@ -1,11 +1,20 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, type ImageStyle } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  useWindowDimensions,
+  Platform,
+  type ImageStyle,
+} from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { SPACING, FONTS, FONT_SIZES } from '@/constants';
+import { SPACING, FONTS, FONT_SIZES, LAYOUT } from '@/constants';
 import { getCategoryPictureSource } from '@/constants/categoryPictures';
 import { getModeCategoryCount } from '@/features/play/data';
 import type { GameMode } from '@/features/shared';
@@ -13,6 +22,7 @@ import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { usePlayStore } from '@/store/play';
+import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
 
 function getCategoryIcon(id: string): keyof typeof Ionicons.glyphMap {
   if (id.startsWith('h')) return 'library-outline';
@@ -24,12 +34,26 @@ function getCategoryIcon(id: string): keyof typeof Ionicons.glyphMap {
   return 'folder-outline';
 }
 
+// ── Grid constants ──────────────────────────────────────────────────────
+
+const WEB_GRID_MAX_WIDTH = 1400;
+const WEB_GRID_GAP = 30;
+const NATIVE_GRID_GAP = 24;
+const NATIVE_COMPACT_GRID_GAP = 12;
+const WEB_GRID_INNER_PAD = 40; // padding inside the max-width container
+const WEB_CARD_HEIGHT = 190;
+const NATIVE_CARD_ASPECT = 0.72; // height = width * aspect
+const COLS = 4;
+
 export default function CategorySelectionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const categoryScrollRef = useRef<ScrollView | null>(null);
   const categoryOffsetsRef = useRef<Record<string, number>>({});
   const { direction, getTextStyle, t } = useI18n();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const fontSizes = useResponsivePlayFontSizes();
+
   const session = usePlayStore((state) => state.session);
   const ensureDraft = usePlayStore((state) => state.ensureDraft);
   const toggleCategory = usePlayStore((state) => state.toggleCategory);
@@ -53,11 +77,52 @@ export default function CategorySelectionScreen() {
     const categoriesBySlug = new Map(
       session.availableCategories.map((category) => [category.slug, category])
     );
-
     return (session.selectedCategoryIds ?? [])
       .map((slug) => categoriesBySlug.get(slug))
       .filter((category): category is NonNullable<typeof category> => Boolean(category));
   }, [session]);
+
+  const isWeb = Platform.OS === 'web';
+  const useWebLayout = isWeb && windowWidth >= 900;
+  const isLandscape = windowWidth > windowHeight;
+  const compactHeader = !useWebLayout && isLandscape && windowHeight < 600;
+
+  // ── Grid dimension calculations ─────────────────────────────────────
+  // Always 4 columns per row as requested.
+  const gridGap = useWebLayout
+    ? WEB_GRID_GAP
+    : windowWidth < 430
+      ? NATIVE_COMPACT_GRID_GAP
+      : NATIVE_GRID_GAP;
+  const gridInnerPad = useWebLayout ? WEB_GRID_INNER_PAD : 0;
+  const maxGridW = useWebLayout ? WEB_GRID_MAX_WIDTH : windowWidth;
+  const horizontalSafeGutters =
+    Math.max(insets.left, LAYOUT.screenGutter) + Math.max(insets.right, LAYOUT.screenGutter);
+  const availableGridW = Math.max(COLS, windowWidth - horizontalSafeGutters);
+
+  // Available inner width for the grid:
+  //   Web: body width after PlayScaffold safe gutters, clamped to maxGridW, then subtract
+  //        the grid's own inner padding so it matches the rendered grid area.
+  //   Native: body width after PlayScaffold contentSafeAreaHorizontal gutters.
+  const innerW = Math.max(
+    COLS,
+    Math.min(maxGridW, availableGridW) - (useWebLayout ? gridInnerPad * 2 : 0)
+  );
+
+  // Card width fills exactly 4 columns: (innerW - 3 gaps) / 4.
+  // Keep this derived from the actual padded body width so phones do not wrap to 3 columns.
+  const cardW = Math.max(
+    1,
+    Math.min(320, Math.floor((innerW - gridGap * (COLS - 1)) / COLS))
+  );
+
+  const cardH = useWebLayout
+    ? WEB_CARD_HEIGHT
+    : Math.floor(cardW * NATIVE_CARD_ASPECT);
+  const imageAreaH = Math.floor(cardH * 0.58);
+  const titleBarH = cardH - imageAreaH;
+
+  // ── Handlers ─────────────────────────────────────────────────────────
 
   const onSelectRandom = () => {
     if (!session) return;
@@ -78,18 +143,35 @@ export default function CategorySelectionScreen() {
   const scrollToCategory = (slug: string) => {
     const offset = categoryOffsetsRef.current[slug];
     if (offset === undefined) return;
-
     categoryScrollRef.current?.scrollTo({
-      y: Math.max(offset - SPACING.md, 0),
+      y: Math.max(offset - SPACING.sm, 0),
       animated: true,
     });
   };
 
+  // ── Derived state ─────────────────────────────────────────────────────
+
   const isLoading = !session;
   const selectedCount = (session?.selectedCategoryIds ?? []).length;
+  const isVeryDense = selectedCount >= 5;
+  const selectedPillGap = selectedCount >= 5 ? 6 : 10;
+  const selectedStripInnerW = Math.max(1, availableGridW - SPACING.sm * 2);
+  const selectedPillWidth =
+    selectedCount > 0
+      ? Math.max(
+          1,
+          Math.floor(
+            (selectedStripInnerW - selectedPillGap * Math.max(0, selectedCount - 1)) /
+              selectedCount
+          )
+        )
+      : 0;
   const canvas = '#FAF9F6';
   const surface = '#FFFFFF';
   const textPrimary = '#333333';
+  const canChooseRandom = session && selectedCount < required;
+
+  // ── Render ────────────────────────────────────────────────────────────
 
   return (
     <PlayScaffold
@@ -101,9 +183,11 @@ export default function CategorySelectionScreen() {
       contentSafeAreaHorizontal
       customHeader={
         isLoading ? null : (
-          <View style={styles.headerWrap}>
-            <View style={styles.headerRow}>
-              <View style={styles.headerLeftCluster}>
+          <View style={[styles.headerWrap, compactHeader && styles.headerWrapCompact]}>
+            {/* Header row: back + counter | title | random button */}
+            <View style={[styles.headerRow, compactHeader && styles.headerRowCompact]}>
+              {/* Left slot */}
+              <View style={styles.headerLeft}>
                 <Pressable
                   onPress={() => router.push('/play/team-setup')}
                   accessibilityRole="button"
@@ -113,7 +197,7 @@ export default function CategorySelectionScreen() {
                     styles.surfaceRaised,
                     SOFT_SURFACE_STYLES.face,
                     SOFT_SURFACE_STYLES.raised,
-                    pressed && styles.backButtonPressed,
+                    pressed && styles.controlPressed,
                   ]}
                 >
                   <Ionicons
@@ -122,191 +206,243 @@ export default function CategorySelectionScreen() {
                     color={textPrimary}
                   />
                 </Pressable>
-                <View style={styles.counterCardHeader}>
-                  <Text style={[styles.counterTextHeader, { color: textPrimary }]}>
+                <View style={[styles.counterBadge, styles.surfaceRaised, SOFT_SURFACE_STYLES.face, SOFT_SURFACE_STYLES.raised]}>
+                  <Text
+                    style={[
+                      styles.counterText,
+                      {
+                        color: textPrimary,
+                        fontSize: fontSizes.headerButton,
+                        lineHeight: Math.round(fontSizes.headerButton * 1.2),
+                      },
+                    ]}
+                  >
                     {selectedCount}/{required}
                   </Text>
                 </View>
               </View>
-              <Text
-                style={[
-                  styles.mainTitle,
-                  { color: textPrimary },
-                  getTextStyle(undefined, 'displayBold', 'center'),
-                ]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.72}
-              >
-                {t('play.pickTopicsTitle').toUpperCase()}
-              </Text>
-              <Pressable
-                onPress={onSelectRandom}
-                disabled={selectedCount >= required}
-                accessibilityRole="button"
-                accessibilityLabel="Choose a random topic"
-                accessibilityState={{ disabled: selectedCount >= required }}
-                style={({ pressed }) => [
-                  styles.randomTopicBtn,
-                  styles.surfaceRaised,
-                  SOFT_SURFACE_STYLES.face,
-                  SOFT_SURFACE_STYLES.raised,
-                  {
-                    opacity: selectedCount >= required ? 0.45 : pressed ? 0.8 : 1,
-                  },
-                ]}
-              >
+
+              {/* Center title (absolutely positioned to stay centered) */}
+              <View style={styles.headerCenterWrap} pointerEvents="none">
                 <Text
-                  style={[styles.randomTopicText, getTextStyle(undefined, 'bodySemibold', 'center')]}
-                  numberOfLines={2}
+                  style={[
+                    styles.mainTitle,
+                    { color: textPrimary },
+                    compactHeader && styles.mainTitleCompact,
+                    getTextStyle(undefined, 'displayBold', 'center'),
+                    { fontSize: fontSizes.pageTitle, lineHeight: Math.round(fontSizes.pageTitle * 1.15) },
+                  ]}
+                  numberOfLines={1}
                 >
-                  Choose a random topic
+                  {t('play.pickTopicsTitle').toUpperCase()}
                 </Text>
-              </Pressable>
+              </View>
+
+              {/* Right slot */}
+              <View style={styles.headerRight}>
+                <Pressable
+                  onPress={onSelectRandom}
+                  disabled={!canChooseRandom}
+                  accessibilityRole="button"
+                  accessibilityLabel="Choose a random topic"
+                  accessibilityState={{ disabled: !canChooseRandom }}
+                  style={({ pressed }) => [
+                    styles.randomBtn,
+                    styles.surfaceRaised,
+                    SOFT_SURFACE_STYLES.face,
+                    SOFT_SURFACE_STYLES.raised,
+                    {
+                      opacity: !canChooseRandom ? 0.45 : pressed ? 0.85 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons name="shuffle-outline" size={16} color={textPrimary} />
+                  <Text
+                    style={[styles.randomBtnLabel, { color: textPrimary, fontSize: fontSizes.headerButton, lineHeight: Math.round(fontSizes.headerButton * 1.2) }]}
+                    numberOfLines={1}
+                  >
+                    Random Topic
+                  </Text>
+                </Pressable>
+              </View>
             </View>
+
+            {/* Subtitle — compact, directly below title */}
+            <Text
+              style={[
+                styles.subtitle,
+                compactHeader && styles.subtitleCompact,
+                getTextStyle(undefined, 'body', 'center'),
+                { fontSize: fontSizes.subtitle, lineHeight: Math.round(fontSizes.subtitle * 1.25) },
+              ]}
+              numberOfLines={1}
+            >
+              {t('play.pickTopicsSubtitle', { count: required })}
+            </Text>
           </View>
         )
       }
       footer={null}
     >
       {isLoading ? (
-        <Text>{t('common.loading')}</Text>
+        <View style={styles.loadingWrap}>
+          <Text style={{ color: textPrimary }}>{t('common.loading')}</Text>
+        </View>
       ) : (
         <View style={styles.contentRoot}>
-          <View style={styles.selectedStrip}>
-            <View style={styles.selectedStripContent}>
-              {selectedCategories.length === 0 ? (
-                <Text style={styles.selectedStripEmpty}>Selected topics appear here.</Text>
-              ) : (
-                selectedCategories.map((category) => (
-                  <View key={category.slug} style={styles.selectedTopicChipWrap}>
-                    <Pressable
-                      onPress={() => scrollToCategory(category.slug)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Jump to ${category.title}`}
-                      style={({ pressed }) => [
-                        styles.selectedTopicChip,
-                        styles.surfaceRaised,
-                        SOFT_SURFACE_STYLES.face,
-                        SOFT_SURFACE_STYLES.raised,
-                        { opacity: pressed ? 0.8 : 1 },
+          {/* Selected topics strip — above the grid */}
+          {selectedCategories.length > 0 && (
+            <View style={styles.selectedStrip}>
+              <View style={[styles.selectedStripContent, { gap: selectedPillGap }]}>
+                {selectedCategories.map((category) => (
+                  <Pressable
+                    key={category.slug}
+                    onPress={() => scrollToCategory(category.slug)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Jump to ${category.title}`}
+                    style={({ pressed }) => [
+                      styles.selectedTopicPill,
+                      styles.surfaceRaised,
+                      SOFT_SURFACE_STYLES.face,
+                      SOFT_SURFACE_STYLES.raised,
+                      { opacity: pressed ? 0.85 : 1, width: selectedPillWidth },
+                      isVeryDense && styles.selectedPillVeryDense,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.selectedPillText,
+                        isVeryDense && styles.selectedPillTextDense,
+                        { fontSize: fontSizes.headerButton, lineHeight: Math.round(fontSizes.headerButton * 1.2) },
                       ]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
                     >
-                      <Text
-                        style={styles.selectedTopicChipText}
-                        numberOfLines={2}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.7}
-                      >
-                        {category.title.toUpperCase()}
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => toggleCategory(category.slug)}
-                      accessibilityRole="button"
+                      {category.title.toUpperCase()}
+                    </Text>
+                    <View
+                      onStartShouldSetResponder={() => true}
+                      onResponderRelease={() => toggleCategory(category.slug)}
                       accessibilityLabel={`Remove ${category.title}`}
-                      style={({ pressed }) => [
-                        styles.selectedTopicRemoveButton,
-                        styles.surfaceRaised,
-                        SOFT_SURFACE_STYLES.face,
-                        SOFT_SURFACE_STYLES.raised,
-                        { opacity: pressed ? 0.85 : 1 },
-                      ]}
+                      style={isVeryDense ? styles.selectedPillCloseDense : styles.selectedPillClose}
                     >
-                      <Ionicons name="close" size={12} color="#333333" />
-                    </Pressable>
-                  </View>
-                ))
-              )}
+                      <Ionicons name="close" size={isVeryDense ? 14 : 16} color={textPrimary} />
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
             </View>
-          </View>
+          )}
 
+          {/* Topic grid */}
           <View style={styles.gridContainer}>
             <ScrollView
               ref={categoryScrollRef}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[
-                styles.gridVerticalContent,
-                { paddingBottom: 160 }, // Extra space to clear the floating footer
+                styles.gridScrollContent,
+                { paddingBottom: 160 },
               ]}
             >
-              <View style={styles.grid}>
-                {session.availableCategories.map((category) => {
-                  const selected = (session.selectedCategoryIds ?? []).includes(category.slug);
-                  const disabled = !selected && selectedCount >= required;
-                  const imageSource = getCategoryPictureSource(category.id);
-                  const iconName = getCategoryIcon(category.id);
+              <View
+                style={[
+                  styles.gridOuter,
+                  useWebLayout && { maxWidth: WEB_GRID_MAX_WIDTH, alignSelf: 'center' as const },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.grid,
+                    { gap: gridGap },
+                    useWebLayout && { paddingHorizontal: WEB_GRID_INNER_PAD },
+                  ]}
+                >
+                  {session.availableCategories.map((category) => {
+                    const selected = (session.selectedCategoryIds ?? []).includes(category.slug);
+                    const disabled = !selected && selectedCount >= required;
+                    const imageSource = getCategoryPictureSource(category.id);
+                    const iconName = getCategoryIcon(category.id);
 
-                  return (
-                    <Pressable
-                      key={category.slug}
-                      disabled={disabled}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Select ${category.title}`}
-                      onPress={() => toggleCategory(category.slug)}
-                      onLayout={(event) => {
-                        categoryOffsetsRef.current[category.slug] = event.nativeEvent.layout.y;
-                      }}
-                      style={({ pressed }) => [
-                        styles.topicPill,
-                        styles.surfaceRaised,
-                        SOFT_SURFACE_STYLES.face,
-                        SOFT_SURFACE_STYLES.raised,
-                        selected && styles.topicPillSelected,
-                        {
-                          opacity: disabled ? 0.35 : pressed ? 0.9 : 1,
-                          backgroundColor: selected ? '#FFFBF5' : surface,
-                        },
-                      ]}
-                    >
-                      {selected ? (
-                        <View style={styles.topicPillCheckBadge}>
-                          <Ionicons name="checkmark-circle-outline" size={18} color="#16A34A" />
+                    return (
+                      <Pressable
+                        key={category.slug}
+                        disabled={disabled}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Select ${category.title}`}
+                        onPress={() => toggleCategory(category.slug)}
+                        onLayout={(event) => {
+                          categoryOffsetsRef.current[category.slug] =
+                            event.nativeEvent.layout.y;
+                        }}
+                        style={({ pressed }) => [
+                          styles.topicCard,
+                          {
+                            width: cardW,
+                            height: cardH,
+                            backgroundColor: surface,
+                            opacity: disabled ? 0.35 : pressed ? 0.94 : 1,
+                            transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                          },
+                          SOFT_SURFACE_STYLES.face,
+                          SOFT_SURFACE_STYLES.raised,
+                          selected && styles.topicCardSelected,
+                        ]}
+                      >
+                        {/* Image area */}
+                        <View style={[styles.cardImageArea, { height: imageAreaH }]}>
+                          {imageSource ? (
+                            <Image
+                              source={imageSource}
+                              style={styles.cardImage as ImageStyle}
+                              contentFit="contain"
+                              transition={200}
+                            />
+                          ) : (
+                            <Ionicons name={iconName} size={28} color={textPrimary} />
+                          )}
                         </View>
-                      ) : null}
-                      <View style={styles.topicPillInner}>
-                        <View style={styles.topicImageArea}>
-                          <View
-                            testID={`topic-logo-wrap-${category.slug}`}
-                            style={styles.pillImageWrap}
+
+                        {/* Title bar */}
+                        <View style={[styles.cardTitleBar, { height: titleBarH }]}>
+                          <Text
+                            style={[
+                              styles.cardTitle,
+                              {
+                                color: textPrimary,
+                                fontSize: fontSizes.topicTitle,
+                                lineHeight: Math.round(fontSizes.topicTitle * 1.18),
+                              },
+                            ]}
+                            numberOfLines={2}
                           >
-                            {imageSource ? (
-                              <Image
-                                source={imageSource}
-                                style={styles.categoryThumb as ImageStyle}
-                                contentFit="contain"
-                                transition={200}
-                              />
-                            ) : (
-                              <Ionicons name={iconName} size={28} color={textPrimary} />
-                            )}
-                          </View>
+                            {category.title.toUpperCase()}
+                          </Text>
                         </View>
 
-                        <View style={styles.topicTitleBar}>
-                          <View style={styles.topicTitleInner}>
-                            <Text
-                              style={[styles.topicTitle, { color: textPrimary }]}
-                              numberOfLines={2}
-                              adjustsFontSizeToFit
-                              minimumFontScale={0.7}
-                            >
-                              {category.title.toUpperCase()}
-                            </Text>
+                        {/* Selected checkmark badge */}
+                        {selected && (
+                          <View style={styles.selectedBadge}>
+                            <Ionicons name="checkmark" size={12} color="#FFFFFF" />
                           </View>
-                        </View>
-                      </View>
-                    </Pressable>
-                  );
-                })}
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
             </ScrollView>
           </View>
         </View>
       )}
 
+      {/* Floating action: "START BOARD" */}
       {isLoading || selectedCount !== required ? null : (
-        <View style={[styles.floatingActionPanel, { bottom: Math.max(insets.bottom, SPACING.lg) }]}>
+        <View
+          style={[
+            styles.floatingPanel,
+            { bottom: Math.max(insets.bottom, SPACING.lg) },
+          ]}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('play.startBoard')}
@@ -320,17 +456,17 @@ export default function CategorySelectionScreen() {
               Alert.alert('', errorMessage);
             }}
             style={({ pressed }) => [
-              styles.primaryButton,
+              styles.startBtn,
               styles.surfaceRaised,
               SOFT_SURFACE_STYLES.face,
               SOFT_SURFACE_STYLES.raised,
               {
-                backgroundColor: '#FFFFFF',
-                  opacity: pressed ? 0.92 : 1,
+                backgroundColor: surface,
+                opacity: pressed ? 0.92 : 1,
               },
             ]}
           >
-            <Text style={styles.primaryButtonText}>
+            <Text style={styles.startBtnText}>
               {t('play.startBoard').toUpperCase()}
             </Text>
           </Pressable>
@@ -340,269 +476,292 @@ export default function CategorySelectionScreen() {
   );
 }
 
+// ── Styles ──────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
+  // ── Header ──────────────────────────────────────────────────────────
   headerWrap: {
     width: '100%',
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
+    paddingTop: SPACING.xs,
+    paddingBottom: 0,
+    gap: 0,
+  },
+  headerWrapCompact: {
+    paddingTop: 2,
   },
   headerRow: {
-    minHeight: 72,
+    height: 72,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: SPACING.sm,
+    position: 'relative',
   },
-  headerLeftCluster: {
+  headerRowCompact: {
+    height: 56,
+  },
+  headerLeft: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    flexShrink: 0,
-  },
-  mainTitle: {
-    flex: 1,
-    fontFamily: FONTS.displayBold,
-    fontSize: FONT_SIZES.md,
-    textAlign: 'center',
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
     minWidth: 0,
-    paddingHorizontal: SPACING.sm,
+    zIndex: 2,
   },
-  randomTopicBtn: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 18,
-    minWidth: 96,
-    maxWidth: 112,
+  headerCenterWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
+    zIndex: 1,
+    elevation: 1,
   },
-  randomTopicText: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 12,
-    color: '#333333',
+  headerRight: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    minWidth: 0,
+    zIndex: 2,
+  },
+  mainTitle: {
+    fontFamily: FONTS.displayBold,
+    fontSize: FONT_SIZES.lg,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
     textAlign: 'center',
   },
+  mainTitleCompact: {
+    fontSize: FONT_SIZES.sm,
+    letterSpacing: 1.2,
+  },
+  subtitle: {
+    fontFamily: FONTS.ui,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#333333',
+    opacity: 0.65,
+    textAlign: 'center',
+    marginTop: 2,
+    marginBottom: SPACING.sm,
+  },
+  subtitleCompact: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 0,
+    marginBottom: SPACING.xs + 2,
+  },
+  // ── Header controls ─────────────────────────────────────────────────
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
   },
-  backButtonPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+  counterBadge: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    minWidth: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  counterText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 13,
+    letterSpacing: 0.4,
+    textAlign: 'center',
+  },
+  randomBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+  },
+  randomBtnLabel: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 0.3,
   },
   surfaceRaised: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
   },
+  controlPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  // ── Selected strip ───────────────────────────────────────────────────
   selectedStrip: {
     flexGrow: 0,
-    marginBottom: SPACING.lg,
+    flexShrink: 0,
+    marginTop: 0,
+    marginBottom: SPACING.sm,
   },
-   selectedStripContent: {
+  selectedStripContent: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: SPACING.md,
-    gap: SPACING.sm,
-    paddingBottom: 8,
-    minHeight: 44,
+    flexWrap: 'nowrap',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  selectedStripEmpty: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 13,
-    color: 'rgba(51,51,51,0.52)',
-    paddingVertical: 10,
     paddingHorizontal: SPACING.sm,
+    height: 56,
+    minWidth: 0,
   },
-  selectedTopicChip: {
+  selectedTopicPill: {
     backgroundColor: '#FFFFFF',
+    borderRadius: 14,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    paddingTop: 10,
-    borderRadius: 14,
-    width: '100%',
+    minHeight: 40,
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    minWidth: 0,
+    flexShrink: 0,
   },
-  selectedTopicChipWrap: {
-    position: 'relative',
-    flexGrow: 1,
-    minWidth: 100,
-    maxWidth: '48%',
-    justifyContent: 'center',
+  selectedPillVeryDense: {
+    paddingHorizontal: 8,
+    gap: 3,
   },
-  selectedTopicRemoveButton: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-    backgroundColor: '#FFFFFF',
-  },
-  selectedTopicChipText: {
+  selectedPillText: {
     fontFamily: FONTS.uiBold,
     fontSize: 12,
     color: '#333333',
     letterSpacing: 0.3,
-    textAlign: 'center',
-  },
-  gridContainer: {
     flex: 1,
-    minHeight: 0,
+    flexShrink: 1,
     minWidth: 0,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    rowGap: SPACING.md,
-    justifyContent: 'space-between',
-    paddingBottom: SPACING.xl,
-  },
-  topicPill: {
-    width: '23%',
-    minHeight: 164,
-    justifyContent: 'center',
-    paddingVertical: 0,
-    paddingHorizontal: 0,
-  },
-  topicPillInner: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 0,
-    width: '100%',
-    flex: 1,
-  },
-  topicImageArea: {
-    width: '100%',
-    height: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  topicTitleBar: {
-    width: '100%',
-    minHeight: 44,
-    flexGrow: 1,
-    flexShrink: 0,
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(51,51,51,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 8,
-  },
-  topicTitleInner: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topicPillSelected: {
-    backgroundColor: '#FFFBF5',
-    zIndex: 10,
-    borderWidth: 1.5,
-    borderColor: '#16A34A',
-  },
-  topicPillCheckBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    zIndex: 2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topicTitle: {
-    fontFamily: FONTS.uiBold,
+  selectedPillTextDense: {
     fontSize: 11,
-    lineHeight: 14,
-    textAlign: 'center',
-    letterSpacing: 0.2,
-    width: '100%',
-    alignSelf: 'center',
-    flexShrink: 1,
   },
-  pillImageWrap: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 0,
-    backgroundColor: 'transparent',
+  selectedPillClose: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(51,51,51,0.08)',
+    flexShrink: 0,
   },
-  categoryThumb: {
-    width: '100%',
-    height: '100%',
-    opacity: 1,
-  },
-  counterRow: {
-    paddingVertical: SPACING.sm,
-    alignItems: 'center',
-  },
-  counterText: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 14,
-  },
-  primaryButton: {
-    width: '100%',
-    height: 64,
+  selectedPillCloseDense: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1,
+    backgroundColor: 'rgba(51,51,51,0.08)',
+    flexShrink: 0,
   },
-  primaryButtonText: {
-    fontFamily: FONTS.displayBold,
-    fontSize: 18,
-    letterSpacing: 1.2,
-    color: '#333333',
-  },
+  // ── Content root ─────────────────────────────────────────────────────
   contentRoot: {
     flex: 1,
     minHeight: 0,
     minWidth: 0,
   },
-  gridVerticalContent: {
-    paddingBottom: SPACING.xl,
+  loadingWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  floatingActionPanel: {
+  // ── Grid container ───────────────────────────────────────────────────
+  gridContainer: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+  },
+  gridScrollContent: {
+    paddingBottom: SPACING.xl,
+    paddingTop: SPACING.xs,
+  },
+  gridOuter: {
+    width: '100%',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+  },
+  // ── Topic card ───────────────────────────────────────────────────────
+  topicCard: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+  },
+  topicCardSelected: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(51, 51, 51, 0.2)',
+  },
+  cardImageArea: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  cardTitleBar: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(51, 51, 51, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+  },
+  cardTitle: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 10,
+    lineHeight: 13,
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    width: '100%',
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(51, 51, 51, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  // ── Floating action panel ────────────────────────────────────────────
+  floatingPanel: {
     position: 'absolute',
     left: SPACING.lg,
     right: SPACING.lg,
     alignItems: 'center',
     zIndex: 100,
   },
-  counterCardHeader: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    minWidth: 56,
-    borderRadius: 14,
-    borderWidth: 0,
+  startBtn: {
+    width: '100%',
+    maxWidth: 380,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SOFT_SURFACE_STYLES.face,
-    ...SOFT_SURFACE_STYLES.raised,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
   },
-  counterTextHeader: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 13,
-    letterSpacing: 0.5,
-    textAlign: 'center',
+  startBtnText: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 17,
+    letterSpacing: 1.3,
+    color: '#333333',
   },
 });

@@ -1,5 +1,5 @@
 /**
- * Core domain types for QuickFire.
+ * Core domain types for Backfire.
  * Game engine, wallet, and content interfaces.
  */
 
@@ -295,6 +295,8 @@ export interface GameSessionState {
   bonus: BonusChallengeState;
   lastAwardedTeamId?: string | null;
   timerStartedAt?: number;
+  /** Current question expired at the hard per-question time limit. */
+  timedOutQuestionId?: string;
   overtime?: OvertimeState;
   scoreEvents: ScoreEvent[];
   lifelineRuntime?: LifelineRuntimeState;

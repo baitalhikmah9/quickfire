@@ -26,7 +26,7 @@ describe('paymentCatalog', () => {
       findTokenProductByStoreProductId(
         DEFAULT_TOKEN_PRODUCTS,
         'app_store',
-        'com.quickfire.tokens.50'
+        'com.backfire.tokens.50'
       )?.productKey
     ).toBe('bundle_50');
 
@@ -34,7 +34,7 @@ describe('paymentCatalog', () => {
       findTokenProductByStoreProductId(
         DEFAULT_TOKEN_PRODUCTS,
         'play_store',
-        'quickfire_tokens_70'
+        'backfire_tokens_70'
       )?.productKey
     ).toBe('bundle_70');
   });
@@ -48,7 +48,7 @@ describe('paymentCatalog', () => {
       findTokenProductByStoreProductId(
         disabled,
         'app_store',
-        'com.quickfire.tokens.20'
+        'com.backfire.tokens.20'
       )
     ).toBeUndefined();
   });

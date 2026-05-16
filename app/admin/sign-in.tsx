@@ -83,7 +83,7 @@ export default function AdminSignInScreen() {
             <Text style={[styles.title, { color: textPrimary }]}>Switch account</Text>
             <Text style={[styles.subtitle, { color: textMuted }]}>
               {userProfile === null
-                ? 'No QuickFire profile was found for this session. Sign out and sign in with an authorized admin account.'
+                ? 'No Backfire profile was found for this session. Sign out and sign in with an authorized admin account.'
                 : 'This signed-in account does not have admin permissions. Sign out to use a different account.'}
             </Text>
           </View>

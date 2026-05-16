@@ -4,13 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, useClerk, useUser } from '@clerk/clerk-expo';
-import { SPACING, BORDER_RADIUS, FONTS, LAYOUT } from '@/constants';
+import { SPACING, BORDER_RADIUS, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { contentLocalePriorityToArray } from '@/lib/i18n/config';
 import { getChevronName, getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
 import { ProfileAuthGate } from '@/components/ProfileAuthGate';
-import { QuickFireTitleLogo } from '@/components/QuickFireTitleLogo';
+import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
 import { ScreenContent } from '@/components/ScreenContent';
 import { useLocaleStore } from '@/store/locale';
 import { usePlayStore } from '@/store/play';
@@ -19,25 +19,7 @@ import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
-/** Raised plastic tile shadow tier. */
-function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill' | 'card'): any {
-  const m =
-    tier === 'hero'
-      ? { h: 14, op: 0.14, r: 28, el: 18 }
-      : tier === 'header'
-      ? { h: 8, op: 0.12, r: 18, el: 12 }
-      : tier === 'card'
-      ? { h: 10, op: 0.12, r: 22, el: 14 }
-      : { h: 6, op: 0.1, r: 14, el: 8 };
 
-  return {
-    shadowColor,
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: m.op,
-    shadowRadius: m.r,
-    elevation: m.el,
-  };
-}
 
 function formatTokens(n: number, locale: string) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(n);
@@ -89,7 +71,6 @@ export default function ProfileScreen() {
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
-  const shadowHex = T.colors.shadowStrong;
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
@@ -115,34 +96,33 @@ export default function ProfileScreen() {
               onPress={handleBack}
               style={({ pressed }) => [
                 styles.headerSquircleInner,
-                styles.plasticFace,
+                SOFT_SURFACE_FACE,
+                softSurfaceLift(),
                 {
                   backgroundColor: surface,
-                  borderRadius: 99,
                   opacity: pressed ? 0.94 : 1,
                   transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
                 },
-                neumorphicLift3D(shadowHex, 'header'),
               ]}
             >
               <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
             </Pressable>
 
             <View style={styles.headerLogoWrap}>
-              <QuickFireTitleLogo width={180} testID="profile-brand-logo" />
+              <BackfireTitleLogo width={180} testID="profile-brand-logo" />
             </View>
 
             <Pressable
               onPress={() => router.push('/(app)/store')}
               style={({ pressed }) => [
                 styles.tokenChip,
-                styles.plasticFace,
+                SOFT_SURFACE_FACE,
+                softSurfaceLift(),
                 {
                   backgroundColor: surface,
                   opacity: pressed ? 0.94 : 1,
                   transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
                 },
-                neumorphicLift3D(shadowHex, 'header'),
               ]}
             >
               <Ionicons name="diamond-outline" size={16} color={textPrimary} />
@@ -157,9 +137,9 @@ export default function ProfileScreen() {
               <View
                 style={[
                   styles.prefsGroup,
-                  styles.plasticFace,
+                  SOFT_SURFACE_FACE,
+                  softSurfaceLift(),
                   { backgroundColor: surface },
-                  neumorphicLift3D(shadowHex, 'card'),
                 ]}
               >
                 {/* Theme selection */}
@@ -299,12 +279,6 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
-  },
   safeArea: {
     flex: 1,
   },

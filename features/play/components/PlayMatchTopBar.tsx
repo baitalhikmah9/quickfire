@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING } from '@/constants';
@@ -7,15 +7,13 @@ import { FONTS } from '@/constants/theme';
 import { useI18n } from '@/lib/i18n/useI18n';
 import type { GameSessionState, TeamState } from '@/features/shared';
 import { HOME_SOFT_UI } from '@/themes';
+import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
 
 const T = HOME_SOFT_UI;
 
 const WAGER_HEADER_ART = require('@/assets/wager.png');
 const HOT_SEAT_HEADER_ART = require('@/assets/hot seat.png');
 const QF_LOGO = require('@/assets/QF logo.png');
-
-/** Board “current team” highlight — orange (matches play board). */
-const ACTIVE_TURN_TINT = 'rgba(255, 179, 71, 0.12)';
 
 function isHotSeatConfigured(session: GameSessionState): boolean {
   if (!SHOW_HOT_SEAT_UI) return false;
@@ -59,10 +57,19 @@ export function PlayMatchTopBar({
   compact,
 }: PlayMatchTopBarProps) {
   const { t } = useI18n();
+  const { width, height } = useWindowDimensions();
+  const fontSizes = useResponsivePlayFontSizes();
+  const isRumble = session.mode === 'rumble';
+  const compactQuestionHeader = Boolean(compact && !isRumble);
+  const shortSide = Math.min(width, height);
+  const isTightHeader = compactQuestionHeader && (width < 760 || shortSide < 430);
+  const isVeryTightHeader = compactQuestionHeader && shortSide < 390;
+  const logoWidth = compactQuestionHeader ? (isVeryTightHeader ? 104 : isTightHeader ? 112 : 142) : 180;
+  const logoHeight = compactQuestionHeader ? (isVeryTightHeader ? 26 : isTightHeader ? 30 : 38) : 48;
+  const sideMaxWidth = compactQuestionHeader ? (isVeryTightHeader ? 142 : isTightHeader ? 158 : 214) : undefined;
   const showWager = session.config.wagerEnabled && onWagerInfoPress;
   const showHotSeat = isHotSeatConfigured(session) && onHotSeatInfoPress;
   const hotSeatDimmed = isHotSeatFullyPlayed(session);
-  const isRumble = session.mode === 'rumble';
 
   const renderIconCluster = (team: TeamState) => {
     if (!showWager && !showHotSeat) return null;
@@ -112,6 +119,14 @@ export function PlayMatchTopBar({
 
   const renderScoreCard = (team: TeamState, alignRight = false, compactScore = false) => {
     const isActive = session.currentTeamId === team.id;
+    const useCompactScore = compactScore || compactQuestionHeader;
+    const teamInitial = team.name.trim().charAt(0).toUpperCase() || 'T';
+    const teamNameFontSize = useCompactScore
+      ? (isVeryTightHeader ? 10 : isTightHeader ? 10.5 : 12)
+      : fontSizes.teamName;
+    const scoreFontSize = useCompactScore
+      ? (isVeryTightHeader ? 12 : isTightHeader ? 12.5 : 14)
+      : fontSizes.scoreValue;
 
     return (
       <View
@@ -120,27 +135,32 @@ export function PlayMatchTopBar({
           styles.teamScoreHeader,
           alignRight && styles.teamScoreHeaderRight,
           compactScore && styles.rumbleTeamScoreHeader,
+          compactQuestionHeader && { maxWidth: sideMaxWidth, width: '100%' },
         ]}
       >
         <View
           style={[
             styles.headerScoreCard,
+            useCompactScore && styles.compactScoreCard,
             compactScore && styles.rumbleScoreCard,
-            isActive && {
-              borderColor: T.colors.accentGlow,
-              backgroundColor: ACTIVE_TURN_TINT,
-            },
+            isActive
+              ? {
+                  borderColor: T.colors.accentGlow,
+                  backgroundColor: T.colors.surface,
+                }
+              : { borderColor: 'rgba(15, 23, 42, 0.1)' },
           ]}
         >
-          <View style={[styles.headerTeamRow, compactScore && styles.rumbleTeamRow]}>
+          <View style={[styles.headerTeamRow, useCompactScore && styles.compactTeamRow]}>
             <View style={styles.headerTeamNameBlock}>
               <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
                 style={[
                   styles.headerTeamName,
-                  compactScore && styles.rumbleTeamName,
+                  useCompactScore && styles.compactTeamName,
                   isActive && styles.headerTeamNameActive,
+                  { fontSize: teamNameFontSize, lineHeight: Math.round(teamNameFontSize * 1.2) },
                 ]}
               >
                 {team.name}
@@ -149,15 +169,28 @@ export function PlayMatchTopBar({
             <View
               style={[
                 styles.headerScoreBadge,
-                compactScore && styles.rumbleScoreBadge,
+                useCompactScore && styles.compactScoreBadge,
                 isActive && { backgroundColor: T.colors.surface, borderColor: T.colors.accentGlow },
               ]}
             >
-              <Text style={[styles.headerScoreValue, compactScore && styles.rumbleScoreValue]}>
+              <Text
+                style={[
+                  styles.headerScoreValue,
+                  useCompactScore && styles.compactScoreValue,
+                  { fontSize: scoreFontSize, lineHeight: Math.round(scoreFontSize * 1.15) },
+                ]}
+                numberOfLines={1}
+              >
                 {team.score}
               </Text>
             </View>
-            {compactScore ? null : renderIconCluster(team)}
+            {useCompactScore ? (
+              <View style={styles.teamAvatarMark} accessibilityElementsHidden>
+                <Text style={styles.teamAvatarInitial}>{teamInitial}</Text>
+              </View>
+            ) : (
+              renderIconCluster(team)
+            )}
           </View>
         </View>
       </View>
@@ -190,21 +223,22 @@ export function PlayMatchTopBar({
   const team1 = session.teams[1];
 
   return (
-    <View style={styles.gameTopBar}>
-      <View style={styles.topBarSide}>
-        {team0 ? (
-          renderScoreCard(team0)
-        ) : null}
+    <View style={[styles.gameTopBar, compactQuestionHeader && styles.gameTopBarCompact]}>
+      <View style={[styles.topBarSide, compactQuestionHeader && styles.topBarSideCompact]}>
+        {team0 ? renderScoreCard(team0) : null}
       </View>
 
-      <Pressable onPress={onLogoPress} style={styles.headerLogoContainer} accessibilityRole="button" accessibilityLabel="QuickFire">
-        <Image source={QF_LOGO} style={[styles.headerLogo, compact && styles.headerLogoCompact]} contentFit="contain" />
+      <Pressable
+        onPress={onLogoPress}
+        style={[styles.headerLogoContainer, { width: logoWidth }]}
+        accessibilityRole="button"
+        accessibilityLabel="QuickFire"
+      >
+        <Image source={QF_LOGO} style={[styles.headerLogo, { width: logoWidth, height: logoHeight }]} contentFit="contain" />
       </Pressable>
 
-      <View style={styles.topBarSide}>
-        {team1 ? (
-          renderScoreCard(team1, true)
-        ) : null}
+      <View style={[styles.topBarSide, compactQuestionHeader && styles.topBarSideCompact, styles.topBarSideRight]}>
+        {team1 ? renderScoreCard(team1, true) : null}
       </View>
     </View>
   );
@@ -217,11 +251,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     backgroundColor: 'transparent',
+    gap: 10,
+  },
+  gameTopBarCompact: {
+    gap: 6,
   },
   topBarSide: {
     flex: 1,
     minWidth: 0,
   },
+  topBarSideCompact: {
+    alignItems: 'flex-start',
+  },
+  topBarSideRight: {
+    alignItems: 'flex-end',
+  },
+
   rumbleTopBar: {
     width: '100%',
     flexDirection: 'row',
@@ -272,6 +317,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  compactScoreCard: {
+    height: 34,
+    paddingLeft: 8,
+    paddingRight: 5,
+    paddingVertical: 0,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.11,
+    shadowRadius: 5,
+    elevation: 2,
+  },
   rumbleScoreCard: {
     width: '100%',
     paddingLeft: 7,
@@ -279,6 +335,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 14,
   },
+
   headerTeamRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -289,6 +346,10 @@ const styles = StyleSheet.create({
   rumbleTeamRow: {
     gap: 5,
   },
+  compactTeamRow: {
+    gap: 5,
+  },
+
   headerTeamIconsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -310,6 +371,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
   },
+  compactTeamName: {
+    fontFamily: FONTS.uiBold,
+  },
+
   headerTeamNameActive: {
     fontFamily: FONTS.uiBold,
   },
@@ -324,12 +389,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  compactScoreBadge: {
+    minWidth: 30,
+    height: 24,
+    paddingHorizontal: 6,
+    paddingVertical: 0,
+    borderRadius: 10,
+    backgroundColor: T.colors.surface,
+    shadowColor: T.colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
   rumbleScoreBadge: {
     minWidth: 28,
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 9,
   },
+
   headerScoreValue: {
     fontFamily: FONTS.displayBold,
     fontSize: 17,
@@ -337,10 +416,30 @@ const styles = StyleSheet.create({
     color: T.colors.textPrimary,
     textAlign: 'center',
   },
+  compactScoreValue: {
+    fontFamily: FONTS.displayBold,
+  },
   rumbleScoreValue: {
     fontSize: 13,
     lineHeight: 16,
   },
+  teamAvatarMark: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    backgroundColor: 'rgba(255, 179, 71, 0.16)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(51, 51, 51, 0.1)',
+  },
+  teamAvatarInitial: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 10,
+    color: T.colors.textPrimary,
+  },
+
   headerIconChip: {
     width: 30,
     height: 30,
@@ -364,7 +463,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }],
   },
   headerLogoContainer: {
-    flex: 1,
+    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -377,10 +476,6 @@ const styles = StyleSheet.create({
   headerLogo: {
     width: 180,
     height: 48,
-  },
-  headerLogoCompact: {
-    width: 150,
-    height: 40,
   },
   rumbleLogo: {
     width: 56,

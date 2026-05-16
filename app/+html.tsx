@@ -8,10 +8,10 @@ export default function Root({ children }: { children: ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <title>QuickFire — competitive trivia</title>
+        <title>Backfire — competitive trivia</title>
         <meta
           name="description"
-          content="QuickFire is a competitive multiplayer trivia game. Play real-time matches and climb the board."
+          content="Backfire is a competitive multiplayer trivia game. Play real-time matches and climb the board."
         />
         <meta
           name="viewport"

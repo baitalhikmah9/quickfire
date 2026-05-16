@@ -1,4 +1,4 @@
-# QuickFire
+# Backfire
 
 Competitive multiplayer trivia — pick categories, split into teams, and outscore your rivals on a shared board. Built with Expo, Clerk, Convex, and Zustand.
 

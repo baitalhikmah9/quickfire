@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import type { GameSessionState } from '@/features/shared';
 import { usePlayStore } from '@/store/play';
+import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
 
 /** Below this width, use the compact strip typography and chrome. */
 const NARROW_SCORE_BREAKPOINT = 560;
@@ -22,6 +23,7 @@ interface ScoreHudProps {
 export function ScoreHud({ session, compact, dense }: ScoreHudProps) {
   const colors = useTheme();
   const { width } = useWindowDimensions();
+  const fontSizes = useResponsivePlayFontSizes();
   const { direction, getTextStyle, t } = useI18n();
   const adjustScoreByPoints = usePlayStore((state) => state.adjustScoreByPoints);
   const showWagerMeta = session.config.wagerEnabled;
@@ -129,6 +131,7 @@ export function ScoreHud({ session, compact, dense }: ScoreHudProps) {
                       compactSegment ? styles.segmentTeamLabelCompact : styles.segmentTeamLabelRelaxed,
                       { color: colors.textSecondary },
                       getTextStyle(undefined, 'bodySemibold', 'center'),
+                      { fontSize: fontSizes.teamName, lineHeight: Math.round(fontSizes.teamName * 1.2) },
                     ]}
                     numberOfLines={1}
                   >
@@ -140,10 +143,9 @@ export function ScoreHud({ session, compact, dense }: ScoreHudProps) {
                       compactSegment ? styles.segmentScoreValueCompact : styles.segmentScoreValueRelaxed,
                       { color: colors.text },
                       getTextStyle(undefined, 'displayBold', 'center'),
+                      { fontSize: fontSizes.scoreValue, lineHeight: Math.round(fontSizes.scoreValue * 1.15) },
                     ]}
                     numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.85}
                   >
                     {team.score}
                   </Text>

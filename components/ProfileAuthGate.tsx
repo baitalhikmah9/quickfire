@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, FONTS } from '@/constants';
 import { HubTokenChip } from '@/components/HubTokenChip';
-import { QuickFireTitleLogo } from '@/components/QuickFireTitleLogo';
+import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { usePlayStore } from '@/store/play';
@@ -80,7 +80,7 @@ export function ProfileAuthGate() {
     >
       <View style={[styles.topBar, { flexDirection: headerDir }]}>
         <View style={styles.topBarTitleOverlay} pointerEvents="none">
-          <QuickFireTitleLogo width={168} testID="profile-auth-brand-logo" />
+          <BackfireTitleLogo width={168} testID="profile-auth-brand-logo" />
         </View>
 
         <View style={[styles.headerSide, styles.backHeaderHit]}>

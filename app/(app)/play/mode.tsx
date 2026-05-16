@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Pressable } from '@/components/ui/Pressable';
-import { ScreenContent } from '@/components/ScreenContent';
+import { GameHeader } from '@/components/GameHeader';
+import { HeaderBackButton } from '@/components/HeaderBackButton';
+import { HubTokenChip } from '@/components/HubTokenChip';
 import { SPACING, LAYOUT, FONTS, BORDER_RADIUS } from '@/constants';
 import type { GameMode } from '@/features/shared';
-import { PlayStackHeader } from '@/features/play/components/PlayStackHeader';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { usePlayStore } from '@/store/play';
@@ -22,12 +23,23 @@ type ModeDef = {
   titleKey: TranslationKey;
 };
 
+const BACKFIRE_TOKEN_ART = require('../../../assets/Backfire logo.png');
+
+function formatTokens(n: number, locale: string) {
+  return n.toLocaleString(locale, { maximumFractionDigits: 0 });
+}
+
 export default function PlayModeScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
-  const { t, direction } = useI18n();
+  const { t, direction, uiLocale } = useI18n();
   const setMode = usePlayStore((state) => state.setMode);
   const storedMode = usePlayStore((state) => state.session?.mode);
+  const tokens = usePlayStore((state) => state.tokens);
+  const rowDir = getRowDirection(direction);
+  const formattedTokens = formatTokens(tokens, uiLocale);
+
+  const isWeb = Platform.OS === 'web';
 
   const [selected, setSelected] = useState<GameMode>('classic');
 
@@ -65,6 +77,14 @@ export default function PlayModeScreen() {
     [router, setMode]
   );
 
+  const handleBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(app)/');
+    }
+  }, [router]);
+
   const handlePress = useCallback(
     (mode: GameMode) => {
       setSelected(mode);
@@ -83,14 +103,44 @@ export default function PlayModeScreen() {
   const rowTileBudget = Math.max(0, (rowInnerWidth - gapsTotal) / 4);
   const tileSide = Math.max(56, Math.min(rowTileBudget, safeH * 0.38));
 
+  /** On native landscape: tighter header + content closer to top so cards don't clip off bottom. */
+  const isNativeLandscape = !isWeb && width > height;
+  const contentTopMargin = isNativeLandscape
+    ? 8
+    : isWeb
+      ? 48
+      : 24;
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: CANVAS_WARM_CREAM }]} edges={['top', 'bottom', 'left', 'right']}>
-      <ScreenContent fullWidth style={styles.viewport}>
-        <View style={styles.headerInset}>
-          <PlayStackHeader title={t('play.chooseModeTitle')} />
-        </View>
+      {/* ── Header ── compact, at top, no vertical centering of the combined group */}
+      <GameHeader
+        variant="title"
+        title={t('play.chooseModeTitle')}
+        leftSlot={
+          <HeaderBackButton
+            onPress={handleBack}
+            direction={direction}
+            rowDirection={rowDir}
+            label={t('common.back')}
+          />
+        }
+        rightSlot={
+          <HubTokenChip
+            label={t('common.tokens')}
+            value={formattedTokens}
+            rowDirection={rowDir}
+            variant="softUi"
+            artworkSource={BACKFIRE_TOKEN_ART}
+            onPress={() => router.push('/(app)/store')}
+            accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
+          />
+        }
+      />
 
-        <View style={styles.gridVertical}>
+      {/* ── Content body ── fills remaining space, positions cards independently of header */}
+      <View style={styles.body}>
+        <View style={[styles.cardsArea, { marginTop: contentTopMargin }]}>
           <View
             style={[
               styles.modeRow,
@@ -131,7 +181,7 @@ export default function PlayModeScreen() {
             })}
           </View>
         </View>
-      </ScreenContent>
+      </View>
     </SafeAreaView>
   );
 }
@@ -140,21 +190,18 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  viewport: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 0,
-  },
-  headerInset: {
-    paddingHorizontal: LAYOUT.screenGutter,
-  },
-  gridVertical: {
+  body: {
     flex: 1,
     minHeight: 0,
     minWidth: 0,
-    justifyContent: 'center',
     paddingHorizontal: LAYOUT.screenGutter,
   },
+  /** Cards sit in the upper portion — no full-screen vertical centering. */
+  cardsArea: {
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+
   modeRow: {
     flexDirection: 'row',
     alignItems: 'center',

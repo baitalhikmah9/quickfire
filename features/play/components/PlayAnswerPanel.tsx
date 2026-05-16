@@ -250,9 +250,11 @@ function getAnswerContentMaxWidth(
   viewportScale: number
 ): number {
   const short = Math.min(width, height);
-  const fromShort = short * 0.82 + 40;
+  const compactHeight = height < 430;
+  const fromShort = short * (compactHeight ? 1.28 : 1.42) + 80;
   const fromWidth = width - 32;
-  return Math.max(280, Math.min(500, fromShort, fromWidth) * (0.88 + 0.12 * viewportScale));
+  const cap = compactHeight ? 620 : 700;
+  return Math.max(320, Math.min(cap, fromShort, fromWidth) * (0.92 + 0.08 * viewportScale));
 }
 
 function shouldStackAwardLayout(
@@ -308,10 +310,10 @@ export function PlayAnswerPanel({
     [windowWidth, windowHeight, answerViewportScale]
   );
 
-  /** Tighter padding + type on the question (embedded) combined answer + scoring card. */
-  const combinedCardLayoutScale = scrollChain ? 0.82 : 1;
-  /** Additional shrink for the white “correct answer” card only (padding + headline + solution type). */
-  const answerCardOnlyScale = scrollChain ? 0.85 : 1;
+  /** Tighter only on very short embedded answer layouts; web/tablet should feel like a reveal stage. */
+  const combinedCardLayoutScale = scrollChain ? (windowHeight < 430 ? 0.88 : 0.96) : 1;
+  /** Keep the white “correct answer” card prominent after reveal. */
+  const answerCardOnlyScale = scrollChain ? (windowHeight < 430 ? 0.92 : 1.06) : 1;
 
   const awardRowGap = useMemo(
     () => Math.max(SPACING.xs, Math.round(SPACING.md * (0.85 * answerViewportScale + 0.15))),
@@ -423,11 +425,13 @@ export function PlayAnswerPanel({
 
   const currentQuestion = session.currentQuestion;
   const wager = session.wager;
+  const isTimedOut = session.timedOutQuestionId === currentQuestion.id;
   const showPostScoreActions = !wager && session.phase === 'scoring';
   const canWager =
     session.config.wagerEnabled &&
     !session.bonus.active &&
     !wager &&
+    !isTimedOut &&
     session.phase === 'scoring' &&
     (session.teams.find((team) => team.id === session.currentTeamId)?.wagersUsed ?? 0) < session.wagersPerTeam;
 
@@ -438,16 +442,25 @@ export function PlayAnswerPanel({
   const hideSubtitle = windowHeight < 360;
   const awardChoiceCommitted =
     session.phase === 'scoring' && session.lastAwardedTeamId !== undefined;
+  const awardedTeamName =
+    session.lastAwardedTeamId === null
+      ? t('play.neitherTeam')
+      : session.teams.find((team) => team.id === session.lastAwardedTeamId)?.name;
+  const awardConfirmationText = awardChoiceCommitted
+    ? session.lastAwardedTeamId === null
+      ? t('play.noPointsAwarded')
+      : `${awardedTeamName ?? 'Team'} gets ${pointsThisQuestion} points`
+    : null;
 
   const teamAwardSurface = (teamId: string, variant: 'stack' | 'rail' | 'tile'): string => {
     const idle = variant === 'rail' ? RAIL_IDLE : T.surface;
     if (awardChoiceCommitted) {
       return session.lastAwardedTeamId === teamId
-        ? `${colors.primary}1F`
+        ? 'rgba(255, 179, 71, 0.18)'
         : idle;
     }
     if (session.phase === 'answerLock' && teamId === session.currentTeamId) {
-      return `${colors.primary}12`;
+      return 'rgba(255, 179, 71, 0.12)';
     }
     return idle;
   };
@@ -455,7 +468,7 @@ export function PlayAnswerPanel({
   const neitherAwardSurface = (variant: 'stack' | 'rail' | 'tile'): string => {
     const idle = variant === 'rail' ? RAIL_IDLE : T.surface;
     if (awardChoiceCommitted && session.lastAwardedTeamId === null) {
-      return `${colors.primary}1A`;
+      return 'rgba(255, 179, 71, 0.14)';
     }
     return idle;
   };
@@ -486,6 +499,22 @@ export function PlayAnswerPanel({
       </View>
     </View>
   ) : undefined;
+
+  const awardTileMinHeight = scrollChain
+    ? windowHeight < 430
+      ? 76
+      : 88
+    : 72;
+  const awardTitleFontSize = Math.max(
+    windowWidth >= 900 ? 15 : 12,
+    Math.round(layoutDensity.segmentTitleSize * (scrollChain ? 1.14 : 1.05))
+  );
+  const awardMetaFontSize = Math.max(
+    windowWidth >= 900 ? 12 : 10,
+    Math.round(layoutDensity.segmentMetaSize * (scrollChain ? 1.08 : 1))
+  );
+  const awardSelectedBorder = '#FFB347';
+  const awardIdleBorder = 'rgba(51, 51, 51, 0.1)';
 
   const postScoreActions = showPostScoreActions ? (
     <View style={[styles.postScoreActionRow, { flexDirection: rowDir, gap: sectionGap }]}>
@@ -518,6 +547,13 @@ export function PlayAnswerPanel({
     </View>
   ) : null;
 
+  const renderSelectedCheck = (selected: boolean) =>
+    selected ? (
+      <View style={styles.awardCheckMark}>
+        <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+      </View>
+    ) : null;
+
   const renderAwardTargets = () => {
     if (stackedAwards) {
       return (
@@ -530,22 +566,27 @@ export function PlayAnswerPanel({
                   {
                     borderRadius: Math.max(8, Math.round(awardTileRadius * combinedCardLayoutScale)),
                     backgroundColor: teamAwardSurface(team.id, 'tile'),
-                    minHeight: Math.max(28, Math.round(layoutDensity.awardStackMinH * combinedCardLayoutScale)),
-                    paddingVertical: Math.max(4, Math.round(layoutDensity.awardStackPadV * combinedCardLayoutScale)),
-                    paddingHorizontal: Math.max(6, Math.round(SPACING.sm * combinedCardLayoutScale)),
+                    minHeight: Math.max(44, Math.round(awardTileMinHeight * combinedCardLayoutScale)),
+                    paddingVertical: Math.max(8, Math.round(layoutDensity.awardStackPadV * combinedCardLayoutScale)),
+                    paddingHorizontal: Math.max(10, Math.round(SPACING.sm * combinedCardLayoutScale)),
                     alignSelf: 'stretch',
-                    opacity: pressed ? 0.92 : 1,
+                    borderWidth: awardChoiceCommitted && session.lastAwardedTeamId === team.id ? 2 : StyleSheet.hairlineWidth,
+                    borderColor: awardChoiceCommitted && session.lastAwardedTeamId === team.id ? awardSelectedBorder : awardIdleBorder,
+                    opacity: isTimedOut ? 0.45 : pressed ? 0.92 : 1,
+                    transform: [{ scale: pressed ? 0.98 : 1 }],
                   },
                 ]}
+                disabled={isTimedOut}
                 onPress={() => awardStandardQuestion(team.id)}
                 accessibilityRole="button"
                 accessibilityLabel={`${team.name}, +${pointsThisQuestion}`}
-                accessibilityState={{ selected: awardChoiceCommitted && session.lastAwardedTeamId === team.id }}
+                accessibilityState={{ disabled: isTimedOut, selected: awardChoiceCommitted && session.lastAwardedTeamId === team.id }}
               >
+                {renderSelectedCheck(awardChoiceCommitted && session.lastAwardedTeamId === team.id)}
                 <Text
                   style={[
                     styles.segmentTitle,
-                    { color: T.textPrimary, fontSize: layoutDensity.segmentTitleSize },
+                    { color: T.textPrimary, fontSize: awardTitleFontSize, lineHeight: Math.round(awardTitleFontSize * 1.18) },
                     getTextStyle(undefined, 'bodyBold', 'center'),
                   ]}
                   numberOfLines={2}
@@ -557,7 +598,7 @@ export function PlayAnswerPanel({
                 <Text
                   style={[
                     styles.segmentMeta,
-                    { color: BRAND_SUBTLE_TEXT, fontSize: layoutDensity.segmentMetaSize },
+                    { color: BRAND_SUBTLE_TEXT, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
                     getTextStyle(undefined, 'body', 'center'),
                   ]}
                   numberOfLines={1}
@@ -572,22 +613,27 @@ export function PlayAnswerPanel({
               {
                 borderRadius: Math.max(8, Math.round(awardTileRadius * combinedCardLayoutScale)),
                 backgroundColor: neitherAwardSurface('tile'),
-                minHeight: Math.max(28, Math.round(layoutDensity.awardStackMinH * combinedCardLayoutScale)),
-                paddingVertical: Math.max(4, Math.round(layoutDensity.awardStackPadV * combinedCardLayoutScale)),
-                paddingHorizontal: Math.max(6, Math.round(SPACING.sm * combinedCardLayoutScale)),
+                minHeight: Math.max(44, Math.round(awardTileMinHeight * combinedCardLayoutScale)),
+                paddingVertical: Math.max(8, Math.round(layoutDensity.awardStackPadV * combinedCardLayoutScale)),
+                paddingHorizontal: Math.max(10, Math.round(SPACING.sm * combinedCardLayoutScale)),
                 alignSelf: 'stretch',
-                opacity: pressed ? 0.92 : 1,
+                borderWidth: awardChoiceCommitted && session.lastAwardedTeamId === null ? 2 : 1,
+                borderColor: awardChoiceCommitted && session.lastAwardedTeamId === null ? awardSelectedBorder : NEITHER_DASH,
+                opacity: isTimedOut ? 0.45 : pressed ? 0.92 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
+            disabled={isTimedOut}
             onPress={() => awardStandardQuestion(null)}
             accessibilityRole="button"
             accessibilityLabel={t('play.neitherTeam')}
-            accessibilityState={{ selected: awardChoiceCommitted && session.lastAwardedTeamId === null }}
+            accessibilityState={{ disabled: isTimedOut, selected: awardChoiceCommitted && session.lastAwardedTeamId === null }}
           >
+            {renderSelectedCheck(awardChoiceCommitted && session.lastAwardedTeamId === null)}
             <Text
               style={[
                 styles.segmentTitle,
-                { color: T.textPrimary, fontSize: layoutDensity.segmentTitleSize },
+                { color: T.textPrimary, fontSize: awardTitleFontSize, lineHeight: Math.round(awardTitleFontSize * 1.18) },
                 getTextStyle(undefined, 'bodyBold', 'center'),
               ]}
               numberOfLines={1}
@@ -597,7 +643,7 @@ export function PlayAnswerPanel({
             <Text
               style={[
                 styles.segmentMeta,
-                { color: BRAND_SUBTLE_TEXT, fontSize: layoutDensity.segmentMetaSize },
+                { color: BRAND_SUBTLE_TEXT, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
                 getTextStyle(undefined, 'body', 'center'),
               ]}
               numberOfLines={2}
@@ -618,22 +664,27 @@ export function PlayAnswerPanel({
               styles.awardTile,
               {
                 borderRadius: Math.max(8, Math.round(awardTileRadius * combinedCardLayoutScale)),
-                minHeight: Math.max(28, Math.round(layoutDensity.awardStackMinH * combinedCardLayoutScale)),
-                paddingVertical: Math.max(4, Math.round(layoutDensity.railPadV * combinedCardLayoutScale)),
-                paddingHorizontal: Math.max(4, Math.round(SPACING.xs * combinedCardLayoutScale)),
+                minHeight: Math.max(44, Math.round(awardTileMinHeight * combinedCardLayoutScale)),
+                paddingVertical: Math.max(8, Math.round(layoutDensity.railPadV * combinedCardLayoutScale)),
+                paddingHorizontal: Math.max(10, Math.round(SPACING.xs * combinedCardLayoutScale)),
                 backgroundColor: teamAwardSurface(team.id, 'tile'),
-                opacity: pressed ? 0.92 : 1,
+                borderWidth: awardChoiceCommitted && session.lastAwardedTeamId === team.id ? 2 : StyleSheet.hairlineWidth,
+                borderColor: awardChoiceCommitted && session.lastAwardedTeamId === team.id ? awardSelectedBorder : awardIdleBorder,
+                opacity: isTimedOut ? 0.45 : pressed ? 0.92 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
+            disabled={isTimedOut}
             onPress={() => awardStandardQuestion(team.id)}
             accessibilityRole="button"
             accessibilityLabel={`${team.name}, +${pointsThisQuestion}`}
-            accessibilityState={{ selected: awardChoiceCommitted && session.lastAwardedTeamId === team.id }}
+            accessibilityState={{ disabled: isTimedOut, selected: awardChoiceCommitted && session.lastAwardedTeamId === team.id }}
           >
+            {renderSelectedCheck(awardChoiceCommitted && session.lastAwardedTeamId === team.id)}
             <Text
               style={[
                 styles.segmentTitle,
-                { color: T.textPrimary, fontSize: layoutDensity.segmentTitleSize },
+                { color: T.textPrimary, fontSize: awardTitleFontSize, lineHeight: Math.round(awardTitleFontSize * 1.18) },
                 getTextStyle(undefined, 'bodyBold', 'center'),
               ]}
               numberOfLines={2}
@@ -645,7 +696,7 @@ export function PlayAnswerPanel({
             <Text
               style={[
                 styles.segmentMeta,
-                { color: BRAND_SUBTLE_TEXT, fontSize: layoutDensity.segmentMetaSize },
+                { color: BRAND_SUBTLE_TEXT, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
                 getTextStyle(undefined, 'body', 'center'),
               ]}
               numberOfLines={1}
@@ -659,22 +710,27 @@ export function PlayAnswerPanel({
             styles.awardNeitherTileBase,
             {
               borderRadius: Math.max(8, Math.round(awardTileRadius * combinedCardLayoutScale)),
-              minHeight: Math.max(28, Math.round(layoutDensity.awardStackMinH * combinedCardLayoutScale)),
-              paddingVertical: Math.max(4, Math.round(layoutDensity.railPadV * combinedCardLayoutScale)),
-              paddingHorizontal: Math.max(4, Math.round(SPACING.xs * combinedCardLayoutScale)),
+              minHeight: Math.max(44, Math.round(awardTileMinHeight * combinedCardLayoutScale)),
+              paddingVertical: Math.max(8, Math.round(layoutDensity.railPadV * combinedCardLayoutScale)),
+              paddingHorizontal: Math.max(10, Math.round(SPACING.xs * combinedCardLayoutScale)),
               backgroundColor: neitherAwardSurface('tile'),
-              opacity: pressed ? 0.92 : 1,
+              borderWidth: awardChoiceCommitted && session.lastAwardedTeamId === null ? 2 : 1,
+              borderColor: awardChoiceCommitted && session.lastAwardedTeamId === null ? awardSelectedBorder : NEITHER_DASH,
+              opacity: isTimedOut ? 0.45 : pressed ? 0.92 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
             },
           ]}
+          disabled={isTimedOut}
           onPress={() => awardStandardQuestion(null)}
           accessibilityRole="button"
           accessibilityLabel={t('play.neitherTeam')}
-          accessibilityState={{ selected: awardChoiceCommitted && session.lastAwardedTeamId === null }}
+          accessibilityState={{ disabled: isTimedOut, selected: awardChoiceCommitted && session.lastAwardedTeamId === null }}
         >
+          {renderSelectedCheck(awardChoiceCommitted && session.lastAwardedTeamId === null)}
           <Text
             style={[
               styles.segmentTitle,
-              { color: T.textPrimary, fontSize: layoutDensity.segmentTitleSize },
+              { color: T.textPrimary, fontSize: awardTitleFontSize, lineHeight: Math.round(awardTitleFontSize * 1.18) },
               getTextStyle(undefined, 'bodyBold', 'center'),
             ]}
             numberOfLines={1}
@@ -684,7 +740,7 @@ export function PlayAnswerPanel({
           <Text
             style={[
               styles.segmentMeta,
-              { color: BRAND_SUBTLE_TEXT, fontSize: layoutDensity.segmentMetaSize },
+              { color: BRAND_SUBTLE_TEXT, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
               getTextStyle(undefined, 'body', 'center'),
             ]}
             numberOfLines={2}
@@ -967,6 +1023,19 @@ export function PlayAnswerPanel({
                     >
                       {session.phase === 'scoring' ? t('play.pointsAwarded') : t('play.whoGetsPoints')}
                     </Text>
+                    {awardConfirmationText ? (
+                      <Text
+                        style={[
+                          styles.awardConfirmationText,
+                          getTextStyle(undefined, 'bodySemibold', 'center'),
+                        ]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.82}
+                      >
+                        {awardConfirmationText}
+                      </Text>
+                    ) : null}
                     <View style={styles.scoringPanelAwardRegion}>{renderAwardTargets()}</View>
                   </View>
                 </View>
@@ -1209,6 +1278,16 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
     maxWidth: '100%',
   },
+  awardConfirmationText: {
+    fontFamily: FONTS.uiSemibold,
+    fontSize: 13,
+    lineHeight: 18,
+    color: BRAND_CHARCOAL,
+    textAlign: 'center',
+    marginTop: -SPACING.sm,
+    marginBottom: SPACING.md,
+    opacity: 0.82,
+  },
   answerCardTop: {
     width: '100%',
   },
@@ -1266,11 +1345,12 @@ const styles = StyleSheet.create({
   },
   /** Tappable score cell — same raised white control as BRAND_GUIDELINES Standard button surface (radius 14). */
   awardTile: {
+    position: 'relative',
     flex: 1,
     minWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     ...SOFT_SURFACE_FACE,
@@ -1278,17 +1358,29 @@ const styles = StyleSheet.create({
   },
   /** Dashed outline per wireframe; use raised shadow, not neumorphic lip (uniform border would replace face). */
   awardNeitherTileBase: {
+    position: 'relative',
     flex: 1,
     minWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderStyle: 'dashed',
     borderWidth: 1,
     borderColor: NEITHER_DASH,
     ...softSurfaceLift(),
+  },
+  awardCheckMark: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFB347',
   },
   scoringPanelAwardRegion: {
     width: '100%',
@@ -1304,11 +1396,13 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.uiBold,
     fontWeight: '700',
     color: BRAND_CHARCOAL,
+    textAlign: 'center',
   },
   segmentMeta: {
     fontFamily: FONTS.ui,
     fontVariant: ['tabular-nums'],
     color: BRAND_SUBTLE_TEXT,
+    textAlign: 'center',
   },
   footerRow: {
     alignItems: 'stretch',

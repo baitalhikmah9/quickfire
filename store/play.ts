@@ -416,6 +416,23 @@ function buildLastResolvedTurn(
   };
 }
 
+function getWagerScoreDelta(basePoints: number, multiplier: WagerState['multiplier'], correct: boolean): number {
+  const delta =
+    multiplier === 0.5
+      ? correct
+        ? basePoints * 0.5
+        : -basePoints * 0.5
+      : multiplier === 1.5
+        ? correct
+          ? basePoints * 1.5
+          : -basePoints
+        : correct
+          ? basePoints * 2
+          : -basePoints * 1.5;
+
+  return Math.round(delta);
+}
+
 interface PlayStore {
   tokens: number;
   session: GameSessionState | null;
@@ -440,6 +457,7 @@ interface PlayStore {
   selectQuestion: (question: QuestionCard) => void;
   cancelCurrentQuestion: () => void;
   revealAnswer: () => { ok: boolean; error?: string };
+  expireCurrentQuestionForTimeout: () => void;
   awardStandardQuestion: (teamId: string | null) => void;
   continueAfterStandardQuestion: () => void;
   adjustScoreByPoints: (teamId: string, delta: number, note?: string) => void;
@@ -540,6 +558,7 @@ function createPlayStore() {
             contentLocaleChain: session.contentLocaleChain,
             step: nextStep,
             phase: 'lobby',
+            selectedCategoryIds: [],
             ...withScores(teams),
             wager: null,
             hotSeat: undefined,
@@ -575,6 +594,7 @@ function createPlayStore() {
             contentLocaleChain: session.contentLocaleChain,
             step: nextStep,
             phase: 'lobby',
+            selectedCategoryIds: [],
             ...withScores(teams),
             wager: null,
             hotSeat: undefined,
@@ -814,6 +834,7 @@ function createPlayStore() {
           bonus: { ...DEFAULT_BONUS },
           hotSeat,
           lastAwardedTeamId: undefined,
+          timedOutQuestionId: undefined,
           lastResolvedTurn: undefined,
           seed: `seed_${Date.now()}`,
         };
@@ -842,6 +863,7 @@ function createPlayStore() {
               step: 'question',
               phase: 'questionReveal',
               timerStartedAt: Date.now(),
+              timedOutQuestionId: undefined,
             },
           };
         }),
@@ -863,6 +885,7 @@ function createPlayStore() {
               step: 'board',
               phase: 'wagerDecision',
               timerStartedAt: undefined,
+              timedOutQuestionId: undefined,
             },
           };
         }),
@@ -886,6 +909,57 @@ function createPlayStore() {
         });
         return { ok: true };
       },
+
+      expireCurrentQuestionForTimeout: () =>
+        set((state) => {
+          const session = state.session;
+          const currentQuestion = session?.currentQuestion;
+          if (!session || !currentQuestion || session.step !== 'question') return state;
+
+          if (session.wager?.question) {
+            const delta = getWagerScoreDelta(
+              session.wager.question.pointValue,
+              session.wager.multiplier,
+              false
+            );
+            const nextTeams = withUpdatedTeamScore(session.teams, session.wager.targetTeamId, delta);
+
+            return {
+              session: {
+                ...session,
+                ...withScores(nextTeams),
+                currentTeamId: session.wager.targetTeamId,
+                wager: null,
+                step: 'answer',
+                phase: 'scoring',
+                lastAwardedTeamId: null,
+                timedOutQuestionId: currentQuestion.id,
+                scoreEvents: [
+                  ...session.scoreEvents,
+                  createScoreEvent(session, {
+                    teamId: session.wager.targetTeamId,
+                    points: delta,
+                    reason: 'wager',
+                    questionId: currentQuestion.id,
+                    metadata: { timeout: true },
+                  }),
+                ],
+                lastResolvedTurn: buildLastResolvedTurn(currentQuestion, null, 0),
+              },
+            };
+          }
+
+          return {
+            session: {
+              ...session,
+              step: 'answer',
+              phase: 'scoring',
+              lastAwardedTeamId: null,
+              timedOutQuestionId: currentQuestion.id,
+              lastResolvedTurn: buildLastResolvedTurn(currentQuestion, null, 0),
+            },
+          };
+        }),
 
       awardStandardQuestion: (teamId) =>
         set((state) => {
@@ -1009,6 +1083,7 @@ function createPlayStore() {
                     phase: 'questionReveal',
                     timerStartedAt: Date.now(),
                     lastAwardedTeamId: undefined,
+                    timedOutQuestionId: undefined,
                     scoreEvents,
                     lastResolvedTurn,
                   },
@@ -1067,6 +1142,7 @@ function createPlayStore() {
                     wager: null,
                     bonus: { ...session.bonus, active: false },
                     lastAwardedTeamId: undefined,
+                    timedOutQuestionId: undefined,
                     scoreEvents,
                     lastResolvedTurn,
                   },
@@ -1088,6 +1164,7 @@ function createPlayStore() {
               hotSeat,
               bonus: { ...session.bonus, active: false },
               lastAwardedTeamId: undefined,
+              timedOutQuestionId: undefined,
               scoreEvents,
               lastResolvedTurn,
             },
@@ -1164,6 +1241,7 @@ function createPlayStore() {
               multiplier,
             },
             lastAwardedTeamId: undefined,
+            timedOutQuestionId: undefined,
           },
         });
         return { ok: true };
@@ -1193,6 +1271,7 @@ function createPlayStore() {
               step: 'question',
               phase: 'questionReveal',
               timerStartedAt: Date.now(),
+              timedOutQuestionId: undefined,
               wager: {
                 ...session.wager,
                 question,
@@ -1207,21 +1286,10 @@ function createPlayStore() {
           if (!session?.wager?.question) return state;
           const { wager, teams } = session;
           const basePoints = wager.question!.pointValue;
-          const delta =
-            wager.multiplier === 0.5
-              ? correct
-                ? basePoints * 0.5
-                : -basePoints * 0.5
-              : wager.multiplier === 1.5
-                ? correct
-                  ? basePoints * 1.5
-                  : -basePoints
-                : correct
-                  ? basePoints * 2
-                  : -basePoints * 1.5;
+          const delta = getWagerScoreDelta(basePoints, wager.multiplier, correct);
 
           const nextTeams = teams.map((team) =>
-            team.id === wager.targetTeamId ? { ...team, score: team.score + Math.round(delta) } : team
+            team.id === wager.targetTeamId ? { ...team, score: team.score + delta } : team
           );
           const remaining = session.board.filter(
             (question) => !session.usedQuestionIds.has(question.id)
@@ -1238,12 +1306,13 @@ function createPlayStore() {
               step: remaining.length ? 'board' : 'end',
               phase: remaining.length ? 'wagerDecision' : 'completed',
               lastAwardedTeamId: wager.targetTeamId,
+              timedOutQuestionId: undefined,
             },
           };
         }),
     }),
     {
-      name: 'quickfire-play-store-v1',
+      name: 'backfire-play-store-v1',
       storage: createJSONStorage(() => AsyncStorage),
       version: 1,
       skipHydration: true,
@@ -1265,9 +1334,12 @@ const playStoreSingletonHolder = globalThis as typeof globalThis & {
   __DOUBLEPLAY_USE_PLAY_STORE__?: PlayStoreApi;
 };
 
+const existingPlayStore = playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__;
+
 export const usePlayStore =
-  playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__ ??
-  (playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__ = createPlayStore());
+  existingPlayStore && typeof existingPlayStore.getState().expireCurrentQuestionForTimeout === 'function'
+    ? existingPlayStore
+    : (playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__ = createPlayStore());
 
 export function usePlayHydration() {
   const hydrate = usePlayStore((state) => state.hydrate);

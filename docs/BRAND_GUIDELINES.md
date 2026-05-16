@@ -1,4 +1,4 @@
-# QuickFire — Brand Guidelines
+# Backfire — Brand Guidelines
 
 Authoritative reference for color, typography, and surface treatment when implementing UI. Align app tokens (`constants/theme.ts`, components) with these rules where practical.
 
@@ -27,7 +27,7 @@ Two bundled typefaces remain the implementation default (**Clash Display**, **Ge
 
 | Level | Style | Usage |
 |-------|--------|--------|
-| Logo wordmark | Bold geometric sans; title case “QuickFire” | Brand title on home |
+| Logo wordmark | Bold geometric sans; title case “Backfire” | Brand title on home |
 | Logo capline | All caps “TRIVIA”; lighter weight; increased letter-spacing | Tagline under wordmark |
 | Primary CTA | Bold; all caps | e.g. “PLAY TRIVIA” |
 | Supporting line | Regular; sentence case; smaller | e.g. “Start a new challenge” |
@@ -39,7 +39,7 @@ Overall voice: clean, modern **geometric sans-serif** feel—tight hierarchy, re
 ## Logo
 
 - **Mark:** Two overlapping / interlocking **D** letterforms—thick, rounded, geometric.
-- **Lockup:** Mark optional; wordmark “QuickFire” with “TRIVIA” beneath in the capline style above.
+- **Lockup:** Mark optional; wordmark “Backfire” with “TRIVIA” beneath in the capline style above.
 - **Color on light UI:** Dark charcoal (`#333333`) for the full lockup on cream/white.
 
 ## Iconography

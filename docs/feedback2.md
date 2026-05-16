@@ -1,6 +1,6 @@
 # Feedback Checklist
 
-- [x] QuickFire is the name of the game, not a replacement name+logo for quick play lol
+- [x] Backfire is the name of the game, not a replacement name+logo for quick play lol
 
 - [x] In general whether 6 topics or less, make sure that the space is being utilised to its maximum effect. Like in 6 topics for example, I still would rather u make the icons bigger as I sent u the image. the logos feel a bit small here and show wasted space above and below it, would rather u made it bigger to make it feel more polished. Same with 3 topics, if theres empty space just make use of it, i.e make everything bigger/taller to utilised the space.
 

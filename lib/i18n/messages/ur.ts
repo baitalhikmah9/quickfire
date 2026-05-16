@@ -30,7 +30,7 @@ const ur = withEnglishFallback({
   'home.tagline': 'جدید ٹریویا نائٹ',
   'profile.changeTheme': 'تھیم تبدیل کریں',
   'store.purchaseTitle': 'ٹوکن پیک خریدیں',
-  'play.hubTitle': 'QuickFire کھیلیں',
+  'play.hubTitle': 'Backfire کھیلیں',
   'play.startNewGame': 'نیا کھیل شروع کریں',
   'play.resumeCurrentMatch': 'موجودہ میچ دوبارہ شروع کریں',
   'play.chooseModeTitle': 'موڈ منتخب کریں',

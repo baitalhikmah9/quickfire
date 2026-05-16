@@ -89,6 +89,21 @@ function estimateWebSingleLineFontSize(
   };
 }
 
+function formatQuestionTimer(totalSeconds: number): string {
+  const safeSeconds = Number.isFinite(totalSeconds)
+    ? Math.max(0, Math.min(QUESTION_MAX_SECONDS, Math.floor(totalSeconds)))
+    : 0;
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function getSafeElapsedSeconds(timerStartedAt: number | undefined, now: number): number {
+  if (!timerStartedAt) return 0;
+  const elapsed = Math.floor((now - timerStartedAt) / 1000);
+  return Number.isFinite(elapsed) ? Math.max(0, Math.min(QUESTION_MAX_SECONDS, elapsed)) : 0;
+}
+
 /** Scales the compact answer-phase / reveal prompt for the pre-reveal “active play” question only. */
 const UNREVEALED_QUESTION_TYPE_SCALE = 1.28;
 
@@ -104,6 +119,7 @@ function scaleUpQuestionEmphasis(phase: { fontSize: number; lineHeight: number }
 
 /** Visual height of `PlayMatchTopBar` + padding — positions legacy absolute timer below it. */
 const MATCH_TOP_BAR_EST_HEIGHT = 64;
+const QUESTION_MAX_SECONDS = 10 * 60;
 
 const WAGER_FAB_ICON = require('@/assets/wager.png');
 
@@ -115,10 +131,11 @@ export default function PlayQuestionScreen() {
   const session = usePlayStore((state) => state.session);
   const cancelCurrentQuestion = usePlayStore((state) => state.cancelCurrentQuestion);
   const revealAnswer = usePlayStore((state) => state.revealAnswer);
+  const expireCurrentQuestionForTimeout = usePlayStore((state) => state.expireCurrentQuestionForTimeout);
   const resetSession = usePlayStore((state) => state.resetSession);
   const initiateWager = usePlayStore((state) => state.initiateWager);
   const continueAfterStandardQuestion = usePlayStore((state) => state.continueAfterStandardQuestion);
-  const [seconds, setSeconds] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
 
   const leaveMatch = useCallback(() => {
@@ -166,13 +183,27 @@ export default function PlayQuestionScreen() {
   }, [session?.currentQuestion?.rumbleSecondTeamId, session?.teams]);
 
   useEffect(() => {
-    if (!session?.timerStartedAt) return;
-    const update = () =>
-      setSeconds(Math.max(0, Math.floor((Date.now() - session.timerStartedAt!) / 1000)));
+    if (!session?.timerStartedAt) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const update = () => setElapsedSeconds(getSafeElapsedSeconds(session.timerStartedAt, Date.now()));
     update();
     const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
   }, [session?.timerStartedAt]);
+
+  useEffect(() => {
+    const currentQuestionId = session?.currentQuestion?.id;
+    if (
+      currentQuestionId &&
+      session?.step === 'question' &&
+      elapsedSeconds >= QUESTION_MAX_SECONDS &&
+      session.timedOutQuestionId !== currentQuestionId
+    ) {
+      expireCurrentQuestionForTimeout();
+    }
+  }, [expireCurrentQuestionForTimeout, elapsedSeconds, session?.currentQuestion?.id, session?.step, session?.timedOutQuestionId]);
 
   useEffect(() => {
     if (!usePlayStore.persist.hasHydrated()) return;
@@ -181,13 +212,24 @@ export default function PlayQuestionScreen() {
     }
   }, [router, session?.currentQuestion]);
 
-  /** Center weighted landscape layout — must run before any early return (Rules of Hooks). */
-  const isLandscape = windowWidth > windowHeight;
-  const contentWidth = isLandscape ? '70%' : '90%';
+  /** Center weighted responsive layout — must run before any early return (Rules of Hooks). */
+  const viewportShortSide = Math.min(windowWidth, windowHeight);
+  const isCompactHeader = windowWidth < 760 || viewportShortSide < 430;
+  const isVeryCompactHeader = viewportShortSide < 390;
+  const showBackLabel = windowWidth >= 560;
+  const headerHorizontalPadding = Math.max(
+    SPACING.sm,
+    Math.min(SPACING.xl, Math.round(windowWidth * 0.025))
+  );
+  const chromeSideWidth = isVeryCompactHeader ? 70 : isCompactHeader ? 78 : 104;
+  const questionContentWidth = Math.min(
+    windowWidth - headerHorizontalPadding * 2,
+    Platform.OS === 'web' ? 1100 : 980
+  );
   /** Pixel width for prompt text — bounds `adjustsFontSizeToFit` (especially on web). */
   const promptLayoutWidth = Math.max(
-    200,
-    Math.floor(windowWidth * (isLandscape ? 0.7 : 0.9))
+    260,
+    Math.min(questionContentWidth, Platform.OS === 'web' ? 1040 : 920)
   );
   const questionPromptSizing = useMemo(
     () => getQuestionPromptSizing(promptLayoutWidth),
@@ -201,7 +243,6 @@ export default function PlayQuestionScreen() {
   }, [windowWidth, windowHeight]);
 
   const promptText = session?.currentQuestion?.prompt ?? '';
-  const viewportShortSide = Math.min(windowWidth, windowHeight);
 
   /**
    * Base sizing for the prompt in the answer/reveal flow (and shared caps).
@@ -230,6 +271,7 @@ export default function PlayQuestionScreen() {
     if (!session.config.wagerEnabled) return false;
     if (session.bonus.active) return false;
     if (session.wager) return false;
+    if (session.timedOutQuestionId === session.currentQuestion?.id) return false;
     if (session.phase !== 'scoring') return false;
     const used =
       session.teams.find((team) => team.id === session.currentTeamId)?.wagersUsed ?? 0;
@@ -247,43 +289,44 @@ export default function PlayQuestionScreen() {
 
   const q = session.currentQuestion;
   const hotSeatChallenge = SHOW_HOT_SEAT_UI ? session.hotSeat?.activeChallenge : undefined;
-  const timeStr = `${Math.floor(seconds / 60)
-    .toString()
-    .padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
+  const displaySeconds = Math.min(elapsedSeconds, QUESTION_MAX_SECONDS);
+  const hasTimedOut = session.timedOutQuestionId === q.id;
+  const timeStr = formatQuestionTimer(displaySeconds);
 
   const isRumbleQuestion = session.mode === 'rumble';
   const visibleRumbleTeams =
-    seconds >= RUMBLE_SECOND_TEAM_REVEAL_SECONDS
+    elapsedSeconds >= RUMBLE_SECOND_TEAM_REVEAL_SECONDS
       ? [rumbleFirstTeam, rumbleSecondTeam].filter(Boolean)
-      : seconds >= RUMBLE_FIRST_TEAM_REVEAL_SECONDS
+      : elapsedSeconds >= RUMBLE_FIRST_TEAM_REVEAL_SECONDS
         ? [rumbleFirstTeam].filter(Boolean)
         : [];
   const rumbleStatus =
     !isRumbleQuestion
       ? null
-      : seconds >= RUMBLE_ROUND_END_SECONDS
+      : elapsedSeconds >= RUMBLE_ROUND_END_SECONDS
         ? t('play.rumbleRoundEnded')
-        : seconds < RUMBLE_FIRST_TEAM_REVEAL_SECONDS
+        : elapsedSeconds < RUMBLE_FIRST_TEAM_REVEAL_SECONDS
         ? t('play.rumbleWaiting')
-        : seconds < RUMBLE_TRANSITION_SECONDS
+        : elapsedSeconds < RUMBLE_TRANSITION_SECONDS
           ? t('play.rumbleFirstWindow', {
               team: rumbleFirstTeam?.name ?? currentTeam?.name ?? 'Team',
             })
-          : seconds < RUMBLE_SECOND_TEAM_REVEAL_SECONDS
+          : elapsedSeconds < RUMBLE_SECOND_TEAM_REVEAL_SECONDS
             ? t('play.rumbleTransitionWindow')
           : t('play.rumbleSecondWindow', {
               team: rumbleSecondTeam?.name ?? 'Next team',
             });
   const canShowAnswer =
-    !isRumbleQuestion ||
-    seconds >= RUMBLE_SECOND_TEAM_REVEAL_SECONDS;
+    !hasTimedOut &&
+    (!isRumbleQuestion ||
+      elapsedSeconds >= RUMBLE_SECOND_TEAM_REVEAL_SECONDS);
   const hotSeatNames = hotSeatChallenge?.participants
     .map((participant) => participant.playerName)
     .join(' vs ');
   const isAnswerPhase = session.step === 'answer';
   const showAnswerPhaseNextTurnDock = isAnswerPhase && !session.wager && session.phase === 'scoring';
 
-  /** Single-row pill header (reference QuickFire layout) — not used for rumble / hot seat. */
+  /** Two-row QuickFire pill header — not used for rumble / hot seat. */
   const usePillHeader = !isRumbleQuestion && !hotSeatNames;
 
   const onBackToBoard = () => {
@@ -293,7 +336,11 @@ export default function PlayQuestionScreen() {
 
   const timerNode = (
     <View style={usePillHeader ? styles.timerRingPill : styles.timerRing}>
-      <Text style={[usePillHeader ? styles.timerValuePill : styles.timerValue, { color: BRAND.charcoal }]}>
+      <Text
+        style={[usePillHeader ? styles.timerValuePill : styles.timerValue, { color: BRAND.charcoal }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit={false}
+      >
         {timeStr}
       </Text>
     </View>
@@ -305,31 +352,27 @@ export default function PlayQuestionScreen() {
       accessibilityRole="summary"
     >
       <Text
-        style={styles.metaPillSegment}
+        style={[styles.metaPillText, isCompactHeader && styles.metaPillTextCompact]}
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={0.75}
+        minimumFontScale={0.78}
       >
-        {(currentTeam?.name || 'TEAM').toUpperCase()}
-      </Text>
-      <View style={styles.metaDivider} />
-      <Text
-        style={[styles.metaPillSegment, styles.metaPillTopic]}
-        numberOfLines={2}
-        adjustsFontSizeToFit
-        minimumFontScale={0.75}
-      >
-        {`TOPIC: ${q.categoryName}`.toUpperCase()}
-      </Text>
-      <View style={styles.metaDivider} />
-      <Text style={styles.metaPillPoints} numberOfLines={1}>
-        {`Points: ${q.pointValue}`}
+        {(isVeryCompactHeader
+          ? `${currentTeam?.name || 'TEAM'} | ${q.categoryName} | ${q.pointValue} PTS`
+          : `${currentTeam?.name || 'TEAM'} | TOPIC: ${q.categoryName} | ${q.pointValue} POINTS`
+        ).toUpperCase()}
       </Text>
     </View>
   );
 
+  const answerQuestionFontSize = Math.min(
+    Platform.OS === 'web' ? 38 : 34,
+    Math.max(18, Math.round(promptLayoutWidth * (isCompactHeader ? 0.04 : 0.034)))
+  );
+  const answerQuestionLineHeight = Math.round(answerQuestionFontSize * 1.14);
+
   const promptBlock = (
-    <View style={[styles.revealPromptBlock, { width: contentWidth }]}>
+    <View style={[styles.revealPromptBlock, { width: questionContentWidth }]}>
       {q.promptImageUrl ? (
         <Image
           testID="question-prompt-image"
@@ -344,8 +387,8 @@ export default function PlayQuestionScreen() {
           getTextStyle(q.locale, 'display', 'center'),
           {
             color: BRAND.charcoal,
-            fontSize: compactQuestionPhaseTypography.fontSize,
-            lineHeight: compactQuestionPhaseTypography.lineHeight,
+            fontSize: answerQuestionFontSize,
+            lineHeight: answerQuestionLineHeight,
             maxWidth: promptLayoutWidth,
             width: '100%',
             alignSelf: 'center',
@@ -373,9 +416,9 @@ export default function PlayQuestionScreen() {
         style={[
           styles.matchTopWrap,
           {
-            paddingTop: insets.top,
-            paddingLeft: Math.max(insets.left, SPACING.sm),
-            paddingRight: Math.max(insets.right, SPACING.sm),
+            paddingTop: Math.max(insets.top, Platform.OS === 'web' ? SPACING.sm : insets.top),
+            paddingLeft: Math.max(insets.left, headerHorizontalPadding),
+            paddingRight: Math.max(insets.right, headerHorizontalPadding),
           },
         ]}
       >
@@ -393,13 +436,13 @@ export default function PlayQuestionScreen() {
           style={[
             styles.pillChromeRow,
             {
-              paddingTop: SPACING.sm,
-              paddingLeft: Math.max(insets.left, SPACING.sm),
-              paddingRight: Math.max(insets.right, SPACING.sm),
+              paddingTop: isCompactHeader ? SPACING.xs : SPACING.sm,
+              paddingLeft: Math.max(insets.left, headerHorizontalPadding),
+              paddingRight: Math.max(insets.right, headerHorizontalPadding),
             },
           ]}
         >
-          <View style={styles.chromeSide}>
+          <View style={[styles.chromeSide, { width: chromeSideWidth, minWidth: chromeSideWidth }]}>
             <Pressable
               onPress={onBackToBoard}
               accessibilityRole="button"
@@ -411,12 +454,14 @@ export default function PlayQuestionScreen() {
                 { opacity: pressed ? 0.88 : 1 },
               ]}
             >
-              <Ionicons name="chevron-back" size={15} color={BRAND.charcoal} />
-              <Text style={styles.backButtonText}>{t('common.back')}</Text>
+              <Ionicons name="chevron-back" size={16} color={BRAND.charcoal} />
+              {showBackLabel ? <Text style={styles.backButtonText}>{t('common.back')}</Text> : null}
             </Pressable>
           </View>
           <View style={styles.chromeCenter}>{metaPill}</View>
-          <View style={[styles.chromeSide, styles.chromeSideRight]}>{timerNode}</View>
+          <View style={[styles.chromeSide, styles.chromeSideRight, { width: chromeSideWidth, minWidth: chromeSideWidth }]}>
+            {timerNode}
+          </View>
         </View>
       ) : (
         <>
@@ -495,6 +540,7 @@ export default function PlayQuestionScreen() {
             style={styles.answerScroll}
             contentContainerStyle={[
               styles.answerScrollContent,
+              Platform.OS === 'web' ? styles.answerScrollContentWeb : null,
               {
                 paddingBottom: Math.max(
                   insets.bottom,
@@ -508,13 +554,27 @@ export default function PlayQuestionScreen() {
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
-            {promptBlock}
-            <PlayAnswerPanel
-              embedded
-              scrollEmbedded
-              suppressPostScoreWagerButton={answerPhaseCanWager}
-              suppressPostScoreActions={showAnswerPhaseNextTurnDock}
-            />
+            <View
+              style={[
+                styles.answerContentStack,
+                { maxWidth: questionContentWidth },
+                Platform.OS === 'web' ? styles.answerContentStackWeb : null,
+              ]}
+            >
+              {promptBlock}
+              {hasTimedOut ? (
+                <View style={[styles.timeoutBanner, SOFT_SURFACE_STYLES.face, SOFT_SURFACE_STYLES.raised]}>
+                  <Text style={styles.timeoutTitle}>{t('play.timeUpTitle').toUpperCase()}</Text>
+                  <Text style={styles.timeoutBody}>{t('play.timeUpBody')}</Text>
+                </View>
+              ) : null}
+              <PlayAnswerPanel
+                embedded
+                scrollEmbedded
+                suppressPostScoreWagerButton={answerPhaseCanWager}
+                suppressPostScoreActions={showAnswerPhaseNextTurnDock}
+              />
+            </View>
           </ScrollView>
           {showAnswerPhaseNextTurnDock ? (
             <View
@@ -595,11 +655,20 @@ export default function PlayQuestionScreen() {
         </View>
       ) : (
         <>
-          {/* Main Question Display */}
-          <View style={styles.contentArea}>
+          {/* Main question and action stack */}
+          <View
+            style={[
+              styles.contentArea,
+              {
+                paddingLeft: Math.max(insets.left, headerHorizontalPadding),
+                paddingRight: Math.max(insets.right, headerHorizontalPadding),
+                paddingBottom: Math.max(insets.bottom, SPACING.md),
+              },
+            ]}
+          >
             <ScrollView
               testID="question-content-scroll"
-              style={[styles.questionScroll, { width: contentWidth }]}
+              style={[styles.questionScroll, { width: questionContentWidth }]}
               contentContainerStyle={[
                 styles.questionScrollContent,
                 Platform.OS === 'web' ? styles.questionScrollContentWeb : null,
@@ -642,34 +711,31 @@ export default function PlayQuestionScreen() {
                 >
                   {q.prompt}
                 </Text>
+
+                <Pressable
+                  onPress={() => {
+                    revealAnswer();
+                  }}
+                  disabled={!canShowAnswer}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: !canShowAnswer }}
+                  style={({ pressed }) => [
+                    styles.answerButton,
+                    SOFT_SURFACE_STYLES.face,
+                    {
+                      backgroundColor: BRAND.surface,
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                      opacity: !canShowAnswer ? 0.45 : pressed ? 0.95 : 1,
+                    },
+                    neumorphicLift3D('pill'),
+                  ]}
+                >
+                  <Text style={[styles.answerButtonText, { color: BRAND.charcoal }]}>
+                    {t('play.showAnswer').toUpperCase()}
+                  </Text>
+                </Pressable>
               </View>
             </ScrollView>
-          </View>
-
-          {/* Action Footer: Show Answer */}
-          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, SPACING.md) }]}>
-            <Pressable
-              onPress={() => {
-                revealAnswer();
-              }}
-              disabled={!canShowAnswer}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canShowAnswer }}
-              style={({ pressed }) => [
-                styles.answerButton,
-                SOFT_SURFACE_STYLES.face,
-                {
-                  backgroundColor: BRAND.surface,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                  opacity: !canShowAnswer ? 0.45 : pressed ? 0.95 : 1,
-                },
-                neumorphicLift3D('pill'),
-              ]}
-            >
-              <Text style={[styles.answerButtonText, { color: BRAND.charcoal }]}>
-                {t('play.showAnswer').toUpperCase()}
-              </Text>
-            </Pressable>
           </View>
         </>
       )}
@@ -713,8 +779,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xs,
   },
   backButtonInline: {
-    height: 30,
-    borderRadius: 12,
+    minWidth: 44,
+    height: 44,
+    borderRadius: 18,
     paddingHorizontal: SPACING.sm,
     alignItems: 'center',
     justifyContent: 'center',
@@ -728,52 +795,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexWrap: 'nowrap',
-    maxWidth: '100%',
-    paddingVertical: 6,
-    paddingHorizontal: SPACING.sm,
+    width: '100%',
+    maxWidth: 560,
+    minHeight: 44,
+    paddingVertical: 8,
+    paddingHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.pill,
     backgroundColor: BRAND.surface,
     gap: SPACING.xs,
   },
-  metaDivider: {
-    width: StyleSheet.hairlineWidth * 2,
-    minWidth: 1,
-    alignSelf: 'stretch',
-    backgroundColor: 'rgba(51, 51, 51, 0.18)',
-    marginVertical: 2,
-  },
-  metaPillSegment: {
+  metaPillText: {
     fontFamily: FONTS.uiBold,
-    fontSize: 10,
-    letterSpacing: 0.6,
+    fontSize: 12,
+    lineHeight: 15,
+    letterSpacing: 0.75,
     color: BRAND.charcoal,
     flexShrink: 1,
-  },
-  metaPillTopic: {
-    flex: 1,
-    minWidth: 48,
     textAlign: 'center',
   },
-  metaPillPoints: {
-    fontFamily: FONTS.ui,
-    fontSize: 10,
-    color: BRAND.charcoal + 'AA',
-    flexShrink: 0,
+  metaPillTextCompact: {
+    fontSize: 10.5,
+    lineHeight: 13,
+    letterSpacing: 0.55,
   },
   timerRingPill: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
+    minWidth: 68,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(51, 51, 51, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: BRAND.surface,
+    paddingHorizontal: 8,
+    ...SOFT_SURFACE_STYLES.face,
+    ...SOFT_SURFACE_STYLES.raised,
   },
   timerValuePill: {
     fontFamily: FONTS.uiBold,
-    fontSize: 12,
+    fontSize: 13,
+    lineHeight: 16,
+    letterSpacing: 0.2,
     fontVariant: ['tabular-nums'],
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   answerScroll: {
     flex: 1,
@@ -781,9 +846,23 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   answerScrollContent: {
-    flexGrow: 0,
+    flexGrow: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingTop: SPACING.xs,
+  },
+  answerScrollContentWeb: {
+    justifyContent: 'center',
+    paddingTop: 0,
+  },
+  answerContentStack: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+  },
+  answerContentStackWeb: {
+    transform: [{ translateY: -40 }],
   },
   answerPhaseShell: {
     flex: 1,
@@ -841,7 +920,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     gap: SPACING.md,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  timeoutBanner: {
+    alignSelf: 'center',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: BORDER_RADIUS.lg,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    maxWidth: 560,
+    width: '100%',
+  },
+  timeoutTitle: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 14,
+    color: '#DC2626',
+    letterSpacing: 0.6,
+  },
+  timeoutBody: {
+    fontFamily: FONTS.ui,
+    fontSize: 13,
+    color: BRAND.charcoal,
+    textAlign: 'center',
   },
   promptImageReveal: {
     width: '100%',
@@ -942,6 +1043,7 @@ const styles = StyleSheet.create({
   },
   timerRing: {
     flex: 1,
+    minWidth: 68,
     borderRadius: 32,
     borderWidth: 3,
     borderColor: 'rgba(51, 51, 51, 0.1)',
@@ -952,29 +1054,27 @@ const styles = StyleSheet.create({
   timerValue: {
     fontFamily: FONTS.uiBold,
     fontSize: 14,
+    lineHeight: 18,
     fontVariant: ['tabular-nums'],
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   contentArea: {
     flex: 1,
+    minHeight: 0,
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
+    justifyContent: 'center',
     paddingTop: SPACING.xs,
-    paddingBottom: SPACING.lg,
   },
   questionScroll: {
-    flexGrow: 0,
+    flex: 1,
+    minHeight: 0,
   },
   questionScrollContent: {
     flexGrow: 1,
     width: '100%',
     justifyContent: 'center',
-    ...Platform.select({
-      web: {
-        justifyContent: 'flex-start' as const,
-        paddingTop: SPACING.xs,
-      },
-      default: {},
-    }),
+    paddingVertical: SPACING.md,
   },
   questionScrollContentWeb: {
     overflow: 'visible',
@@ -986,8 +1086,8 @@ const styles = StyleSheet.create({
   questionBox: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: SPACING.lg,
-    paddingTop: SPACING.xs,
+    gap: SPACING.xl,
+    paddingTop: SPACING.sm,
     paddingBottom: SPACING.md,
     width: '100%',
     maxWidth: '100%',
@@ -1002,18 +1102,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: '100%',
   },
-  footer: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingHorizontal: SPACING.xl,
-    zIndex: 10,
-  },
   answerButton: {
-    paddingHorizontal: 40,
-    paddingVertical: 18,
+    width: 286,
+    maxWidth: '88%',
+    minHeight: 58,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
     borderRadius: 22,
-    minWidth: 200,
     alignItems: 'center',
     justifyContent: 'center',
   },

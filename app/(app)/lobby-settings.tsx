@@ -2,35 +2,44 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPACING, FONT_SIZES, BORDER_RADIUS } from '@/constants';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { SPACING, FONT_SIZES, BORDER_RADIUS, FONTS, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import { HOME_SOFT_UI } from '@/themes';
+
+const T = HOME_SOFT_UI;
 
 export default function LobbySettingsModal() {
   const router = useRouter();
-  const colors = useTheme();
+
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.closeButton}>
-          <Text style={[styles.closeText, { color: colors.textOnBackground }]}>Close</Text>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+      <View style={[styles.header, SOFT_SURFACE_FACE, softSurfaceLift(), { backgroundColor: surface, borderRadius: 14, marginHorizontal: SPACING.lg, marginTop: SPACING.sm }]}>
+        <View style={styles.headerSpacer} />
+        <Text style={[styles.title, { color: textPrimary }]}>LOBBY SETTINGS</Text>
+        <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.closeButton, { opacity: pressed ? 0.8 : 1 }]}>
+          <Text style={[styles.closeText, { color: textPrimary }]}>CLOSE</Text>
         </Pressable>
-        <Text style={[styles.title, { color: colors.textOnBackground }]}>Lobby Settings</Text>
       </View>
-      <View style={styles.content}>
-        <Text style={[styles.subtitle, { color: colors.textSecondaryOnBackground }]}>
+      <View style={[styles.content, { paddingHorizontal: SPACING.lg }]}>
+        <Text style={[styles.subtitle, { color: textMuted }]}>
           Team setup, player names, mode config, and category selection. Full lobby builder coming in
           Phase 3.
         </Text>
         <Pressable
           style={({ pressed }) => [
             styles.placeholderButton,
-            { backgroundColor: colors.primary },
-            pressed && styles.pressed,
+            SOFT_SURFACE_FACE,
+            softSurfaceLift(),
+            { backgroundColor: surface },
+            pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
           ]}
           onPress={() => router.back()}
         >
-          <Text style={styles.placeholderButtonText}>Start Game (placeholder)</Text>
+          <Text style={[styles.placeholderButtonText, { color: textPrimary }]}>START GAME (PLACEHOLDER)</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -42,39 +51,52 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: SPACING.md,
-    borderBottomWidth: 1,
+    paddingHorizontal: SPACING.lg,
+    height: 64,
+  },
+  headerSpacer: {
+    width: 60,
   },
   closeButton: {
-    alignSelf: 'flex-end',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
   },
   closeText: {
-    fontSize: FONT_SIZES.md,
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 1,
   },
   title: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: 'bold',
-    marginTop: SPACING.sm,
+    fontFamily: FONTS.displayBold,
+    fontSize: 20,
+    letterSpacing: 0.8,
+    textAlign: 'center',
+    flex: 1,
   },
   content: {
     flex: 1,
     padding: SPACING.lg,
+    gap: SPACING.xl,
   },
   subtitle: {
+    fontFamily: FONTS.ui,
     fontSize: FONT_SIZES.md,
-    marginBottom: SPACING.xl,
+    lineHeight: 22,
   },
   placeholderButton: {
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
+    paddingVertical: SPACING.lg,
+    borderRadius: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 54,
   },
   placeholderButtonText: {
-    color: '#FFFFFF',
+    fontFamily: FONTS.displayBold,
     fontSize: FONT_SIZES.lg,
-    fontWeight: '600',
-  },
-  pressed: {
-    opacity: 0.8,
+    letterSpacing: 1,
   },
 });

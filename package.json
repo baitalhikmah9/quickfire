@@ -1,5 +1,5 @@
 {
-  "name": "quickfire",
+  "name": "backfire",
   "version": "1.0.0",
   "description": "A reusable React Native template using Expo with TypeScript, navigation, and best practices",
   "main": "expo-router/entry",
@@ -15,7 +15,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint .",
-    "seed:normalize": "tsx scripts/normalize-questions.ts"
+    "seed:normalize": "tsx scripts/normalize-questions.ts",
+    "topics:transparent": "python3 scripts/transparency-topic-images.py"
   },
   "keywords": [
     "expo",

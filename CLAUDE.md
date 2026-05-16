@@ -1,8 +1,8 @@
-# QuickFire — Agent Context
+# Backfire — Agent Context
 
 ## Codebase Overview
 
-QuickFire is a competitive multiplayer trivia mobile app built with **Expo SDK 55** (React Native 0.83, React 19.2). It uses Expo Router for navigation, **Clerk** for auth, **Convex** for backend/data, **Zustand** for ephemeral UI state, and TypeScript throughout.
+Backfire is a competitive multiplayer trivia mobile app built with **Expo SDK 55** (React Native 0.83, React 19.2). It uses Expo Router for navigation, **Clerk** for auth, **Convex** for backend/data, **Zustand** for ephemeral UI state, and TypeScript throughout.
 
 **Stack**: Expo, React Native, TypeScript, Clerk, Convex, Zustand
 

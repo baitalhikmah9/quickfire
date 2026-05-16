@@ -12,6 +12,7 @@ import { getResolvedContentLocaleChain } from '@/lib/i18n/config';
 import { HOME_SOFT_UI } from '@/themes';
 import { useLocaleStore } from '@/store/locale';
 import { Ionicons } from '@expo/vector-icons';
+import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
 
 const T = HOME_SOFT_UI;
 
@@ -19,7 +20,7 @@ const T = HOME_SOFT_UI;
 function getMockQuestions(count: number): QuestionCard[] {
   const categories = ['History', 'Pop Culture', 'Science', 'Sports', 'General'];
   const questions: QuestionCard[] = [];
-  const points = [200, 400, 600];
+  const points = [100, 200, 300];
   for (let i = 0; i < count; i++) {
     const cat = categories[i % categories.length];
     const pt = points[i % 3];
@@ -59,6 +60,7 @@ function neumorphicLift3D(tier: 'pill' | 'card' | 'panel'): any {
 
 export default function GameScreen() {
   const router = useRouter();
+  const fontSizes = useResponsivePlayFontSizes();
   const params = useLocalSearchParams<{ mode?: string }>();
   
   const contentLocaleChain = getResolvedContentLocaleChain(
@@ -141,8 +143,31 @@ export default function GameScreen() {
         <View style={styles.scores}>
           {session.config.teams.map((t) => (
             <View key={t.id} style={styles.scoreItem}>
-              <Text style={[styles.scoreTeamName, { color: textMuted }]}>{t.name.toUpperCase()}</Text>
-              <Text style={[styles.scoreValue, { color: textPrimary }]}>{session.scores[t.id] ?? 0}</Text>
+              <Text
+                style={[
+                  styles.scoreTeamName,
+                  {
+                    color: textMuted,
+                    fontSize: fontSizes.teamName,
+                    lineHeight: Math.round(fontSizes.teamName * 1.2),
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {t.name.toUpperCase()}
+              </Text>
+              <Text
+                style={[
+                  styles.scoreValue,
+                  {
+                    color: textPrimary,
+                    fontSize: fontSizes.scoreValue,
+                    lineHeight: Math.round(fontSizes.scoreValue * 1.15),
+                  },
+                ]}
+              >
+                {session.scores[t.id] ?? 0}
+              </Text>
             </View>
           ))}
         </View>

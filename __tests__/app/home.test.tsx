@@ -39,7 +39,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'common.tokens': 'Tokens',
         'home.continueGame': 'Continue Game',
         'home.logoCapline': 'TRIVIA',
-        'home.logoWordmark': 'QuickFire',
+        'home.logoWordmark': 'Backfire',
         'home.newGame': 'New Game',
         'home.playTriviaA11yResume':
           'Play trivia. You have a game in progress; opens a choice to continue or start new.',
@@ -204,11 +204,11 @@ describe('AppHubScreen', () => {
     });
   });
 
-  it('shows the QuickFire logo image in the home header title area', () => {
+  it('shows the Backfire logo image in the home header title area', () => {
     render(<AppHubScreen />);
 
     expect(screen.getByTestId('home-brand-logo')).toBeTruthy();
-    expect(screen.queryByText('QuickFire')).toBeNull();
+    expect(screen.queryByText('Backfire')).toBeNull();
   });
 
   it('uses the brand raised surface treatment for mode choices', () => {
@@ -239,7 +239,7 @@ describe('AppHubScreen', () => {
       fontSize: 12,
       letterSpacing: 0.15,
     });
-    expect(screen.queryByTestId('home-quickfire-mode-art')).toBeNull();
+    expect(screen.queryByTestId('home-backfire-mode-art')).toBeNull();
   });
 
   it('opens a small explanation when tapping the mode info icon', () => {

@@ -2,7 +2,7 @@
  * Production web origin for SEO (canonical URLs, Open Graph, sitemaps).
  * Override per deployment with EXPO_PUBLIC_SITE_ORIGIN when previews should not canonicalize to prod.
  */
-export const DEFAULT_PUBLIC_SITE_ORIGIN = 'https://playquickfire.com';
+export const DEFAULT_PUBLIC_SITE_ORIGIN = 'https://playbackfire.com';
 
 export function getPublicSiteOrigin(): string {
   const fromEnv =

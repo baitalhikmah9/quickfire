@@ -11,7 +11,7 @@ import { StepSplitTeams } from '@/features/lobby/StepSplitTeams';
 import { lifelinesToConfig } from '@/features/shared';
 import type { GameConfig, TeamConfig, LifelineId, QuestionCard } from '@/features/shared';
 import { FALLBACK_CATEGORIES } from '@/constants/categories';
-import { SPACING, FONTS } from '@/constants';
+import { SPACING, FONTS, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { getResolvedContentLocaleChain } from '@/lib/i18n/config';
 import { useGameStore } from '@/store/game';
 import { useLocaleStore } from '@/store/locale';
@@ -22,23 +22,6 @@ const T = HOME_SOFT_UI;
 
 const STEPS = ['categories', 'teamInfo', 'splitTeams'] as const;
 
-/** Raised plastic tile shadow tier. */
-function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill'): any {
-  const m =
-    tier === 'hero'
-      ? { h: 10, r: 0, el: 12 }
-      : tier === 'header'
-      ? { h: 6, r: 0, el: 8 }
-      : { h: 4, r: 0, el: 4 };
-
-  return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: m.el,
-  };
-}
 
 export default function CreateGameScreen() {
   const router = useRouter();
@@ -114,7 +97,7 @@ export default function CreateGameScreen() {
       ? [...new Set(slugs.map((s) => categories.find((x) => x.slug === s)?.title ?? s))]
       : ['General'];
     const questions: QuestionCard[] = [];
-    const points = [200, 400, 600];
+    const points = [100, 200, 300];
     for (let i = 0; i < count; i++) {
       const cat = catNames[i % catNames.length] ?? 'General';
       questions.push({
@@ -207,15 +190,15 @@ export default function CreateGameScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
-      <View style={[styles.header, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'header')]}>
+      <View style={[styles.header, SOFT_SURFACE_FACE, { backgroundColor: surface }, softSurfaceLift()]}>
         <View style={styles.headerLeft}>
           <Pressable
             onPress={() => (step > 0 ? setStep(step - 1) : router.back())}
             style={({ pressed }) => [
               styles.backButton,
-              styles.plasticFace,
+              SOFT_SURFACE_FACE,
+              softSurfaceLift(),
               { backgroundColor: surface, opacity: pressed ? 0.94 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
-              neumorphicLift3D(shadowHex, 'pill'),
             ]}
           >
             <Ionicons name="chevron-back" size={20} color={textPrimary} />
@@ -253,12 +236,6 @@ export default function CreateGameScreen() {
 }
 
 const styles = StyleSheet.create({
-  plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
-  },
   safeArea: { flex: 1 },
   stepBody: { flex: 1 },
   header: {
@@ -286,7 +263,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },

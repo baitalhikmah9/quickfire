@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "QuickFire",
-    "slug": "quickfire",
-    "scheme": "quickfire",
+    "name": "Backfire",
+    "slug": "backfire",
+    "scheme": "backfire",
     "version": "1.0.0",
     "orientation": "landscape",
-    "icon": "./assets/QF logo.png",
+    "icon": "./assets/Backfire logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/QF logo.png",
+      "image": "./assets/Backfire logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
@@ -19,13 +19,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/QF logo.png",
+        "foregroundImage": "./assets/Backfire logo.png",
         "backgroundColor": "#000000"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/QF logo.png",
+      "favicon": "./assets/Backfire logo.png",
       "bundler": "metro",
       "output": "static"
     },
