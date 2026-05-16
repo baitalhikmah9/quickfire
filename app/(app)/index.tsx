@@ -467,7 +467,9 @@ export default function AppHubScreen() {
                 onPress={continueCurrentGame}
                 style={({ pressed }) => [
                   styles.raisedButton,
-                  { backgroundColor: '#007BFF', borderColor: '#0056CC', opacity: pressed ? 0.88 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
+                  styles.primaryRaisedButton,
+                  styles.primaryRaisedButtonDepth,
+                  { opacity: pressed ? 0.88 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
                 ]}
               >
                 <Text style={styles.raisedButtonTextPrimary}>{t('home.continueGame').toUpperCase()}</Text>
@@ -478,7 +480,9 @@ export default function AppHubScreen() {
                 onPress={startPendingModeNewGame}
                 style={({ pressed }) => [
                   styles.raisedButton,
-                  { backgroundColor: '#FFFFFF', borderColor: '#CCCCCC', opacity: pressed ? 0.88 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
+                  styles.secondaryRaisedButton,
+                  styles.secondaryRaisedButtonDepth,
+                  { opacity: pressed ? 0.88 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
                 ]}
               >
                 <Text style={styles.raisedButtonText}>{t('home.newGame').toUpperCase()}</Text>
@@ -727,6 +731,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: SPACING.sm,
     borderWidth: 1.5,
+    borderTopWidth: 2,
+    borderBottomWidth: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  primaryRaisedButton: {
+    backgroundColor: '#FF8A00',
+    borderColor: '#C76400',
+  },
+  primaryRaisedButtonDepth: {
+    borderTopColor: 'rgba(255, 214, 163, 0.72)',
+    borderBottomColor: '#C76400',
+    shadowColor: 'rgba(255, 138, 0, 0.42)',
+  },
+  secondaryRaisedButton: {
+    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(51, 51, 51, 0.12)',
+  },
+  secondaryRaisedButtonDepth: {
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    shadowColor: 'rgba(51, 51, 51, 0.15)',
   },
   raisedButtonText: {
     fontFamily: FONTS.uiBold,
