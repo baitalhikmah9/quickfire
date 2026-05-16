@@ -36,7 +36,7 @@ const ar = withEnglishFallback({
   'profile.changeThemeDescription': 'خصص مظهر التطبيق',
   'store.purchaseTitle': 'اشترِ باقات الرموز',
   'store.demoTitle': 'وضع العرض التجريبي',
-  'play.hubTitle': 'العب QuickFire',
+  'play.hubTitle': 'العب Backfire',
   'play.startNewGame': 'ابدأ لعبة جديدة',
   'play.resumeCurrentMatch': 'استئناف المباراة الحالية',
   'play.chooseModeTitle': 'اختر وضعاً',

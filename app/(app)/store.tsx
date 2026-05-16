@@ -13,41 +13,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@clerk/clerk-expo';
 import { Redirect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SPACING, BORDER_RADIUS, TYPE_SCALE, FONTS, LAYOUT } from '@/constants';
+import { COLORS, SPACING, BORDER_RADIUS, TYPE_SCALE, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { PillCollapsibleSection } from '@/components/PillCollapsibleSection';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { STORE_BUNDLES, type StoreBundle } from '@/features/play/storeBundles';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
 import { isAuthDisabled } from '@/lib/authMode';
 import { usePlayStore } from '@/store/play';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 const COMPACT_BUNDLES_ROW_MAX_WIDTH = 584;
-
-/** Raised plastic tile shadow tier. */
-function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill' | 'card'): any {
-  const m =
-    tier === 'hero'
-      ? { h: 10, r: 0, el: 12 }
-      : tier === 'header'
-      ? { h: 6, r: 0, el: 8 }
-      : tier === 'card'
-      ? { h: 8, r: 0, el: 10 }
-      : { h: 4, r: 0, el: 4 };
-
-  return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: m.el,
-  };
-}
-
 
 
 const VOUCHER_CODES: Record<string, number> = {
@@ -73,7 +51,6 @@ function BundleCard({
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
-  const shadowHex = T.colors.shadowStrong;
   const accentGlow = T.colors.accentGlow;
 
   return (
@@ -81,13 +58,13 @@ function BundleCard({
       <Pressable
         style={({ pressed }) => [
           styles.bundleCard,
-          styles.plasticFace,
+          SOFT_SURFACE_FACE,
+          softSurfaceLift(),
           {
             backgroundColor: surface,
             opacity: pressed ? 0.96 : 1,
             transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
           },
-          neumorphicLift3D(shadowHex, 'card'),
         ]}
         onPress={onPress}
       >
@@ -113,7 +90,7 @@ function BundleCard({
         <View 
           style={[
             styles.buyButton, 
-            styles.plasticFace,
+            SOFT_SURFACE_FACE,
             { backgroundColor: accentGlow }
           ]}
         >
@@ -140,7 +117,6 @@ export default function StoreScreen() {
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
-  const shadowHex = T.colors.shadowStrong;
 
   if (!isLoaded && !authDisabled) {
     return null;
@@ -197,9 +173,9 @@ export default function StoreScreen() {
               onPress={handleBack}
               style={({ pressed }) => [
                 styles.backButton,
-                styles.plasticFace,
+                SOFT_SURFACE_FACE,
+                softSurfaceLift(),
                 { backgroundColor: surface },
-                styles.raisedButtonDepth,
                 {
                   opacity: pressed ? 0.9 : 1,
                   transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
@@ -246,7 +222,7 @@ export default function StoreScreen() {
 
           <View style={styles.redeemSection}>
             <Text style={[styles.redeemTitle, { color: textPrimary }]}>REDEEM CODE</Text>
-            <View style={[styles.redeemCard, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'header')]}>
+            <View style={[styles.redeemCard, SOFT_SURFACE_FACE, { backgroundColor: surface }, softSurfaceLift()]}>
               <TextInput
                 value={voucherCode}
                 onChangeText={setVoucherCode}
@@ -267,13 +243,13 @@ export default function StoreScreen() {
                 onPress={applyVoucher}
                 style={({ pressed }) => [
                   styles.applyButton,
-                  styles.plasticFace,
+                  SOFT_SURFACE_FACE,
+                  softSurfaceLift(),
                   {
-                    backgroundColor: '#6D8EB1', // Match image blue
+                    backgroundColor: '#6D8EB1',
                     opacity: pressed ? 0.92 : 1,
                     transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }]
                   },
-                  neumorphicLift3D(shadowHex, 'pill'),
                 ]}
               >
                 <Text style={styles.applyButtonText}>APPLY CODE</Text>
@@ -287,12 +263,6 @@ export default function StoreScreen() {
 }
 
 const styles = StyleSheet.create({
-  plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
-  },
   safeArea: {
     flex: 1,
   },
@@ -336,17 +306,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  raisedButtonDepth: {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
-  },
+
   title: {
     fontFamily: FONTS.displayBold,
-    fontSize: 42,
-    letterSpacing: 2,
+    fontSize: 20,
+    letterSpacing: 0.8,
     marginBottom: 0,
   },
   tokenBalanceHint: {

@@ -246,6 +246,7 @@ const persistedGameSessionSchema = z.object({
   bonus: bonusChallengeSchema,
   lastAwardedTeamId: z.string().nullable().optional(),
   timerStartedAt: z.number().optional(),
+  timedOutQuestionId: z.string().optional(),
   overtime: overtimeStateSchema.optional(),
   scoreEvents: z.array(scoreEventSchema).default([]),
   lifelineRuntime: lifelineRuntimeStateSchema.optional(),
@@ -274,6 +275,7 @@ export interface PersistedGameSessionState {
   bonus: BonusChallengeState;
   lastAwardedTeamId?: string | null;
   timerStartedAt?: number;
+  timedOutQuestionId?: string;
   overtime?: OvertimeState;
   scoreEvents: ScoreEvent[];
   lifelineRuntime?: LifelineRuntimeState;

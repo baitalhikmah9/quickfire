@@ -14,9 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { QuickFireTitleLogo } from '@/components/QuickFireTitleLogo';
 import { FONTS, SPACING, LAYOUT } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
+import { GameHeader } from '@/components/GameHeader';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -75,7 +75,7 @@ function brandRaisedSurfaceShadow(tier: 'hero' | 'header' | 'pill'): ViewStyle {
   };
 }
 
-function RumblePeopleIcon({ size, color, compact }: { size: number; color: string; compact: boolean }) {
+function RumblePeopleIcon({ size, color, compact, isWeb }: { size: number; color: string; compact: boolean; isWeb?: boolean }) {
   const personSize = Math.round(size * 0.42);
   return (
     <View
@@ -84,7 +84,7 @@ function RumblePeopleIcon({ size, color, compact }: { size: number; color: strin
         {
           width: size,
           height: Math.round(size * 0.74),
-          marginBottom: compact ? 4 : 10,
+          marginBottom: compact ? 4 : (isWeb ? 8 : 10),
         },
       ]}
       accessible={false}
@@ -123,8 +123,8 @@ export default function AppHubScreen() {
 
   const isWeb = Platform.OS === 'web';
 
-  const modeGap = compact ? SPACING.md : (isWeb ? 32 : SPACING.lg);
-  const modeIconSize = compact ? 70 : (isWeb ? 104 : 92);
+  const modeGap = compact ? SPACING.md : (isWeb ? 36 : SPACING.lg);
+  const modeIconSize = compact ? 70 : (isWeb ? 96 : 92);
   const modeInfoIconSize = compact ? 20 : 24;
   const minimumTokenCostForMode = useCallback(
     (mode: GameMode) => (mode === 'quickPlay' ? getGameTokenCost(mode, 3) : getGameTokenCost(mode)),
@@ -232,36 +232,30 @@ export default function AppHubScreen() {
       >
         <ScreenContent fullWidth style={styles.viewport}>
           <View style={styles.pageColumn}>
-            <View style={[styles.contentFrame, isWeb && { maxWidth: 1150 }]}>
-            <View style={[styles.headerBar, compact && styles.headerBarCompact]}>
-              <View style={[styles.headerEdge, styles.headerEdgeLeading]}>
+            {/* Web: shared max-width aligns header bar + card row edges. */}
+            <View style={[styles.contentFrame, isWeb && { maxWidth: 1250 }]}>
+            <GameHeader variant="logoOnly"
+              barMaxWidthOverride={isWeb ? 1250 : undefined}
+              style={isWeb ? { paddingHorizontal: 8 } : undefined}
+              leftSlot={
                 <HubTokenChip
                   label={t('common.tokens')}
                   value={formattedTokens}
                   rowDirection={rowDir}
                   variant="softUi"
-                  outerStyle={styles.hubTokenLeading}
+                  outerStyle={{ alignSelf: 'flex-start' }}
                   onPress={() => router.push('/(app)/store')}
                   accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
                 />
-              </View>
-
-              <View style={styles.headerLogoWrap} pointerEvents="none">
-                <QuickFireTitleLogo
-                  width={compact ? 172 : (isWeb ? 280 : 220)}
-                  testID="home-brand-logo"
-                  containerStyle={styles.headerLogoImageWrap}
-                />
-              </View>
-
-              <View style={[styles.headerEdge, styles.headerEdgeTrailing]}>
+              }
+              rightSlot={
                 <Pressable
                   onPress={() => router.push('/(app)/profile')}
                   accessibilityRole="button"
                   accessibilityLabel={t('profile.preferences')}
                   style={({ pressed }) => [
                     styles.settingsImageButton,
-                    { opacity: pressed ? 0.92 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
+                    { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
                   ]}
                 >
                   <Image
@@ -270,8 +264,8 @@ export default function AppHubScreen() {
                     resizeMode="contain"
                   />
                 </Pressable>
-              </View>
-            </View>
+              }
+            />
 
             <View style={styles.mainFill}>
               <View
@@ -283,7 +277,7 @@ export default function AppHubScreen() {
                 ]}
               >
                 {HOME_MODES.map((mode) => (
-                  <View key={mode.id} style={[styles.modeTileContainer, isWeb && { aspectRatio: 0.75 }]}>
+                  <View key={mode.id} style={[styles.modeTileContainer, isWeb && { aspectRatio: 0.95 }]}>
                     {(() => {
                       const minimumCost = minimumTokenCostForMode(mode.id);
                       const canAffordMode = tokens >= minimumCost;
@@ -304,6 +298,7 @@ export default function AppHubScreen() {
                               borderRadius: 44,
                               opacity: !canAffordMode ? 0.45 : pressed ? 0.94 : 1,
                               transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                              ...(isWeb ? { paddingVertical: SPACING.md } : {}),
                             },
                             brandRaisedSurfaceShadow('hero'),
                           ]}
@@ -313,13 +308,14 @@ export default function AppHubScreen() {
                               size={modeIconSize * 0.74}
                               color={textPrimary}
                               compact={compact}
+                              isWeb={isWeb}
                             />
                           ) : (
                             <Ionicons
                               name={mode.icon}
                               size={modeIconSize * 0.74}
                               color={textPrimary}
-                              style={{ marginBottom: compact ? 4 : (isWeb ? 14 : 10) }}
+                              style={{ marginBottom: compact ? 4 : (isWeb ? 8 : 10) }}
                             />
                           )}
                           <Text
@@ -328,7 +324,7 @@ export default function AppHubScreen() {
                               styles.modeTileLabel,
                               compact && styles.modeTileLabelCompact,
                               { color: textPrimary },
-                              isWeb && { fontSize: 19 },
+                              isWeb && { fontSize: 17 },
                             ]}
                             numberOfLines={1}
                             adjustsFontSizeToFit
@@ -341,7 +337,7 @@ export default function AppHubScreen() {
                               styles.modeTileCopy,
                               compact && styles.modeTileCopyCompact,
                               { color: textMuted },
-                              isWeb && { fontSize: 13, lineHeight: 18 },
+                              isWeb && { fontSize: 12, lineHeight: 16 },
                             ]}
                             numberOfLines={2}
                             adjustsFontSizeToFit
@@ -349,15 +345,15 @@ export default function AppHubScreen() {
                           >
                             {t(mode.copyKey)}
                           </Text>
-                          <View style={styles.modeTileCostRow}>
-                            <Ionicons name="diamond" size={compact ? 9 : (isWeb ? 13 : 11)} color={textPrimary} />
+                          <View style={[styles.modeTileCostRow, isWeb && { marginTop: SPACING.xs }]}>
+                            <Ionicons name="diamond" size={compact ? 9 : (isWeb ? 11 : 11)} color={textPrimary} />
                             <Text
                               testID={`home-mode-token-cost-${mode.id}`}
                               style={[
                                 styles.modeTileCostText,
                                 compact && styles.modeTileCostTextCompact,
                                 { color: textPrimary },
-                                isWeb && { fontSize: 12, lineHeight: 15 },
+                                isWeb && { fontSize: 11, lineHeight: 14 },
                               ]}
                               numberOfLines={1}
                             >
@@ -450,16 +446,17 @@ export default function AppHubScreen() {
           />
           <View
             style={[
-              styles.infoModalCard,
+              styles.resumeModalCard,
               styles.plasticFace,
               brandRaisedSurfaceShadow('hero'),
               { backgroundColor: surface },
+              isWeb && { maxWidth: 480 },
             ]}
           >
-            <Text style={[styles.infoModalTitle, { color: textPrimary }]}>
+            <Text style={[styles.infoModalTitle, { color: textPrimary, marginBottom: 16 }]}>
               {t('home.resumeModalTitle')}
             </Text>
-            <Text style={[styles.infoModalBody, { color: textPrimary }]}>
+            <Text style={[styles.infoModalBody, { color: textPrimary, marginBottom: 4 }]}>
               {t('home.resumeModalBody')}
             </Text>
 
@@ -469,22 +466,22 @@ export default function AppHubScreen() {
                 accessibilityLabel={t('home.continueGame')}
                 onPress={continueCurrentGame}
                 style={({ pressed }) => [
-                  styles.resumePrimaryButton,
-                  { opacity: pressed ? 0.78 : 1 },
+                  styles.raisedButton,
+                  { backgroundColor: '#007BFF', borderColor: '#0056CC', opacity: pressed ? 0.88 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
                 ]}
               >
-                <Text style={styles.resumePrimaryButtonText}>{t('home.continueGame')}</Text>
+                <Text style={styles.raisedButtonTextPrimary}>{t('home.continueGame').toUpperCase()}</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('home.newGame')}
                 onPress={startPendingModeNewGame}
                 style={({ pressed }) => [
-                  styles.resumeSecondaryButton,
-                  { opacity: pressed ? 0.78 : 1 },
+                  styles.raisedButton,
+                  { backgroundColor: '#FFFFFF', borderColor: '#CCCCCC', opacity: pressed ? 0.88 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
                 ]}
               >
-                <Text style={styles.resumeSecondaryButtonText}>{t('home.newGame')}</Text>
+                <Text style={styles.raisedButtonText}>{t('home.newGame').toUpperCase()}</Text>
               </Pressable>
             </View>
           </View>
@@ -532,57 +529,7 @@ const styles = StyleSheet.create({
     minHeight: 0,
     justifyContent: 'flex-start',
   },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    paddingTop: SPACING.sm,
-    paddingBottom: SPACING.sm,
-    paddingHorizontal: 8,
-    minHeight: 56,
-    flexShrink: 0,
-  },
-  headerBarCompact: {
-    paddingTop: SPACING.xs,
-    paddingBottom: 2,
-    minHeight: 48,
-  },
-  headerEdge: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerEdgeLeading: {
-    alignItems: 'flex-start',
-  },
-  headerEdgeTrailing: {
-    alignItems: 'flex-end',
-  },
-  headerLogoWrap: {
-    flex: 2,
-    minWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.xs,
-  },
-  headerLogoImageWrap: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  /** Home hub: token chip — left-aligned, vertically centered via headerEdge justifyContent. */
-  hubTokenLeading: {
-    alignSelf: 'flex-start',
-  },
 
-  headerSquircleInner: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   settingsImageButton: {
     width: 52,
     height: 52,
@@ -717,6 +664,20 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 2,
   },
+  resumeModalCard: {
+    width: '100%',
+    maxWidth: 520,
+    paddingTop: 30,
+    paddingBottom: 24,
+    paddingLeft: 24,
+    paddingRight: 24,
+    borderRadius: 42,
+    gap: 0,
+    alignItems: 'center',
+    position: 'relative',
+    zIndex: 2,
+    minHeight: 210,
+  },
   infoModalTitle: {
     fontFamily: FONTS.displayBold,
     fontSize: 20,
@@ -734,8 +695,17 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.lg,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.03)',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.78)',
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    shadowColor: 'rgba(51, 51, 51, 0.15)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
   infoModalCloseText: {
     fontFamily: FONTS.uiBold,
@@ -746,33 +716,34 @@ const styles = StyleSheet.create({
   resumeButtonsRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: SPACING.sm,
-    marginTop: SPACING.xs,
+    gap: SPACING.md,
+    marginTop: 20,
   },
-  resumePrimaryButton: {
+  raisedButton: {
     flex: 1,
-    minHeight: 42,
-    borderRadius: 20,
+    minHeight: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1B73E8',
+    paddingHorizontal: SPACING.sm,
+    borderWidth: 1.5,
   },
-  resumePrimaryButtonText: {
+  raisedButtonText: {
     fontFamily: FONTS.uiBold,
-    fontSize: 13,
+    fontSize: 12,
+    letterSpacing: 1.2,
+    color: '#333333',
+  },
+  raisedButtonTextPrimary: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    letterSpacing: 1.2,
     color: '#FFFFFF',
   },
-  resumeSecondaryButton: {
-    flex: 1,
-    minHeight: 42,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.06)',
-  },
-  resumeSecondaryButtonText: {
+  raisedButtonTextAccent: {
     fontFamily: FONTS.uiBold,
-    fontSize: 13,
-    color: '#333333',
+    fontSize: 12,
+    letterSpacing: 1.2,
+    color: '#007BFF',
   },
 });

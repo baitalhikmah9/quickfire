@@ -13,14 +13,16 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
-import { QuickFireTitleLogo } from '@/components/QuickFireTitleLogo';
 import { Button } from '@/components/ui/Button';
+import { GameHeader } from '@/components/GameHeader';
+import { HeaderBackButton } from '@/components/HeaderBackButton';
 import { FONT_SIZES, FONTS, SPACING } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { getRowDirection } from '@/lib/i18n/direction';
 import { usePlayStore } from '@/store/play';
 import type { GameSessionState } from '@/features/shared';
 import { HOME_SOFT_UI } from '@/themes';
@@ -103,6 +105,8 @@ export default function TeamSetupScreen() {
   /** Phones / mobile web narrow view — hug Continue CTA with no extra strip padding. */
   const tightContinueStrip =
     Platform.OS === 'ios' || Platform.OS === 'android' || shortSide < 560;
+  /** Desktop web: three-column balanced layout with constrained panel widths. */
+  const isWebLayout = Platform.OS === 'web' && windowWidth >= 900;
   const viewportScale = Math.max(0.72, Math.min(1.08, Math.min(windowWidth / 860, windowHeight / 620)));
   const { direction, getTextStyle, t } = useI18n();
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
@@ -145,11 +149,6 @@ export default function TeamSetupScreen() {
   const cardPad = Math.round((shortScreen ? SPACING.sm : SPACING.md) * viewportScale);
   const centerTitleSize = Math.round((shortScreen ? 14 : FONT_SIZES.lg) * viewportScale);
   const centerIconSize = Math.round((shortScreen ? 40 : 64) * viewportScale);
-
-  const teamSetupLogoWidth = Math.min(
-    200,
-    Math.max(96, Math.round(Math.min(windowWidth, 700) * 0.28))
-  );
 
   const rumbleDensity = useMemo(
     () => getRumbleTeamSetupDensity(windowWidth, windowHeight),
@@ -525,11 +524,44 @@ export default function TeamSetupScreen() {
       showsVerticalScrollIndicator={Platform.OS !== 'web'}
     >
       {landscape ? (
-        <View style={[styles.landscapeRow, shortScreen && styles.landscapeRowTight]}>
-          <View style={styles.teamCol}>{teamCard(session.teams[0])}</View>
-          <View style={styles.centerCol}>{centerColumn}</View>
-          <View style={styles.teamCol}>{teamCard(session.teams[1])}</View>
-        </View>
+        isWebLayout ? (
+          <View style={styles.webLandscapeRow}>
+            <View style={styles.webTeamPanel}>{teamCard(session.teams[0])}</View>
+            <View style={styles.webCenterColumn}>
+              {centerColumn}
+              <View style={styles.webContinueSection}>
+                <Button
+                  title={t('common.continue').toUpperCase()}
+                  onPress={() => router.push('/play/categories')}
+                  disabled={!canContinue}
+                  style={StyleSheet.flatten([styles.continueBtn, styles.webContinueBtn, !canContinue && { opacity: 0.5 }])}
+                  textStyle={StyleSheet.flatten([
+                    styles.continueBtnText,
+                    getTextStyle(undefined, 'bodySemibold', 'center'),
+                  ])}
+                />
+                {!canContinue && (
+                  <Text
+                    style={[
+                      styles.footerHint,
+                      { color: T.textMuted },
+                      getTextStyle(undefined, 'body', 'center'),
+                    ]}
+                  >
+                    {t('play.setupIncompleteHint') || 'Enter all names to continue'}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <View style={styles.webTeamPanel}>{teamCard(session.teams[1])}</View>
+          </View>
+        ) : (
+          <View style={[styles.landscapeRow, shortScreen && styles.landscapeRowTight]}>
+            <View style={styles.teamCol}>{teamCard(session.teams[0])}</View>
+            <View style={styles.centerCol}>{centerColumn}</View>
+            <View style={styles.teamCol}>{teamCard(session.teams[1])}</View>
+          </View>
+        )
       ) : (
         <View style={[styles.portraitColumn, shortScreen && styles.portraitColumnTight]}>
           <View style={styles.teamSlot}>{teamCard(session.teams[0])}</View>
@@ -544,29 +576,31 @@ export default function TeamSetupScreen() {
     <View style={styles.fixedViewportLayout}>
       <View style={styles.cardsViewportSlot}>{teamSetupBody}</View>
 
-      <View style={[styles.floatingButtonWrap, tightContinueStrip && styles.floatingButtonWrapTight]}>
-        <Button
-          title={t('common.continue').toUpperCase()}
-          onPress={() => router.push('/play/categories')}
-          disabled={!canContinue}
-          style={StyleSheet.flatten([styles.continueBtn, !canContinue && { opacity: 0.5 }])}
-          textStyle={StyleSheet.flatten([
-            styles.continueBtnText,
-            getTextStyle(undefined, 'bodySemibold', 'center'),
-          ])}
-        />
-        {!canContinue && (
-          <Text
-            style={[
-              styles.footerHint,
-              { color: T.textMuted },
-              getTextStyle(undefined, 'body', 'center'),
-            ]}
-          >
-            {t('play.setupIncompleteHint') || 'Enter all names to continue'}
-          </Text>
-        )}
-      </View>
+      {!isWebLayout && (
+        <View style={[styles.floatingButtonWrap, tightContinueStrip && styles.floatingButtonWrapTight]}>
+          <Button
+            title={t('common.continue').toUpperCase()}
+            onPress={() => router.push('/play/categories')}
+            disabled={!canContinue}
+            style={StyleSheet.flatten([styles.continueBtn, !canContinue && { opacity: 0.5 }])}
+            textStyle={StyleSheet.flatten([
+              styles.continueBtnText,
+              getTextStyle(undefined, 'bodySemibold', 'center'),
+            ])}
+          />
+          {!canContinue && (
+            <Text
+              style={[
+                styles.footerHint,
+                { color: T.textMuted },
+                getTextStyle(undefined, 'body', 'center'),
+              ]}
+            >
+              {t('play.setupIncompleteHint') || 'Enter all names to continue'}
+            </Text>
+          )}
+        </View>
+      )}
     </View>
   );
 
@@ -575,40 +609,18 @@ export default function TeamSetupScreen() {
       title={t('play.teamSetupTitle')}
       onBack={() => router.replace('/(app)/')}
       customHeader={
-        <View style={styles.teamSetupHeader} accessibilityRole="header">
-          <Pressable
-            onPress={() => router.replace('/(app)/')}
-            style={({ pressed }) => [
-              styles.headerBackButton,
-              PLASTIC_FACE,
-              neumorphicLift(T.shadowStrong, 'header'),
-              pressed && styles.headerBackButtonPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.back')}
-          >
-            <Ionicons
-              name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'}
-              size={18}
-              color={T.textPrimary}
+        <GameHeader
+          variant="logoTitle"
+          title={t('play.teamSetupTitle')}
+          leftSlot={
+            <HeaderBackButton
+              onPress={() => router.replace('/(app)/')}
+              direction={direction}
+              rowDirection={getRowDirection(direction)}
+              label={t('common.back')}
             />
-            <Text style={styles.headerBackLabel}>{t('common.back')}</Text>
-          </Pressable>
-          <View style={styles.headerTitleBlock}>
-            <QuickFireTitleLogo
-              width={teamSetupLogoWidth}
-              testID="team-setup-brand-logo"
-              containerStyle={styles.headerLogoWrap}
-            />
-            <Text
-              numberOfLines={1}
-              style={[styles.teamSetupHeaderTitle, getTextStyle(undefined, 'displayBold', 'center')]}
-            >
-              {t('play.teamSetupTitle').toUpperCase()}
-            </Text>
-          </View>
-          <View style={styles.headerMirrorSpacer} />
-        </View>
+          }
+        />
       }
       bodyScrollEnabled={false}
       bodyFrame={false}
@@ -652,57 +664,8 @@ export default function TeamSetupScreen() {
 }
 
 const styles = StyleSheet.create({
-  teamSetupHeader: {
-    minHeight: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.xs,
-  },
-  headerTitleBlock: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.xs,
-  },
-  headerLogoWrap: {
-    alignItems: 'center',
-  },
-  headerBackButton: {
-    minWidth: 80,
-    height: 38,
-    paddingHorizontal: SPACING.sm,
-    borderRadius: 14,
-    backgroundColor: T.surface,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  headerBackLabel: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 14,
-    color: T.textPrimary,
-  },
-  headerBackButtonPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
-  },
-  teamSetupHeaderTitle: {
-    width: '100%',
-    textAlign: 'center',
-    fontFamily: FONTS.displayBold,
-    color: T.textPrimary,
-    fontSize: FONT_SIZES.md,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-    paddingHorizontal: SPACING.sm,
-  },
-  headerMirrorSpacer: {
-    width: 80,
-    height: 38,
-  },
+
+
   bodyFill: {
     flex: 1,
     minHeight: 0,
@@ -1127,6 +1090,48 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
     textAlign: 'center',
     fontFamily: FONTS.ui,
+  },
+
+  /* ── Web-only desktop layout ── */
+  /** Outer row: centered container with max-width for a composed desktop feel. */
+  webLandscapeRow: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 36,
+    maxWidth: 1320,
+    alignSelf: 'center',
+    width: '100%',
+    minHeight: 0,
+    minWidth: 0,
+  },
+  /** Team panel: constrained width with a sensible height range so it doesn't stretch. */
+  webTeamPanel: {
+    flex: 1,
+    maxWidth: 480,
+    minHeight: 580,
+    maxHeight: '70vh',
+    minWidth: 0,
+  },
+  /** Center column: fixed action width, vertically centers wager + Continue button. */
+  webCenterColumn: {
+    width: 260,
+    flexShrink: 0,
+    flexGrow: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 32,
+    minHeight: 0,
+  },
+  /** Wraps the Continue button below the wager card in the center column. */
+  webContinueSection: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 4,
+  },
+  /** Slightly wider Continue button on web, matching the center column scale. */
+  webContinueBtn: {
+    maxWidth: 280,
+    minHeight: 48,
   },
 
 });

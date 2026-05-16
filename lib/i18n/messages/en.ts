@@ -1,5 +1,5 @@
 const enBase = {
-  'common.appName': 'QuickFire',
+  'common.appName': 'Backfire',
   'common.back': 'Back',
   'common.close': 'Close',
   'common.cancel': 'Cancel',
@@ -109,7 +109,7 @@ const enBase = {
 
   'hub.play': 'Play',
 
-  'home.logoWordmark': 'QuickFire',
+  'home.logoWordmark': 'Backfire',
   'home.logoCapline': 'TRIVIA',
   'home.playTriviaCta': 'PLAY TRIVIA',
   'home.playTriviaSub': 'Start a new challenge',
@@ -175,7 +175,7 @@ const enBase = {
   'home.multiplierValue': '×{value}',
   'home.fabNewGameA11y': 'Start a new game',
   'home.notificationsA11y': 'Notifications',
-  'home.classicHeroShort': 'Full topics, wagers, and the complete board — the standard QuickFire match.',
+  'home.classicHeroShort': 'Full topics, wagers, and the complete board — the standard Backfire match.',
   'home.quickGridShort': 'Five topics, faster setup — same team flow.',
   'home.randomGridShort': 'Random draws each turn; wagers off.',
   'home.rumbleGridShort': 'Multi-team clashes with deliberation and steal timing.',
@@ -208,7 +208,7 @@ const enBase = {
   'profile.guest.createAccount': 'CREATE ACCOUNT',
   'profile.guest.login': 'LOGIN',
   'profile.guest.tokenPill': '{count} TOKENS',
-  'profile.guest.wordmark': 'QUICKFIRE',
+  'profile.guest.wordmark': 'BACKFIRE',
 
   'store.purchaseTitle': 'Token Store',
   'store.purchaseDescription': 'Fuel your climb to the top',
@@ -248,7 +248,7 @@ const enBase = {
   'store.typicalGameTokensHint':
     'A regular 6 topic game (45-60 mins) is typically around 10 tokens',
 
-  'play.hubTitle': 'Play QuickFire',
+  'play.hubTitle': 'Play Backfire',
   'play.hubSubtitle': 'A modern game-night shell with the full TriviaApp flow inside it.',
   'play.startNewGame': 'Start New Game',
   'play.resumeCurrentMatch': 'Resume Current Match',
@@ -338,6 +338,8 @@ const enBase = {
   'play.noQuestionsLeft': 'No Questions Left',
   'play.questionTimer': 'Question Timer',
   'play.showAnswer': 'Show Answer',
+  'play.timeUpTitle': "Time's up",
+  'play.timeUpBody': 'The question expired. The answer is revealed and no points are awarded.',
   'play.rumbleWaiting': 'Teams appear after 30 seconds.',
   'play.rumbleFirstWindow': '{team} answers now.',
   'play.rumbleTransitionWindow': 'Next team appears at 76 seconds.',

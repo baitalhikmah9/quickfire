@@ -1,6 +1,6 @@
 # Vercel Web Deployment
 
-QuickFire's production web deployment is a static Expo export served by Vercel. This does not replace the native EAS flow; `bun run build` remains the EAS build command for iOS and Android.
+Backfire's production web deployment is a static Expo export served by Vercel. This does not replace the native EAS flow; `bun run build` remains the EAS build command for iOS and Android.
 
 ## Vercel Project Settings
 
@@ -43,15 +43,15 @@ Do not add these as Vercel static web client variables unless the app starts rea
 
 - Add the production Vercel origin to Clerk allowed origins: `https://<production-domain>`.
 - Add Vercel preview origins if previews use real auth: `https://<project>-git-<branch>-<team>.vercel.app`, or the team's chosen preview pattern.
-- Keep native custom-scheme redirects for the app scheme: `quickfire://` and `quickfire://(app)/`.
+- Keep native custom-scheme redirects for the app scheme: `backfire://` and `backfire://(app)/`.
 - Add HTTPS web redirects for the hosted domain, including `https://<production-domain>/` and any app paths used as OAuth return locations.
 - Confirm Google and Apple OAuth provider settings include the hosted Vercel domain where those providers require it.
-- If the production publishable key encodes a custom Clerk Frontend API host such as `clerk.playquickfire.com`, verify that host resolves before deploying:
+- If the production publishable key encodes a custom Clerk Frontend API host such as `clerk.playbackfire.com`, verify that host resolves before deploying:
 
 ```bash
-dig +short CNAME clerk.playquickfire.com
-dig +short A clerk.playquickfire.com
-curl -I https://clerk.playquickfire.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js
+dig +short CNAME clerk.playbackfire.com
+dig +short A clerk.playbackfire.com
+curl -I https://clerk.playbackfire.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js
 ```
 
 The script check must return an HTTP response from Clerk. `ERR_NAME_NOT_RESOLVED` or `curl: (6) Could not resolve host` means the issue is DNS/custom-domain propagation or an incorrect production publishable key, not the Expo bundle.

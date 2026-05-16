@@ -1,4 +1,4 @@
-const INSTALL_KEY = 'quickfire_install_id_v1';
+const INSTALL_KEY = 'backfire_install_id_v1';
 
 function isValidInstallId(id: string): boolean {
   return id.length >= 12 && /^[a-zA-Z0-9_:._-]+$/.test(id);

@@ -13,5 +13,8 @@ export {
   BREAKPOINTS,
   LAYOUT,
   AUTH_CARD_RADIUS,
+  HEADER,
+  SOFT_SURFACE_FACE,
+  softSurfaceLift,
   type ThemePaletteId,
 } from './theme';

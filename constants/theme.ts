@@ -202,6 +202,27 @@ export const LAYOUT = {
 /** Large surface radius (auth card, modals) */
 export const AUTH_CARD_RADIUS = 48;
 
+/**
+ * Shared header height / spacing tokens — one system per platform.
+ * Used by <GameHeader /> and all screens that position content below the header.
+ *
+ * Values are platform-aware defaults; the GameHeader component applies the correct
+ * one based on `Platform.OS` so every page gets consistent header measurements.
+ *
+ * - `height`       — bar height (left/center/right row). Native: 56, Web: 64
+ * - `topPadding`   — padding above the header bar. Native: sm(8), Web: md(12)
+ * - `bottomGap`    — gap below the full header (bar + subtitle) before main content
+ * - `titleBelowGap` — gap between logo bottom and title text (when both shown)
+ */
+export const HEADER = {
+  heightNative: 56,
+  heightWeb: 64,
+  topPaddingNative: SPACING.sm,
+  topPaddingWeb: SPACING.md,
+  bottomGap: SPACING.md,
+  titleBelowGap: SPACING.xs,
+} as const;
+
 export type ThemePaletteId = 'default' | 'warm' | 'cool' | 'green' | 'red' | 'dark';
 
 export const FONT_SIZES = {
@@ -356,4 +377,35 @@ export function relativeLuminance(hex: string): number {
 /** Light status-bar content (white icons) on darker page backgrounds */
 export function paletteUsesLightStatusBarContent(id: ThemePaletteId): boolean {
   return relativeLuminance(PALETTES[id].background) < 0.55;
+}
+
+/**
+ * Shared raised-surface face treatment — docs/BRAND_GUIDELINES.md “Standard button surface (raised)”.
+ * Top lip + soft bottom edge so controls read as extruded on warm cream.
+ */
+export const SOFT_SURFACE_FACE = {
+  borderTopWidth: 2,
+  borderTopColor: 'rgba(255, 255, 255, 0.78)',
+  borderBottomWidth: 3,
+  borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+} as const;
+
+/**
+ * Shared raised drop shadow — hard shadow (radius=0), charcoal tint.
+ * Use across all raised controls, cards, buttons so depth is visually uniform.
+ */
+export function softSurfaceLift(): Pick<ReturnType<typeof import('react-native').StyleSheet.create>, never> & {
+  shadowColor: string;
+  shadowOffset: { width: number; height: number };
+  shadowOpacity: number;
+  shadowRadius: number;
+  elevation: number;
+} {
+  return {
+    shadowColor: 'rgba(51, 51, 51, 0.15)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  };
 }

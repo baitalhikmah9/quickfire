@@ -1,7 +1,7 @@
-# QuickFire Full Product Plan
+# Backfire Full Product Plan
 
 ## Summary
-- Build QuickFire from the current Expo template in [CODEBASE_MAP.md](CODEBASE_MAP.md) into a full product with local-first gameplay, account-backed sync, token ledger, promo code redemption, and content expansion.
+- Build Backfire from the current Expo template in [CODEBASE_MAP.md](CODEBASE_MAP.md) into a full product with local-first gameplay, account-backed sync, token ledger, promo code redemption, and content expansion.
 - Locked decisions: full product scope, `Clerk` for auth, `Convex` for backend/data, local shared-device multiplayer for v1, English-first release, real-money purchases deferred to a later phase.
 - Audit basis: checked against the current repo on 2026-04-21. `[x]` means the implementation exists in code; notes call out where the repo still has partial wiring or placeholder UX.
 - Current state: the repo now has the Expo Router app shell, Clerk auth screens, Convex schema/functions for core product data, localized content plumbing, persistent local play state, and playable Classic / Quick Play flows. The biggest remaining gaps are auth-gated gameplay, Convex-backed wallet/session wiring in the client, Rapid Fire, recap/history depth, admin tooling, and release hardening.

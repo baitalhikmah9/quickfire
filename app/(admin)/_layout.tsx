@@ -31,7 +31,7 @@ function Sidebar({ pathname }: { pathname: string }) {
   return (
     <View style={styles.sidebar}>
       <View style={styles.sidebarBrand}>
-        <Text style={styles.sidebarWordmark}>QuickFire</Text>
+        <Text style={styles.sidebarWordmark}>Backfire</Text>
         <Text style={styles.sidebarCapline}>ADMIN</Text>
       </View>
       <View style={styles.nav}>

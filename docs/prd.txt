@@ -1,12 +1,12 @@
-# Product Requirements Document: QuickFire
+# Product Requirements Document: Backfire
 
-This Product Requirements Document (PRD) summarizes the features, mechanics, and design goals for the mobile trivia application "QuickFire" (formerly known as "Trivianite"), as described in the provided video walkthrough.
+This Product Requirements Document (PRD) summarizes the features, mechanics, and design goals for the mobile trivia application "Backfire" (formerly known as "Trivianite"), as described in the provided video walkthrough.
 
 ---
 
 ## 1. Project Overview
 
-QuickFire is a competitive, multiplayer trivia mobile application inspired by the Arabic trivia game Seen Jeem. It allows teams and individual players to compete in various trivia modes using a strategic betting system ("Wagers") and specific player challenges ("Hot Seat").
+Backfire is a competitive, multiplayer trivia mobile application inspired by the Arabic trivia game Seen Jeem. It allows teams and individual players to compete in various trivia modes using a strategic betting system ("Wagers") and specific player challenges ("Hot Seat").
 
 ---
 
@@ -134,7 +134,7 @@ A text-entry field for promotional and affiliate use.
 ## 8. Content & Data
 
 - **Categories:** History, Pop Culture, Games, Sports, General Knowledge
-- **Structure:** Questions tagged by category and point value (e.g., 200, 400, 600)
+- **Structure:** Questions tagged by category and point value (e.g., 100, 200, 300)
 - **Question Count:**
   - Classic and Quick Play: Fixed grid (36 questions across categories)
   - Random and Rumble: 36 questions each

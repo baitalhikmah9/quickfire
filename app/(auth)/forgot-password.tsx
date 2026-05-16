@@ -4,30 +4,13 @@ import { StyleSheet, Text, TextInput, View, ScrollView } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { SPACING, FONT_SIZES, BORDER_RADIUS, FONTS, LAYOUT } from '@/constants';
+import { SPACING, FONT_SIZES, BORDER_RADIUS, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
-/** Raised plastic tile shadow tier. */
-function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill'): any {
-  const m =
-    tier === 'hero'
-      ? { h: 14, op: 0.14, r: 28, el: 18 }
-      : tier === 'header'
-      ? { h: 8, op: 0.12, r: 18, el: 12 }
-      : { h: 6, op: 0.1, r: 14, el: 8 };
 
-  return {
-    shadowColor,
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: m.op,
-    shadowRadius: m.r,
-    elevation: m.el,
-  };
-}
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -39,7 +22,6 @@ export default function ForgotPasswordScreen() {
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
-  const shadowHex = T.colors.shadowStrong;
 
   const handleSubmit = () => {
     // TODO: Wire to Clerk's password reset flow when available in Expo
@@ -57,14 +39,13 @@ export default function ForgotPasswordScreen() {
           onPress={() => router.back()}
           style={({ pressed }) => [
             styles.headerSquircleInner,
-            styles.plasticFace,
+            SOFT_SURFACE_FACE,
+            softSurfaceLift(),
             {
               backgroundColor: surface,
-              borderRadius: 99,
               opacity: pressed ? 0.94 : 1,
               transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
             },
-            neumorphicLift3D(shadowHex, 'header'),
           ]}
         >
           <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
@@ -102,14 +83,14 @@ export default function ForgotPasswordScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.primaryCta,
-                styles.plasticFace,
+                SOFT_SURFACE_FACE,
+                softSurfaceLift(),
                 {
                   backgroundColor: surface,
                   opacity: pressed ? 0.94 : 1,
                   transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
                   marginTop: SPACING.md,
                 },
-                neumorphicLift3D(shadowHex, 'pill'),
                 !email && { opacity: 0.5 },
               ]}
               onPress={handleSubmit}
@@ -121,7 +102,7 @@ export default function ForgotPasswordScreen() {
             </Pressable>
           </View>
         ) : (
-          <View style={[styles.successCard, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'hero')]}>
+          <View style={[styles.successCard, SOFT_SURFACE_FACE, { backgroundColor: surface }, softSurfaceLift()]}>
             <Ionicons name="checkmark-circle-outline" size={48} color={textPrimary} style={{ marginBottom: SPACING.md }} />
             <Text style={[styles.successText, { color: textPrimary }]}>
               {t('auth.forgot.success')}
@@ -145,12 +126,6 @@ export default function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-  },
   safeArea: {
     flex: 1,
   },
@@ -160,9 +135,9 @@ const styles = StyleSheet.create({
     gap: SPACING.xl,
   },
   headerSquircleInner: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.sm,

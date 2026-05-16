@@ -101,7 +101,7 @@ export const useGameStore = create<GameStore>()(
       resetSession: () => set({ session: null }),
     }),
     {
-      name: 'quickfire-legacy-game-store-v1',
+      name: 'backfire-legacy-game-store-v1',
       storage: createJSONStorage(() => AsyncStorage),
       version: 1,
       skipHydration: true,

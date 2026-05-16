@@ -240,7 +240,7 @@ export function getBonusQuestion(
         categoryName: categoryTranslation.title,
         prompt: resolvedQuestion.prompt,
         answer: resolvedQuestion.answer,
-        pointValue: group.points + 200,
+        pointValue: group.points + 100,
         locale: resolvedQuestion.locale,
         resolvedFromFallback: resolvedQuestion.resolvedFromFallback,
         used: false,

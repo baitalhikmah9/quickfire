@@ -15,10 +15,10 @@ describe('site SEO helpers', () => {
     }
   });
 
-  it('defaults origin to playquickfire.com', () => {
+  it('defaults origin to playbackfire.com', () => {
     delete process.env.EXPO_PUBLIC_SITE_ORIGIN;
     expect(getPublicSiteOrigin()).toBe(DEFAULT_PUBLIC_SITE_ORIGIN);
-    expect(DEFAULT_PUBLIC_SITE_ORIGIN).toBe('https://playquickfire.com');
+    expect(DEFAULT_PUBLIC_SITE_ORIGIN).toBe('https://playbackfire.com');
   });
 
   it('trims EXPO_PUBLIC_SITE_ORIGIN and strips trailing slash', () => {
@@ -28,7 +28,7 @@ describe('site SEO helpers', () => {
 
   it('builds canonical URLs for paths', () => {
     delete process.env.EXPO_PUBLIC_SITE_ORIGIN;
-    expect(canonicalUrlForPath('/')).toBe('https://playquickfire.com/');
-    expect(canonicalUrlForPath('/play/mode')).toBe('https://playquickfire.com/play/mode');
+    expect(canonicalUrlForPath('/')).toBe('https://playbackfire.com/');
+    expect(canonicalUrlForPath('/play/mode')).toBe('https://playbackfire.com/play/mode');
   });
 });

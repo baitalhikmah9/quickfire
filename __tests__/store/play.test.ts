@@ -32,7 +32,7 @@ jest.mock('@/constants/featureFlags', () => ({
 
 const { usePlayStore } = require('@/store/play') as typeof import('@/store/play');
 
-const STORAGE_KEY = 'quickfire-play-store-v1';
+const STORAGE_KEY = 'backfire-play-store-v1';
 
 function createQuestion(overrides: Partial<QuestionCard> & Pick<QuestionCard, 'id' | 'canonicalKey'>): QuestionCard {
   return {
@@ -173,6 +173,62 @@ describe('usePlayStore', () => {
     expect(usePlayStore.getState().session?.config.quickPlayTopicCount).toBe(5);
   });
 
+  it('clears previously selected topics when starting a new mode session', () => {
+    usePlayStore.setState({
+      tokens: 20,
+      rapidFire: null,
+      session: createSession({
+        selectedCategoryIds: ['science', 'history'],
+        config: {
+          mode: 'classic',
+          teams: [
+            { id: 'team_1', name: 'Alpha', playerNames: ['Ava'] },
+            { id: 'team_2', name: 'Beta', playerNames: ['Ben'] },
+          ],
+          categories: ['science', 'history'],
+          contentLocaleChain: ['en'],
+          quickPlayTopicCount: 3,
+          hotSeatEnabled: false,
+          wagerEnabled: true,
+          wagersPerTeam: 1,
+        },
+      }),
+    });
+
+    const result = usePlayStore.getState().startModeSession('quickPlay');
+
+    expect(result).toEqual({ ok: true });
+    expect(usePlayStore.getState().session?.selectedCategoryIds).toEqual([]);
+    expect(usePlayStore.getState().session?.config.categories).toEqual([]);
+  });
+
+  it('clears previously selected topics when choosing a mode', () => {
+    usePlayStore.setState({
+      rapidFire: null,
+      session: createSession({
+        selectedCategoryIds: ['science', 'history'],
+        config: {
+          mode: 'classic',
+          teams: [
+            { id: 'team_1', name: 'Alpha', playerNames: ['Ava'] },
+            { id: 'team_2', name: 'Beta', playerNames: ['Ben'] },
+          ],
+          categories: ['science', 'history'],
+          contentLocaleChain: ['en'],
+          quickPlayTopicCount: 3,
+          hotSeatEnabled: false,
+          wagerEnabled: true,
+          wagersPerTeam: 1,
+        },
+      }),
+    });
+
+    usePlayStore.getState().setMode('classic');
+
+    expect(usePlayStore.getState().session?.selectedCategoryIds).toEqual([]);
+    expect(usePlayStore.getState().session?.config.categories).toEqual([]);
+  });
+
   it('sends rumble into team setup like classic', () => {
     usePlayStore.getState().setMode('rumble');
     expect(usePlayStore.getState().session?.step).toBe('team-setup');
@@ -276,7 +332,7 @@ describe('usePlayStore', () => {
 
     expect(result).toMatchObject({ ok: true });
     const session = usePlayStore.getState().session!;
-    const bucketFor = (pointValue: number) => pointValue / 2;
+    const bucketFor = (pointValue: number) => pointValue;
     const byBucket = session.board.reduce<Record<number, typeof session.board>>(
       (groups, question) => {
         const bucket = bucketFor(question.pointValue);
@@ -817,6 +873,50 @@ describe('usePlayStore', () => {
 
     expect(usePlayStore.getState().session?.wager).toBeNull();
     expect(usePlayStore.getState().session?.currentTeamId).toBe('team_1');
+  });
+
+  it('applies a wager penalty on timeout, reveals the answer, and returns control after continue', () => {
+    const question = createQuestion({ id: 'q-timeout-wager', canonicalKey: 'science:200:timeout-wager' });
+    const nextQuestion = createQuestion({ id: 'q-after-timeout', canonicalKey: 'science:200:after-timeout' });
+    usePlayStore.setState({
+      session: createSession({
+        step: 'question',
+        phase: 'questionReveal',
+        currentTeamId: 'team_1',
+        currentQuestion: question,
+        board: [question, nextQuestion],
+        usedQuestionIds: new Set([question.id]),
+        wager: {
+          wageringTeamId: 'team_2',
+          targetTeamId: 'team_1',
+          multiplier: 1.5,
+          question,
+        },
+      }),
+    });
+
+    usePlayStore.getState().expireCurrentQuestionForTimeout();
+
+    expect(usePlayStore.getState().session).toMatchObject({
+      step: 'answer',
+      phase: 'scoring',
+      wager: null,
+      lastAwardedTeamId: null,
+      timedOutQuestionId: question.id,
+      currentTeamId: 'team_1',
+      scores: { team_1: 100, team_2: 500 },
+    });
+    expect(usePlayStore.getState().session?.scoreEvents[0]).toMatchObject({
+      teamId: 'team_1',
+      points: -200,
+      reason: 'wager',
+      questionId: question.id,
+      metadata: { timeout: true },
+    });
+
+    usePlayStore.getState().continueAfterStandardQuestion();
+
+    expect(usePlayStore.getState().session?.currentTeamId).toBe('team_2');
   });
 
   it('ignores corrupt storage and falls back to defaults', async () => {

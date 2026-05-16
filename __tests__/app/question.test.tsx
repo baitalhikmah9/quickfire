@@ -47,6 +47,8 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'play.rumbleSecondWindow': `${values?.team ?? 'Team'} answers now. Round ends at 90 seconds.`,
         'play.rumbleRoundEnded': 'Round ended.',
         'play.showAnswer': 'Show Answer',
+        'play.timeUpTitle': "Time's up",
+        'play.timeUpBody': 'The question expired. The answer is revealed and no points are awarded.',
         'play.hotSeatActiveTitle': 'Hot Seat',
         'play.nextTurn': 'Next Turn',
         'play.whoGetsPoints': 'Who gets the points?',
@@ -263,6 +265,53 @@ describe('PlayQuestionScreen', () => {
     fireEvent.press(screen.getByText('SHOW ANSWER'));
     expect(screen.getByText('Who gets the points?')).toBeTruthy();
     expect(screen.getByText('42')).toBeTruthy();
+  });
+
+  it('auto-expires a question after ten minutes and reveals the answer with no points awarded', () => {
+    const question = createQuestion({
+      id: 'q-timeout',
+      canonicalKey: 'science:200:timeout',
+      answer: 'A clock',
+    });
+
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'classic',
+        currentQuestion: question,
+        board: [question],
+        teams: [
+          { id: 'team_1', name: 'Alpha', playerNames: ['Ava'], score: 0, wagersUsed: 0 },
+          { id: 'team_2', name: 'Beta', playerNames: ['Ben'], score: 0, wagersUsed: 0 },
+        ],
+        scores: { team_1: 0, team_2: 0 },
+        config: {
+          mode: 'classic',
+          teams: [
+            { id: 'team_1', name: 'Alpha', playerNames: ['Ava'] },
+            { id: 'team_2', name: 'Beta', playerNames: ['Ben'] },
+          ],
+          categories: ['science'],
+          contentLocaleChain: ['en'],
+          quickPlayTopicCount: 3,
+          hotSeatEnabled: false,
+          wagerEnabled: false,
+          wagersPerTeam: 0,
+        },
+      }),
+    });
+
+    render(<PlayQuestionScreen />);
+
+    jest.spyOn(Date, 'now').mockReturnValue(1_600_000);
+    act(() => {
+      jest.advanceTimersByTime(600_000);
+    });
+
+    expect(screen.getByText("TIME'S UP")).toBeTruthy();
+    expect(screen.getByText('The question expired. The answer is revealed and no points are awarded.')).toBeTruthy();
+    expect(screen.getByText('A clock')).toBeTruthy();
+    expect(usePlayStore.getState().session?.lastAwardedTeamId).toBeNull();
+    expect(usePlayStore.getState().session?.timedOutQuestionId).toBe('q-timeout');
   });
 
   it('shows a scrollable question body with prompt imagery for dense prompts', () => {

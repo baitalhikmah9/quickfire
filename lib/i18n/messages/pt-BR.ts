@@ -26,7 +26,7 @@ const ptBr = withEnglishFallback({
   'home.tagline': 'Noite moderna de trivia',
   'profile.changeTheme': 'Mudar tema',
   'store.purchaseTitle': 'Comprar pacotes de tokens',
-  'play.hubTitle': 'Jogar QuickFire',
+  'play.hubTitle': 'Jogar Backfire',
   'play.startNewGame': 'Iniciar novo jogo',
   'play.resumeCurrentMatch': 'Retomar partida atual',
   'play.chooseModeTitle': 'Escolha um modo',

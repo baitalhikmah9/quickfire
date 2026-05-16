@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SessionSavePayload } from '@/features/shared';
 import { deserializeGameSession, serializeGameSession } from '@/store/gameSessionPersistence';
 
-const STORAGE_KEY = 'quickfire-offline-session-queue-v1';
+const STORAGE_KEY = 'backfire-offline-session-queue-v1';
 
 /** AsyncStorage-safe payload (`session` is serialized board state). */
 export interface StorableSessionQueuePayload {

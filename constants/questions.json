@@ -20,7 +20,7 @@
     ],
     "categoryId": "h1",
     "name":"19th Century",
-    "points": 200
+    "points": 100
 },
 {
     "id": "q_2",
@@ -45,7 +45,7 @@
     ],
     "categoryId": "h1",
     "name":"19th Century",
-    "points": 400
+    "points": 200
 },
 {
     "id": "q_3",
@@ -68,7 +68,7 @@
     ],
     "categoryId": "h1",
     "name":"19th Century",
-    "points": 600
+    "points": 300
 },
 {
   "id": "q_4",
@@ -156,7 +156,7 @@
   ],
   "categoryId": "h2",
   "name": "19th Century Europe",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_5",
@@ -244,7 +244,7 @@
   ],
   "categoryId": "h2",
   "name": "19th Century Europe",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_6",
@@ -320,7 +320,7 @@
   ],
   "categoryId": "h2",
   "name": "19th Century Europe",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_7",
@@ -408,7 +408,7 @@
   ],
   "categoryId": "h3",
   "name": "20th Century",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_8",
@@ -488,7 +488,7 @@
   ],
   "categoryId": "h3",
   "name": "20th Century",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_9",
@@ -564,7 +564,7 @@
   ],
   "categoryId": "h3",
   "name": "20th Century",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_10",
@@ -632,7 +632,7 @@
   ],
   "categoryId": "h4",
   "name": "21st Century",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_11",
@@ -708,7 +708,7 @@
   ],
   "categoryId": "h4",
   "name": "21st Century",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_12",
@@ -776,7 +776,7 @@
   ],
   "categoryId": "h4",
   "name": "21st Century",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_13",
@@ -864,7 +864,7 @@
   ],
   "categoryId": "h5",
   "name": "Ancient Civilisations",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_14",
@@ -948,7 +948,7 @@
   ],
   "categoryId": "h5",
   "name": "Ancient Civilisations",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_15",
@@ -1032,7 +1032,7 @@
   ],
   "categoryId": "h5",
   "name": "Ancient Civilisations",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_16",
@@ -1120,7 +1120,7 @@
   ],
   "categoryId": "h6",
   "name": "Arab History",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_17",
@@ -1204,7 +1204,7 @@
   ],
   "categoryId": "h6",
   "name": "Arab History",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_18",
@@ -1288,7 +1288,7 @@
   ],
   "categoryId": "h6",
   "name": "Arab History",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_19",
@@ -1372,7 +1372,7 @@
   ],
   "categoryId": "h7",
   "name": "Cold War",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_20",
@@ -1460,7 +1460,7 @@
   ],
   "categoryId": "h7",
   "name": "Cold War",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_21",
@@ -1548,7 +1548,7 @@
   ],
   "categoryId": "h7",
   "name": "Cold War",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_22",
@@ -1612,7 +1612,7 @@
   ],
   "categoryId": "h9",
   "name": "South Asian History",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_23",
@@ -1688,7 +1688,7 @@
   ],
   "categoryId": "h9",
   "name": "South Asian History",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_24",
@@ -1768,7 +1768,7 @@
   ],
   "categoryId": "h9",
   "name": "South Asian History",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_15",
@@ -1836,7 +1836,7 @@
   ],
   "categoryId": "h10",
   "name": "Middle Ages Europe",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_26",
@@ -1924,7 +1924,7 @@
   ],
   "categoryId": "h10",
   "name": "Middle Ages Europe",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_27",
@@ -2012,7 +2012,7 @@
   ],
   "categoryId": "h10",
   "name": "Middle Ages Europe",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_28",
@@ -2064,7 +2064,7 @@
   ],
   "categoryId": "h11",
   "name": "Middle Eastern History",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_29",
@@ -2120,7 +2120,7 @@
   ],
   "categoryId": "h11",
   "name": "Middle Eastern History",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_30",
@@ -2192,7 +2192,7 @@
   ],
   "categoryId": "h11",
   "name": "Middle Eastern History",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_31",
@@ -2244,7 +2244,7 @@
   ],
   "categoryId": "h12",
   "name": "UK History",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_32",
@@ -2300,7 +2300,7 @@
   ],
   "categoryId": "h12",
   "name": "UK History",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_33",
@@ -2376,7 +2376,7 @@
   ],
   "categoryId": "h12",
   "name": "UK History",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_34",
@@ -2448,7 +2448,7 @@
   ],
   "categoryId": "h13",
   "name": "US History",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_35",
@@ -2532,7 +2532,7 @@
   ],
   "categoryId": "h13",
   "name": "US History",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_36",
@@ -2612,7 +2612,7 @@
   ],
   "categoryId": "h13",
   "name": "US History",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_37",
@@ -2696,7 +2696,7 @@
   ],
   "categoryId": "g1",
   "name": "ARK: Survival Evolved",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_38",
@@ -2776,7 +2776,7 @@
   ],
   "categoryId": "g1",
   "name": "ARK: Survival Evolved",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_26",
@@ -2860,7 +2860,7 @@
   ],
   "categoryId": "g1",
   "name": "ARK: Survival Evolved",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q-39",
@@ -2936,6 +2936,78 @@
   ],
   "categoryId": "g2",
   "name": "Call of Duty",
+  "points": 100
+},
+{
+  "id": "q-40",
+  "questionAndanswer": [
+    {
+      "text": "In Black Ops (2010), the line \"What do the numbers mean, Mason? \" appears in what narrative context?",
+      "answer": "The campaign s interrogation framing scenes"
+    },
+    {
+      "text": "In Modern Warfare 2 (2009), which missions set in Rio de Janeiro involve chasing arms dealer Alejandro Rojas through the favelas?",
+      "answer": "Takedown\" and \"The Hornet s Nest"
+    },
+    {
+      "text": "What is the canonical name of the Zombies demonic energy/force behind many maps?",
+      "answer": "Aether"
+    },
+    {
+      "text": "What is the name of the fictional private military company in Advanced Warfare?",
+      "answer": "Atlas Corporation"
+    },
+    {
+      "text": "What is the typical team size for standard multiplayer TDM at launch across many titles?",
+      "answer": "6v6"
+    },
+    {
+      "text": "What's the name of the Pacific-themed Warzone map introduced after Verdansk?",
+      "answer": "Caldera"
+    },
+    {
+      "text": "Which campaign places you in the Vietnam War with characters like Woods and Mason?",
+      "answer": "Black Ops"
+    },
+    {
+      "text": "Which CoD installment is set in the future with space combat and the UNSA/Settlement Defense Front?",
+      "answer": "Infinite Warfare"
+    },
+    {
+      "text": "Which CoD introduced the \"Gulag\" respawn mechanic in battle royale?",
+      "answer": "Warzone"
+    },
+    {
+      "text": "Which game prominently features the mission \"All Ghillied Up\"?",
+      "answer": "Call of Duty 4: Modern Warfare"
+    },
+    {
+      "text": "Which mainline Call of Duty title is set during World War I?",
+      "answer": "None"
+    },
+    {
+      "text": "Which MW (2019) mission tasks you with clearing a townhouse in London at night?",
+      "answer": "Clean House"
+    },
+    {
+      "text": "Which recurring Zombies character is a German scientist linked to Group 935?",
+      "answer": "Edward Richtofen"
+    },
+    {
+      "text": "Which studio is most associated with the Black Ops storyline?",
+      "answer": "Treyarch"
+    },
+    {
+      "text": "Which title first introduced the Exo Suit for advanced mobility?",
+      "answer": "Advanced Warfare"
+    },
+    {
+      "text": "Who is the primary antagonist across the original MW trilogy?",
+      "answer": "Vladimir Makarov"
+    }
+  ],
+  "categoryId": "g2",
+  "name": "Call of Duty",
   "points": 200
 },
 {
@@ -3008,79 +3080,7 @@
   ],
   "categoryId": "g2",
   "name": "Call of Duty",
-  "points": 400
-},
-{
-  "id": "q-40",
-  "questionAndanswer": [
-    {
-      "text": "In Black Ops (2010), the line \"What do the numbers mean, Mason? \" appears in what narrative context?",
-      "answer": "The campaign s interrogation framing scenes"
-    },
-    {
-      "text": "In Modern Warfare 2 (2009), which missions set in Rio de Janeiro involve chasing arms dealer Alejandro Rojas through the favelas?",
-      "answer": "Takedown\" and \"The Hornet s Nest"
-    },
-    {
-      "text": "What is the canonical name of the Zombies demonic energy/force behind many maps?",
-      "answer": "Aether"
-    },
-    {
-      "text": "What is the name of the fictional private military company in Advanced Warfare?",
-      "answer": "Atlas Corporation"
-    },
-    {
-      "text": "What is the typical team size for standard multiplayer TDM at launch across many titles?",
-      "answer": "6v6"
-    },
-    {
-      "text": "What's the name of the Pacific-themed Warzone map introduced after Verdansk?",
-      "answer": "Caldera"
-    },
-    {
-      "text": "Which campaign places you in the Vietnam War with characters like Woods and Mason?",
-      "answer": "Black Ops"
-    },
-    {
-      "text": "Which CoD installment is set in the future with space combat and the UNSA/Settlement Defense Front?",
-      "answer": "Infinite Warfare"
-    },
-    {
-      "text": "Which CoD introduced the \"Gulag\" respawn mechanic in battle royale?",
-      "answer": "Warzone"
-    },
-    {
-      "text": "Which game prominently features the mission \"All Ghillied Up\"?",
-      "answer": "Call of Duty 4: Modern Warfare"
-    },
-    {
-      "text": "Which mainline Call of Duty title is set during World War I?",
-      "answer": "None"
-    },
-    {
-      "text": "Which MW (2019) mission tasks you with clearing a townhouse in London at night?",
-      "answer": "Clean House"
-    },
-    {
-      "text": "Which recurring Zombies character is a German scientist linked to Group 935?",
-      "answer": "Edward Richtofen"
-    },
-    {
-      "text": "Which studio is most associated with the Black Ops storyline?",
-      "answer": "Treyarch"
-    },
-    {
-      "text": "Which title first introduced the Exo Suit for advanced mobility?",
-      "answer": "Advanced Warfare"
-    },
-    {
-      "text": "Who is the primary antagonist across the original MW trilogy?",
-      "answer": "Vladimir Makarov"
-    }
-  ],
-  "categoryId": "g2",
-  "name": "Call of Duty",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_41",
@@ -3156,7 +3156,7 @@
   ],
   "categoryId": "g4",
   "name": "Grand Theft Auto",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_42",
@@ -3228,7 +3228,7 @@
   ],
   "categoryId": "g4",
   "name": "Grand Theft Auto",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_43",
@@ -3300,7 +3300,7 @@
   ],
   "categoryId": "g4",
   "name": "Grand Theft Auto",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_44",
@@ -3380,7 +3380,7 @@
   ],
   "categoryId": "g5",
   "name": "Halo",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_45",
@@ -3468,7 +3468,7 @@
   ],
   "categoryId": "g5",
   "name": "Halo",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_46",
@@ -3540,7 +3540,7 @@
   ],
   "categoryId": "g5",
   "name": "Halo",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_47",
@@ -3620,7 +3620,7 @@
   ],
   "categoryId": "g6",
   "name": "League of Legends",
-  "points": 200
+  "points": 100
 },{
   "id": "q_48",
   "questionAndanswer": [
@@ -3699,7 +3699,7 @@
   ],
   "categoryId": "g6",
   "name": "League of Legends",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_49",
@@ -3783,7 +3783,7 @@
   ],
   "categoryId": "g6",
   "name": "League of Legends",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_50",
@@ -3867,7 +3867,7 @@
   ],
   "categoryId": "g7",
   "name": "Minecraft",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_51",
@@ -3951,7 +3951,7 @@
   ],
   "categoryId": "g7",
   "name": "Minecraft",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_52",
@@ -4035,7 +4035,7 @@
   ],
   "categoryId": "g7",
   "name": "Minecraft",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_53",
@@ -4119,7 +4119,7 @@
   ],
   "categoryId": "g8",
   "name": "Overwatch",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_54",
@@ -4187,7 +4187,7 @@
   ],
   "categoryId": "g8",
   "name": "Overwatch",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_55",
@@ -4271,7 +4271,7 @@
   ],
   "categoryId": "g8",
   "name": "Overwatch",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_56",
@@ -4351,7 +4351,7 @@
   ],
   "categoryId": "g9",
   "name": "Red Dead Redemption",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_57",
@@ -4431,7 +4431,7 @@
   ],
   "categoryId": "g9",
   "name": "Red Dead Redemption",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_58",
@@ -4519,7 +4519,7 @@
   ],
   "categoryId": "g9",
   "name": "Red Dead Redemption",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_59",
@@ -4599,7 +4599,7 @@
   ],
   "categoryId": "g10",
   "name": "Super Mario Bros",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_60",
@@ -4687,7 +4687,7 @@
   ],
   "categoryId": "g10",
   "name": "Super Mario Bros",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_61",
@@ -4771,7 +4771,7 @@
   ],
   "categoryId": "g10",
   "name": "Super Mario Bros",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_62",
@@ -4859,7 +4859,7 @@
   ],
   "categoryId": "g11",
   "name": "The Legend of Zelda",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_63",
@@ -4939,7 +4939,7 @@
   ],
   "categoryId": "g11",
   "name": "The Legend of Zelda",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_64",
@@ -5023,7 +5023,7 @@
   ],
   "categoryId": "g11",
   "name": "The Legend of Zelda",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_65",
@@ -5103,7 +5103,7 @@
   ],
   "categoryId": "g12",
   "name": "The Witcher",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_66",
@@ -5187,7 +5187,7 @@
   ],
   "categoryId": "g12",
   "name": "The Witcher",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_67",
@@ -5263,7 +5263,7 @@
   ],
   "categoryId": "g12",
   "name": "The Witcher",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_68",
@@ -5347,7 +5347,7 @@
   ],
   "categoryId": "g13",
   "name": "World of Warcraft",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_69",
@@ -5431,7 +5431,7 @@
   ],
   "categoryId": "g13",
   "name": "World of Warcraft",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_70",
@@ -5511,7 +5511,7 @@
   ],
   "categoryId": "g13",
   "name": "World of Warcraft",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_71",
@@ -5587,7 +5587,7 @@
   ],
   "categoryId": "s2",
   "name": "Cricket",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_72",
@@ -5663,7 +5663,7 @@
   ],
   "categoryId": "s2",
   "name": "Cricket",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_73",
@@ -5755,7 +5755,7 @@
   ],
   "categoryId": "s2",
   "name": "Cricket",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_74",
@@ -5839,7 +5839,7 @@
   ],
   "categoryId": "s3",
   "name": "Formula 1",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_75",
@@ -5923,7 +5923,7 @@
   ],
   "categoryId": "s3",
   "name": "Formula 1",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_76",
@@ -6011,7 +6011,7 @@
   ],
   "categoryId": "s3",
   "name": "Formula 1",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_77",
@@ -6087,7 +6087,7 @@
   ],
   "categoryId": "s5",
   "name": "NBA",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_78",
@@ -6135,7 +6135,7 @@
   ],
   "categoryId": "s5",
   "name": "NBA",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_79",
@@ -6223,7 +6223,7 @@
   ],
   "categoryId": "s5",
   "name": "NBA",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_80",
@@ -6295,7 +6295,7 @@
   ],
   "categoryId": "s6",
   "name": "NFL",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_81",
@@ -6359,7 +6359,7 @@
   ],
   "categoryId": "s6",
   "name": "NFL",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_82",
@@ -6431,7 +6431,7 @@
   ],
   "categoryId": "s6",
   "name": "NFL",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_83",
@@ -6495,7 +6495,7 @@
   ],
   "categoryId": "s7",
   "name": "Premier League",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_84",
@@ -6551,7 +6551,7 @@
   ],
   "categoryId": "s7",
   "name": "Premier League",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_85",
@@ -6615,7 +6615,7 @@
   ],
   "categoryId": "s7",
   "name": "Premier League",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_86",
@@ -6687,7 +6687,7 @@
   ],
   "categoryId": "s8",
   "name": "Tennis",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_87",
@@ -6755,7 +6755,7 @@
   ],
   "categoryId": "s8",
   "name": "Tennis",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_88",
@@ -6823,7 +6823,7 @@
   ],
   "categoryId": "s8",
   "name": "Tennis",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_89",
@@ -6879,7 +6879,7 @@
   ],
   "categoryId": "s9",
   "name": "UEFA Champions League",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_90",
@@ -6947,7 +6947,7 @@
   ],
   "categoryId": "s9",
   "name": "UEFA Champions League",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_91",
@@ -7019,7 +7019,7 @@
   ],
   "categoryId": "s9",
   "name": "UEFA Champions League",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_92",
@@ -7099,7 +7099,7 @@
   ],
   "categoryId": "s10",
   "name": "UFC",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_93",
@@ -7171,7 +7171,7 @@
   ],
   "categoryId": "s10",
   "name": "UFC",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_94",
@@ -7243,7 +7243,7 @@
   ],
   "categoryId": "s10",
   "name": "UFC",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_95",
@@ -7279,7 +7279,7 @@
   ],
   "categoryId": "s12",
   "name": "World Cup",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_96",
@@ -7343,7 +7343,7 @@
   ],
   "categoryId": "s12",
   "name": "World Cup",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_97",
@@ -7411,7 +7411,7 @@
   ],
   "categoryId": "s12",
   "name": "World Cup",
-  "points": 600
+  "points": 300
 },
 {
     "id": "q_99",
@@ -7491,7 +7491,7 @@
     ],
     "categoryId": "gen1",
     "name": "Corporations",
-    "points": 200
+    "points": 100
 },
 {
     "id": "q_100",
@@ -7575,7 +7575,7 @@
     ],
     "categoryId": "gen1",
     "name": "Corporations",
-    "points": 400
+    "points": 200
 },
 {
     "id": "q_101",
@@ -7659,7 +7659,7 @@
     ],
     "categoryId": "gen1",
     "name": "Corporations",
-    "points": 600
+    "points": 300
 },
 {
     "id": "q_102",
@@ -7719,7 +7719,7 @@
     ],
     "categoryId": "gen2",
     "name": "Geography",
-    "points": 200
+    "points": 100
 },
 {
     "id": "q_103",
@@ -7783,7 +7783,7 @@
     ],
     "categoryId": "gen2",
     "name": "Geography",
-    "points": 400
+    "points": 200
 },
 {
     "id": "q_104",
@@ -7867,7 +7867,7 @@
     ],
     "categoryId": "gen2",
     "name": "Geography",
-    "points": 600
+    "points": 300
 },
 {
     "id": "q_105",
@@ -7943,7 +7943,7 @@
     ],
     "categoryId": "gen3",
     "name": "Science",
-    "points": 200
+    "points": 100
 },
 {
     "id": "q_106",
@@ -8023,7 +8023,7 @@
     ],
     "categoryId": "gen3",
     "name": "Science",
-    "points": 400
+    "points": 200
 },
 {
     "id": "q_107",
@@ -8115,7 +8115,7 @@
     ],
     "categoryId": "gen3",
     "name": "Science",
-    "points": 600
+    "points": 300
 },
 {
     "id": "q_108",
@@ -8183,7 +8183,7 @@
     ],
     "categoryId": "gen4",
     "name": "UK (General)",
-    "points": 200
+    "points": 100
 },
 {
     "id": "q_109",
@@ -8255,7 +8255,7 @@
     ],
     "categoryId": "gen4",
     "name": "UK (General)",
-    "points": 400
+    "points": 200
 },
 {
     "id": "q_110",
@@ -8339,7 +8339,7 @@
     ],
     "categoryId": "gen4",
     "name": "UK (General)",
-    "points": 600
+    "points": 300
 },
 {
     "id": "q_111",
@@ -8427,7 +8427,7 @@
     ],
     "categoryId": "pc2",
     "name": "Breaking Bad",
-    "points": 200
+    "points": 100
   },
   {
     "id": "q_112",
@@ -8503,7 +8503,7 @@
     ],
     "categoryId": "pc2",
     "name": "Breaking Bad",
-    "points": 400
+    "points": 200
   },
   {
     "id": "q_113",
@@ -8571,7 +8571,7 @@
     ],
     "categoryId": "pc2",
     "name": "Breaking Bad",
-    "points": 600
+    "points": 300
   },
 {
     "id": "q_114",
@@ -8655,7 +8655,7 @@
     ],
     "categoryId": "pc3",
     "name": "Dexter",
-    "points": 200
+    "points": 100
   },
   {
     "id": "q_115",
@@ -8731,7 +8731,7 @@
     ],
     "categoryId": "pc3",
     "name": "Dexter",
-    "points": 400
+    "points": 200
   },
   {
     "id": "q_116",
@@ -8807,7 +8807,7 @@
     ],
     "categoryId": "pc3",
     "name": "Dexter",
-    "points": 600
+    "points": 300
   },
 {
     "id": "q_117",
@@ -8891,7 +8891,7 @@
     ],
     "categoryId": "pc4",
     "name": "DC",
-    "points": 200
+    "points": 100
   },
   {
     "id": "q_118",
@@ -8967,7 +8967,7 @@
     ],
     "categoryId": "pc4",
     "name": "DC",
-    "points": 400
+    "points": 200
   },
   {
     "id": "q_119",
@@ -9051,7 +9051,7 @@
     ],
     "categoryId": "pc4",
     "name": "DC",
-    "points": 600
+    "points": 300
   },
   {
     "id": "q_120",
@@ -9139,7 +9139,7 @@
     ],
     "categoryId": "pc5",
     "name": "Disney",
-    "points": 200
+    "points": 100
   },
   {
     "id": "q_121",
@@ -9223,7 +9223,7 @@
     ],
     "categoryId": "pc5",
     "name": "Disney",
-    "points": 400
+    "points": 200
   },
   {
     "id": "q_122",
@@ -9307,7 +9307,7 @@
     ],
     "categoryId": "pc5",
     "name": "Disney",
-    "points": 600
+    "points": 300
   },
 {
     "id": "q_123",
@@ -9391,7 +9391,7 @@
     ],
     "categoryId": "pc6",
     "name": "Dragon Ball",
-    "points": 200
+    "points": 100
   },
   {
     "id": "q_124",
@@ -9479,7 +9479,7 @@
     ],
     "categoryId": "pc6",
     "name": "Dragon Ball",
-    "points": 400
+    "points": 200
   },
   {
     "id": "q_125",
@@ -9551,7 +9551,7 @@
     ],
     "categoryId": "pc6",
     "name": "Dragon Ball",
-    "points": 600
+    "points": 300
   },
   {
     "id": "q_126",
@@ -9639,7 +9639,7 @@
     ],
     "categoryId": "pc7",
     "name": "Friends",
-    "points": 200
+    "points": 100
   },
   {
     "id": "q_127",
@@ -9711,7 +9711,7 @@
     ],
     "categoryId": "pc7",
     "name": "Friends",
-    "points": 400
+    "points": 200
   },
   {
     "id": "q_128",
@@ -9799,7 +9799,7 @@
     ],
     "categoryId": "pc7",
     "name": "Friends",
-    "points": 600
+    "points": 300
   },
 {
     "id": "q_129",
@@ -9887,7 +9887,7 @@
     ],
     "categoryId": "pc8",
     "name": "Game of Thrones",
-    "points": 200
+    "points": 100
   },
   {
     "id": "q_130",
@@ -9967,7 +9967,7 @@
     ],
     "categoryId": "pc8",
     "name": "Game of Thrones",
-    "points": 400
+    "points": 200
   },
   {
     "id": "q_131",
@@ -10055,7 +10055,7 @@
     ],
     "categoryId": "pc8",
     "name": "Game of Thrones",
-    "points": 600
+    "points": 300
 },
 {
   "id": "q_132",
@@ -10143,7 +10143,7 @@
   ],
   "categoryId": "pc9",
   "name": "Harry Potter",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_133",
@@ -10227,7 +10227,7 @@
   ],
   "categoryId": "pc9",
   "name": "Harry Potter",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_134",
@@ -10315,7 +10315,7 @@
   ],
   "categoryId": "pc9",
   "name": "Harry Potter",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_135",
@@ -10395,7 +10395,7 @@
   ],
   "categoryId": "pc10",
   "name": "How I Met Your Mother",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_136",
@@ -10479,7 +10479,7 @@
   ],
   "categoryId": "pc10",
   "name": "How I Met Your Mother",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_137",
@@ -10555,7 +10555,7 @@
   ],
   "categoryId": "pc10",
   "name": "How I Met Your Mother",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_138",
@@ -10639,7 +10639,7 @@
   ],
   "categoryId": "pc11",
   "name": "James Bond",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_139",
@@ -10727,7 +10727,7 @@
   ],
   "categoryId": "pc11",
   "name": "James Bond",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_140",
@@ -10807,7 +10807,7 @@
   ],
   "categoryId": "pc11",
   "name": "James Bond",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_141",
@@ -10887,7 +10887,7 @@
   ],
   "categoryId": "pc12",
   "name": "Jurassic Park",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_142",
@@ -10967,7 +10967,7 @@
   ],
   "categoryId": "pc12",
   "name": "Jurassic Park",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_143",
@@ -11047,7 +11047,7 @@
   ],
   "categoryId": "pc12",
   "name": "Jurassic Park",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_144",
@@ -11123,7 +11123,7 @@
   ],
   "categoryId": "pc13",
   "name": "Marvel",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_145",
@@ -11199,7 +11199,7 @@
   ],
   "categoryId": "pc13",
   "name": "Marvel",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_146",
@@ -11279,7 +11279,7 @@
   ],
   "categoryId": "pc13",
   "name": "Marvel",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_147",
@@ -11363,7 +11363,7 @@
   ],
   "categoryId": "pc14",
   "name": "Naruto",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_148",
@@ -11439,7 +11439,7 @@
   ],
   "categoryId": "pc14",
   "name": "Naruto",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_149",
@@ -11527,7 +11527,7 @@
   ],
   "categoryId": "pc14",
   "name": "Naruto",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_150",
@@ -11607,7 +11607,7 @@
   ],
   "categoryId": "pc15",
   "name": "One Piece",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_151",
@@ -11687,7 +11687,7 @@
   ],
   "categoryId": "pc15",
   "name": "One Piece",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_152",
@@ -11767,7 +11767,7 @@
   ],
   "categoryId": "pc15",
   "name": "One Piece",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_153",
@@ -11851,7 +11851,7 @@
   ],
   "categoryId": "pc16",
   "name": "Pirates of the Caribbean",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_154",
@@ -11923,7 +11923,7 @@
   ],
   "categoryId": "pc16",
   "name": "Pirates of the Caribbean",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_155",
@@ -12003,7 +12003,7 @@
   ],
   "categoryId": "pc16",
   "name": "Pirates of the Caribbean",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_156",
@@ -12087,7 +12087,7 @@
   ],
   "categoryId": "pc17",
   "name": "Pokémon",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_157",
@@ -12171,7 +12171,7 @@
   ],
   "categoryId": "pc17",
   "name": "Pokémon",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_158",
@@ -12191,7 +12191,7 @@
   ],
   "categoryId": "pc17",
   "name": "Pokémon",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_159",
@@ -12275,7 +12275,7 @@
   ],
   "categoryId": "pc18",
   "name": "Prison Break",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_160",
@@ -12343,7 +12343,7 @@
   ],
   "categoryId": "pc18",
   "name": "Prison Break",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_161",
@@ -12423,7 +12423,7 @@
   ],
   "categoryId": "pc18",
   "name": "Prison Break",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_162",
@@ -12507,7 +12507,7 @@
   ],
   "categoryId": "pc20",
   "name": "SpongeBob SquarePants",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_163",
@@ -12591,7 +12591,7 @@
   ],
   "categoryId": "pc20",
   "name": "SpongeBob SquarePants",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_164",
@@ -12683,7 +12683,7 @@
   ],
   "categoryId": "pc20",
   "name": "SpongeBob SquarePants",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_165",
@@ -12771,7 +12771,7 @@
   ],
   "categoryId": "pc21",
   "name": "Squid Game",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_166",
@@ -12843,7 +12843,7 @@
   ],
   "categoryId": "pc21",
   "name": "Squid Game",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_167",
@@ -12927,7 +12927,7 @@
   ],
   "categoryId": "pc21",
   "name": "Squid Game",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_168",
@@ -13003,7 +13003,7 @@
   ],
   "categoryId": "pc22",
   "name": "Star Trek",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_169",
@@ -13091,7 +13091,7 @@
   ],
   "categoryId": "pc22",
   "name": "Star Trek",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_170",
@@ -13179,7 +13179,7 @@
   ],
   "categoryId": "pc22",
   "name": "Star Trek",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_171",
@@ -13263,7 +13263,7 @@
   ],
   "categoryId": "pc23",
   "name": "Star Wars",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_172",
@@ -13343,7 +13343,7 @@
   ],
   "categoryId": "pc23",
   "name": "Star Wars",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_173",
@@ -13427,7 +13427,7 @@
   ],
   "categoryId": "pc23",
   "name": "Star Wars",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_174",
@@ -13515,7 +13515,7 @@
   ],
   "categoryId": "pc24",
   "name": "Stranger Things",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_175",
@@ -13591,7 +13591,7 @@
   ],
   "categoryId": "pc24",
   "name": "Stranger Things",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_176",
@@ -13675,7 +13675,7 @@
   ],
   "categoryId": "pc24",
   "name": "Stranger Things",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_197",
@@ -13747,7 +13747,7 @@
   ],
   "categoryId": "pc25",
   "name": "The Big Bang Theory",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_198",
@@ -13831,7 +13831,7 @@
   ],
   "categoryId": "pc25",
   "name": "The Big Bang Theory",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_199",
@@ -13903,7 +13903,7 @@
   ],
   "categoryId": "pc25",
   "name": "The Big Bang Theory",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_200",
@@ -13991,7 +13991,7 @@
   ],
   "categoryId": "pc27",
   "name": "The Hunger Games",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_201",
@@ -14075,7 +14075,7 @@
   ],
   "categoryId": "pc27",
   "name": "The Hunger Games",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_202",
@@ -14163,7 +14163,7 @@
   ],
   "categoryId": "pc27",
   "name": "The Hunger Games",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_203",
@@ -14251,7 +14251,7 @@
   ],
   "categoryId": "pc28",
   "name": "The Office (US)",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_204",
@@ -14327,7 +14327,7 @@
   ],
   "categoryId": "pc28",
   "name": "The Office (US)",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_205",
@@ -14411,7 +14411,7 @@
   ],
   "categoryId": "pc28",
   "name": "The Office (US)",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_206",
@@ -14487,7 +14487,7 @@
   ],
   "categoryId": "pc29",
   "name": "The Simpsons",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_207",
@@ -14575,7 +14575,7 @@
   ],
   "categoryId": "pc29",
   "name": "The Simpsons",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_208",
@@ -14659,7 +14659,7 @@
   ],
   "categoryId": "pc29",
   "name": "The Simpsons",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_209",
@@ -14731,7 +14731,7 @@
   ],
   "categoryId": "pc30",
   "name": "Shakespeare",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_210",
@@ -14755,7 +14755,7 @@
   ],
   "categoryId": "pc30",
   "name": "Shakespeare",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_211",
@@ -14807,7 +14807,7 @@
   ],
   "categoryId": "pc30",
   "name": "Shakespeare",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_212",
@@ -14895,7 +14895,7 @@
   ],
   "categoryId": "pc1",
   "name": "Avatar: TLA",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_213",
@@ -14975,7 +14975,7 @@
   ],
   "categoryId": "pc1",
   "name": "Avatar: TLA",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_214",
@@ -15063,7 +15063,7 @@
   ],
   "categoryId": "pc1",
   "name": "Avatar: TLA",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_215",
@@ -15151,7 +15151,7 @@
   ],
   "categoryId": "pc9",
   "name": "Harry Potter",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_216",
@@ -15239,7 +15239,7 @@
   ],
   "categoryId": "pc21",
   "name": "Squid Game",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_217",
@@ -15327,7 +15327,7 @@
   ],
   "categoryId": "pc1",
   "name": "Avatar: TLA",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_218",
@@ -15415,7 +15415,7 @@
   ],
   "categoryId": "pc29",
   "name": "The Simpsons",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_219",
@@ -15471,7 +15471,7 @@
   ],
   "categoryId": "s9",
   "name": "UEFA Champions League",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_220",
@@ -15543,7 +15543,7 @@
   ],
   "categoryId": "s6",
   "name": "NFL",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_221",
@@ -15627,7 +15627,7 @@
   ],
   "categoryId": "g7",
   "name": "Minecraft",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_222",
@@ -15711,7 +15711,7 @@
   ],
   "categoryId": "h15",
   "name": "WW2",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_223",
@@ -15799,7 +15799,7 @@
   ],
   "categoryId": "h15",
   "name": "WW2",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_224",
@@ -15883,7 +15883,7 @@
   ],
   "categoryId": "h15",
   "name": "WW2",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_225",
@@ -15963,7 +15963,7 @@
   ],
   "categoryId": "h14",
   "name": "WW1",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_226",
@@ -16035,7 +16035,7 @@
   ],
   "categoryId": "h14",
   "name": "WW1",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_227",
@@ -16119,7 +16119,7 @@
   ],
   "categoryId": "h14",
   "name": "WW1",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_228",
@@ -16203,7 +16203,7 @@
   ],
   "categoryId": "g3",
   "name": "DoTA",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_229",
@@ -16283,7 +16283,7 @@
   ],
   "categoryId": "g3",
   "name": "DoTA",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_230",
@@ -16367,7 +16367,7 @@
   ],
   "categoryId": "g3",
   "name": "DoTA",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_231",
@@ -16443,7 +16443,7 @@
   ],
   "categoryId": "h8",
   "name": "European History",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_232",
@@ -16519,7 +16519,7 @@
   ],
   "categoryId": "h8",
   "name": "European History",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_233",
@@ -16599,7 +16599,7 @@
   ],
   "categoryId": "h8",
   "name": "European History",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_234",
@@ -16683,7 +16683,7 @@
   ],
   "categoryId": "pc26",
   "name": "The Fast and the Furious",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_235",
@@ -16759,7 +16759,7 @@
   ],
   "categoryId": "pc26",
   "name": "The Fast and the Furious",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_236",
@@ -16843,7 +16843,7 @@
   ],
   "categoryId": "pc26",
   "name": "The Fast and the Furious",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_237",
@@ -16911,7 +16911,7 @@
   ],
   "categoryId": "s11",
   "name": "Which Player?",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_238",
@@ -16979,7 +16979,7 @@
   ],
   "categoryId": "s11",
   "name": "Which Player?",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_239",
@@ -17067,7 +17067,7 @@
   ],
   "categoryId": "s11",
   "name": "Which Player?",
-  "points": 600
+  "points": 300
 },
 {
   "id": "q_240",
@@ -17087,7 +17087,7 @@
   ],
   "categoryId": "s9",
   "name": "UEFA Champions League",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_241",
@@ -17147,7 +17147,7 @@
   ],
   "categoryId": "gen5",
   "name": "US (General)",
-  "points": 200
+  "points": 100
 },
 {
   "id": "q_242",
@@ -17215,7 +17215,7 @@
   ],
   "categoryId": "gen5",
   "name": "US (General)",
-  "points": 400
+  "points": 200
 },
 {
   "id": "q_243",
@@ -17291,7 +17291,7 @@
   ],
   "categoryId": "gen5",
   "name": "US (General)",
-  "points": 600
+  "points": 300
 },
 {
     "id":"w_1",
@@ -17314,7 +17314,7 @@
     ],
     "categoryId": "h1",
     "name":"19th Century",
-    "points": 200
+    "points": 100
 },
 {
     "id":"w_2",
@@ -17339,7 +17339,7 @@
     ],
     "categoryId": "h1",
     "name":"19th Century",
-    "points": 400
+    "points": 200
 },
 {
     "id":"w_3",
@@ -17362,7 +17362,7 @@
     ],
     "categoryId": "h1",
     "name":"19th Century",
-    "points": 600
+    "points": 300
 },
 {
   "id":"w_4",
@@ -17450,7 +17450,7 @@
   ],
   "categoryId": "h2",
   "name": "19th Century Europe",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_5",
@@ -17538,7 +17538,7 @@
   ],
   "categoryId": "h2",
   "name": "19th Century Europe",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_6",
@@ -17614,7 +17614,7 @@
   ],
   "categoryId": "h2",
   "name": "19th Century Europe",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_7",
@@ -17702,7 +17702,7 @@
   ],
   "categoryId": "h3",
   "name": "20th Century",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_8",
@@ -17782,7 +17782,7 @@
   ],
   "categoryId": "h3",
   "name": "20th Century",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_9",
@@ -17858,7 +17858,7 @@
   ],
   "categoryId": "h3",
   "name": "20th Century",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_10",
@@ -17926,7 +17926,7 @@
   ],
   "categoryId": "h4",
   "name": "21st Century",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_11",
@@ -18002,7 +18002,7 @@
   ],
   "categoryId": "h4",
   "name": "21st Century",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_12",
@@ -18070,7 +18070,7 @@
   ],
   "categoryId": "h4",
   "name": "21st Century",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_13",
@@ -18158,7 +18158,7 @@
   ],
   "categoryId": "h5",
   "name": "Ancient Civilisations",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_14",
@@ -18242,7 +18242,7 @@
   ],
   "categoryId": "h5",
   "name": "Ancient Civilisations",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_15",
@@ -18326,7 +18326,7 @@
   ],
   "categoryId": "h5",
   "name": "Ancient Civilisations",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_16",
@@ -18414,7 +18414,7 @@
   ],
   "categoryId": "h6",
   "name": "Arab History",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_17",
@@ -18498,7 +18498,7 @@
   ],
   "categoryId": "h6",
   "name": "Arab History",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_18",
@@ -18582,7 +18582,7 @@
   ],
   "categoryId": "h6",
   "name": "Arab History",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_19",
@@ -18666,7 +18666,7 @@
   ],
   "categoryId": "h7",
   "name": "Cold War",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_20",
@@ -18754,7 +18754,7 @@
   ],
   "categoryId": "h7",
   "name": "Cold War",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_21",
@@ -18842,7 +18842,7 @@
   ],
   "categoryId": "h7",
   "name": "Cold War",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_22",
@@ -18906,7 +18906,7 @@
   ],
   "categoryId": "h9",
   "name": "South Asian History",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_23",
@@ -18982,7 +18982,7 @@
   ],
   "categoryId": "h9",
   "name": "South Asian History",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_24",
@@ -19062,7 +19062,7 @@
   ],
   "categoryId": "h9",
   "name": "South Asian History",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_15",
@@ -19130,7 +19130,7 @@
   ],
   "categoryId": "h10",
   "name": "Middle Ages Europe",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_26",
@@ -19218,7 +19218,7 @@
   ],
   "categoryId": "h10",
   "name": "Middle Ages Europe",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_27",
@@ -19306,7 +19306,7 @@
   ],
   "categoryId": "h10",
   "name": "Middle Ages Europe",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_28",
@@ -19358,7 +19358,7 @@
   ],
   "categoryId": "h11",
   "name": "Middle Eastern History",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_29",
@@ -19414,7 +19414,7 @@
   ],
   "categoryId": "h11",
   "name": "Middle Eastern History",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_30",
@@ -19486,7 +19486,7 @@
   ],
   "categoryId": "h11",
   "name": "Middle Eastern History",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_31",
@@ -19538,7 +19538,7 @@
   ],
   "categoryId": "h12",
   "name": "UK History",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_32",
@@ -19594,7 +19594,7 @@
   ],
   "categoryId": "h12",
   "name": "UK History",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_33",
@@ -19670,7 +19670,7 @@
   ],
   "categoryId": "h12",
   "name": "UK History",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_34",
@@ -19742,7 +19742,7 @@
   ],
   "categoryId": "h13",
   "name": "US History",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_35",
@@ -19826,7 +19826,7 @@
   ],
   "categoryId": "h13",
   "name": "US History",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_36",
@@ -19906,7 +19906,7 @@
   ],
   "categoryId": "h13",
   "name": "US History",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_37",
@@ -19990,7 +19990,7 @@
   ],
   "categoryId": "g1",
   "name": "ARK: Survival Evolved",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_38",
@@ -20070,7 +20070,7 @@
   ],
   "categoryId": "g1",
   "name": "ARK: Survival Evolved",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_26",
@@ -20154,7 +20154,7 @@
   ],
   "categoryId": "g1",
   "name": "ARK: Survival Evolved",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w-39",
@@ -20230,6 +20230,78 @@
   ],
   "categoryId": "g2",
   "name": "Call of Duty",
+  "points": 100
+},
+{
+  "id":"w-40",
+  "questionAndanswer": [
+    {
+      "text": "In Black Ops (2010), the line \"What do the numbers mean, Mason? \" appears in what narrative context?",
+      "answer": "The campaign s interrogation framing scenes"
+    },
+    {
+      "text": "In Modern Warfare 2 (2009), which missions set in Rio de Janeiro involve chasing arms dealer Alejandro Rojas through the favelas?",
+      "answer": "Takedown\" and \"The Hornet s Nest"
+    },
+    {
+      "text": "What is the canonical name of the Zombies demonic energy/force behind many maps?",
+      "answer": "Aether"
+    },
+    {
+      "text": "What is the name of the fictional private military company in Advanced Warfare?",
+      "answer": "Atlas Corporation"
+    },
+    {
+      "text": "What is the typical team size for standard multiplayer TDM at launch across many titles?",
+      "answer": "6v6"
+    },
+    {
+      "text": "What's the name of the Pacific-themed Warzone map introduced after Verdansk?",
+      "answer": "Caldera"
+    },
+    {
+      "text": "Which campaign places you in the Vietnam War with characters like Woods and Mason?",
+      "answer": "Black Ops"
+    },
+    {
+      "text": "Which CoD installment is set in the future with space combat and the UNSA/Settlement Defense Front?",
+      "answer": "Infinite Warfare"
+    },
+    {
+      "text": "Which CoD introduced the \"Gulag\" respawn mechanic in battle royale?",
+      "answer": "Warzone"
+    },
+    {
+      "text": "Which game prominently features the mission \"All Ghillied Up\"?",
+      "answer": "Call of Duty 4: Modern Warfare"
+    },
+    {
+      "text": "Which mainline Call of Duty title is set during World War I?",
+      "answer": "None"
+    },
+    {
+      "text": "Which MW (2019) mission tasks you with clearing a townhouse in London at night?",
+      "answer": "Clean House"
+    },
+    {
+      "text": "Which recurring Zombies character is a German scientist linked to Group 935?",
+      "answer": "Edward Richtofen"
+    },
+    {
+      "text": "Which studio is most associated with the Black Ops storyline?",
+      "answer": "Treyarch"
+    },
+    {
+      "text": "Which title first introduced the Exo Suit for advanced mobility?",
+      "answer": "Advanced Warfare"
+    },
+    {
+      "text": "Who is the primary antagonist across the original MW trilogy?",
+      "answer": "Vladimir Makarov"
+    }
+  ],
+  "categoryId": "g2",
+  "name": "Call of Duty",
   "points": 200
 },
 {
@@ -20302,79 +20374,7 @@
   ],
   "categoryId": "g2",
   "name": "Call of Duty",
-  "points": 400
-},
-{
-  "id":"w-40",
-  "questionAndanswer": [
-    {
-      "text": "In Black Ops (2010), the line \"What do the numbers mean, Mason? \" appears in what narrative context?",
-      "answer": "The campaign s interrogation framing scenes"
-    },
-    {
-      "text": "In Modern Warfare 2 (2009), which missions set in Rio de Janeiro involve chasing arms dealer Alejandro Rojas through the favelas?",
-      "answer": "Takedown\" and \"The Hornet s Nest"
-    },
-    {
-      "text": "What is the canonical name of the Zombies demonic energy/force behind many maps?",
-      "answer": "Aether"
-    },
-    {
-      "text": "What is the name of the fictional private military company in Advanced Warfare?",
-      "answer": "Atlas Corporation"
-    },
-    {
-      "text": "What is the typical team size for standard multiplayer TDM at launch across many titles?",
-      "answer": "6v6"
-    },
-    {
-      "text": "What's the name of the Pacific-themed Warzone map introduced after Verdansk?",
-      "answer": "Caldera"
-    },
-    {
-      "text": "Which campaign places you in the Vietnam War with characters like Woods and Mason?",
-      "answer": "Black Ops"
-    },
-    {
-      "text": "Which CoD installment is set in the future with space combat and the UNSA/Settlement Defense Front?",
-      "answer": "Infinite Warfare"
-    },
-    {
-      "text": "Which CoD introduced the \"Gulag\" respawn mechanic in battle royale?",
-      "answer": "Warzone"
-    },
-    {
-      "text": "Which game prominently features the mission \"All Ghillied Up\"?",
-      "answer": "Call of Duty 4: Modern Warfare"
-    },
-    {
-      "text": "Which mainline Call of Duty title is set during World War I?",
-      "answer": "None"
-    },
-    {
-      "text": "Which MW (2019) mission tasks you with clearing a townhouse in London at night?",
-      "answer": "Clean House"
-    },
-    {
-      "text": "Which recurring Zombies character is a German scientist linked to Group 935?",
-      "answer": "Edward Richtofen"
-    },
-    {
-      "text": "Which studio is most associated with the Black Ops storyline?",
-      "answer": "Treyarch"
-    },
-    {
-      "text": "Which title first introduced the Exo Suit for advanced mobility?",
-      "answer": "Advanced Warfare"
-    },
-    {
-      "text": "Who is the primary antagonist across the original MW trilogy?",
-      "answer": "Vladimir Makarov"
-    }
-  ],
-  "categoryId": "g2",
-  "name": "Call of Duty",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_41",
@@ -20450,7 +20450,7 @@
   ],
   "categoryId": "g4",
   "name": "Grand Theft Auto",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_42",
@@ -20522,7 +20522,7 @@
   ],
   "categoryId": "g4",
   "name": "Grand Theft Auto",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_43",
@@ -20594,7 +20594,7 @@
   ],
   "categoryId": "g4",
   "name": "Grand Theft Auto",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_44",
@@ -20674,7 +20674,7 @@
   ],
   "categoryId": "g5",
   "name": "Halo",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_45",
@@ -20762,7 +20762,7 @@
   ],
   "categoryId": "g5",
   "name": "Halo",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_46",
@@ -20834,7 +20834,7 @@
   ],
   "categoryId": "g5",
   "name": "Halo",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_47",
@@ -20914,7 +20914,7 @@
   ],
   "categoryId": "g6",
   "name": "League of Legends",
-  "points": 200
+  "points": 100
 },{
   "id":"w_48",
   "questionAndanswer": [
@@ -20993,7 +20993,7 @@
   ],
   "categoryId": "g6",
   "name": "League of Legends",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_49",
@@ -21077,7 +21077,7 @@
   ],
   "categoryId": "g6",
   "name": "League of Legends",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_50",
@@ -21161,7 +21161,7 @@
   ],
   "categoryId": "g7",
   "name": "Minecraft",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_51",
@@ -21245,7 +21245,7 @@
   ],
   "categoryId": "g7",
   "name": "Minecraft",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_52",
@@ -21329,7 +21329,7 @@
   ],
   "categoryId": "g7",
   "name": "Minecraft",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_53",
@@ -21413,7 +21413,7 @@
   ],
   "categoryId": "g8",
   "name": "Overwatch",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_54",
@@ -21481,7 +21481,7 @@
   ],
   "categoryId": "g8",
   "name": "Overwatch",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_55",
@@ -21565,7 +21565,7 @@
   ],
   "categoryId": "g8",
   "name": "Overwatch",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_56",
@@ -21645,7 +21645,7 @@
   ],
   "categoryId": "g9",
   "name": "Red Dead Redemption",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_57",
@@ -21725,7 +21725,7 @@
   ],
   "categoryId": "g9",
   "name": "Red Dead Redemption",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_58",
@@ -21813,7 +21813,7 @@
   ],
   "categoryId": "g9",
   "name": "Red Dead Redemption",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_59",
@@ -21893,7 +21893,7 @@
   ],
   "categoryId": "g10",
   "name": "Super Mario Bros",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_60",
@@ -21981,7 +21981,7 @@
   ],
   "categoryId": "g10",
   "name": "Super Mario Bros",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_61",
@@ -22065,7 +22065,7 @@
   ],
   "categoryId": "g10",
   "name": "Super Mario Bros",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_62",
@@ -22153,7 +22153,7 @@
   ],
   "categoryId": "g11",
   "name": "The Legend of Zelda",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_63",
@@ -22233,7 +22233,7 @@
   ],
   "categoryId": "g11",
   "name": "The Legend of Zelda",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_64",
@@ -22317,7 +22317,7 @@
   ],
   "categoryId": "g11",
   "name": "The Legend of Zelda",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_65",
@@ -22397,7 +22397,7 @@
   ],
   "categoryId": "g12",
   "name": "The Witcher",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_66",
@@ -22481,7 +22481,7 @@
   ],
   "categoryId": "g12",
   "name": "The Witcher",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_67",
@@ -22557,7 +22557,7 @@
   ],
   "categoryId": "g12",
   "name": "The Witcher",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_68",
@@ -22641,7 +22641,7 @@
   ],
   "categoryId": "g13",
   "name": "World of Warcraft",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_69",
@@ -22725,7 +22725,7 @@
   ],
   "categoryId": "g13",
   "name": "World of Warcraft",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_70",
@@ -22805,7 +22805,7 @@
   ],
   "categoryId": "g13",
   "name": "World of Warcraft",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_71",
@@ -22881,7 +22881,7 @@
   ],
   "categoryId": "s2",
   "name": "Cricket",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_72",
@@ -22957,7 +22957,7 @@
   ],
   "categoryId": "s2",
   "name": "Cricket",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_73",
@@ -23049,7 +23049,7 @@
   ],
   "categoryId": "s2",
   "name": "Cricket",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_74",
@@ -23133,7 +23133,7 @@
   ],
   "categoryId": "s3",
   "name": "Formula 1",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_75",
@@ -23217,7 +23217,7 @@
   ],
   "categoryId": "s3",
   "name": "Formula 1",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_76",
@@ -23305,7 +23305,7 @@
   ],
   "categoryId": "s3",
   "name": "Formula 1",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_77",
@@ -23381,7 +23381,7 @@
   ],
   "categoryId": "s5",
   "name": "NBA",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_78",
@@ -23429,7 +23429,7 @@
   ],
   "categoryId": "s5",
   "name": "NBA",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_79",
@@ -23517,7 +23517,7 @@
   ],
   "categoryId": "s5",
   "name": "NBA",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_80",
@@ -23589,7 +23589,7 @@
   ],
   "categoryId": "s6",
   "name": "NFL",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_81",
@@ -23653,7 +23653,7 @@
   ],
   "categoryId": "s6",
   "name": "NFL",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_82",
@@ -23725,7 +23725,7 @@
   ],
   "categoryId": "s6",
   "name": "NFL",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_83",
@@ -23789,7 +23789,7 @@
   ],
   "categoryId": "s7",
   "name": "Premier League",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_84",
@@ -23845,7 +23845,7 @@
   ],
   "categoryId": "s7",
   "name": "Premier League",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_85",
@@ -23909,7 +23909,7 @@
   ],
   "categoryId": "s7",
   "name": "Premier League",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_86",
@@ -23981,7 +23981,7 @@
   ],
   "categoryId": "s8",
   "name": "Tennis",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_87",
@@ -24049,7 +24049,7 @@
   ],
   "categoryId": "s8",
   "name": "Tennis",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_88",
@@ -24117,7 +24117,7 @@
   ],
   "categoryId": "s8",
   "name": "Tennis",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_89",
@@ -24173,7 +24173,7 @@
   ],
   "categoryId": "s9",
   "name": "UEFA Champions League",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_90",
@@ -24241,7 +24241,7 @@
   ],
   "categoryId": "s9",
   "name": "UEFA Champions League",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_91",
@@ -24313,7 +24313,7 @@
   ],
   "categoryId": "s9",
   "name": "UEFA Champions League",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_92",
@@ -24393,7 +24393,7 @@
   ],
   "categoryId": "s10",
   "name": "UFC",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_93",
@@ -24465,7 +24465,7 @@
   ],
   "categoryId": "s10",
   "name": "UFC",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_94",
@@ -24537,7 +24537,7 @@
   ],
   "categoryId": "s10",
   "name": "UFC",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_95",
@@ -24573,7 +24573,7 @@
   ],
   "categoryId": "s12",
   "name": "World Cup",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_96",
@@ -24637,7 +24637,7 @@
   ],
   "categoryId": "s12",
   "name": "World Cup",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_97",
@@ -24705,7 +24705,7 @@
   ],
   "categoryId": "s12",
   "name": "World Cup",
-  "points": 600
+  "points": 300
 },
 {
     "id":"w_99",
@@ -24785,7 +24785,7 @@
     ],
     "categoryId": "gen1",
     "name": "Corporations",
-    "points": 200
+    "points": 100
 },
 {
     "id":"w_100",
@@ -24869,7 +24869,7 @@
     ],
     "categoryId": "gen1",
     "name": "Corporations",
-    "points": 400
+    "points": 200
 },
 {
     "id":"w_101",
@@ -24953,7 +24953,7 @@
     ],
     "categoryId": "gen1",
     "name": "Corporations",
-    "points": 600
+    "points": 300
 },
 {
     "id":"w_102",
@@ -25013,7 +25013,7 @@
     ],
     "categoryId": "gen2",
     "name": "Geography",
-    "points": 200
+    "points": 100
 },
 {
     "id":"w_103",
@@ -25077,7 +25077,7 @@
     ],
     "categoryId": "gen2",
     "name": "Geography",
-    "points": 400
+    "points": 200
 },
 {
     "id":"w_104",
@@ -25161,7 +25161,7 @@
     ],
     "categoryId": "gen2",
     "name": "Geography",
-    "points": 600
+    "points": 300
 },
 {
     "id":"w_105",
@@ -25237,7 +25237,7 @@
     ],
     "categoryId": "gen3",
     "name": "Science",
-    "points": 200
+    "points": 100
 },
 {
     "id":"w_106",
@@ -25317,7 +25317,7 @@
     ],
     "categoryId": "gen3",
     "name": "Science",
-    "points": 400
+    "points": 200
 },
 {
     "id":"w_107",
@@ -25409,7 +25409,7 @@
     ],
     "categoryId": "gen3",
     "name": "Science",
-    "points": 600
+    "points": 300
 },
 {
     "id":"w_108",
@@ -25477,7 +25477,7 @@
     ],
     "categoryId": "gen4",
     "name": "UK (General)",
-    "points": 200
+    "points": 100
 },
 {
     "id":"w_109",
@@ -25549,7 +25549,7 @@
     ],
     "categoryId": "gen4",
     "name": "UK (General)",
-    "points": 400
+    "points": 200
 },
 {
     "id":"w_110",
@@ -25633,7 +25633,7 @@
     ],
     "categoryId": "gen4",
     "name": "UK (General)",
-    "points": 600
+    "points": 300
 },
 {
     "id":"w_111",
@@ -25721,7 +25721,7 @@
     ],
     "categoryId": "pc2",
     "name": "Breaking Bad",
-    "points": 200
+    "points": 100
   },
   {
     "id":"w_112",
@@ -25797,7 +25797,7 @@
     ],
     "categoryId": "pc2",
     "name": "Breaking Bad",
-    "points": 400
+    "points": 200
   },
   {
     "id":"w_113",
@@ -25865,7 +25865,7 @@
     ],
     "categoryId": "pc2",
     "name": "Breaking Bad",
-    "points": 600
+    "points": 300
   },
 {
     "id":"w_114",
@@ -25949,7 +25949,7 @@
     ],
     "categoryId": "pc3",
     "name": "Dexter",
-    "points": 200
+    "points": 100
   },
   {
     "id":"w_115",
@@ -26025,7 +26025,7 @@
     ],
     "categoryId": "pc3",
     "name": "Dexter",
-    "points": 400
+    "points": 200
   },
   {
     "id":"w_116",
@@ -26101,7 +26101,7 @@
     ],
     "categoryId": "pc3",
     "name": "Dexter",
-    "points": 600
+    "points": 300
   },
 {
     "id":"w_117",
@@ -26185,7 +26185,7 @@
     ],
     "categoryId": "pc4",
     "name": "DC",
-    "points": 200
+    "points": 100
   },
   {
     "id":"w_118",
@@ -26261,7 +26261,7 @@
     ],
     "categoryId": "pc4",
     "name": "DC",
-    "points": 400
+    "points": 200
   },
   {
     "id":"w_119",
@@ -26345,7 +26345,7 @@
     ],
     "categoryId": "pc4",
     "name": "DC",
-    "points": 600
+    "points": 300
   },
   {
     "id":"w_120",
@@ -26433,7 +26433,7 @@
     ],
     "categoryId": "pc5",
     "name": "Disney",
-    "points": 200
+    "points": 100
   },
   {
     "id":"w_121",
@@ -26517,7 +26517,7 @@
     ],
     "categoryId": "pc5",
     "name": "Disney",
-    "points": 400
+    "points": 200
   },
   {
     "id":"w_122",
@@ -26601,7 +26601,7 @@
     ],
     "categoryId": "pc5",
     "name": "Disney",
-    "points": 600
+    "points": 300
   },
 {
     "id":"w_123",
@@ -26685,7 +26685,7 @@
     ],
     "categoryId": "pc6",
     "name": "Dragon Ball",
-    "points": 200
+    "points": 100
   },
   {
     "id":"w_124",
@@ -26773,7 +26773,7 @@
     ],
     "categoryId": "pc6",
     "name": "Dragon Ball",
-    "points": 400
+    "points": 200
   },
   {
     "id":"w_125",
@@ -26845,7 +26845,7 @@
     ],
     "categoryId": "pc6",
     "name": "Dragon Ball",
-    "points": 600
+    "points": 300
   },
   {
     "id":"w_126",
@@ -26933,7 +26933,7 @@
     ],
     "categoryId": "pc7",
     "name": "Friends",
-    "points": 200
+    "points": 100
   },
   {
     "id":"w_127",
@@ -27005,7 +27005,7 @@
     ],
     "categoryId": "pc7",
     "name": "Friends",
-    "points": 400
+    "points": 200
   },
   {
     "id":"w_128",
@@ -27093,7 +27093,7 @@
     ],
     "categoryId": "pc7",
     "name": "Friends",
-    "points": 600
+    "points": 300
   },
 {
     "id":"w_129",
@@ -27181,7 +27181,7 @@
     ],
     "categoryId": "pc8",
     "name": "Game of Thrones",
-    "points": 200
+    "points": 100
   },
   {
     "id":"w_130",
@@ -27261,7 +27261,7 @@
     ],
     "categoryId": "pc8",
     "name": "Game of Thrones",
-    "points": 400
+    "points": 200
   },
   {
     "id":"w_131",
@@ -27349,7 +27349,7 @@
     ],
     "categoryId": "pc8",
     "name": "Game of Thrones",
-    "points": 600
+    "points": 300
 },
 {
   "id":"w_132",
@@ -27437,7 +27437,7 @@
   ],
   "categoryId": "pc9",
   "name": "Harry Potter",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_133",
@@ -27521,7 +27521,7 @@
   ],
   "categoryId": "pc9",
   "name": "Harry Potter",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_134",
@@ -27609,7 +27609,7 @@
   ],
   "categoryId": "pc9",
   "name": "Harry Potter",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_135",
@@ -27689,7 +27689,7 @@
   ],
   "categoryId": "pc10",
   "name": "How I Met Your Mother",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_136",
@@ -27773,7 +27773,7 @@
   ],
   "categoryId": "pc10",
   "name": "How I Met Your Mother",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_137",
@@ -27849,7 +27849,7 @@
   ],
   "categoryId": "pc10",
   "name": "How I Met Your Mother",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_138",
@@ -27933,7 +27933,7 @@
   ],
   "categoryId": "pc11",
   "name": "James Bond",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_139",
@@ -28021,7 +28021,7 @@
   ],
   "categoryId": "pc11",
   "name": "James Bond",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_140",
@@ -28101,7 +28101,7 @@
   ],
   "categoryId": "pc11",
   "name": "James Bond",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_141",
@@ -28181,7 +28181,7 @@
   ],
   "categoryId": "pc12",
   "name": "Jurassic Park",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_142",
@@ -28261,7 +28261,7 @@
   ],
   "categoryId": "pc12",
   "name": "Jurassic Park",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_143",
@@ -28341,7 +28341,7 @@
   ],
   "categoryId": "pc12",
   "name": "Jurassic Park",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_144",
@@ -28417,7 +28417,7 @@
   ],
   "categoryId": "pc13",
   "name": "Marvel",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_145",
@@ -28493,7 +28493,7 @@
   ],
   "categoryId": "pc13",
   "name": "Marvel",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_146",
@@ -28573,7 +28573,7 @@
   ],
   "categoryId": "pc13",
   "name": "Marvel",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_147",
@@ -28657,7 +28657,7 @@
   ],
   "categoryId": "pc14",
   "name": "Naruto",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_148",
@@ -28733,7 +28733,7 @@
   ],
   "categoryId": "pc14",
   "name": "Naruto",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_149",
@@ -28821,7 +28821,7 @@
   ],
   "categoryId": "pc14",
   "name": "Naruto",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_150",
@@ -28901,7 +28901,7 @@
   ],
   "categoryId": "pc15",
   "name": "One Piece",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_151",
@@ -28981,7 +28981,7 @@
   ],
   "categoryId": "pc15",
   "name": "One Piece",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_152",
@@ -29061,7 +29061,7 @@
   ],
   "categoryId": "pc15",
   "name": "One Piece",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_153",
@@ -29145,7 +29145,7 @@
   ],
   "categoryId": "pc16",
   "name": "Pirates of the Caribbean",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_154",
@@ -29217,7 +29217,7 @@
   ],
   "categoryId": "pc16",
   "name": "Pirates of the Caribbean",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_155",
@@ -29297,7 +29297,7 @@
   ],
   "categoryId": "pc16",
   "name": "Pirates of the Caribbean",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_156",
@@ -29381,7 +29381,7 @@
   ],
   "categoryId": "pc17",
   "name": "Pokémon",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_157",
@@ -29465,7 +29465,7 @@
   ],
   "categoryId": "pc17",
   "name": "Pokémon",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_158",
@@ -29485,7 +29485,7 @@
   ],
   "categoryId": "pc17",
   "name": "Pokémon",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_159",
@@ -29569,7 +29569,7 @@
   ],
   "categoryId": "pc18",
   "name": "Prison Break",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_160",
@@ -29637,7 +29637,7 @@
   ],
   "categoryId": "pc18",
   "name": "Prison Break",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_161",
@@ -29717,7 +29717,7 @@
   ],
   "categoryId": "pc18",
   "name": "Prison Break",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_162",
@@ -29801,7 +29801,7 @@
   ],
   "categoryId": "pc20",
   "name": "SpongeBob SquarePants",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_163",
@@ -29885,7 +29885,7 @@
   ],
   "categoryId": "pc20",
   "name": "SpongeBob SquarePants",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_164",
@@ -29977,7 +29977,7 @@
   ],
   "categoryId": "pc20",
   "name": "SpongeBob SquarePants",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_165",
@@ -30065,7 +30065,7 @@
   ],
   "categoryId": "pc21",
   "name": "Squid Game",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_166",
@@ -30137,7 +30137,7 @@
   ],
   "categoryId": "pc21",
   "name": "Squid Game",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_167",
@@ -30221,7 +30221,7 @@
   ],
   "categoryId": "pc21",
   "name": "Squid Game",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_168",
@@ -30297,7 +30297,7 @@
   ],
   "categoryId": "pc22",
   "name": "Star Trek",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_169",
@@ -30385,7 +30385,7 @@
   ],
   "categoryId": "pc22",
   "name": "Star Trek",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_170",
@@ -30473,7 +30473,7 @@
   ],
   "categoryId": "pc22",
   "name": "Star Trek",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_171",
@@ -30557,7 +30557,7 @@
   ],
   "categoryId": "pc23",
   "name": "Star Wars",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_172",
@@ -30637,7 +30637,7 @@
   ],
   "categoryId": "pc23",
   "name": "Star Wars",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_173",
@@ -30721,7 +30721,7 @@
   ],
   "categoryId": "pc23",
   "name": "Star Wars",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_174",
@@ -30809,7 +30809,7 @@
   ],
   "categoryId": "pc24",
   "name": "Stranger Things",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_175",
@@ -30885,7 +30885,7 @@
   ],
   "categoryId": "pc24",
   "name": "Stranger Things",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_176",
@@ -30969,7 +30969,7 @@
   ],
   "categoryId": "pc24",
   "name": "Stranger Things",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_197",
@@ -31041,7 +31041,7 @@
   ],
   "categoryId": "pc25",
   "name": "The Big Bang Theory",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_198",
@@ -31125,7 +31125,7 @@
   ],
   "categoryId": "pc25",
   "name": "The Big Bang Theory",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_199",
@@ -31197,7 +31197,7 @@
   ],
   "categoryId": "pc25",
   "name": "The Big Bang Theory",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_200",
@@ -31285,7 +31285,7 @@
   ],
   "categoryId": "pc27",
   "name": "The Hunger Games",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_201",
@@ -31369,7 +31369,7 @@
   ],
   "categoryId": "pc27",
   "name": "The Hunger Games",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_202",
@@ -31457,7 +31457,7 @@
   ],
   "categoryId": "pc27",
   "name": "The Hunger Games",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_203",
@@ -31545,7 +31545,7 @@
   ],
   "categoryId": "pc28",
   "name": "The Office (US)",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_204",
@@ -31621,7 +31621,7 @@
   ],
   "categoryId": "pc28",
   "name": "The Office (US)",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_205",
@@ -31705,7 +31705,7 @@
   ],
   "categoryId": "pc28",
   "name": "The Office (US)",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_206",
@@ -31781,7 +31781,7 @@
   ],
   "categoryId": "pc29",
   "name": "The Simpsons",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_207",
@@ -31869,7 +31869,7 @@
   ],
   "categoryId": "pc29",
   "name": "The Simpsons",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_208",
@@ -31953,7 +31953,7 @@
   ],
   "categoryId": "pc29",
   "name": "The Simpsons",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_209",
@@ -32025,7 +32025,7 @@
   ],
   "categoryId": "pc30",
   "name": "Shakespeare",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_210",
@@ -32049,7 +32049,7 @@
   ],
   "categoryId": "pc30",
   "name": "Shakespeare",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_211",
@@ -32101,7 +32101,7 @@
   ],
   "categoryId": "pc30",
   "name": "Shakespeare",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_212",
@@ -32189,7 +32189,7 @@
   ],
   "categoryId": "pc1",
   "name": "Avatar: TLA",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_213",
@@ -32269,7 +32269,7 @@
   ],
   "categoryId": "pc1",
   "name": "Avatar: TLA",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_214",
@@ -32357,7 +32357,7 @@
   ],
   "categoryId": "pc1",
   "name": "Avatar: TLA",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_215",
@@ -32445,7 +32445,7 @@
   ],
   "categoryId": "pc9",
   "name": "Harry Potter",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_216",
@@ -32533,7 +32533,7 @@
   ],
   "categoryId": "pc21",
   "name": "Squid Game",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_217",
@@ -32621,7 +32621,7 @@
   ],
   "categoryId": "pc1",
   "name": "Avatar: TLA",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_218",
@@ -32709,7 +32709,7 @@
   ],
   "categoryId": "pc29",
   "name": "The Simpsons",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_219",
@@ -32765,7 +32765,7 @@
   ],
   "categoryId": "s9",
   "name": "UEFA Champions League",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_220",
@@ -32837,7 +32837,7 @@
   ],
   "categoryId": "s6",
   "name": "NFL",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_221",
@@ -32921,7 +32921,7 @@
   ],
   "categoryId": "g7",
   "name": "Minecraft",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_222",
@@ -33005,7 +33005,7 @@
   ],
   "categoryId": "h15",
   "name": "WW2",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_223",
@@ -33093,7 +33093,7 @@
   ],
   "categoryId": "h15",
   "name": "WW2",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_224",
@@ -33177,7 +33177,7 @@
   ],
   "categoryId": "h15",
   "name": "WW2",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_225",
@@ -33257,7 +33257,7 @@
   ],
   "categoryId": "h14",
   "name": "WW1",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_226",
@@ -33329,7 +33329,7 @@
   ],
   "categoryId": "h14",
   "name": "WW1",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_227",
@@ -33413,7 +33413,7 @@
   ],
   "categoryId": "h14",
   "name": "WW1",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_228",
@@ -33497,7 +33497,7 @@
   ],
   "categoryId": "g3",
   "name": "DoTA",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_229",
@@ -33577,7 +33577,7 @@
   ],
   "categoryId": "g3",
   "name": "DoTA",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_230",
@@ -33661,7 +33661,7 @@
   ],
   "categoryId": "g3",
   "name": "DoTA",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_231",
@@ -33737,7 +33737,7 @@
   ],
   "categoryId": "h8",
   "name": "European History",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_232",
@@ -33813,7 +33813,7 @@
   ],
   "categoryId": "h8",
   "name": "European History",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_233",
@@ -33893,7 +33893,7 @@
   ],
   "categoryId": "h8",
   "name": "European History",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_234",
@@ -33977,7 +33977,7 @@
   ],
   "categoryId": "pc26",
   "name": "The Fast and the Furious",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_235",
@@ -34053,7 +34053,7 @@
   ],
   "categoryId": "pc26",
   "name": "The Fast and the Furious",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_236",
@@ -34137,7 +34137,7 @@
   ],
   "categoryId": "pc26",
   "name": "The Fast and the Furious",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_237",
@@ -34205,7 +34205,7 @@
   ],
   "categoryId": "s11",
   "name": "Which Player?",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_238",
@@ -34273,7 +34273,7 @@
   ],
   "categoryId": "s11",
   "name": "Which Player?",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_239",
@@ -34361,7 +34361,7 @@
   ],
   "categoryId": "s11",
   "name": "Which Player?",
-  "points": 600
+  "points": 300
 },
 {
   "id":"w_240",
@@ -34381,7 +34381,7 @@
   ],
   "categoryId": "s9",
   "name": "UEFA Champions League",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_241",
@@ -34441,7 +34441,7 @@
   ],
   "categoryId": "gen5",
   "name": "US (General)",
-  "points": 200
+  "points": 100
 },
 {
   "id":"w_242",
@@ -34509,7 +34509,7 @@
   ],
   "categoryId": "gen5",
   "name": "US (General)",
-  "points": 400
+  "points": 200
 },
 {
   "id":"w_243",
@@ -34585,5 +34585,5 @@
   ],
   "categoryId": "gen5",
   "name": "US (General)",
-  "points": 600
+  "points": 300
 }]

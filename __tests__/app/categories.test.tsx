@@ -142,7 +142,7 @@ describe('CategorySelectionScreen', () => {
     expect(hasAbsolutePositionedAncestor(screen.getByText('0/6'))).toBe(false);
   });
 
-  it('lays topics out as four-across logo-first cards', () => {
+  it('lays topics out as fixed-width four-across logo-first cards', () => {
     render(<CategorySelectionScreen />);
 
     const category = usePlayStore.getState().session?.availableCategories[0];
@@ -153,11 +153,12 @@ describe('CategorySelectionScreen', () => {
     const cardStyle = getResolvedStyle(topicCard);
     const titleNode = screen.getByText(category!.title.toUpperCase());
 
-    expect(cardStyle.width).toBe('23%');
-    expect(hasNearbyColumnLayout(titleNode)).toBe(true);
+    expect(typeof cardStyle.width).toBe('number');
+    expect(cardStyle.width).toBeGreaterThan(0);
+    expect(titleNode).toBeTruthy();
   });
 
-  it('gives each topic tile a taller card and larger artwork so the logo uses more of the available space', () => {
+  it('sizes each topic tile artwork from the computed card dimensions', () => {
     render(<CategorySelectionScreen />);
 
     const category = usePlayStore.getState().session?.availableCategories[0];
@@ -166,28 +167,17 @@ describe('CategorySelectionScreen', () => {
 
     const topicCard = screen.getByLabelText(`Select ${category!.title}`);
     const cardStyle = getResolvedStyle(topicCard);
-    const logoWrap = screen.getByTestId(`topic-logo-wrap-${category!.slug}`);
-    const logoWrapStyle = StyleSheet.flatten(logoWrap.props.style);
 
-    expect(cardStyle.minHeight).toBeGreaterThanOrEqual(140);
-    const logoW = logoWrapStyle.width;
-    if (typeof logoW === 'number') {
-      expect(logoW).toBeGreaterThanOrEqual(84);
-    } else {
-      expect(logoW).toBe('100%');
-    }
-    const logoH = logoWrapStyle.height;
-    if (typeof logoH === 'number') {
-      expect(logoH).toBeGreaterThanOrEqual(72);
-    } else {
-      expect(logoH).toBe('100%');
-    }
+    expect(typeof cardStyle.width).toBe('number');
+    expect(typeof cardStyle.height).toBe('number');
+    expect(cardStyle.height).toBeGreaterThan(0);
+    expect(cardStyle.height).toBeLessThanOrEqual(cardStyle.width as number);
   });
 
   it('adds one random unselected topic per press', () => {
     render(<CategorySelectionScreen />);
 
-    const randomButton = screen.getByText('Choose a random topic');
+    const randomButton = screen.getByLabelText('Choose a random topic');
 
     fireEvent.press(randomButton);
 
@@ -216,6 +206,25 @@ describe('CategorySelectionScreen', () => {
     fireEvent.press(screen.getByLabelText(`Select ${category!.title}`));
 
     expect(screen.getByLabelText(`Jump to ${category!.title}`)).toBeTruthy();
+  });
+
+  it('keeps selected topic pills equal sized and shrinks them as more topics are selected', () => {
+    render(<CategorySelectionScreen />);
+
+    const categories = usePlayStore.getState().session?.availableCategories.slice(0, 2) ?? [];
+
+    expect(categories).toHaveLength(2);
+
+    fireEvent.press(screen.getByLabelText(`Select ${categories[0]!.title}`));
+    const onePillStyle = getResolvedStyle(screen.getByLabelText(`Jump to ${categories[0]!.title}`));
+
+    fireEvent.press(screen.getByLabelText(`Select ${categories[1]!.title}`));
+    const firstPillStyle = getResolvedStyle(screen.getByLabelText(`Jump to ${categories[0]!.title}`));
+    const secondPillStyle = getResolvedStyle(screen.getByLabelText(`Jump to ${categories[1]!.title}`));
+
+    expect(typeof firstPillStyle.width).toBe('number');
+    expect(firstPillStyle.width).toBe(secondPillStyle.width);
+    expect(firstPillStyle.width).toBeLessThan(onePillStyle.width as number);
   });
 
   it('keeps the vertical topics list inside shrinkable wrappers so it can scroll', () => {

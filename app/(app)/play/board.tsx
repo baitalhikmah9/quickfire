@@ -21,11 +21,17 @@ import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
 import { HOME_SOFT_UI } from '@/themes';
+import { getResponsivePlayFontSizes, scaleFont } from '@/utils/responsiveTypography';
 
 const T = HOME_SOFT_UI;
 
-/** Topic art is a portrait tile: same width as the layout cap, extra height for the illustration. */
-const TOPIC_ART_HEIGHT_RATIO = 1.18;
+/** Topic art is a portrait tile: same width as the layout cap, extra height for the illustration.
+ * Dynamic ratio — tighter on small screens to prevent clipping in native landscape. */
+function getTopicArtHeightRatio(screenHeight: number): number {
+  if (screenHeight < 420) return 0.98;
+  if (screenHeight < 560) return 1.06;
+  return 1.18;
+}
 
 interface BoardRow {
   pointValue: number;
@@ -102,10 +108,9 @@ function clampGridColumns(
   categoryCount: number
 ): number {
   if (categoryCount <= 0) return 1;
-  const rowPadding = gridGap * 2;
-  const usableRow = Math.max(0, innerWidth - rowPadding);
-  /** Minimum space per topic cell before we reduce column count — must fit long category titles. */
-  const MIN_CELL = 200;
+  const usableRow = Math.max(0, innerWidth);
+  /** Minimum space per topic cell before we reduce column count — must fit long category titles without abandoning the intended 3x2 board too early. */
+  const MIN_CELL = 176;
   let cols = Math.min(preferredCols, categoryCount);
   while (cols > 1) {
     const cell = (usableRow - gridGap * (cols - 1)) / cols;
@@ -118,18 +123,33 @@ function clampGridColumns(
 function computeTopicFit(
   innerWidth: number,
   m: BoardMetrics,
-  cols: number
-): { topicImageSize: number; railWidth: number; artGap: number } {
-  const rowPadding = m.gridGap * 2;
-  const usableRow = Math.max(0, innerWidth - rowPadding);
+  cols: number,
+  screenWidth: number
+): {
+  cellWidth: number;
+  groupWidth: number;
+  topicImageSize: number;
+  centerWidth: number;
+  titleWidth: number;
+  titleHeight: number;
+  railWidth: number;
+  artGap: number;
+} {
+  const usableRow = Math.max(0, innerWidth);
   const safeCols = Math.max(1, cols);
-  const cellWidth = (usableRow - m.gridGap * (safeCols - 1)) / safeCols;
-  const railW = Math.min(58, Math.max(36, Math.round(cellWidth * 0.22)));
-  const artGap = Math.min(m.topicArtGap, Math.max(4, Math.round(cellWidth * 0.045)));
-  const reserved = railW * 2 + artGap * 2 + 14;
-  const maxImg = Math.floor(cellWidth - reserved);
-  const topicImageSize = Math.max(48, Math.min(m.topicImageSize, maxImg));
-  return { topicImageSize, railWidth: railW, artGap };
+  const cellWidth = Math.max(1, (usableRow - m.gridGap * (safeCols - 1)) / safeCols);
+  const web = Platform.OS === 'web' && screenWidth >= 900;
+  const railWidth = web ? 64 : screenWidth < 620 ? 50 : 56;
+  const artGap = web ? 10 : screenWidth < 620 ? 6 : 8;
+  const horizontalChrome = railWidth * 2 + artGap * 2;
+  const maxCenterWidth = Math.max(56, Math.floor(cellWidth - horizontalChrome));
+  const preferredCenterWidth = web ? 218 : screenWidth < 620 ? 116 : 152;
+  const centerWidth = Math.max(56, Math.min(preferredCenterWidth, maxCenterWidth));
+  const groupWidth = horizontalChrome + centerWidth;
+  const topicImageSize = Math.max(48, Math.min(m.topicImageSize, centerWidth));
+  const titleWidth = Math.min(Math.max(centerWidth, web ? 218 : 160), cellWidth);
+  const titleHeight = Math.round(m.topicTitleFont * 2.45);
+  return { cellWidth, groupWidth, topicImageSize, centerWidth, titleWidth, titleHeight, railWidth, artGap };
 }
 
 function lifelineGlyph(id: LifelineId): keyof typeof Ionicons.glyphMap {
@@ -207,20 +227,23 @@ type BoardMetrics = {
 function getBoardMetrics(screenHeight: number, screenWidth: number): BoardMetrics {
   const micro = screenHeight < 400 || screenWidth < 520;
   const compact = screenHeight < 560;
+  const tight = screenHeight < 450;
+  const roomy = screenHeight >= 680 && screenWidth >= 900;
+  const tall = screenHeight >= 820 && screenWidth >= 1000;
   return {
-    gridGap: micro ? 8 : compact ? 12 : 20,
+    gridGap: tight ? 8 : micro ? 10 : compact ? 14 : tall ? 30 : roomy ? 26 : 20,
     cellBorder: micro ? 1 : 2,
-    innerGap: micro ? 2 : compact ? 6 : 10,
-    tileFont: micro ? 13 : compact ? 14 : 16,
-    titleOnImage: micro ? 8 : compact ? 9 : 11,
-    scoreFont: micro ? 14 : compact ? 16 : 18,
-    lifelineIcon: micro ? 10 : compact ? 12 : 14,
-    lifelineIconBox: micro ? 18 : compact ? 20 : 24,
-    topicImageSize: micro ? 100 : compact ? 116 : 132,
-    topicArtGap: micro ? 8 : compact ? 12 : 14,
-    pointRailGap: micro ? 8 : compact ? 10 : 12,
-    pointRailClipBleed: micro ? 6 : 8,
-    topicTitleFont: micro ? 12 : compact ? 13 : 14,
+    innerGap: tight ? 2 : micro ? 2 : compact ? 6 : 10,
+    tileFont: tight ? 11 : micro ? 12 : compact ? 14 : roomy ? 18 : 16,
+    titleOnImage: tight ? 6 : micro ? 8 : compact ? 9 : 11,
+    scoreFont: tight ? 13 : micro ? 14 : compact ? 16 : roomy ? 20 : 18,
+    lifelineIcon: tight ? 9 : micro ? 10 : compact ? 12 : 14,
+    lifelineIconBox: tight ? 16 : micro ? 18 : compact ? 20 : 24,
+    topicImageSize: tight ? 86 : micro ? 96 : compact ? 118 : tall ? 184 : roomy ? 166 : 148,
+    topicArtGap: tight ? 5 : micro ? 6 : compact ? 10 : roomy ? 16 : 14,
+    pointRailGap: tight ? 5 : micro ? 6 : compact ? 10 : roomy ? 14 : 12,
+    pointRailClipBleed: tight ? 3 : micro ? 5 : 8,
+    topicTitleFont: tight ? 11 : micro ? 11 : compact ? 13 : roomy ? 16 : 14,
   };
 }
 
@@ -439,30 +462,41 @@ export default function PlayBoardScreen() {
   }, [clearSelectorTimeout, session?.step, showWagerSelector, startRandomSelection]);
 
   const grouped = useMemo(() => (session ? groupBoardTrivia(session) : []), [session]);
-  const metrics = useMemo(() => getBoardMetrics(height, width), [height, width]);
-  const padXEarly = Math.max(insets.left, LAYOUT.screenGutter) + Math.max(insets.right, LAYOUT.screenGutter);
-  const innerWidthEarly = Math.max(0, width - padXEarly);
+  const responsiveFontSizes = useMemo(() => getResponsivePlayFontSizes(width, height), [height, width]);
+  const metrics = useMemo(() => {
+    const baseMetrics = getBoardMetrics(height, width);
+    const isWebBoard = Platform.OS === 'web' && width >= 900;
+    const topicTitleFont = isWebBoard
+      ? scaleFont(16, 16, 20, width, height)
+      : scaleFont(20, 18, 26, width, height);
+    return {
+      ...baseMetrics,
+      tileFont: isWebBoard ? scaleFont(16, 14, 20, width, height) : responsiveFontSizes.pointValue,
+      topicTitleFont,
+      scoreFont: responsiveFontSizes.scoreValue,
+    };
+  }, [height, responsiveFontSizes, width]);
+  const topicArtHeightRatio = useMemo(() => getTopicArtHeightRatio(height), [height]);
+  const bodyPadLeft = Math.max(insets.left, LAYOUT.screenGutter);
+  const bodyPadRight = Math.max(insets.right, LAYOUT.screenGutter);
+  const padX = bodyPadLeft + bodyPadRight;
+  const innerWidth = Math.max(0, width - padX);
+  const centeredContentMaxWidth = width >= 900 ? 1120 : Math.floor(innerWidth * 0.94);
+  const boardLayoutWidth = Math.max(0, Math.min(innerWidth, centeredContentMaxWidth));
   const preferredGridCols = useMemo(
     () => getGridColumnCount(session?.mode ?? 'classic', grouped.length),
     [session?.mode, grouped.length]
   );
-  const gridColumnCount = useMemo(
-    () =>
-      grouped.length === 0
-        ? preferredGridCols
-        : clampGridColumns(preferredGridCols, innerWidthEarly, metrics.gridGap, grouped.length),
-    [preferredGridCols, innerWidthEarly, metrics.gridGap, grouped.length]
-  );
+  const gridColumnCount = useMemo(() => {
+    if (grouped.length === 0) return preferredGridCols;
+    if (Platform.OS === 'web' && width >= 900 && grouped.length >= 6) return Math.min(3, grouped.length);
+    return clampGridColumns(preferredGridCols, boardLayoutWidth, metrics.gridGap, grouped.length);
+  }, [preferredGridCols, boardLayoutWidth, metrics.gridGap, grouped.length, width]);
   const gridRows = useMemo(() => chunkColumns(grouped, gridColumnCount), [grouped, gridColumnCount]);
   const topicFit = useMemo(
-    () => computeTopicFit(innerWidthEarly, metrics, gridColumnCount),
-    [innerWidthEarly, metrics, gridColumnCount]
+    () => computeTopicFit(boardLayoutWidth, metrics, gridColumnCount, width),
+    [boardLayoutWidth, metrics, gridColumnCount, width]
   );
-
-  const padX = Math.max(insets.left, LAYOUT.screenGutter) + Math.max(insets.right, LAYOUT.screenGutter);
-  const innerWidth = Math.max(0, width - padX);
-  const bodyPadLeft = Math.max(insets.left, LAYOUT.screenGutter);
-  const bodyPadRight = Math.max(insets.right, LAYOUT.screenGutter);
 
   /** Tighter rails + scroll on small landscape phones so columns and footer are not clipped. */
   const layoutTuning = useMemo(() => {
@@ -470,9 +504,9 @@ export default function PlayBoardScreen() {
     const tight = innerWidth < 600;
     const short = height < 420;
     const rowCount = Math.max(1, gridRows.length);
-    const reserved = short ? 200 : 232;
+    const reserved = short ? 160 : 200;
     const avail = Math.max(0, height - insets.top - insets.bottom - reserved);
-    const rowMin = Math.max(80, Math.min(140, Math.floor(avail / rowCount)));
+    const rowMin = Math.max(60, Math.min(130, Math.floor(avail / rowCount)));
     return {
       narrow,
       pictureFlex: narrow ? 1 : 1.15,
@@ -528,7 +562,7 @@ export default function PlayBoardScreen() {
       <Pressable
         style={({ pressed }) => [
           styles.topicPointPill,
-          topicFit.railWidth <= 52 && styles.topicPointPillTight,
+          topicFit.railWidth <= 56 && styles.topicPointPillTight,
           SOFT_SURFACE_FACE,
           softSurfaceLift(),
           {
@@ -551,14 +585,17 @@ export default function PlayBoardScreen() {
             styles.topicPointPillText,
             {
               fontSize: metrics.tileFont,
+              lineHeight: Math.round(metrics.tileFont * 1.1),
               color: used ? textMuted : T.colors.textPrimary,
               textDecorationLine: used ? 'line-through' : 'none',
               opacity: used ? 0.55 : 1,
             },
+            Platform.OS === 'web' ? ({ whiteSpace: 'nowrap' } as any) : null,
           ]}
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.75}
+          ellipsizeMode="clip"
         >
           {question.pointValue}
         </Text>
@@ -569,12 +606,13 @@ export default function PlayBoardScreen() {
   const categoryCell = (column: (typeof grouped)[0]) => {
     const picture = getCategoryPictureSource(column.categoryId);
     const textPrimary = T.colors.textPrimary;
-    const imgW = topicFit.topicImageSize;
-    const imgH = Math.round(imgW * TOPIC_ART_HEIGHT_RATIO);
+    const imgW = topicFit.centerWidth;
+    const imgH = Math.round(imgW * topicArtHeightRatio);
 
     return (
-      <View key={column.categoryId} style={styles.categoryBlock}>
-        <View style={[styles.topicArtRow, { gap: topicFit.artGap }]}>
+      <View key={column.categoryId} style={styles.categoryGridCell}>
+        <View style={[styles.categoryBlock, { width: topicFit.groupWidth }]}> 
+          <View style={[styles.topicArtRow, { columnGap: topicFit.artGap }]}>
           <View
             style={[
               styles.topicPointRail,
@@ -590,6 +628,7 @@ export default function PlayBoardScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.topicImageFrame,
+                height < 420 && styles.topicImageFrameTight,
                 {
                   width: imgW,
                   height: imgH,
@@ -626,22 +665,31 @@ export default function PlayBoardScreen() {
               </View>
             </Pressable>
 
-            <View style={styles.topicTitleRow}>
-                <Text
-                  style={[
-                    styles.topicTitleText,
-                    {
-                      color: textPrimary,
-                      fontSize: metrics.topicTitleFont,
-                      lineHeight: Math.round(metrics.topicTitleFont * 1.35),
-                    },
-                  ]}
-                  numberOfLines={2}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.7}
-                >
-                  {column.categoryName.toUpperCase()}
-                </Text>
+            <View
+              style={[
+                styles.topicTitleRow,
+                { width: topicFit.titleWidth, height: topicFit.titleHeight },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.topicTitleText,
+                  {
+                    color: textPrimary,
+                    fontSize: metrics.topicTitleFont,
+                    lineHeight: Math.round(metrics.topicTitleFont * 1.12),
+                  },
+                  Platform.OS === 'web'
+                    ? ({ wordBreak: 'normal', overflowWrap: 'break-word' } as any)
+                    : null,
+                ]}
+                numberOfLines={2}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+                ellipsizeMode="tail"
+              >
+                {column.categoryName.toUpperCase()}
+              </Text>
             </View>
           </View>
 
@@ -655,18 +703,22 @@ export default function PlayBoardScreen() {
               <View key={`R-${row.pointValue}`}>{renderTile(column, row.right)}</View>
             ))}
           </View>
+          </View>
         </View>
       </View>
     );
   };
 
   const boardHeader = (
-    <PlayMatchTopBar
-      session={session}
-      onLogoPress={toggleExitModal}
-      onWagerInfoPress={session.config.wagerEnabled ? () => setWagerInfoOpen(true) : undefined}
-      onHotSeatInfoPress={SHOW_HOT_SEAT_UI ? () => setHotSeatInfoOpen(true) : undefined}
-    />
+    <View style={[styles.headerCenterWrap, { width: boardLayoutWidth, maxWidth: centeredContentMaxWidth }]}>
+      <PlayMatchTopBar
+        session={session}
+        onLogoPress={toggleExitModal}
+        onWagerInfoPress={session.config.wagerEnabled ? () => setWagerInfoOpen(true) : undefined}
+        onHotSeatInfoPress={SHOW_HOT_SEAT_UI ? () => setHotSeatInfoOpen(true) : undefined}
+        compact={Platform.OS !== 'web' && height < 560}
+      />
+    </View>
   );
 
   return (
@@ -686,6 +738,11 @@ export default function PlayBoardScreen() {
         bodyFrame={false}
         bodyEdgeToEdge
         contentSafeAreaHorizontal={false}
+        chromeColumnStyle={
+          Platform.OS !== 'web' && height < 500
+            ? { paddingVertical: 4 }
+            : { paddingVertical: Platform.OS === 'web' ? 8 : SPACING.sm }
+        }
       >
         {wager && !showWagerSelector ? (
           <View
@@ -720,10 +777,13 @@ export default function PlayBoardScreen() {
           contentContainerStyle={[
             styles.gridScrollContent,
             {
-              paddingLeft: bodyPadLeft + metrics.gridGap,
-              paddingRight: bodyPadRight + metrics.gridGap,
+              paddingLeft: bodyPadLeft,
+              paddingRight: bodyPadRight,
               gap: metrics.gridGap,
-              paddingBottom: Math.max(insets.bottom, SPACING.sm) + SPACING.md,
+              paddingTop: Platform.OS === 'web' ? 4 : 0,
+              paddingBottom: Platform.OS === 'web'
+                ? Math.max(SPACING.lg, SPACING.md)
+                : Math.max(insets.bottom, SPACING.xs) + SPACING.sm,
             },
           ]}
           showsVerticalScrollIndicator={false}
@@ -762,7 +822,16 @@ export default function PlayBoardScreen() {
               onAction={() => startRandomSelection('random')}
             />
           ) : (
-            <>
+            <View
+              style={[
+                styles.boardCenterContainer,
+                {
+                  width: boardLayoutWidth,
+                  maxWidth: centeredContentMaxWidth,
+                  gap: metrics.gridGap,
+                },
+              ]}
+            >
               {gridRows.map((row, ri) => (
                 <View
                   key={`row-${ri}`}
@@ -776,7 +845,7 @@ export default function PlayBoardScreen() {
                     : null}
                 </View>
               ))}
-            </>
+            </View>
           )}
         </ScrollView>
       </PlayScaffold>
@@ -1093,6 +1162,7 @@ const styles = StyleSheet.create({
     width: '100%',
     minWidth: 0,
     paddingTop: 0,
+    justifyContent: 'center',
   },
   gridRow: {
     flexDirection: 'row',
@@ -1103,8 +1173,26 @@ const styles = StyleSheet.create({
   gridCellSpacer: {
     flex: 1,
   },
-  categoryBlock: {
+  categoryGridCell: {
     flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+  },
+  boardCenterContainer: {
+    width: '100%',
+    maxWidth: 1200,
+    alignSelf: 'center',
+    flexGrow: 0,
+    flexShrink: 1,
+  },
+  headerCenterWrap: {
+    width: '100%',
+    maxWidth: 1200,
+    alignSelf: 'center',
+  },
+  categoryBlock: {
+    flexGrow: 0,
+    flexShrink: 0,
     minWidth: 0,
     maxWidth: '100%',
   },
@@ -1117,7 +1205,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     minWidth: 0,
     minHeight: 0,
-    gap: SPACING.xs,
+    gap: Platform.OS === 'web' ? SPACING.xs : 2,
   },
   /** Rails + illustration — side rails fixed width; center flexes horizontally and stretches to row height. */
   topicArtRow: {
@@ -1138,21 +1226,25 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Platform.OS === 'android' ? 10 : 11,
-    paddingHorizontal: 12,
-    minHeight: 42,
+    paddingVertical: Platform.OS === 'android' ? 8 : 10,
+    paddingHorizontal: Platform.OS === 'web' ? 4 : 8,
+    minHeight: 38,
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
   },
   topicPointPillTight: {
-    paddingHorizontal: 7,
-    minHeight: 38,
-    paddingVertical: Platform.OS === 'android' ? 8 : 9,
+    paddingHorizontal: 4,
+    minHeight: 32,
+    paddingVertical: Platform.OS === 'android' ? 5 : 7,
+    overflow: 'hidden',
   },
   topicPointPillText: {
     fontFamily: FONTS.displayBold,
     textAlign: 'center',
     letterSpacing: -0.25,
+    width: '100%',
+    flexShrink: 0,
   },
   topicImageFrame: {
     flexShrink: 0,
@@ -1161,6 +1253,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignSelf: 'center',
     flexGrow: 0,
+  },
+  topicImageFrameTight: {
+    borderRadius: 16,
   },
   topicImageInner: {
     flex: 1,
@@ -1180,15 +1275,17 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   topicTitleRow: {
-    flex: 1,
+    flexGrow: 0,
+    flexShrink: 0,
     minHeight: 0,
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingHorizontal: SPACING.xs,
-    paddingTop: 2,
-    alignSelf: 'stretch',
-    width: '100%',
+    paddingTop: 3,
+    paddingBottom: 2,
+    alignSelf: 'center',
     maxWidth: '100%',
+    overflow: 'hidden',
   },
   topicTitleText: {
     fontFamily: FONTS.displayBold,
@@ -1197,6 +1294,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     width: '100%',
     flexShrink: 1,
+    flexWrap: 'wrap',
   },
   rootContainer: {
     flex: 1,
