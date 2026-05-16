@@ -544,9 +544,7 @@ export default function PlayQuestionScreen() {
               {
                 paddingBottom: Math.max(
                   insets.bottom,
-                  SPACING.lg +
-                    (answerPhaseCanWager ? 56 : 0) +
-                    (showAnswerPhaseNextTurnDock ? 82 : 0)
+                  SPACING.lg + (showAnswerPhaseNextTurnDock ? 82 : 0)
                 ),
                 paddingHorizontal: answerPhaseScrollPaddingH,
               },
@@ -589,68 +587,66 @@ export default function PlayQuestionScreen() {
               ]}
               pointerEvents="box-none"
             >
-              <Pressable
-                onPress={() => {
-                  continueAfterStandardQuestion();
-                  router.replace('/play/board');
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={(session.bonus.active
-                  ? t('play.finishMatch')
-                  : t('play.nextTurn')
-                ).toUpperCase()}
-                style={({ pressed }) => [
-                  styles.answerNextTurnButton,
-                  SOFT_SURFACE_STYLES.face,
-                  {
-                    opacity: pressed ? 0.94 : 1,
-                    transform: [{ scale: pressed ? 0.98 : 1 }],
-                  },
-                  neumorphicLift3D('pill'),
-                ]}
-              >
-                <Text style={styles.answerNextTurnText} numberOfLines={1} adjustsFontSizeToFit>
-                  {(session.bonus.active ? t('play.finishMatch') : t('play.nextTurn')).toUpperCase()}
-                </Text>
-              </Pressable>
+              <View style={styles.answerNextTurnDockRow}>
+                <Pressable
+                  onPress={() => {
+                    continueAfterStandardQuestion();
+                    router.replace('/play/board');
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={(session.bonus.active
+                    ? t('play.finishMatch')
+                    : t('play.nextTurn')
+                  ).toUpperCase()}
+                  style={({ pressed }) => [
+                    styles.answerNextTurnButton,
+                    SOFT_SURFACE_STYLES.face,
+                    {
+                      opacity: pressed ? 0.94 : 1,
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                    },
+                    neumorphicLift3D('pill'),
+                  ]}
+                >
+                  <Text style={styles.answerNextTurnText} numberOfLines={1} adjustsFontSizeToFit>
+                    {(session.bonus.active ? t('play.finishMatch') : t('play.nextTurn')).toUpperCase()}
+                  </Text>
+                </Pressable>
+                {answerPhaseCanWager ? (
+                  <Pressable
+                    testID="question-answer-wager-button"
+                    accessibilityRole="button"
+                    accessibilityLabel={t('play.wagerNextTeam')}
+                    onPress={() => {
+                      const result = initiateWager();
+                      if (result.ok) {
+                        router.replace('/play/board');
+                      }
+                    }}
+                    style={({ pressed }) => [
+                      styles.answerDockWagerButton,
+                      SOFT_SURFACE_STYLES.face,
+                      {
+                        opacity: pressed ? 0.92 : 1,
+                        transform: [{ scale: pressed ? 0.98 : 1 }],
+                      },
+                      neumorphicLift3D('pill'),
+                      styles.answerDockWagerDepth,
+                    ]}
+                  >
+                    <Image
+                      source={WAGER_FAB_ICON}
+                      style={styles.answerDockWagerImage}
+                      contentFit="contain"
+                      accessibilityIgnoresInvertColors
+                    />
+                    <Text style={styles.answerDockWagerText} numberOfLines={1} adjustsFontSizeToFit>
+                      {t('play.wagerCardTitle').toUpperCase()}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
             </View>
-          ) : null}
-          {answerPhaseCanWager ? (
-            <Pressable
-              testID="question-answer-wager-fab"
-              accessibilityRole="button"
-              accessibilityLabel={t('play.wagerNextTeam')}
-              onPress={() => {
-                const result = initiateWager();
-                if (result.ok) {
-                  router.replace('/play/board');
-                }
-              }}
-              style={({ pressed }) => [
-                styles.answerWagerFab,
-                SOFT_SURFACE_STYLES.face,
-                {
-                  bottom:
-                    Math.max(insets.bottom, SPACING.md) +
-                    SPACING.xs +
-                    (showAnswerPhaseNextTurnDock ? 66 : 0),
-                  right: Math.max(insets.right, answerPhaseScrollPaddingH),
-                  opacity: pressed ? 0.92 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                },
-                neumorphicLift3D('pill'),
-              ]}
-            >
-              <Image
-                source={WAGER_FAB_ICON}
-                style={styles.answerWagerFabImage}
-                contentFit="contain"
-                accessibilityIgnoresInvertColors
-              />
-              <Text style={styles.answerWagerFabLabel} numberOfLines={1}>
-                {t('play.wagerCardTitle').toUpperCase()}
-              </Text>
-            </Pressable>
           ) : null}
         </View>
       ) : (
@@ -870,38 +866,57 @@ const styles = StyleSheet.create({
     minWidth: 0,
     position: 'relative',
   },
-  answerWagerFab: {
-    position: 'absolute',
-    zIndex: 30,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingLeft: 10,
-    paddingRight: 12,
-    borderRadius: 14,
+  answerDockWagerButton: {
+    minHeight: 54,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    maxWidth: 220,
+    borderRadius: 18,
     backgroundColor: '#FF8A00',
-    maxWidth: '88%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
   },
-  answerWagerFabImage: {
-    width: 24,
-    height: 24,
+  answerDockWagerDepth: {
+    borderTopColor: 'rgba(255, 214, 163, 0.72)',
+    borderBottomColor: '#C76400',
+    shadowColor: 'rgba(255, 138, 0, 0.42)',
   },
-  answerWagerFabLabel: {
-    fontFamily: FONTS.displayBold,
+  answerDockWagerImage: {
+    width: 22,
+    height: 22,
+    flexShrink: 0,
+  },
+  answerDockWagerText: {
+    fontFamily: FONTS.uiBold,
     fontSize: 13,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     color: '#FFFFFF',
+    textAlign: 'center',
   },
   answerNextTurnDock: {
     position: 'absolute',
     zIndex: 28,
     alignItems: 'center',
   },
+  answerNextTurnDockRow: {
+    width: '100%',
+    maxWidth: 600,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+  },
   answerNextTurnButton: {
     minHeight: 54,
-    width: '100%',
-    maxWidth: 360,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    maxWidth: 320,
     borderRadius: 18,
     backgroundColor: BRAND.surface,
     alignItems: 'center',
