@@ -12,6 +12,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { AdminScreenHeader } from '@/components/admin/AdminScreenHeader';
+import PromoModeDropdown from '@/components/admin/PromoModeDropdown';
 import { BRAND_ADMIN_TABLE, BRAND_RAISED_SURFACE, COLORS, FONTS, SPACING } from '@/constants/theme';
 import { Link } from 'expo-router';
 import { HOME_SOFT_UI } from '@/themes';
@@ -211,34 +212,19 @@ export default function PromoCodesScreen() {
             </View>
             <View style={styles.formField}>
               <Text style={styles.formLabel}>Mode</Text>
-              <View style={styles.modeGrid}>
-                {COUPON_MODES.map((item) => (
-                  <Pressable
-                    key={item.value}
-                    onPress={() => {
-                      setMode(item.value);
-                      setError('');
-                      if (!item.requiresAccount) {
-                        setAccountQuery('');
-                        setSelectedAccount(null);
-                      }
-                    }}
-                    style={[
-                      styles.modeOption,
-                      mode === item.value ? styles.modeOptionActive : undefined,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.modeOptionText,
-                        mode === item.value ? styles.modeOptionTextActive : undefined,
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+              <PromoModeDropdown
+                value={mode}
+                options={COUPON_MODES}
+                onValueChange={(next) => {
+                  const item = COUPON_MODES.find((m) => m.value === next);
+                  setMode(next as CouponMode);
+                  setError('');
+                  if (item && !item.requiresAccount) {
+                    setAccountQuery('');
+                    setSelectedAccount(null);
+                  }
+                }}
+              />
             </View>
             {selectedMode.requiresCap && (
               <View style={styles.formField}>
@@ -354,7 +340,9 @@ export default function PromoCodesScreen() {
             <Text style={[styles.cell, styles.headerCell, styles.cellCode]}>Code</Text>
             <Text style={[styles.cell, styles.headerCell, styles.cellReward]}>Reward</Text>
             <Text style={[styles.cell, styles.headerCell, styles.cellCap]}>Used / Cap</Text>
-            <Text style={[styles.cell, styles.headerCell, styles.cellStatus]}>Status</Text>
+            <View style={styles.cellStatus}>
+              <Text style={[styles.cell, styles.headerCell]}>Status</Text>
+            </View>
           </View>
           {promoCodes.items.map((promo: { _id: string; code: string; rewardAmount: number; usedCount?: number; usageCap: number; status: string }) => (
             <Link key={promo._id} href={`/admin/promo-codes/${promo._id}`} asChild>
@@ -470,31 +458,6 @@ const styles = StyleSheet.create({
     color: SOFT.textPrimary,
     backgroundColor: BRAND_ADMIN_TABLE.inputBackground,
   },
-  modeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  modeOption: {
-    borderWidth: 1,
-    borderColor: BRAND_ADMIN_TABLE.inputBorder,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: BRAND_ADMIN_TABLE.inputBackground,
-  },
-  modeOptionActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + '14',
-  },
-  modeOptionText: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 12,
-    color: SOFT.textMuted,
-  },
-  modeOptionTextActive: {
-    color: COLORS.primary,
-  },
   selectedAccountText: {
     marginTop: 6,
     fontFamily: FONTS.ui,
@@ -575,6 +538,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.ui,
     fontSize: 13,
     color: SOFT.textPrimary,
+    textAlign: 'center',
   },
   headerCell: {
     fontFamily: FONTS.uiSemibold,
@@ -583,16 +547,22 @@ const styles = StyleSheet.create({
   },
   cellCode: {
     flex: 2,
+    alignSelf: 'stretch',
   },
   cellReward: {
     flex: 1,
+    alignSelf: 'stretch',
   },
   cellCap: {
     flex: 1,
+    alignSelf: 'stretch',
   },
   cellStatus: {
     flex: 1,
-    alignItems: 'flex-end',
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
   },
   badge: {
     paddingHorizontal: 8,
@@ -602,5 +572,6 @@ const styles = StyleSheet.create({
   badgeText: {
     fontFamily: FONTS.uiSemibold,
     fontSize: 11,
+    textAlign: 'center',
   },
 });

@@ -1,4 +1,13 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from 'react';
 import { useAuth } from '@clerk/clerk-expo';
 import { Link, Redirect, Stack, usePathname } from 'expo-router';
 import {
@@ -10,6 +19,7 @@ import {
   Pressable,
   useWindowDimensions,
   Modal,
+  Animated,
   type ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +36,7 @@ const SOFT = HOME_SOFT_UI.colors;
 const SIDEBAR_WIDTH_EXPANDED = 280;
 const SIDEBAR_WIDTH_COLLAPSED = 72;
 const DESKTOP_BREAKPOINT = 1024; // px
+const MOBILE_SIDEBAR_ANIM_MS = 280;
 /** Shared height for desktop sidebar top row and main column top bar. */
 const ADMIN_HEADER_HEIGHT = 56;
 
@@ -199,6 +210,9 @@ function AdminSidebar({ pathname }: { pathname: string }) {
 // ── Mobile sidebar overlay ───────────────────────────────────────────
 function MobileSidebarOverlay({ pathname }: { pathname: string }) {
   const { mobileOpen, toggleMobile } = useSidebarCtx();
+  const [presented, setPresented] = useState(false);
+  const translateX = useRef(new Animated.Value(-SIDEBAR_WIDTH_EXPANDED)).current;
+
   const normalizedPath = pathname.replace('/(admin)', '/admin');
 
   const isActive = (href: string) => {
@@ -208,15 +222,52 @@ function MobileSidebarOverlay({ pathname }: { pathname: string }) {
 
   const signOutActive = isActive('/admin/sign-out');
 
+  useLayoutEffect(() => {
+    if (mobileOpen) {
+      translateX.setValue(-SIDEBAR_WIDTH_EXPANDED);
+      setPresented(true);
+    }
+  }, [mobileOpen, translateX]);
+
+  useEffect(() => {
+    if (!presented) return undefined;
+
+    if (mobileOpen) {
+      const anim = Animated.timing(translateX, {
+        toValue: 0,
+        duration: MOBILE_SIDEBAR_ANIM_MS,
+        useNativeDriver: true,
+      });
+      anim.start();
+      return () => anim.stop();
+    }
+
+    const anim = Animated.timing(translateX, {
+      toValue: -SIDEBAR_WIDTH_EXPANDED,
+      duration: MOBILE_SIDEBAR_ANIM_MS,
+      useNativeDriver: true,
+    });
+    anim.start(({ finished }) => {
+      if (finished) setPresented(false);
+    });
+    return () => anim.stop();
+  }, [mobileOpen, presented, translateX]);
+
   return (
     <Modal
-      visible={mobileOpen}
-      animationType="slide"
+      visible={presented}
+      animationType="none"
       transparent
       onRequestClose={toggleMobile}
     >
       <View style={styles.mobileOverlay}>
-        <View style={styles.mobileSidebar}>
+        <Pressable style={styles.mobileBackdrop} onPress={toggleMobile} />
+        <Animated.View
+          style={[
+            styles.mobileSidebar,
+            { transform: [{ translateX }] },
+          ]}
+        >
           {/* ── Brand header ────────────────────────────── */}
           <View style={styles.mobileSidebarHeader}>
             <View style={styles.mobileBrandWrap}>
@@ -309,10 +360,7 @@ function MobileSidebarOverlay({ pathname }: { pathname: string }) {
               </Pressable>
             </Link>
           </View>
-        </View>
-
-        {/* ── tap backdrop to dismiss ──────────────────── */}
-        <Pressable style={styles.mobileBackdrop} onPress={toggleMobile} />
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -605,12 +653,14 @@ const styles = StyleSheet.create({
   // ── Mobile overlay ──────────────────────────────────
   mobileOverlay: {
     flex: 1,
-    flexDirection: 'row',
   },
   mobileSidebar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
     width: SIDEBAR_WIDTH_EXPANDED,
     flexDirection: 'column',
-    alignSelf: 'stretch',
     backgroundColor: SOFT.canvas,
     paddingTop: 0,
     paddingBottom: SPACING.sm,
@@ -624,8 +674,9 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
   mobileBackdrop: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    zIndex: 1,
   },
   mobileSidebarHeader: {
     height: ADMIN_HEADER_HEIGHT,

@@ -165,22 +165,35 @@ export default function PromoCodeDetailScreen() {
           <View style={styles.table}>
             <View style={[styles.row, styles.headerRow]}>
               <Text style={[styles.cell, styles.headerCell, styles.cellUser]}>User</Text>
+              <Text style={[styles.cell, styles.headerCell, styles.cellUserId]}>User ID</Text>
               <Text style={[styles.cell, styles.headerCell, styles.cellDate]}>Date</Text>
               <Text style={[styles.cell, styles.headerCell, styles.cellTx]}>Transaction</Text>
             </View>
-            {redemptions.map((r: { redemption: { _id: string; redeemedAt: number }; user: { email?: string | null; clerkId?: string | null } | null; transaction: { type: string; amount: number } | null }) => (
-              <View key={r.redemption._id} style={styles.row}>
-                <Text style={[styles.cell, styles.cellUser]}>
-                  {r.user?.email ?? r.user?.clerkId ?? 'Unknown'}
-                </Text>
-                <Text style={[styles.cell, styles.cellDate]}>
-                  {new Date(r.redemption.redeemedAt).toLocaleDateString()}
-                </Text>
-                <Text style={[styles.cell, styles.cellTx]}>
-                  {r.transaction ? `${r.transaction.type} (${r.transaction.amount})` : '-'}
-                </Text>
-              </View>
-            ))}
+            {redemptions.map(
+              (r: {
+                redemption: { _id: string; userId: string; redeemedAt: number };
+                user: { email?: string | null; clerkId?: string | null } | null;
+                transaction: { type: string; amount: number } | null;
+              }) => (
+                <View key={r.redemption._id} style={styles.row}>
+                  <Text style={[styles.cell, styles.cellUser]}>
+                    {r.user?.email ?? r.user?.clerkId ?? 'Unknown'}
+                  </Text>
+                  <Text
+                    style={[styles.cell, styles.cellUserId, styles.cellMono]}
+                    selectable
+                  >
+                    {r.redemption.userId}
+                  </Text>
+                  <Text style={[styles.cell, styles.cellDate]}>
+                    {new Date(r.redemption.redeemedAt).toLocaleDateString()}
+                  </Text>
+                  <Text style={[styles.cell, styles.cellTx]}>
+                    {r.transaction ? `${r.transaction.type} (${r.transaction.amount})` : '-'}
+                  </Text>
+                </View>
+              )
+            )}
           </View>
         )}
       </View>
@@ -353,6 +366,13 @@ const styles = StyleSheet.create({
   },
   cellUser: {
     flex: 2,
+  },
+  cellUserId: {
+    flex: 2,
+    minWidth: 0,
+  },
+  cellMono: {
+    fontSize: 11,
   },
   cellDate: {
     flex: 1,

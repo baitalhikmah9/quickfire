@@ -287,6 +287,7 @@ describe('PromoCodesScreen', () => {
 
     expect(screen.getByText('Mode')).toBeTruthy();
     expect(screen.getByText('Public Single-Use')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Select coupon mode'));
     expect(screen.getByText('Public Multi-Use')).toBeTruthy();
     expect(screen.getByText('Account Single-Use')).toBeTruthy();
     expect(screen.getByText('Account Multi-Use')).toBeTruthy();
@@ -298,6 +299,7 @@ describe('PromoCodesScreen', () => {
     fireEvent.press(screen.getByText('Create'));
     expect(screen.queryByText('Restricted Account')).toBeNull();
 
+    fireEvent.press(screen.getByLabelText('Select coupon mode'));
     fireEvent.press(screen.getByText('Account Single-Use'));
     expect(screen.getByText('Restricted Account')).toBeTruthy();
   });
@@ -308,6 +310,7 @@ describe('PromoCodesScreen', () => {
     fireEvent.press(screen.getByText('Create'));
     fireEvent.changeText(screen.getByPlaceholderText('e.g. WELCOME2024'), 'VIP123');
     fireEvent.changeText(screen.getByPlaceholderText('Tokens'), '50');
+    fireEvent.press(screen.getByLabelText('Select coupon mode'));
     fireEvent.press(screen.getByText('Account Single-Use'));
     fireEvent.changeText(screen.getByPlaceholderText('Search email, Clerk id, or purchaser id'), 'target');
     fireEvent.press(await screen.findByText('target@example.com'));
