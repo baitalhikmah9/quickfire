@@ -26,7 +26,7 @@ export default function AdminSignInScreen() {
     signIn,
     setActive,
   } = useSignIn();
-  /** Only when Clerk reports a session — avoids trapping signed-out users behind `authDisabled` (__DEV__) which stays true after signOut. */
+  /** Only when Clerk reports a session — avoids querying Convex as a signed-out user after signOut. */
   const shouldLoadProfile = Platform.OS === 'web' && isLoaded && isSignedIn;
   const userProfile = useQuery(
     api.users.getCurrentProfile,

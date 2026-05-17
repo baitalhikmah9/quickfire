@@ -1,22 +1,24 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { SPACING, FONT_SIZES, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import { SPACING, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { OAuthProviderButtons } from '@/components/OAuthProviderButtons';
+import { AuthCard, AuthCardHeader, AuthOrDivider } from '@/components/auth/AuthCard';
+import { AuthEmailSignInForm } from '@/components/auth/AuthEmailSignInForm';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useClerkOAuthFlow } from '@/lib/hooks/useClerkOAuthFlow';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
-
-
 function useWarmUpBrowser() {
   useEffect(() => {
+    /** `warmUpAsync` / `coolDownAsync` target native Custom Tabs (Android); not implemented on web. */
+    if (Platform.OS === 'web') return undefined;
     void WebBrowser.warmUpAsync();
     return () => {
       void WebBrowser.coolDownAsync();
@@ -58,35 +60,27 @@ export default function SignInScreen() {
           <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
         </Pressable>
 
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: textPrimary }]}>
-            {t('auth.signIn.heroTitle')}
-          </Text>
-          <Text style={[styles.subtitle, { color: textMuted }]}>
-            {t('auth.signIn.heroSubtitle')}
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: textMuted }]}>
-            {t('auth.signIn.chooseMethod').toUpperCase()}
-          </Text>
-
+        <AuthCard>
+          <AuthCardHeader title={t('auth.signIn.heroTitle')} description={t('auth.signIn.heroSubtitle')} />
+          <AuthEmailSignInForm />
           {busy ? (
             <View style={styles.busy}>
               <ActivityIndicator size="large" color={textPrimary} />
             </View>
           ) : (
-            <OAuthProviderButtons
-              onGooglePress={() => void signInWithOAuthStrategy('oauth_google')}
-              onApplePress={() => void signInWithOAuthStrategy('oauth_apple')}
-              googlePrimaryLabel={t('auth.signIn.google')}
-              googleSecondaryLabel={t('auth.signIn.googleDescription')}
-              applePrimaryLabel={t('auth.signIn.apple')}
-              appleSecondaryLabel={t('auth.signIn.appleDescription')}
-            />
+            <>
+              <AuthOrDivider label={t('auth.continueWith')} />
+              <OAuthProviderButtons
+                onGooglePress={() => void signInWithOAuthStrategy('oauth_google')}
+                onApplePress={() => void signInWithOAuthStrategy('oauth_apple')}
+                googlePrimaryLabel={t('auth.signIn.google')}
+                googleSecondaryLabel={t('auth.signIn.googleDescription')}
+                applePrimaryLabel={t('auth.signIn.apple')}
+                appleSecondaryLabel={t('auth.signIn.appleDescription')}
+              />
+            </>
           )}
-        </View>
+        </AuthCard>
 
         <View style={styles.links}>
           <Pressable
@@ -111,7 +105,23 @@ export default function SignInScreen() {
         </View>
 
         <Text style={[styles.legal, { color: textMuted }]}>
-          {t('auth.termsPrefix')} {t('auth.terms')} {t('auth.and')} {t('auth.privacy')}.
+          {t('auth.termsPrefix')}{' '}
+          <Text
+            accessibilityRole="link"
+            onPress={() => router.push('/terms')}
+            style={[styles.legalLink, { color: textPrimary }]}
+          >
+            {t('auth.terms')}
+          </Text>{' '}
+          {t('auth.and')}{' '}
+          <Text
+            accessibilityRole="link"
+            onPress={() => router.push('/privacy')}
+            style={[styles.legalLink, { color: textPrimary }]}
+          >
+            {t('auth.privacy')}
+          </Text>
+          .
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -135,31 +145,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: SPACING.sm,
   },
-  header: {
-    gap: SPACING.xs,
-  },
-  title: {
-    fontFamily: FONTS.displayBold,
-    fontSize: 32,
-    letterSpacing: -1,
-  },
-  subtitle: {
-    fontFamily: FONTS.ui,
-    fontSize: 16,
-    lineHeight: 22,
-    opacity: 0.7,
-  },
-  section: {
-    gap: SPACING.lg,
-  },
-  sectionLabel: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 12,
-    letterSpacing: 1.5,
-    opacity: 0.6,
-  },
   busy: {
-    paddingVertical: SPACING.xl,
+    paddingVertical: SPACING.md,
     alignItems: 'center',
   },
   links: {
@@ -200,5 +187,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: 'center',
     opacity: 0.5,
+  },
+  legalLink: {
+    fontFamily: FONTS.uiSemibold,
+    textDecorationLine: 'underline',
+    opacity: 1,
   },
 });

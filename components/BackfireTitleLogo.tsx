@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-const BACKFIRE_TITLE_LOGO = require('../assets/Backfire logo.png');
-const BACKFIRE_TITLE_LOGO_ASPECT_RATIO = 1574 / 355;
+const BACKFIRE_TITLE_LOGO = require('../assets/BF in game logo.png');
+const BACKFIRE_TITLE_LOGO_ASPECT_RATIO = 1536 / 1024;
 
 type BackfireTitleLogoProps = {
   width: number;

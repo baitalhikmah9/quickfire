@@ -147,8 +147,8 @@ describe('AppHubScreen', () => {
     fireEvent.press(screen.getByLabelText('Quick Play'));
 
     expect(screen.getByText('Continue or start fresh?')).toBeTruthy();
-    expect(screen.getByText('Continue Game')).toBeTruthy();
-    expect(screen.getByText('New Game')).toBeTruthy();
+    expect(screen.getByText('CONTINUE GAME')).toBeTruthy();
+    expect(screen.getByText('NEW GAME')).toBeTruthy();
     expect(mockPush).not.toHaveBeenCalled();
   });
 
@@ -209,7 +209,7 @@ describe('AppHubScreen', () => {
   it('shows the Backfire logo image in the home header title area', () => {
     render(<AppHubScreen />);
 
-    expect(screen.getByTestId('home-brand-logo')).toBeTruthy();
+    expect(screen.getByLabelText('Backfire')).toBeTruthy();
     expect(screen.queryByText('Backfire')).toBeNull();
   });
 
@@ -231,14 +231,14 @@ describe('AppHubScreen', () => {
     expect(screen.getByTestId('home-mode-card-title-quickPlay')).toHaveStyle({
       color: '#333333',
       fontFamily: FONTS.uiBold,
-      fontSize: 18,
+      fontSize: 16,
       letterSpacing: 1.2,
       textTransform: 'uppercase',
     });
     expect(screen.getByTestId('home-mode-card-copy-quickPlay')).toHaveStyle({
       color: 'rgba(51, 51, 51, 0.58)',
       fontFamily: FONTS.ui,
-      fontSize: 12,
+      fontSize: 11,
       letterSpacing: 0.15,
     });
     expect(screen.queryByTestId('home-backfire-mode-art')).toBeNull();
@@ -266,13 +266,12 @@ describe('AppHubScreen', () => {
     expect(screen.getByText('Random questions each turn.')).toBeTruthy();
   });
 
-  it('shows signed-out auth entry points in the home header', () => {
+  it('does not show public auth entry in the home header when signed out', () => {
     mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
 
     render(<AppHubScreen />);
 
-    expect(screen.getByTestId('public-auth-entry')).toBeTruthy();
-    expect(screen.getByTestId('public-auth-entry-sign-in')).toHaveTextContent('Sign in');
+    expect(screen.queryByTestId('public-auth-entry')).toBeNull();
   });
 
   it('routes signed-out players to sign-in instead of opening a game lobby', () => {

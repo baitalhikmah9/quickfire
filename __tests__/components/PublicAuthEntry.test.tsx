@@ -59,7 +59,7 @@ describe('PublicAuthEntry', () => {
     expect(mockPush).toHaveBeenNthCalledWith(2, '/(auth)/sign-up');
   });
 
-  it('hides while auth is loading, signed in, or disabled for dev', () => {
+  it('hides while auth is loading, signed in, or when auth bypass is enabled', () => {
     mockUseAuth.mockReturnValue({ isLoaded: false, isSignedIn: false });
     const { rerender } = render(<PublicAuthEntry />);
     expect(screen.queryByTestId('public-auth-entry')).toBeNull();
