@@ -22,6 +22,7 @@ import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
 import { usePlayStore } from '@/store/play';
+import { useThemeStore } from '@/store/theme';
 import { HOME_SOFT_UI } from '@/themes';
 import { getGameTokenCost, getHomeModeTokenCostLabel } from '@/features/play/tokenCosts';
 import type { GameMode, PlayRouteStep } from '@/features/shared';
@@ -108,6 +109,7 @@ export default function AppHubScreen() {
   const { isSignedIn } = useAuth();
   const authDisabled = isAuthDisabled();
   const { direction, t, uiLocale } = useI18n();
+  useThemeStore((state) => state.paletteId);
   const tokens = usePlayStore((state) => state.tokens);
   const session = usePlayStore((state) => state.session);
   const startModeSession = usePlayStore((state) => state.startModeSession);

@@ -83,7 +83,6 @@ export default function ThemePickerModal() {
                 ]}
                 onPress={() => {
                   setPalette(id);
-                  handleBack();
                 }}
               >
                 <View style={styles.palettePreview}>

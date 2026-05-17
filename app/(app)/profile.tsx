@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Image,
   Platform,
@@ -6,15 +7,30 @@ import {
   StyleSheet,
   ScrollView,
   useWindowDimensions,
+  Modal,
 } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, useClerk, useUser } from '@clerk/clerk-expo';
-import { SPACING, BORDER_RADIUS, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
-import { contentLocalePriorityToArray } from '@/lib/i18n/config';
-import { getChevronName, getRowDirection } from '@/lib/i18n/direction';
+import {
+  SPACING,
+  BORDER_RADIUS,
+  PALETTES,
+  FONTS,
+  LAYOUT,
+  SOFT_SURFACE_FACE,
+  softSurfaceLift,
+  type ThemePaletteId,
+} from '@/constants';
+import {
+  SUPPORTED_LOCALES,
+  contentLocalePriorityToArray,
+  isNonEnglishContentLocale,
+  type NonEnglishContentLocale,
+} from '@/lib/i18n/config';
+import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
 import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
@@ -27,17 +43,17 @@ import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
-
+const ALL_PALETTES: ThemePaletteId[] = ['default', 'warm', 'cool', 'green', 'red', 'dark'];
+const SELECTABLE_CONTENT_LOCALES = SUPPORTED_LOCALES.filter((locale) =>
+  isNonEnglishContentLocale(locale)
+);
 
 function formatTokens(n: number, locale: string) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(n);
 }
 
-function formatPaletteName(id: string) {
-  return id
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+function getPaletteNameKey(id: ThemePaletteId) {
+  return `settings.palette.${id}` as const;
 }
 
 export default function ProfileScreen() {
@@ -48,12 +64,20 @@ export default function ProfileScreen() {
   const authDisabled = isAuthDisabled();
   const router = useRouter();
   const paletteId = useThemeStore((s) => s.paletteId);
+  const setPalette = useThemeStore((s) => s.setPalette);
+  const [isThemeModalVisible, setThemeModalVisible] = useState(false);
+  const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
+  const [isContentLanguagesModalVisible, setContentLanguagesModalVisible] = useState(false);
   const { direction, getLocaleName, t, uiLocale } = useI18n();
+  const setUiLocale = useLocaleStore((state) => state.setUiLocale);
   const contentLocales = useLocaleStore((state) => state.contentLocales);
+  const setContentLocales = useLocaleStore((state) => state.setContentLocales);
+  const moveContentLocale = useLocaleStore((state) => state.moveContentLocale);
   const tokens = usePlayStore((state) => state.tokens);
 
-  const themeSummary = formatPaletteName(paletteId);
-  const selectedContentLocales = contentLocalePriorityToArray(contentLocales)
+  const themeSummary = t(getPaletteNameKey(paletteId));
+  const selectedContentLocaleValues = contentLocalePriorityToArray(contentLocales);
+  const selectedContentLocales = selectedContentLocaleValues
     .map((locale) => getLocaleName(locale, 'english'))
     .join(', ');
   const contentLanguageSummary =
@@ -74,6 +98,19 @@ export default function ProfileScreen() {
       return;
     }
     router.replace('/(app)');
+  };
+
+  const toggleContentLocale = (locale: NonEnglishContentLocale) => {
+    if (selectedContentLocaleValues.includes(locale)) {
+      setContentLocales(selectedContentLocaleValues.filter((value) => value !== locale));
+      return;
+    }
+
+    if (selectedContentLocaleValues.length >= 3) {
+      return;
+    }
+
+    setContentLocales([...selectedContentLocaleValues, locale]);
   };
 
   return (
@@ -173,16 +210,18 @@ export default function ProfileScreen() {
                 ]}
               >
                 {/* Theme selection */}
-                <Link href="/(app)/theme-picker" asChild>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.prefRow,
-                      { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
-                      pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
-                    ]}
-                  >
-                    <View style={[styles.prefMain, { flexDirection: rowDir }]}>
-                      <Ionicons name="color-palette-outline" size={20} color={textPrimary} />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('settings.themeSelectionTitle')}
+                  onPress={() => setThemeModalVisible(true)}
+                  style={({ pressed }) => [
+                    styles.prefRow,
+                    { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
+                    pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
+                  ]}
+                >
+                  <View style={[styles.prefMain, { flexDirection: rowDir }]}>
+                      <Ionicons name="color-palette-outline" size={18} color={textPrimary} />
                       <View style={styles.prefTextBlock}>
                         <Text
                           style={[styles.prefLabel, { color: textPrimary }]}
@@ -199,24 +238,22 @@ export default function ProfileScreen() {
                           {themeSummary}
                         </Text>
                       </View>
-                      <View style={styles.prefTrailingSlot}>
-                        <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
-                      </View>
-                    </View>
-                  </Pressable>
-                </Link>
+                  </View>
+                </Pressable>
 
                 {/* App language */}
-                <Link href="/(app)/language-picker" asChild>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.prefRow,
-                      { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
-                      pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
-                    ]}
-                  >
-                    <View style={[styles.prefMain, { flexDirection: rowDir }]}>
-                      <Ionicons name="language-outline" size={20} color={textPrimary} />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('settings.appLanguageTitle')}
+                  onPress={() => setLanguageModalVisible(true)}
+                  style={({ pressed }) => [
+                    styles.prefRow,
+                    { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
+                    pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
+                  ]}
+                >
+                  <View style={[styles.prefMain, { flexDirection: rowDir }]}>
+                      <Ionicons name="language-outline" size={18} color={textPrimary} />
                       <View style={styles.prefTextBlock}>
                         <Text
                           style={[styles.prefLabel, { color: textPrimary }]}
@@ -233,24 +270,22 @@ export default function ProfileScreen() {
                           {getLocaleName(uiLocale, 'both')}
                         </Text>
                       </View>
-                      <View style={styles.prefTrailingSlot}>
-                        <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
-                      </View>
-                    </View>
-                  </Pressable>
-                </Link>
+                  </View>
+                </Pressable>
 
                 {/* Content languages */}
-                <Link href="/(app)/content-languages-picker" asChild>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.prefRow,
-                      { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
-                      pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
-                    ]}
-                  >
-                    <View style={[styles.prefMain, { flexDirection: rowDir }]}>
-                      <Ionicons name="chatbubbles-outline" size={20} color={textPrimary} />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('settings.languagesUpToThreeTitle')}
+                  onPress={() => setContentLanguagesModalVisible(true)}
+                  style={({ pressed }) => [
+                    styles.prefRow,
+                    { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
+                    pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
+                  ]}
+                >
+                  <View style={[styles.prefMain, { flexDirection: rowDir }]}>
+                      <Ionicons name="chatbubbles-outline" size={18} color={textPrimary} />
                       <View style={styles.prefTextBlock}>
                         <Text
                           style={[styles.prefLabel, { color: textPrimary }]}
@@ -267,12 +302,8 @@ export default function ProfileScreen() {
                           {contentLanguageSummary}
                         </Text>
                       </View>
-                      <View style={styles.prefTrailingSlot}>
-                        <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
-                      </View>
-                    </View>
-                  </Pressable>
-                </Link>
+                  </View>
+                </Pressable>
 
               </View>
 
@@ -299,7 +330,7 @@ export default function ProfileScreen() {
                     }}
                   >
                     <View style={[styles.prefMain, { flexDirection: rowDir }]}>
-                      <Ionicons name="log-out-outline" size={20} color="#DC2626" />
+                      <Ionicons name="log-out-outline" size={18} color="#DC2626" />
                       <View style={styles.prefTextBlock}>
                         <Text
                           style={[styles.prefLabel, { color: '#DC2626' }]}
@@ -308,9 +339,6 @@ export default function ProfileScreen() {
                         >
                           {t('common.signOut')}
                         </Text>
-                      </View>
-                      <View style={styles.prefTrailingSlot}>
-                        <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
                       </View>
                     </View>
                   </Pressable>
@@ -327,6 +355,322 @@ export default function ProfileScreen() {
           </View>
         </ScrollView>
       </ScreenContent>
+
+      <Modal
+        visible={isThemeModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setThemeModalVisible(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.closeThemePicker')}
+            style={styles.modalBackdrop}
+            onPress={() => setThemeModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.themeModalCard,
+              SOFT_SURFACE_FACE,
+              softSurfaceLift(),
+              { backgroundColor: surface },
+            ]}
+          >
+            <View style={styles.themeModalHeader}>
+              <View>
+                <Text style={[styles.themeModalTitle, { color: textPrimary }]}>{t('common.theme').toUpperCase()}</Text>
+                <Text style={[styles.themeModalSubtitle, { color: textMuted }]}>{t('settings.themePickerDescription')}</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.closeThemePicker')}
+                onPress={() => setThemeModalVisible(false)}
+                style={({ pressed }) => [
+                  styles.themeModalCloseButton,
+                  SOFT_SURFACE_FACE,
+                  softSurfaceLift(),
+                  {
+                    backgroundColor: surface,
+                    opacity: pressed ? 0.94 : 1,
+                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                  },
+                ]}
+              >
+                <Ionicons name="close" size={20} color={textPrimary} />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.themePaletteGrid}
+            >
+              {ALL_PALETTES.map((id) => {
+                const palette = PALETTES[id];
+                const isSelected = id === paletteId;
+                return (
+                  <Pressable
+                    key={id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t(getPaletteNameKey(id))} ${t('common.theme')}`}
+                    onPress={() => setPalette(id)}
+                    style={({ pressed }) => [
+                      styles.themePaletteCard,
+                      SOFT_SURFACE_FACE,
+                      softSurfaceLift(),
+                      {
+                        backgroundColor: surface,
+                        opacity: pressed ? 0.94 : 1,
+                        borderColor: isSelected ? textPrimary : 'rgba(51, 51, 51, 0.08)',
+                      },
+                    ]}
+                  >
+                    <View style={styles.themeSwatchRow}>
+                      <View style={[styles.themeSwatch, { backgroundColor: palette.primary }]} />
+                      <View style={[styles.themeSwatch, { backgroundColor: palette.background }]} />
+                      <View style={[styles.themeSwatch, { backgroundColor: palette.success }]} />
+                    </View>
+                    <View style={styles.themePaletteTextBlock}>
+                      <Text style={[styles.themePaletteName, { color: textPrimary }]}>
+                        {t(getPaletteNameKey(id))}
+                      </Text>
+                      <Text style={[styles.themePaletteMeta, { color: textMuted }]}>
+                        {isSelected ? t('settings.activePalette') : t('settings.tapToApply')}
+                      </Text>
+                    </View>
+                    {isSelected ? <Ionicons name="checkmark-circle" size={22} color={textPrimary} /> : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={isLanguageModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.closeLanguagePicker')}
+            style={styles.modalBackdrop}
+            onPress={() => setLanguageModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.themeModalCard,
+              SOFT_SURFACE_FACE,
+              softSurfaceLift(),
+              { backgroundColor: surface },
+            ]}
+          >
+            <View style={styles.themeModalHeader}>
+              <View>
+                <Text style={[styles.themeModalTitle, { color: textPrimary }]}> 
+                  {t('settings.appLanguageTitle').toUpperCase()}
+                </Text>
+                <Text style={[styles.themeModalSubtitle, { color: textMuted }]}>{t('settings.appLanguagePickerDescription')}</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.closeLanguagePicker')}
+                onPress={() => setLanguageModalVisible(false)}
+                style={({ pressed }) => [
+                  styles.themeModalCloseButton,
+                  SOFT_SURFACE_FACE,
+                  softSurfaceLift(),
+                  {
+                    backgroundColor: surface,
+                    opacity: pressed ? 0.94 : 1,
+                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                  },
+                ]}
+              >
+                <Ionicons name="close" size={20} color={textPrimary} />
+              </Pressable>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.languageRow}>
+              {SUPPORTED_LOCALES.map((locale) => {
+                const isSelected = locale === uiLocale;
+                return (
+                  <Pressable
+                    key={locale}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${getLocaleName(locale, 'english')} ${t('settings.appLanguageTitle')}`}
+                    onPress={() => setUiLocale(locale)}
+                    style={({ pressed }) => [
+                      styles.languageCard,
+                      SOFT_SURFACE_FACE,
+                      softSurfaceLift(),
+                      {
+                        backgroundColor: surface,
+                        opacity: pressed ? 0.94 : 1,
+                        borderColor: isSelected ? textPrimary : 'rgba(51, 51, 51, 0.08)',
+                      },
+                    ]}
+                  >
+                    <View style={styles.themePaletteTextBlock}>
+                      <Text style={[styles.languagePrimaryLabel, { color: textPrimary }]}> 
+                        {getLocaleName(locale, 'native').toUpperCase()}
+                      </Text>
+                      <Text style={[styles.themePaletteMeta, { color: textMuted }]}> 
+                        {getLocaleName(locale, 'english')}
+                      </Text>
+                    </View>
+                    {isSelected ? <Ionicons name="checkmark-circle" size={22} color={textPrimary} /> : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={isContentLanguagesModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setContentLanguagesModalVisible(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.closeTriviaLanguagesPicker')}
+            style={styles.modalBackdrop}
+            onPress={() => setContentLanguagesModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.themeModalCard,
+              SOFT_SURFACE_FACE,
+              softSurfaceLift(),
+              { backgroundColor: surface },
+            ]}
+          >
+            <View style={styles.themeModalHeader}>
+              <View>
+                <Text style={[styles.themeModalTitle, { color: textPrimary }]}>{t('settings.triviaLanguagesTitle').toUpperCase()}</Text>
+                <Text style={[styles.themeModalSubtitle, { color: textMuted }]}>{t('settings.triviaLanguagesDescription')}</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.closeTriviaLanguagesPicker')}
+                onPress={() => setContentLanguagesModalVisible(false)}
+                style={({ pressed }) => [
+                  styles.themeModalCloseButton,
+                  SOFT_SURFACE_FACE,
+                  softSurfaceLift(),
+                  {
+                    backgroundColor: surface,
+                    opacity: pressed ? 0.94 : 1,
+                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                  },
+                ]}
+              >
+                <Ionicons name="close" size={20} color={textPrimary} />
+              </Pressable>
+            </View>
+
+            {selectedContentLocaleValues.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectedLanguageRow}>
+                {selectedContentLocaleValues.map((locale, index) => (
+                  <View
+                    key={locale}
+                    style={[
+                      styles.selectedLanguageCard,
+                      SOFT_SURFACE_FACE,
+                      softSurfaceLift(),
+                      { backgroundColor: surface },
+                    ]}
+                  >
+                    <View style={styles.themePaletteTextBlock}>
+                      <Text style={[styles.themePaletteName, { color: textPrimary }]}>{getLocaleName(locale, 'native')}</Text>
+                      <Text style={[styles.themePaletteMeta, { color: textMuted }]}>{t('common.priorityLabel', { count: index + 1 })}</Text>
+                    </View>
+                    <View style={styles.priorityActions}>
+                      <Pressable
+                        onPress={() => index > 0 && moveContentLocale(index as 0 | 1 | 2, (index - 1) as 0 | 1 | 2)}
+                        disabled={index === 0}
+                      >
+                        <Ionicons name="arrow-up" size={18} color={index === 0 ? 'rgba(51,51,51,0.32)' : textMuted} />
+                      </Pressable>
+                      <Pressable
+                        onPress={() =>
+                          index < selectedContentLocaleValues.length - 1 &&
+                          moveContentLocale(index as 0 | 1 | 2, (index + 1) as 0 | 1 | 2)
+                        }
+                        disabled={index === selectedContentLocaleValues.length - 1}
+                      >
+                        <Ionicons
+                          name="arrow-down"
+                          size={18}
+                          color={index === selectedContentLocaleValues.length - 1 ? 'rgba(51,51,51,0.32)' : textMuted}
+                        />
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : null}
+
+            <View style={styles.contentLanguageHeader}>
+              <Text style={[styles.themePaletteName, { color: textPrimary }]}>{t('common.languages')}</Text>
+              <Text style={[styles.themePaletteMeta, { color: textMuted }]}>{selectedContentLocaleValues.length}/3</Text>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.themePaletteGrid}>
+              {SELECTABLE_CONTENT_LOCALES.map((locale) => {
+                const isSelected = selectedContentLocaleValues.includes(locale);
+                const disabled = !isSelected && selectedContentLocaleValues.length >= 3;
+                return (
+                  <Pressable
+                    key={locale}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${getLocaleName(locale, 'english')} ${t('settings.triviaLanguagesTitle')}`}
+                    onPress={() => toggleContentLocale(locale)}
+                    disabled={disabled}
+                    style={({ pressed }) => [
+                      styles.themePaletteCard,
+                      SOFT_SURFACE_FACE,
+                      softSurfaceLift(),
+                      {
+                        backgroundColor: surface,
+                        opacity: disabled ? 0.5 : pressed ? 0.94 : 1,
+                        borderColor: isSelected ? textPrimary : 'rgba(51, 51, 51, 0.08)',
+                      },
+                    ]}
+                  >
+                    <View style={styles.themePaletteTextBlock}>
+                      <Text style={[styles.themePaletteName, { color: textPrimary }]}>{getLocaleName(locale, 'native')}</Text>
+                      <Text style={[styles.themePaletteMeta, { color: textMuted }]}>{getLocaleName(locale, 'english')}</Text>
+                    </View>
+                    {isSelected ? <Ionicons name="checkmark-circle" size={22} color={textPrimary} /> : null}
+                  </Pressable>
+                );
+              })}
+              <View
+                style={[
+                  styles.themePaletteCard,
+                  SOFT_SURFACE_FACE,
+                  softSurfaceLift(),
+                  { backgroundColor: surface, borderColor: 'rgba(51, 51, 51, 0.08)', opacity: 0.82 },
+                ]}
+              >
+                <View style={styles.themePaletteTextBlock}>
+                  <Text style={[styles.themePaletteName, { color: textPrimary }]}>{t('common.english')}</Text>
+                  <Text style={[styles.themePaletteMeta, { color: textMuted }]}>{t('settings.englishFallback')}</Text>
+                </View>
+                <Ionicons name="lock-closed" size={18} color={textMuted} />
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -387,11 +731,11 @@ const styles = StyleSheet.create({
     gap: SPACING.lg,
   },
   prefsGroup: {
-    borderRadius: 32,
+    borderRadius: 24,
     overflow: 'hidden',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.sm,
-    gap: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xs,
+    gap: SPACING.xs,
   },
   authCard: {
     borderRadius: 32,
@@ -460,25 +804,25 @@ const styles = StyleSheet.create({
   },
   prefRow: {
     alignItems: 'center',
-    minHeight: 80,
-    paddingVertical: SPACING.xl,
+    minHeight: 52,
+    paddingVertical: SPACING.sm,
     paddingHorizontal: 0,
     borderBottomWidth: 0,
-    gap: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
+    gap: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
   },
   prefRowLast: {
     alignItems: 'center',
-    minHeight: 80,
-    paddingVertical: SPACING.xl,
+    minHeight: 52,
+    paddingVertical: SPACING.sm,
     paddingHorizontal: 0,
-    gap: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
+    gap: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
   },
   prefLabel: {
     fontFamily: FONTS.uiSemibold,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 18,
   },
   prefTextBlock: {
     flex: 1,
@@ -493,21 +837,149 @@ const styles = StyleSheet.create({
   },
   prefMeta: {
     fontFamily: FONTS.ui,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
     opacity: 0.75,
   },
-  chevronSpacer: {
-    width: 18,
-    marginStart: 'auto',
+  modalRoot: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.lg,
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.42)',
+  },
+  themeModalCard: {
+    width: '100%',
+    maxWidth: 720,
+    maxHeight: '86%',
+    borderRadius: 32,
+    padding: SPACING.xl,
+    gap: SPACING.lg,
+  },
+  themeModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.md,
+  },
+  themeModalTitle: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 20,
+    lineHeight: 26,
+    letterSpacing: 0.8,
+  },
+  themeModalSubtitle: {
+    marginTop: 4,
+    fontFamily: FONTS.ui,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  themeModalCloseButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  prefTrailingSlot: {
-    width: 18,
-    marginStart: 'auto',
+  themePaletteGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.md,
+    paddingBottom: SPACING.xs,
+  },
+  themePaletteCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexGrow: 1,
+    flexShrink: 1,
+    width: 300,
+    maxWidth: 340,
+    borderWidth: 1.5,
+    borderRadius: 24,
+    gap: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.lg,
+  },
+  themeSwatchRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  themeSwatch: {
+    width: 24,
+    height: 24,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  themePaletteTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  themePaletteName: {
+    fontFamily: FONTS.uiSemibold,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  themePaletteMeta: {
+    marginTop: 2,
+    fontFamily: FONTS.ui,
+    fontSize: 12,
+    lineHeight: 16,
+    opacity: 0.75,
+  },
+  languageRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: SPACING.md,
+    paddingVertical: SPACING.xs,
+  },
+  languageCard: {
+    width: 220,
+    minHeight: 120,
+    flexShrink: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderRadius: 28,
+    gap: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.lg,
+  },
+  languagePrimaryLabel: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: 0.5,
+  },
+  selectedLanguageRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: SPACING.md,
+    paddingVertical: SPACING.xs,
+  },
+  selectedLanguageCard: {
+    width: 220,
+    flexShrink: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 24,
+    gap: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  priorityActions: {
+    gap: SPACING.sm,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  contentLanguageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.md,
   },
 });

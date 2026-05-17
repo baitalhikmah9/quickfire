@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 
 import ProfileScreen from '@/app/(app)/profile';
@@ -102,8 +102,27 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'settings.accountAuthTitle': 'Account & auth',
         'settings.appLanguageTitle': 'App Language',
         'settings.languagesUpToThreeTitle': 'Languages (up to 3)',
+        'common.english': 'English',
+        'common.languages': 'Languages',
+        'common.priorityLabel': `Priority ${params?.count}`,
+        'common.theme': 'Theme',
         'settings.noTriviaLanguagesSelected': 'No trivia languages selected',
         'settings.themeSelectionTitle': 'Theme selection',
+        'settings.themePickerDescription': 'Choose a color palette',
+        'settings.appLanguagePickerDescription': 'Choose the app interface language',
+        'settings.triviaLanguagesDescription': 'Pick up to 3 preferred trivia languages. English is always the fallback.',
+        'settings.closeThemePicker': 'Close theme picker',
+        'settings.closeLanguagePicker': 'Close language picker',
+        'settings.closeTriviaLanguagesPicker': 'Close trivia languages picker',
+        'settings.activePalette': 'Active palette',
+        'settings.tapToApply': 'Tap to apply',
+        'settings.englishFallback': 'English fallback',
+        'settings.palette.default': 'Default',
+        'settings.palette.warm': 'Warm',
+        'settings.palette.cool': 'Cool',
+        'settings.palette.green': 'Green',
+        'settings.palette.red': 'Red',
+        'settings.palette.dark': 'Dark',
         'auth.signUp.signIn': 'Sign in',
         'profile.guest.createAccount': 'CREATE ACCOUNT',
       };
@@ -142,6 +161,36 @@ describe('ProfileScreen settings', () => {
     expect(screen.queryByText('WIN RATE')).toBeNull();
     expect(screen.queryByText('BEST STREAK')).toBeNull();
     expect(screen.queryByText('ACCURACY')).toBeNull();
+  });
+
+  it('opens theme choices inline as a modal instead of navigating away', () => {
+    render(<ProfileScreen />);
+
+    fireEvent.press(screen.getByText('Theme selection'));
+
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByText('Choose a color palette')).toBeTruthy();
+    expect(screen.getByText('Warm')).toBeTruthy();
+  });
+
+  it('opens app language choices inline as a modal instead of navigating away', () => {
+    render(<ProfileScreen />);
+
+    fireEvent.press(screen.getByText('App Language'));
+
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByText('Choose the app interface language')).toBeTruthy();
+    expect(screen.getByText('Arabic')).toBeTruthy();
+  });
+
+  it('opens trivia language choices inline as a modal instead of navigating away', () => {
+    render(<ProfileScreen />);
+
+    fireEvent.press(screen.getByText('Languages (up to 3)'));
+
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByText('Pick up to 3 preferred trivia languages. English is always the fallback.')).toBeTruthy();
+    expect(screen.getByText('Languages')).toBeTruthy();
   });
 
   it('shows public sign-in entry on the settings screen when signed out', () => {
