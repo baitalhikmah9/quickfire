@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
 import { HEADER, SPACING, FONTS, FONT_SIZES } from '@/constants';
+import { getBackfireTitleLogoWidth } from '@/lib/layout/backfireTitleLogoWidth';
 import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -80,12 +81,7 @@ export function GameHeader({
   const showTitleBelow = hasLogo && hasTitleText;    // title below logo
   const showCenterTitle = variant === 'title' && hasTitleText; // centered in bar
 
-  const defaultLogoWidth =
-    logoWidth ??
-    Math.min(
-      240,
-      Math.max(120, Math.round(Math.min(windowWidth, 700) * 0.28))
-    );
+  const defaultLogoWidth = logoWidth ?? getBackfireTitleLogoWidth(windowWidth, windowHeight);
 
   return (
     <View style={style}>
@@ -172,9 +168,11 @@ const styles = StyleSheet.create({
   },
   sideLeft: {
     alignItems: 'flex-start',
+    zIndex: 2,
   },
   sideRight: {
     alignItems: 'flex-end',
+    zIndex: 2,
   },
   center: {
     position: 'absolute',

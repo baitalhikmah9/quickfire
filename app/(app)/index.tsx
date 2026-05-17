@@ -252,9 +252,10 @@ export default function AppHubScreen() {
               }
               rightSlot={
                 <Pressable
-                  onPress={() => router.push('/(app)/profile')}
+                  testID="home-open-settings"
+                  onPress={() => router.push('/(app)/settings')}
                   accessibilityRole="button"
-                  accessibilityLabel={t('profile.preferences')}
+                  accessibilityLabel={t('common.settings')}
                   style={({ pressed }) => [
                     styles.settingsImageButton,
                     { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },

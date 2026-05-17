@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ScrollView,
   useWindowDimensions,
-  Modal,
 } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,9 +32,14 @@ import {
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
-import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
+import { LEGAL_DOCUMENT_EFFECTIVE_DATE } from '@/lib/legal/effectiveDate';
+import { PRIVACY_SECTIONS } from '@/lib/legal/privacySections';
+import { TERMS_SECTIONS } from '@/lib/legal/termsSections';
 import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { ScreenContent } from '@/components/ScreenContent';
+import { HubTokenChip } from '@/components/HubTokenChip';
+import { LegalDocumentBody } from '@/components/LegalDocumentBody';
+import { WebAwareModal } from '@/components/WebAwareModal';
 import { useLocaleStore } from '@/store/locale';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
@@ -56,8 +60,8 @@ function getPaletteNameKey(id: ThemePaletteId) {
   return `settings.palette.${id}` as const;
 }
 
-export default function ProfileScreen() {
-  const { width } = useWindowDimensions();
+export default function SettingsScreen() {
+  const { width, height } = useWindowDimensions();
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -68,6 +72,8 @@ export default function ProfileScreen() {
   const [isThemeModalVisible, setThemeModalVisible] = useState(false);
   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
   const [isContentLanguagesModalVisible, setContentLanguagesModalVisible] = useState(false);
+  const [isTermsLegalModalVisible, setTermsLegalModalVisible] = useState(false);
+  const [isPrivacyLegalModalVisible, setPrivacyLegalModalVisible] = useState(false);
   const { direction, getLocaleName, t, uiLocale } = useI18n();
   const setUiLocale = useLocaleStore((state) => state.setUiLocale);
   const contentLocales = useLocaleStore((state) => state.contentLocales);
@@ -82,12 +88,14 @@ export default function ProfileScreen() {
     .join(', ');
   const contentLanguageSummary =
     selectedContentLocales || t('settings.noTriviaLanguagesSelected');
+  const formattedTokens = formatTokens(tokens, uiLocale);
   const userDisplayName = user?.fullName || user?.username || user?.primaryEmailAddress?.emailAddress || t('common.profile');
   const userEmail = user?.primaryEmailAddress?.emailAddress;
   const userInitial = userDisplayName.trim().charAt(0).toUpperCase() || 'U';
 
   const rowDir = getRowDirection(direction);
   const isCompactLayout = width < 980;
+  const legalModalBodyMaxHeight = Math.min(540, Math.max(280, Math.round(height * 0.52)));
   const canvas = T.colors.canvas;
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
@@ -119,55 +127,49 @@ export default function ProfileScreen() {
       edges={['top', 'bottom', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: canvas }]}
     >
-      <ScreenContent fullWidth style={styles.profileViewport}>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={[styles.topBar, { flexDirection: rowDir }]}>
+      <ScreenContent fullWidth style={styles.settingsViewport}>
+        <View style={styles.header}>
+          <View style={styles.headerSide}>
             <Pressable
               onPress={handleBack}
               style={({ pressed }) => [
-                styles.headerSquircleInner,
+                styles.backButton,
                 SOFT_SURFACE_FACE,
                 softSurfaceLift(),
+                { backgroundColor: surface },
                 {
-                  backgroundColor: surface,
-                  opacity: pressed ? 0.94 : 1,
-                  transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                  opacity: pressed ? 0.9 : 1,
+                  transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
                 },
               ]}
             >
               <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
             </Pressable>
-
-            <View style={styles.headerLogoWrap}>
-              <BackfireTitleLogo width={180} testID="profile-brand-logo" />
-            </View>
-
-            <Pressable
-              onPress={() => router.push('/(app)/store')}
-              style={({ pressed }) => [
-                styles.tokenChip,
-                SOFT_SURFACE_FACE,
-                softSurfaceLift(),
-                {
-                  backgroundColor: surface,
-                  opacity: pressed ? 0.94 : 1,
-                  transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-                },
-              ]}
-            >
-              <Ionicons name="diamond-outline" size={16} color={textPrimary} />
-              <Text style={[styles.tokenChipValue, { color: textPrimary }]}>
-                {formatTokens(tokens, uiLocale)}
-              </Text>
-            </Pressable>
           </View>
+          <View style={styles.headerCenter}>
+            <Text style={[styles.headerTitle, { color: textPrimary }]} accessibilityRole="header">
+              {t('common.settings').toUpperCase()}
+            </Text>
+          </View>
+          <View style={[styles.headerSide, styles.headerSideRight]}>
+            <HubTokenChip
+              label={t('common.tokens')}
+              value={formattedTokens}
+              rowDirection={rowDir}
+              variant="softUi"
+              onPress={() => router.push('/(app)/store')}
+              accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
+            />
+          </View>
+        </View>
 
-          <View style={[styles.profileColumns, isCompactLayout && styles.profileColumnsCompact]}>
-            <View style={styles.profileCol}>
+        <ScrollView
+          style={styles.settingsScroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.settingsColumns, isCompactLayout && styles.settingsColumnsCompact]}>
+            <View style={styles.settingsCol}>
               {isSignedIn && user ? (
                 <View
                   testID="settings-user-profile-card"
@@ -307,6 +309,70 @@ export default function ProfileScreen() {
 
               </View>
 
+              <View
+                style={[
+                  styles.prefsGroup,
+                  SOFT_SURFACE_FACE,
+                  softSurfaceLift(),
+                  { backgroundColor: surface },
+                ]}
+              >
+                <Text
+                  accessibilityRole="header"
+                  style={[styles.userProfileKicker, { color: textMuted, marginBottom: SPACING.xs }]}
+                >
+                  {t('settings.legalHeading').toUpperCase()}
+                </Text>
+                <Pressable
+                  testID="settings-legal-terms"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('legal.termsTitle')}
+                  onPress={() => setTermsLegalModalVisible(true)}
+                  style={({ pressed }) => [
+                    styles.prefRow,
+                    { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
+                    pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
+                  ]}
+                >
+                  <View style={[styles.prefMain, { flexDirection: rowDir }]}>
+                    <Ionicons name="document-text-outline" size={18} color={textPrimary} />
+                    <View style={styles.prefTextBlock}>
+                      <Text
+                        style={[styles.prefLabel, { color: textPrimary }]}
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                      >
+                        {t('legal.termsTitle')}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+                <Pressable
+                  testID="settings-legal-privacy"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('legal.privacyTitle')}
+                  onPress={() => setPrivacyLegalModalVisible(true)}
+                  style={({ pressed }) => [
+                    styles.prefRowLast,
+                    { flexDirection: rowDir },
+                    pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
+                  ]}
+                >
+                  <View style={[styles.prefMain, { flexDirection: rowDir }]}>
+                    <Ionicons name="shield-checkmark-outline" size={18} color={textPrimary} />
+                    <View style={styles.prefTextBlock}>
+                      <Text
+                        style={[styles.prefLabel, { color: textPrimary }]}
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                      >
+                        {t('legal.privacyTitle')}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              </View>
+
               {isSignedIn ? (
                 <View
                   style={[
@@ -356,10 +422,8 @@ export default function ProfileScreen() {
         </ScrollView>
       </ScreenContent>
 
-      <Modal
+      <WebAwareModal
         visible={isThemeModalVisible}
-        transparent
-        animationType="fade"
         onRequestClose={() => setThemeModalVisible(false)}
       >
         <View style={styles.modalRoot}>
@@ -445,12 +509,10 @@ export default function ProfileScreen() {
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </WebAwareModal>
 
-      <Modal
+      <WebAwareModal
         visible={isLanguageModalVisible}
-        transparent
-        animationType="fade"
         onRequestClose={() => setLanguageModalVisible(false)}
       >
         <View style={styles.modalRoot}>
@@ -529,12 +591,10 @@ export default function ProfileScreen() {
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </WebAwareModal>
 
-      <Modal
+      <WebAwareModal
         visible={isContentLanguagesModalVisible}
-        transparent
-        animationType="fade"
         onRequestClose={() => setContentLanguagesModalVisible(false)}
       >
         <View style={styles.modalRoot}>
@@ -670,7 +730,129 @@ export default function ProfileScreen() {
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </WebAwareModal>
+
+      <WebAwareModal
+        visible={isTermsLegalModalVisible}
+        onRequestClose={() => setTermsLegalModalVisible(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            style={styles.modalBackdrop}
+            onPress={() => setTermsLegalModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.themeModalCard,
+              SOFT_SURFACE_FACE,
+              softSurfaceLift(),
+              { backgroundColor: surface },
+            ]}
+          >
+            <View style={styles.themeModalHeader}>
+              <View style={styles.legalModalHeaderText}>
+                <Text style={[styles.themeModalTitle, { color: textPrimary }]}>{t('legal.termsTitle')}</Text>
+                <Text style={[styles.themeModalSubtitle, { color: textMuted }]}>
+                  {t('legal.lastUpdated', { date: LEGAL_DOCUMENT_EFFECTIVE_DATE })}
+                </Text>
+              </View>
+              <Pressable
+                testID="settings-legal-terms-close"
+                accessibilityRole="button"
+                accessibilityLabel={t('common.close')}
+                onPress={() => setTermsLegalModalVisible(false)}
+                style={({ pressed }) => [
+                  styles.themeModalCloseButton,
+                  SOFT_SURFACE_FACE,
+                  softSurfaceLift(),
+                  {
+                    backgroundColor: surface,
+                    opacity: pressed ? 0.94 : 1,
+                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                  },
+                ]}
+              >
+                <Ionicons name="close" size={20} color={textPrimary} />
+              </Pressable>
+            </View>
+            <ScrollView
+              testID="settings-legal-terms-scroll"
+              style={{ maxHeight: legalModalBodyMaxHeight }}
+              contentContainerStyle={styles.legalModalScrollContent}
+              showsVerticalScrollIndicator
+            >
+              <LegalDocumentBody
+                sections={TERMS_SECTIONS}
+                textPrimary={textPrimary}
+                textSecondary={textMuted}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </WebAwareModal>
+
+      <WebAwareModal
+        visible={isPrivacyLegalModalVisible}
+        onRequestClose={() => setPrivacyLegalModalVisible(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            style={styles.modalBackdrop}
+            onPress={() => setPrivacyLegalModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.themeModalCard,
+              SOFT_SURFACE_FACE,
+              softSurfaceLift(),
+              { backgroundColor: surface },
+            ]}
+          >
+            <View style={styles.themeModalHeader}>
+              <View style={styles.legalModalHeaderText}>
+                <Text style={[styles.themeModalTitle, { color: textPrimary }]}>{t('legal.privacyTitle')}</Text>
+                <Text style={[styles.themeModalSubtitle, { color: textMuted }]}>
+                  {t('legal.lastUpdated', { date: LEGAL_DOCUMENT_EFFECTIVE_DATE })}
+                </Text>
+              </View>
+              <Pressable
+                testID="settings-legal-privacy-close"
+                accessibilityRole="button"
+                accessibilityLabel={t('common.close')}
+                onPress={() => setPrivacyLegalModalVisible(false)}
+                style={({ pressed }) => [
+                  styles.themeModalCloseButton,
+                  SOFT_SURFACE_FACE,
+                  softSurfaceLift(),
+                  {
+                    backgroundColor: surface,
+                    opacity: pressed ? 0.94 : 1,
+                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                  },
+                ]}
+              >
+                <Ionicons name="close" size={20} color={textPrimary} />
+              </Pressable>
+            </View>
+            <ScrollView
+              testID="settings-legal-privacy-scroll"
+              style={{ maxHeight: legalModalBodyMaxHeight }}
+              contentContainerStyle={styles.legalModalScrollContent}
+              showsVerticalScrollIndicator
+            >
+              <LegalDocumentBody
+                sections={PRIVACY_SECTIONS}
+                textPrimary={textPrimary}
+                textSecondary={textMuted}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </WebAwareModal>
     </SafeAreaView>
   );
 }
@@ -681,52 +863,59 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: LAYOUT.screenGutter,
+    paddingTop: SPACING.lg,
     paddingBottom: SPACING.xxl,
+    gap: SPACING.lg,
   },
-  profileViewport: {
+  settingsViewport: {
     flex: 1,
-    paddingTop: SPACING.md,
   },
-
-  topBar: {
+  settingsScroll: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.xl,
-    gap: SPACING.md,
+    width: '100%',
+    minHeight: 72,
+    paddingVertical: SPACING.md,
   },
-  headerSquircleInner: {
-    width: 48,
-    height: 48,
+  headerSide: {
+    width: 116,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  headerSideRight: {
+    alignItems: 'flex-end',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButton: {
+    width: 44,
+    height: 44,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerLogoWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerTitle: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 20,
+    letterSpacing: 0.8,
+    marginBottom: 0,
   },
-  tokenChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: BORDER_RADIUS.pill,
-  },
-  tokenChipValue: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 16,
-  },
-  profileColumns: {
+  settingsColumns: {
     flexDirection: 'row',
     gap: SPACING.xl,
   },
-  profileColumnsCompact: {
+  settingsColumnsCompact: {
     flexDirection: 'column',
     gap: SPACING.lg,
   },
-  profileCol: {
+  settingsCol: {
     flex: 1,
     gap: SPACING.lg,
   },
@@ -865,6 +1054,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: SPACING.md,
+  },
+  legalModalHeaderText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  legalModalScrollContent: {
+    paddingBottom: SPACING.xl,
   },
   themeModalTitle: {
     fontFamily: FONTS.displayBold,

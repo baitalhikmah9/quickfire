@@ -58,8 +58,8 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'play.mode.randomCopy': 'Random questions each turn.',
         'play.mode.rumble': 'Rumble',
         'play.mode.rumbleCopy': 'Three or more teams and steals.',
+        'common.settings': 'Settings',
         'profile.guest.createAccount': 'CREATE ACCOUNT',
-        'profile.preferences': 'Preferences',
         'auth.signUp.signIn': 'Sign in',
       };
       return messages[key] ?? key;
@@ -127,6 +127,14 @@ describe('AppHubScreen', () => {
     expect(screen.getByTestId('home-rumble-person-1')).toBeTruthy();
     expect(screen.getByTestId('home-rumble-person-2')).toBeTruthy();
     expect(screen.getByTestId('home-rumble-person-3')).toBeTruthy();
+  });
+
+  it('opens settings from the header gear', () => {
+    render(<AppHubScreen />);
+
+    fireEvent.press(screen.getByTestId('home-open-settings'));
+
+    expect(mockPush).toHaveBeenCalledWith('/(app)/settings');
   });
 
   it('prompts to continue or start new when a session is already in progress', () => {

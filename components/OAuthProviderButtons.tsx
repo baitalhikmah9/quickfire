@@ -1,4 +1,5 @@
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
@@ -22,7 +23,7 @@ function neumorphicLift3D(shadowColor: string): {
   };
 }
 
-/** Multicolor Google “G” — raster-free, works on web and native */
+/** Multicolor Google “G” — `data:` SVG for web only; native uses `Ionicons` (RN `Image` cannot decode SVG data URIs). */
 const GOOGLE_LOGO_URI =
   'data:image/svg+xml,' +
   encodeURIComponent(
@@ -42,6 +43,35 @@ const ICON_RADIUS = 14;
 function accessibilityHint(primary?: string, secondary?: string): string {
   const parts = [primary, secondary].filter(Boolean) as string[];
   return parts.join('. ');
+}
+
+/** RN `Image` does not render SVG `data:` URIs on iOS/Android — use vector marks there. */
+function GoogleBrandMark() {
+  if (Platform.OS === 'web') {
+    return (
+      <Image
+        source={{ uri: GOOGLE_LOGO_URI }}
+        style={styles.brandImage}
+        resizeMode="contain"
+        accessibilityIgnoresInvertColors
+      />
+    );
+  }
+  return <Ionicons name="logo-google" size={LOGO_SIZE} color="#4285F4" accessibilityIgnoresInvertColors />;
+}
+
+function AppleBrandMark() {
+  if (Platform.OS === 'web') {
+    return (
+      <Image
+        source={{ uri: APPLE_LOGO_URI }}
+        style={styles.brandImage}
+        resizeMode="contain"
+        accessibilityIgnoresInvertColors
+      />
+    );
+  }
+  return <Ionicons name="logo-apple" size={LOGO_SIZE} color="#000000" accessibilityIgnoresInvertColors />;
 }
 
 export type OAuthProviderButtonsProps = {
@@ -85,12 +115,7 @@ export function OAuthProviderButtons({
         accessibilityRole="button"
         accessibilityLabel={accessibilityHint(googlePrimaryLabel, googleSecondaryLabel)}
       >
-        <Image
-          source={{ uri: GOOGLE_LOGO_URI }}
-          style={styles.brandImage}
-          resizeMode="contain"
-          accessibilityIgnoresInvertColors
-        />
+        <GoogleBrandMark />
       </Pressable>
 
       <Pressable
@@ -108,12 +133,7 @@ export function OAuthProviderButtons({
         accessibilityRole="button"
         accessibilityLabel={accessibilityHint(applePrimaryLabel, appleSecondaryLabel)}
       >
-        <Image
-          source={{ uri: APPLE_LOGO_URI }}
-          style={styles.brandImage}
-          resizeMode="contain"
-          accessibilityIgnoresInvertColors
-        />
+        <AppleBrandMark />
       </Pressable>
     </View>
   );

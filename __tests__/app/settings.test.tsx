@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 
-import ProfileScreen from '@/app/(app)/profile';
+import SettingsScreen from '@/app/(app)/settings';
 
 const mockBack = jest.fn();
 const mockPush = jest.fn();
@@ -88,6 +88,9 @@ jest.mock('@/lib/i18n/useI18n', () => ({
     t: (key: string, params?: Record<string, string | number | null | undefined>) => {
       const messages: Record<string, string> = {
         'common.playerFallback': 'Player',
+        'common.close': 'Close',
+        'common.profile': 'Profile',
+        'common.settings': 'Settings',
         'common.signOut': 'Sign Out',
         'common.tokens': 'Tokens',
         'home.logoCapline': 'TRIVIA',
@@ -102,6 +105,10 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'settings.accountAuthTitle': 'Account & auth',
         'settings.appLanguageTitle': 'App Language',
         'settings.languagesUpToThreeTitle': 'Languages (up to 3)',
+        'settings.legalHeading': 'Legal',
+        'legal.termsTitle': 'Terms of Service',
+        'legal.privacyTitle': 'Privacy Policy',
+        'legal.lastUpdated': `Last updated: ${params?.date ?? ''}`,
         'common.english': 'English',
         'common.languages': 'Languages',
         'common.priorityLabel': `Priority ${params?.count}`,
@@ -132,7 +139,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
   }),
 }));
 
-describe('ProfileScreen settings', () => {
+describe('SettingsScreen', () => {
   beforeEach(() => {
     mockBack.mockClear();
     mockPush.mockClear();
@@ -152,7 +159,7 @@ describe('ProfileScreen settings', () => {
   });
 
   it('includes theme, app language, and up-to-three language settings', () => {
-    render(<ProfileScreen />);
+    render(<SettingsScreen />);
 
     expect(screen.getByText('Theme selection')).toBeTruthy();
     expect(screen.getByText('App Language')).toBeTruthy();
@@ -163,8 +170,29 @@ describe('ProfileScreen settings', () => {
     expect(screen.queryByText('ACCURACY')).toBeNull();
   });
 
+  it('shows legal section with links to terms and privacy', () => {
+    render(<SettingsScreen />);
+
+    expect(screen.getByText('LEGAL')).toBeTruthy();
+    expect(screen.getByText('Terms of Service')).toBeTruthy();
+    expect(screen.getByText('Privacy Policy')).toBeTruthy();
+  });
+
+  it('opens terms and privacy content in modals from legal rows', () => {
+    render(<SettingsScreen />);
+
+    fireEvent.press(screen.getByTestId('settings-legal-terms'));
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByText('Agreement')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('settings-legal-terms-close'));
+
+    fireEvent.press(screen.getByTestId('settings-legal-privacy'));
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByText('Overview')).toBeTruthy();
+  });
+
   it('opens theme choices inline as a modal instead of navigating away', () => {
-    render(<ProfileScreen />);
+    render(<SettingsScreen />);
 
     fireEvent.press(screen.getByText('Theme selection'));
 
@@ -174,7 +202,7 @@ describe('ProfileScreen settings', () => {
   });
 
   it('opens app language choices inline as a modal instead of navigating away', () => {
-    render(<ProfileScreen />);
+    render(<SettingsScreen />);
 
     fireEvent.press(screen.getByText('App Language'));
 
@@ -184,7 +212,7 @@ describe('ProfileScreen settings', () => {
   });
 
   it('opens trivia language choices inline as a modal instead of navigating away', () => {
-    render(<ProfileScreen />);
+    render(<SettingsScreen />);
 
     fireEvent.press(screen.getByText('Languages (up to 3)'));
 
@@ -197,7 +225,7 @@ describe('ProfileScreen settings', () => {
     mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
     mockUseUser.mockReturnValue({ user: null } as any);
 
-    render(<ProfileScreen />);
+    render(<SettingsScreen />);
 
     expect(screen.getByTestId('public-auth-entry')).toBeTruthy();
     expect(screen.getByTestId('public-auth-entry-sign-in')).toHaveTextContent('Sign in');
@@ -214,7 +242,7 @@ describe('ProfileScreen settings', () => {
     mockUseClerk.mockReturnValue({ signOut: undefined } as any);
     mockUseUser.mockReturnValue({ user: null } as any);
 
-    render(<ProfileScreen />);
+    render(<SettingsScreen />);
 
     expect(screen.getByText('Theme selection')).toBeTruthy();
     expect(screen.getByText('App Language')).toBeTruthy();

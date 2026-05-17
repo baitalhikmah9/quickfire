@@ -41,7 +41,7 @@ export default function ThemePickerModal() {
       router.back();
       return;
     }
-    router.replace('/(app)/profile');
+    router.replace('/(app)/settings');
   };
 
   return (

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import {
   DEFAULT_UI_LOCALE,
@@ -14,6 +15,21 @@ import {
 
 const UI_LOCALE_STORAGE_KEY = 'backfire-ui-locale';
 const CONTENT_LOCALE_STORAGE_KEY = 'backfire-content-locales';
+
+async function getStoredLocaleItem(key: string): Promise<string | null> {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return window.localStorage.getItem(key);
+  }
+  return SecureStore.getItemAsync(key);
+}
+
+async function setStoredLocaleItem(key: string, value: string): Promise<void> {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.localStorage.setItem(key, value);
+    return;
+  }
+  await SecureStore.setItemAsync(key, value);
+}
 
 interface LocaleStore {
   uiLocale: SupportedLocale;
@@ -34,7 +50,9 @@ export const useLocaleStore = create<LocaleStore>((set, get) => ({
 
   setUiLocale: (locale) => {
     set({ uiLocale: locale, hasExplicitUiSelection: true });
-    void SecureStore.setItemAsync(UI_LOCALE_STORAGE_KEY, locale);
+    void setStoredLocaleItem(UI_LOCALE_STORAGE_KEY, locale).catch(() => {
+      // Ignore storage errors; in-memory locale still updates.
+    });
   },
 
   setContentLocales: (locales) => {
@@ -43,10 +61,12 @@ export const useLocaleStore = create<LocaleStore>((set, get) => ({
       contentLocales: normalized,
       hasExplicitContentSelection: locales.length > 0,
     });
-    void SecureStore.setItemAsync(
+    void setStoredLocaleItem(
       CONTENT_LOCALE_STORAGE_KEY,
       JSON.stringify(normalized)
-    );
+    ).catch(() => {
+      // Ignore storage errors; in-memory state still updates.
+    });
   },
 
   moveContentLocale: (from, to) => {
@@ -65,8 +85,8 @@ export const useLocaleStore = create<LocaleStore>((set, get) => ({
   hydrate: async () => {
     try {
       const [storedUiLocale, storedContentLocales] = await Promise.all([
-        SecureStore.getItemAsync(UI_LOCALE_STORAGE_KEY),
-        SecureStore.getItemAsync(CONTENT_LOCALE_STORAGE_KEY),
+        getStoredLocaleItem(UI_LOCALE_STORAGE_KEY),
+        getStoredLocaleItem(CONTENT_LOCALE_STORAGE_KEY),
       ]);
 
       if (storedUiLocale && isSupportedLocale(storedUiLocale)) {

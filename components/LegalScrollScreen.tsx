@@ -4,13 +4,13 @@ import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPACING, BORDER_RADIUS, FONTS, TYPE_SCALE, LAYOUT } from '@/constants';
+import { SPACING, BORDER_RADIUS, FONTS, LAYOUT } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { PublicAuthEntry } from '@/components/PublicAuthEntry';
+import { LegalDocumentBody } from '@/components/LegalDocumentBody';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { getRowDirection } from '@/lib/i18n/direction';
-import { LEGAL_DOCUMENT_EFFECTIVE_DATE } from '@/lib/legal/effectiveDate';
 import type { LegalSection } from '@/lib/legal/documentTypes';
 
 export type LegalScrollScreenProps = {
@@ -66,26 +66,12 @@ export function LegalScrollScreen({ title, sections }: LegalScrollScreenProps) {
             <PublicAuthEntry style={styles.topBarAuth} />
           </View>
 
-          <Text style={[styles.docTitle, { color: colors.text, fontFamily: FONTS.displayBold }]}>{title}</Text>
-          <Text style={[styles.lastUpdated, { color: colors.textSecondary }]}>
-            {t('legal.lastUpdated', { date: LEGAL_DOCUMENT_EFFECTIVE_DATE })}
-          </Text>
-
-          <View style={styles.englishBody}>
-            {sections.map((section) => (
-              <View key={section.heading} style={styles.section}>
-                <Text style={[styles.sectionHeading, { color: colors.text }]}>{section.heading}</Text>
-                {section.paragraphs.map((paragraph, index) => (
-                  <Text
-                    key={`${section.heading}-${index}`}
-                    style={[styles.paragraph, { color: colors.textSecondary }]}
-                  >
-                    {paragraph}
-                  </Text>
-                ))}
-              </View>
-            ))}
-          </View>
+          <LegalDocumentBody
+            preamble={{ title }}
+            sections={sections}
+            textPrimary={colors.text}
+            textSecondary={colors.textSecondary}
+          />
         </ScrollView>
       </ScreenContent>
     </SafeAreaView>
@@ -131,32 +117,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: LAYOUT.screenGutter,
     paddingBottom: SPACING.xxl,
     gap: SPACING.md,
-  },
-  docTitle: {
-    fontSize: 28,
-    lineHeight: 34,
-    letterSpacing: -0.5,
-  },
-  lastUpdated: {
-    ...TYPE_SCALE.bodyS,
-    lineHeight: 20,
-    marginBottom: SPACING.sm,
-  },
-  /** Legal copy is authored in English; keep LTR for readability in RTL UI locales. */
-  englishBody: {
-    writingDirection: 'ltr',
-  },
-  section: {
-    marginTop: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  sectionHeading: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  paragraph: {
-    ...TYPE_SCALE.bodyM,
-    lineHeight: 24,
   },
 });

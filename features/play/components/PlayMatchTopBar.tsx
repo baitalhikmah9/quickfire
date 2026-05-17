@@ -1,7 +1,9 @@
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
+import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING } from '@/constants';
+import { getBackfireTitleLogoWidth } from '@/lib/layout/backfireTitleLogoWidth';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { FONTS } from '@/constants/theme';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -64,8 +66,10 @@ export function PlayMatchTopBar({
   const shortSide = Math.min(width, height);
   const isTightHeader = compactQuestionHeader && (width < 760 || shortSide < 430);
   const isVeryTightHeader = compactQuestionHeader && shortSide < 390;
-  const logoWidth = compactQuestionHeader ? (isVeryTightHeader ? 104 : isTightHeader ? 112 : 142) : 180;
-  const logoHeight = compactQuestionHeader ? (isVeryTightHeader ? 26 : isTightHeader ? 30 : 38) : 48;
+  const homeLogoWidth = getBackfireTitleLogoWidth(width, height);
+  const logoWidth = compactQuestionHeader
+    ? Math.min(homeLogoWidth, isVeryTightHeader ? 104 : isTightHeader ? 112 : 142)
+    : homeLogoWidth;
   const sideMaxWidth = compactQuestionHeader ? (isVeryTightHeader ? 142 : isTightHeader ? 158 : 214) : undefined;
   const showWager = session.config.wagerEnabled && onWagerInfoPress;
   const showHotSeat = isHotSeatConfigured(session) && onHotSeatInfoPress;
@@ -135,7 +139,7 @@ export function PlayMatchTopBar({
           styles.teamScoreHeader,
           alignRight && styles.teamScoreHeaderRight,
           compactScore && styles.rumbleTeamScoreHeader,
-          compactQuestionHeader && { maxWidth: sideMaxWidth, width: '100%' },
+          compactQuestionHeader && { maxWidth: sideMaxWidth },
         ]}
       >
         <View
@@ -228,18 +232,16 @@ export function PlayMatchTopBar({
         {team0 ? renderScoreCard(team0) : null}
       </View>
 
-      <Pressable
-        onPress={onLogoPress}
-        style={[styles.headerLogoContainer, { width: logoWidth }]}
-        accessibilityRole="button"
-        accessibilityLabel="Backfire"
-      >
-        <Image
-          source={BACKFIRE_IN_GAME_LOGO}
-          style={[styles.headerLogo, { width: logoWidth, height: logoHeight }]}
-          contentFit="contain"
-        />
-      </Pressable>
+      <View style={styles.topBarTitle}>
+        <Pressable
+          onPress={onLogoPress}
+          style={styles.headerLogoContainer}
+          accessibilityRole="button"
+          accessibilityLabel="Backfire"
+        >
+          <BackfireTitleLogo width={logoWidth} accessibilityLabel="Backfire" />
+        </Pressable>
+      </View>
 
       <View style={[styles.topBarSide, compactQuestionHeader && styles.topBarSideCompact, styles.topBarSideRight]}>
         {team1 ? renderScoreCard(team1, true) : null}
@@ -252,7 +254,7 @@ const styles = StyleSheet.create({
   gameTopBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     width: '100%',
     backgroundColor: 'transparent',
     gap: 10,
@@ -261,8 +263,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   topBarSide: {
+    flexGrow: 0,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  topBarTitle: {
     flex: 1,
     minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   topBarSideCompact: {
     alignItems: 'flex-start',
@@ -470,16 +479,13 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    maxWidth: '100%',
   },
   rumbleLogoContainer: {
     width: 56,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-  },
-  headerLogo: {
-    width: 180,
-    height: 48,
   },
   rumbleLogo: {
     width: 56,

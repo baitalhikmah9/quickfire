@@ -11,6 +11,7 @@ const enBase = {
   'common.languages': 'Languages',
   'common.theme': 'Theme',
   'common.profile': 'Profile',
+  'common.settings': 'Settings',
   'common.home': 'Home',
   'common.store': 'Store',
   'common.playerFallback': 'Player',
@@ -41,7 +42,7 @@ const enBase = {
 
   'tabs.home': 'Home',
   'tabs.store': 'Store',
-  'tabs.profile': 'Profile',
+  'tabs.settings': 'Settings',
 
   'modal.rules': 'Rules',
   'modal.theme': 'Theme',
@@ -65,6 +66,7 @@ const enBase = {
   'settings.accountAuthTitle': 'Account & auth',
   'settings.themeSelectionTitle': 'Theme selection',
   'settings.languagesUpToThreeTitle': 'Languages (up to 3)',
+  'settings.legalHeading': 'Legal',
   'settings.noTriviaLanguagesSelected': 'No trivia languages selected',
   'settings.themePickerDescription': 'Choose a color palette',
   'settings.appLanguagePickerDescription': 'Choose the app interface language',
