@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
 import { HEADER, SPACING, FONTS, FONT_SIZES } from '@/constants';
-import { getBackfireTitleLogoWidth } from '@/lib/layout/backfireTitleLogoWidth';
+import { getGameHeaderLogoDisplayWidth } from '@/lib/layout/backfireTitleLogoWidth';
 import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -81,8 +81,6 @@ export function GameHeader({
   const showTitleBelow = hasLogo && hasTitleText;    // title below logo
   const showCenterTitle = variant === 'title' && hasTitleText; // centered in bar
 
-  const defaultLogoWidth = logoWidth ?? getBackfireTitleLogoWidth(windowWidth, windowHeight);
-
   return (
     <View style={style}>
       {/* Header bar — compact, sits at top of its container */}
@@ -109,7 +107,7 @@ export function GameHeader({
           <View style={styles.center} pointerEvents="none">
             {hasLogo ? (
               <BackfireTitleLogo
-                width={compact ? Math.min(defaultLogoWidth, 160) : defaultLogoWidth}
+                width={getGameHeaderLogoDisplayWidth(windowWidth, windowHeight, logoWidth)}
                 containerStyle={styles.logoWrap}
               />
             ) : null}

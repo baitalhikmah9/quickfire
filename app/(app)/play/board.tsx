@@ -716,7 +716,7 @@ export default function PlayBoardScreen() {
         onLogoPress={toggleExitModal}
         onWagerInfoPress={session.config.wagerEnabled ? () => setWagerInfoOpen(true) : undefined}
         onHotSeatInfoPress={SHOW_HOT_SEAT_UI ? () => setHotSeatInfoOpen(true) : undefined}
-        compact={Platform.OS !== 'web' && height < 560}
+        compact={Math.min(width, height) < 560}
       />
     </View>
   );

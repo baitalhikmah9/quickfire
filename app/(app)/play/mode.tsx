@@ -23,7 +23,7 @@ type ModeDef = {
   titleKey: TranslationKey;
 };
 
-const BACKFIRE_TOKEN_ART = require('../../../assets/BF in game logo.png');
+const BACKFIRE_TOKEN_ART = require('@/assets/BF in game logo.png');
 
 function formatTokens(n: number, locale: string) {
   return n.toLocaleString(locale, { maximumFractionDigits: 0 });

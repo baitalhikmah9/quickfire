@@ -9,7 +9,7 @@ import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { usePlayStore } from '@/store/play';
 
-const BACKFIRE_TOKEN_ART = require('../../../assets/BF in game logo.png');
+const BACKFIRE_TOKEN_ART = require('@/assets/BF in game logo.png');
 
 function formatTokens(n: number, locale: string) {
   return n.toLocaleString(locale, { maximumFractionDigits: 0 });

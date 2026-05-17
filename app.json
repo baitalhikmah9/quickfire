@@ -18,6 +18,7 @@
       "buildNumber": "1"
     },
     "android": {
+      "package": "com.mikhailspeaks.backfire",
       "adaptiveIcon": {
         "foregroundImage": "./assets/BF app logo.png",
         "backgroundColor": "#000000"
@@ -41,6 +42,13 @@
       "expo-web-browser",
       "expo-font",
       "expo-image"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ed21e462-752d-4c84-b233-c0fa0b48be25"
+      }
+    },
+    "owner": "mikhailspeaks"
   }
 }
