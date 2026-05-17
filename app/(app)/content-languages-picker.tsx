@@ -48,7 +48,7 @@ export default function ContentLanguagesPickerScreen() {
       router.back();
       return;
     }
-    router.replace('/(app)/profile');
+    router.replace('/(app)/settings');
   };
 
   const toggleLocale = (locale: NonEnglishContentLocale) => {

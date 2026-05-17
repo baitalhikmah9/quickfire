@@ -90,7 +90,7 @@ graph TB
 │   ├── (app)/                    # Main app route group
 │   │   ├── _layout.tsx           # Stack + modals
 │   │   ├── index.tsx             # App hub (home)
-│   │   ├── profile.tsx           # User profile
+│   │   ├── settings.tsx          # Settings & preferences
 │   │   ├── store.tsx             # Token store
 │   │   ├── create-game.tsx       # Multi-step game wizard
 │   │   ├── game.tsx              # Active gameplay (landscape)
@@ -321,7 +321,7 @@ graph TB
 | `index.tsx` | Entry redirect → Play tab |
 | `how-to-play.tsx` | Full-screen game instructions |
 | `(app)/index.tsx` | App hub (home dashboard) |
-| `(app)/profile.tsx` | User profile |
+| `(app)/settings.tsx` | Settings & preferences |
 | `(app)/store.tsx` | Token store |
 | `(app)/create-game.tsx` | Multi-step game wizard |
 | `(app)/game.tsx` | Active gameplay (landscape) |

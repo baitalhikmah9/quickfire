@@ -102,8 +102,8 @@ export default function GameScreen() {
       resetSession();
       setSelectedQuestion(null);
     } else {
-      /** Create flow reaches here via `replace`; use profile, not stack pop. */
-      router.replace('/(app)/profile');
+      /** Create flow reaches here via `replace`; use settings, not stack pop. */
+      router.replace('/(app)/settings');
     }
   };
 

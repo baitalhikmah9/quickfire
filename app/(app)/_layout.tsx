@@ -6,7 +6,7 @@ export default function AppLayout() {
     <Stack screenOptions={landscapeStackScreenOptions}>
       <Stack.Screen name="index" />
       <Stack.Screen name="store" />
-      <Stack.Screen name="profile" />
+      <Stack.Screen name="settings" />
       <Stack.Screen name="play" />
       <Stack.Screen name="game" />
       <Stack.Screen name="create-game" />

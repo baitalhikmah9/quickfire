@@ -72,7 +72,7 @@ app/
 ├── (app)/
 │   ├── _layout.tsx                # Signed-in stack (landscape)
 │   ├── index.tsx                  # App hub — 4 mode cards, token chip, resume overlay
-│   ├── profile.tsx                # Profile & preferences
+│   ├── settings.tsx               # Settings & preferences
 │   ├── store.tsx                  # Token store / purchase
 │   ├── create-game.tsx            # Multi-step game wizard
 │   ├── game.tsx                   # Active gameplay (landscape)

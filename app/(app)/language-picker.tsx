@@ -47,7 +47,7 @@ export default function LanguagePickerScreen() {
       router.back();
       return;
     }
-    router.replace('/(app)/profile');
+    router.replace('/(app)/settings');
   };
 
   return (
