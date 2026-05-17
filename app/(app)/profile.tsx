@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Image, View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
@@ -9,7 +9,7 @@ import { contentLocalePriorityToArray } from '@/lib/i18n/config';
 import { getChevronName, getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
-import { ProfileAuthGate } from '@/components/ProfileAuthGate';
+import { useClerkOAuthFlow } from '@/lib/hooks/useClerkOAuthFlow';
 import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
 import { ScreenContent } from '@/components/ScreenContent';
 import { useLocaleStore } from '@/store/locale';
@@ -38,25 +38,12 @@ export default function ProfileScreen() {
   const { user } = useUser();
   const { signOut } = useClerk();
   const authDisabled = isAuthDisabled();
+  const { busy: authBusy, signInWithOAuthStrategy } = useClerkOAuthFlow();
   const router = useRouter();
   const paletteId = useThemeStore((s) => s.paletteId);
   const { direction, getLocaleName, t, uiLocale } = useI18n();
   const contentLocales = useLocaleStore((state) => state.contentLocales);
   const tokens = usePlayStore((state) => state.tokens);
-
-  if (!isSignedIn && !authDisabled) {
-    return (
-      <SafeAreaView
-        collapsable={false}
-        edges={['top', 'bottom', 'left', 'right']}
-        style={[styles.safeArea, { backgroundColor: T.colors.canvas }]}
-      >
-        <ScreenContent fullWidth style={styles.authGateViewport}>
-          <ProfileAuthGate />
-        </ScreenContent>
-      </SafeAreaView>
-    );
-  }
 
   const themeSummary = formatPaletteName(paletteId);
   const selectedContentLocales = contentLocalePriorityToArray(contentLocales)
@@ -64,6 +51,9 @@ export default function ProfileScreen() {
     .join(', ');
   const contentLanguageSummary =
     selectedContentLocales || t('settings.noTriviaLanguagesSelected');
+  const userDisplayName = user?.fullName || user?.username || user?.primaryEmailAddress?.emailAddress || t('common.profile');
+  const userEmail = user?.primaryEmailAddress?.emailAddress;
+  const userInitial = userDisplayName.trim().charAt(0).toUpperCase() || 'U';
 
   const rowDir = getRowDirection(direction);
   const isCompactLayout = width < 980;
@@ -134,6 +124,39 @@ export default function ProfileScreen() {
 
           <View style={[styles.profileColumns, isCompactLayout && styles.profileColumnsCompact]}>
             <View style={styles.profileCol}>
+              {isSignedIn && user ? (
+                <View
+                  testID="settings-user-profile-card"
+                  style={[
+                    styles.userProfileCard,
+                    SOFT_SURFACE_FACE,
+                    softSurfaceLift(),
+                    { backgroundColor: surface, flexDirection: rowDir },
+                  ]}
+                >
+                  {user.imageUrl ? (
+                    <Image source={{ uri: user.imageUrl }} style={styles.userAvatar} />
+                  ) : (
+                    <View style={[styles.userAvatar, styles.userAvatarFallback]}>
+                      <Text style={[styles.userAvatarInitial, { color: textPrimary }]}>{userInitial}</Text>
+                    </View>
+                  )}
+                  <View style={styles.userProfileTextBlock}>
+                    <Text style={[styles.userProfileKicker, { color: textMuted }]}>
+                      {t('settings.accountAuthTitle').toUpperCase()}
+                    </Text>
+                    <Text style={[styles.userProfileName, { color: textPrimary }]} numberOfLines={1}>
+                      {userDisplayName}
+                    </Text>
+                    {userEmail ? (
+                      <Text style={[styles.userProfileEmail, { color: textMuted }]} numberOfLines={1}>
+                        {userEmail}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
+
               <View
                 style={[
                   styles.prefsGroup,
@@ -244,31 +267,67 @@ export default function ProfileScreen() {
                   </Pressable>
                 </Link>
 
-                {/* Sign out */}
-                {!authDisabled && signOut ? (
+              </View>
+
+              <View
+                style={[
+                  styles.authCard,
+                  SOFT_SURFACE_FACE,
+                  softSurfaceLift(),
+                  { backgroundColor: surface },
+                ]}
+              >
                   <Pressable
+                    testID={isSignedIn ? 'settings-sign-out-button' : 'settings-sign-in-button'}
+                    accessibilityRole="button"
+                    accessibilityLabel={isSignedIn ? t('common.signOut') : t('auth.signUp.signIn')}
                     style={({ pressed }) => [
                       styles.prefRowLast,
                       { flexDirection: rowDir },
                       pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
                     ]}
-                    onPress={() => signOut()}
+                    disabled={!isSignedIn && authBusy}
+                    onPress={() => {
+                      if (isSignedIn) {
+                        void signOut?.();
+                        return;
+                      }
+                      void signInWithOAuthStrategy('oauth_google');
+                    }}
                   >
                     <View style={[styles.prefMain, { flexDirection: rowDir }]}>
-                      <Ionicons name="log-out-outline" size={20} color="#DC2626" />
+                      <Ionicons
+                        name={isSignedIn ? 'log-out-outline' : 'log-in-outline'}
+                        size={20}
+                        color={isSignedIn ? '#DC2626' : textPrimary}
+                      />
                       <View style={styles.prefTextBlock}>
                         <Text
-                          style={[styles.prefLabel, { color: '#DC2626' }]}
+                          style={[styles.prefLabel, { color: isSignedIn ? '#DC2626' : textPrimary }]}
                           numberOfLines={1}
                           ellipsizeMode="tail"
                         >
-                          {t('common.signOut')}
+                          {isSignedIn ? t('common.signOut') : t('auth.signUp.signIn')}
                         </Text>
+                        {!isSignedIn ? (
+                          <Text
+                            style={[styles.prefMeta, { color: textMuted }]}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
+                            {t('auth.signIn.google')}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View style={styles.prefTrailingSlot}>
+                        {!isSignedIn && authBusy ? (
+                          <ActivityIndicator size="small" color={textMuted} />
+                        ) : (
+                          <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
+                        )}
                       </View>
                     </View>
-                    <View style={styles.chevronSpacer} />
                   </Pressable>
-                ) : null}
               </View>
             </View>
           </View>
@@ -290,9 +349,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: SPACING.md,
   },
-  authGateViewport: {
-    flex: 1,
-  },
+
   topBar: {
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -341,6 +398,60 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.sm,
     gap: SPACING.md,
+  },
+  authCard: {
+    borderRadius: 32,
+    overflow: 'hidden',
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.sm,
+  },
+  userProfileCard: {
+    alignItems: 'center',
+    borderRadius: 32,
+    gap: SPACING.md,
+    overflow: 'hidden',
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
+  },
+  userAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  userAvatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(51, 51, 51, 0.08)',
+  },
+  userAvatarInitial: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 22,
+    lineHeight: 28,
+  },
+  userProfileTextBlock: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  userProfileKicker: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 1.2,
+    opacity: 0.65,
+  },
+  userProfileName: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 18,
+    lineHeight: 24,
+    marginTop: 3,
+  },
+  userProfileEmail: {
+    fontFamily: FONTS.ui,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
+    opacity: 0.75,
   },
   prefRow: {
     alignItems: 'center',

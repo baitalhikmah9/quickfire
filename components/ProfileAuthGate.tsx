@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SPACING, FONTS } from '@/constants';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
+import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { usePlayStore } from '@/store/play';
@@ -107,6 +108,7 @@ export function ProfileAuthGate() {
         <View style={styles.topBarSpacer} />
 
         <View style={[styles.headerSide, styles.headerSideEnd]}>
+          <PublicAuthEntry showCreateAccount={false} />
           <HubTokenChip
             label={t('common.tokens')}
             value={formatTokens(tokens)}
@@ -205,6 +207,7 @@ const styles = StyleSheet.create({
   },
   headerSideEnd: {
     alignItems: 'flex-end',
+    gap: SPACING.xs,
   },
   backHeaderHit: {
     alignItems: 'flex-start',

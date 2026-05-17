@@ -18,6 +18,7 @@ import { FONTS, SPACING, LAYOUT } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { GameHeader } from '@/components/GameHeader';
 import { HubTokenChip } from '@/components/HubTokenChip';
+import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
@@ -249,21 +250,24 @@ export default function AppHubScreen() {
                 />
               }
               rightSlot={
-                <Pressable
-                  onPress={() => router.push('/(app)/profile')}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('profile.preferences')}
-                  style={({ pressed }) => [
-                    styles.settingsImageButton,
-                    { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
-                  ]}
-                >
-                  <Image
-                    source={require('../../assets/QF Settings button.png')}
-                    style={styles.settingsImage}
-                    resizeMode="contain"
-                  />
-                </Pressable>
+                <View style={[styles.headerActions, { flexDirection: rowDir }]}>
+                  <PublicAuthEntry showCreateAccount={isWeb} />
+                  <Pressable
+                    onPress={() => router.push('/(app)/profile')}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('profile.preferences')}
+                    style={({ pressed }) => [
+                      styles.settingsImageButton,
+                      { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+                    ]}
+                  >
+                    <Image
+                      source={require('../../assets/QF Settings button.png')}
+                      style={styles.settingsImage}
+                      resizeMode="contain"
+                    />
+                  </Pressable>
+                </View>
               }
             />
 
@@ -534,6 +538,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
 
+  headerActions: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: SPACING.xs,
+    minWidth: 0,
+  },
   settingsImageButton: {
     width: 52,
     height: 52,

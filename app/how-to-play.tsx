@@ -8,6 +8,7 @@ import { SPACING, BORDER_RADIUS, FONTS, TYPE_SCALE, LAYOUT } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { ScreenContent } from '@/components/ScreenContent';
 import { PillCollapsibleSection } from '@/components/PillCollapsibleSection';
+import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { getRowDirection } from '@/lib/i18n/direction';
@@ -101,6 +102,7 @@ export default function HowToPlayScreen() {
               <Ionicons name={backIcon} size={20} color={colors.primary} />
               <Text style={[styles.backLabel, { color: colors.textOnBackground }]}>{t('common.back')}</Text>
             </Pressable>
+            <PublicAuthEntry style={styles.topBarAuth} />
           </View>
 
           <PillCollapsibleSection
@@ -169,8 +171,14 @@ const styles = StyleSheet.create({
   },
   topBar: {
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     paddingVertical: SPACING.sm,
+    width: '100%',
+    gap: SPACING.sm,
+    minWidth: 0,
+  },
+  topBarAuth: {
+    flexShrink: 1,
   },
   backPill: {
     alignItems: 'center',
