@@ -1,7 +1,7 @@
 ---
-last_mapped: 2026-05-06T00:00:00Z
-total_files: 220
-total_tokens: ~714000
+last_mapped: 2026-05-16T00:00:00Z
+total_files: 240
+total_tokens: ~746000
 upgraded: 2026-04-11
 ---
 
@@ -112,41 +112,48 @@ graph TB
 │   │       ├── answer.tsx        # Answer reveal
 │   │       └── end.tsx           # Game end screen
 │   ├── (admin)/                  # Admin route group (auth-gated)
-│   │   ├── _layout.tsx           # Admin layout
+│   │   ├── _layout.tsx           # Admin layout (sidebar + topbar + access boundary)
 │   │   ├── index.tsx             # Admin dashboard
-│   │   ├── promo-codes.tsx       # Promo code management
-│   │   ├── promo-codes/          # Nested admin routes
-│   │   ├── wallets.tsx           # Wallet management
-│   │   └── wallets/              # Nested wallet routes
-│   └── admin/                    # Admin public routes
-│       ├── index.tsx             # Admin entry
-│       ├── sign-in.tsx           # Admin sign-in
-│       ├── promo-codes.tsx       # Promo code list
-│       ├── promo-codes/          # Nested promo routes
-│       ├── wallets.tsx           # Wallet list
-│       └── wallets/              # Nested wallet routes
+│   │   ├── promo-codes.tsx       # Promo code list
+│   │   ├── promo-codes/[promoCodeId].tsx  # Promo code detail/edit
+│   │   ├── wallets.tsx           # Wallet list
+│   │   ├── wallets/[walletId].tsx  # Wallet detail
+│   │   └── sign-out.tsx          # Admin sign-out
+│   └── admin/                    # Admin public entry routes (web-only)
+│       ├── _layout.tsx           # Blocks native, redirects to sign-in
+│       ├── index.tsx             # Admin entry (redirects)
+│       ├── sign-in.tsx           # Admin-only sign-in
+│       ├── sign-out.tsx
+│       ├── promo-codes.tsx       # Redirects
+│       └── wallets.tsx           # Redirects
 │
 ├── components/                   # Reusable UI components
 │   ├── ErrorBoundary.tsx         # Error boundary (class-based)
+│   ├── GameHeader.tsx            # Hub header with token chip + settings
+│   ├── HeaderBackButton.tsx      # Stack back button
 │   ├── HeroSection.tsx           # Hero banner section
 │   ├── HubActionCard.tsx         # Hub action card
 │   ├── HubTokenChip.tsx          # Token display chip
 │   ├── OAuthProviderButtons.tsx  # OAuth sign-in buttons
 │   ├── PillCollapsibleSection.tsx # Collapsible pill section
 │   ├── ProfileAuthGate.tsx       # Auth gate for profile
-│   ├── BackfireTitleLogo.tsx    # Title logo component
+│   ├── BackfireTitleLogo.tsx     # Title logo component
 │   ├── ScreenContent.tsx         # Screen content wrapper
+│   ├── WebSeoHead.tsx            # Open Graph / SEO meta tags
+│   ├── admin/
+│   │   └── AdminScreenHeader.tsx # Admin screen header
 │   └── ui/
 │       ├── Button.tsx            # Reusable button (5 variants)
 │       └── Pressable.tsx         # Base pressable component
 │
 ├── constants/                    # Design tokens and data
 │   ├── index.ts                  # Barrel exports
-│   ├── theme.ts                  # Design tokens (PALETTES, COLORS)
+│   ├── theme.ts                  # Design tokens (FONTS, SPACING, COLORS, LAYOUT)
 │   ├── legacy.ts                 # Backward compat constants
 │   ├── categories.ts             # Fallback categories
 │   ├── categoryPictures.ts       # Category picture assets
 │   ├── featureFlags.ts           # Feature flag toggles
+│   ├── site.ts                   # Web origin, canonical URL helpers (playbackfire.com)
 │   └── questions.json            # 17,000+ line question DB
 │
 ├── convex/                       # Backend (Convex)
@@ -161,12 +168,14 @@ graph TB
 │   ├── devices.ts                # Device registration
 │   ├── http.ts                   # HTTP endpoints (webhooks)
 │   ├── admin.ts                  # Admin queries/mutations
+│   ├── adminSignIn.ts            # Admin sign-in endpoint
 │   ├── payments.ts               # Payment processing
 │   ├── promo.ts                  # Promo code logic
 │   ├── wallet.ts                 # Wallet operations
 │   └── lib/
 │       ├── auth.ts               # getCurrentUser, requireUser
 │       ├── adminValidation.ts    # Admin input validation
+│       ├── adminSignInRateLimit.ts # Rate limiting for admin sign-in
 │       ├── contentRules.ts       # Content filtering rules
 │       ├── ensureWallet.ts       # Wallet initialization
 │       ├── paymentCatalog.ts     # Payment product catalog
@@ -318,8 +327,11 @@ graph TB
 | `(app)/game.tsx` | Active gameplay (landscape) |
 | `(app)/play/` | Play flow — 10-screen stack (mode → categories → teams → board → question → answer → end) |
 | `(admin)/index.tsx` | Admin dashboard |
-| `(admin)/promo-codes.tsx` | Promo code management |
-| `(admin)/wallets.tsx` | Wallet management |
+| `(admin)/promo-codes.tsx` | Promo code list |
+| `(admin)/promo-codes/[promoCodeId].tsx` | Promo code detail / edit |
+| `(admin)/wallets.tsx` | Wallet list |
+| `(admin)/wallets/[walletId].tsx` | Wallet detail |
+| `(admin)/sign-out.tsx` | Admin sign-out |
 
 **Gotchas**:
 - Forgot password not wired to Clerk (TODO comment)
@@ -432,6 +444,7 @@ overtimeCheck -> completed
 | `devices.ts` | Device registration |
 | `http.ts` | HTTP endpoints (webhooks) |
 | `admin.ts` | Admin queries/mutations |
+| `adminSignIn.ts` | Admin sign-in endpoint with rate limiting |
 | `payments.ts` | Payment processing |
 | `promo.ts` | Promo code logic |
 | `wallet.ts` | Wallet operations |
@@ -443,6 +456,7 @@ overtimeCheck -> completed
 |------|---------|
 | `auth.ts` | getCurrentUser, requireUser |
 | `adminValidation.ts` | Admin input validation |
+| `adminSignInRateLimit.ts` | Rate limiting for admin sign-in attempts |
 | `contentRules.ts` | Content filtering rules |
 | `ensureWallet.ts` | Wallet initialization |
 | `paymentCatalog.ts` | Payment product catalog |
@@ -500,6 +514,8 @@ overtimeCheck -> completed
 | `ui/Button.tsx` | Button with 5 variants |
 | `ui/Pressable.tsx` | Base pressable component |
 | `ErrorBoundary.tsx` | Error boundary (class-based) |
+| `GameHeader.tsx` | Hub header with logo, token chip, settings |
+| `HeaderBackButton.tsx` | Stack navigation back button |
 | `HeroSection.tsx` | Hero banner section |
 | `HubActionCard.tsx` | Hub action card |
 | `HubTokenChip.tsx` | Token display chip |
@@ -508,6 +524,8 @@ overtimeCheck -> completed
 | `ProfileAuthGate.tsx` | Auth gate for profile |
 | `BackfireTitleLogo.tsx` | Title logo component |
 | `ScreenContent.tsx` | Screen content wrapper |
+| `WebSeoHead.tsx` | Open Graph / SEO meta tags |
+| `admin/AdminScreenHeader.tsx` | Admin screen header |
 
 ---
 
@@ -519,22 +537,26 @@ overtimeCheck -> completed
 
 | File | Purpose |
 |------|---------|
-| `theme.ts` | Design system tokens |
+| `theme.ts` | Design system tokens (FONTS, SPACING, COLORS, LAYOUT) |
 | `legacy.ts` | Backward compat |
 | `categories.ts` | Fallback categories |
 | `categoryPictures.ts` | Category picture assets |
 | `featureFlags.ts` | Feature flag toggles |
+| `site.ts` | Web origin, canonical URL helpers (playbackfire.com) |
 | `questions.json` | 17,000+ line question DB |
 
 **Exports**:
 - `COLORS` — 39 color tokens (brand, UI, game states, timer)
-- `PALETTES` — 6 theme palettes (default, warm, cool, green, red, dark)
-- `TYPE_SCALE` — 10 typography styles
+- `FONTS` — Typeface family constants
 - `SPACING` — 11 spacing tokens (8px base)
+- `LAYOUT` — Layout constraints
 - `BORDER_RADIUS` — 6 radius tokens
 - `SHADOWS` — 3 shadow configs
 - `FALLBACK_CATEGORIES` — 8 hardcoded categories
 - `ThemePaletteId` — Type union
+- `DEFAULT_PUBLIC_SITE_ORIGIN` — `https://playbackfire.com`
+- `getPublicSiteOrigin()` — Reads `EXPO_PUBLIC_SITE_ORIGIN` env
+- `canonicalUrlForPath()` — Builds absolute canonical URL
 
 **Gotchas**:
 - **CRITICAL**: `legacy.ts` COLORS has DIFFERENT values than `theme.ts`
@@ -783,6 +805,7 @@ sequenceDiagram
 1. **Theme Inconsistency**: `legacy.ts` has different color values than `theme.ts`
 2. **Question ID Collisions**: Duplicate IDs in `questions.json` (e.g., `q_15`)
 3. **Forgot Password**: Not wired to Clerk (TODO comment in code)
+4. **Admin sign-in rate limited**: `adminSignInRateLimit.ts` must be deployed for production admin access
 
 ### Auth
 - `identity.subject` is Clerk ID, not Convex `_id`
@@ -857,6 +880,18 @@ sequenceDiagram
 3. Call `users:upsertOnFirstSignIn` on sign-in
 4. Use `getCurrentUser()` in queries for auth context
 
+### To Add SEO / Web Metadata
+1. Set `EXPO_PUBLIC_SITE_ORIGIN` in `.env` (defaults to `playbackfire.com`)
+2. Use `canonicalUrlForPath()` from `constants/site.ts` for canonical URLs
+3. Add `<WebSeoHead>` component to public pages for Open Graph tags
+4. Update `public/robots.txt` and `public/sitemap.xml` for crawlers
+
+### To Add Admin Functionality
+1. Add query/mutation in `convex/admin.ts` or a new `convex/admin*.ts`
+2. Add admin layout route in `app/(admin)/` (auth-gated web-only shell)
+3. Add public entry in `app/admin/` if needed (e.g. sign-in)
+4. Use `adminValidation.ts` and `adminSignInRateLimit.ts` for security
+
 ### To Add a New Locale
 1. Add message file in `lib/i18n/messages/<locale>.ts`
 2. Register in `lib/i18n/messages/catalog.ts`
@@ -889,6 +924,11 @@ EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 EXPO_PUBLIC_CONVEX_URL=https://...
 ```
 
+Optional in `.env`:
+```
+EXPO_PUBLIC_SITE_ORIGIN=https://playbackfire.com  # Canonical URL for SEO (defaults to production)
+```
+
 Required in Convex Dashboard:
 ```
 CLERK_JWT_ISSUER_DOMAIN=https://your-clerk-frontend-api.clerk.accounts.dev
@@ -905,6 +945,10 @@ bun run ios          # iOS simulator
 bun run android      # Android emulator
 bun run web          # Web
 
+# Build / Deploy
+bun run build:web    # Static export to dist/ for Vercel deploy
+bun run build        # EAS build
+
 # Testing
 bun run test         # Run tests
 bun run test:watch   # Watch mode
@@ -913,6 +957,9 @@ bun run test:coverage # Coverage report
 # Database
 npx convex dev       # Start Convex dev
 bun run seed:normalize # Normalize questions
+
+# Assets
+bun run topics:transparent # Generate transparency topic images
 
 # Linting
 bun run lint         # ESLint

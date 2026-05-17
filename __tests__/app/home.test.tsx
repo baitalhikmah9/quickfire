@@ -8,7 +8,7 @@ import { FONTS } from '@/constants';
 import { usePlayStore } from '@/store/play';
 
 const mockPush = jest.fn();
-const mockUseAuth = jest.fn(() => ({ isSignedIn: true }));
+const mockUseAuth = jest.fn(() => ({ isLoaded: true, isSignedIn: true }));
 const mockIsAuthDisabled = jest.fn(() => false);
 
 jest.mock('expo-router', () => ({
@@ -58,7 +58,9 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'play.mode.randomCopy': 'Random questions each turn.',
         'play.mode.rumble': 'Rumble',
         'play.mode.rumbleCopy': 'Three or more teams and steals.',
+        'profile.guest.createAccount': 'CREATE ACCOUNT',
         'profile.preferences': 'Preferences',
+        'auth.signUp.signIn': 'Sign in',
       };
       return messages[key] ?? key;
     },
@@ -84,7 +86,7 @@ jest.mock('expo-image', () => ({
 describe('AppHubScreen', () => {
   beforeEach(async () => {
     mockPush.mockClear();
-    mockUseAuth.mockReturnValue({ isSignedIn: true });
+    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: true });
     mockIsAuthDisabled.mockReturnValue(false);
     usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
     await usePlayStore.getState().hydrate();
@@ -264,8 +266,17 @@ describe('AppHubScreen', () => {
     expect(screen.getByText('Random questions each turn.')).toBeTruthy();
   });
 
+  it('shows signed-out auth entry points in the home header', () => {
+    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
+
+    render(<AppHubScreen />);
+
+    expect(screen.getByTestId('public-auth-entry')).toBeTruthy();
+    expect(screen.getByTestId('public-auth-entry-sign-in')).toHaveTextContent('Sign in');
+  });
+
   it('routes signed-out players to sign-in instead of opening a game lobby', () => {
-    mockUseAuth.mockReturnValue({ isSignedIn: false });
+    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
 
     render(<AppHubScreen />);
 
@@ -276,7 +287,7 @@ describe('AppHubScreen', () => {
   });
 
   it('lets signed-out players start a game when auth is disabled', () => {
-    mockUseAuth.mockReturnValue({ isSignedIn: false });
+    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
     mockIsAuthDisabled.mockReturnValue(true);
 
     render(<AppHubScreen />);

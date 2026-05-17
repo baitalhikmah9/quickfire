@@ -37,39 +37,7 @@ export default function AdminIndexScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.pageHeader, isCompact && styles.pageHeaderCompact]}>
-        <Text style={styles.heading}>Overview</Text>
-        <View style={[styles.headerActions, isCompact && styles.headerActionsCompact]}>
-          <Link href="/admin/promo-codes" asChild>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Create promo code. Coupons, account restrictions, and token rewards."
-              style={({ pressed }) => [
-                styles.headerAction,
-                BRAND_RAISED_SURFACE,
-                isCompact && styles.headerActionFlex,
-                pressed && styles.headerActionPressed,
-              ]}
-            >
-              <Text style={styles.headerActionLabel}>Promo codes</Text>
-            </Pressable>
-          </Link>
-          <Link href="/admin/wallets" asChild>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Manage wallets. Search accounts and adjust token balances."
-              style={({ pressed }) => [
-                styles.headerAction,
-                BRAND_RAISED_SURFACE,
-                isCompact && styles.headerActionFlex,
-                pressed && styles.headerActionPressed,
-              ]}
-            >
-              <Text style={styles.headerActionLabel}>Wallets</Text>
-            </Pressable>
-          </Link>
-        </View>
-      </View>
+      <Text style={styles.heading}>Overview</Text>
 
       <View style={[styles.statsRow, isCompact && styles.statsRowCompact]}>
         <StatCard label="Active Promo Codes" value={activePromos} />
@@ -116,54 +84,10 @@ const styles = StyleSheet.create({
   container: {
     gap: SPACING.lg,
   },
-  pageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: SPACING.md,
-    flexWrap: 'wrap',
-  },
-  pageHeaderCompact: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
-  },
   heading: {
     fontFamily: FONTS.displayBold,
     fontSize: 24,
     color: SOFT.textPrimary,
-    flexShrink: 0,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    flexShrink: 0,
-  },
-  headerActionsCompact: {
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-  },
-  /** Matches docs/BRAND_GUIDELINES.md — standard raised button surface */
-  headerAction: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerActionPressed: {
-    opacity: 0.9,
-  },
-  headerActionFlex: {
-    flex: 1,
-  },
-  /** Functional labels: bold + all caps per brand typography table */
-  headerActionLabel: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 12,
-    letterSpacing: 0.9,
-    color: SOFT.textPrimary,
-    textTransform: 'uppercase',
   },
   statsRow: {
     flexDirection: 'row',

@@ -6,16 +6,17 @@ import {
   ScrollView,
   TextInput,
   Alert,
-  type ViewStyle,
+  ActivityIndicator,
 } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@clerk/clerk-expo';
 import { Redirect, useRouter } from 'expo-router';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SPACING, BORDER_RADIUS, TYPE_SCALE, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import { SPACING, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
-import { PillCollapsibleSection } from '@/components/PillCollapsibleSection';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { STORE_BUNDLES, type StoreBundle } from '@/features/play/storeBundles';
 import { getRowDirection } from '@/lib/i18n/direction';
@@ -28,10 +29,24 @@ const T = HOME_SOFT_UI;
 const COMPACT_BUNDLES_ROW_MAX_WIDTH = 584;
 
 
-const VOUCHER_CODES: Record<string, number> = {
-  DOUBLE: 10,
-  WELCOME: 5,
+const SIGN_IN_TO_REDEEM_MESSAGE = 'Sign in to redeem promo codes.';
+
+const PROMO_ERROR_MESSAGES: Record<string, string> = {
+  invalid_code: 'That code is invalid or expired.',
+  inactive: 'That code is no longer active.',
+  not_yet_active: 'That code is not active yet.',
+  expired: 'That code has expired.',
+  usage_cap: 'That code has already been fully redeemed.',
+  per_user_cap: 'You have already redeemed that code.',
+  already_redeemed: 'You have already redeemed that code.',
+  account_restricted: 'That code is restricted to another account.',
+  idempotency_required: 'Please try redeeming that code again.',
 };
+
+function getPromoErrorMessage(error?: string) {
+  if (!error) return 'Unable to redeem that code. Please try again.';
+  return PROMO_ERROR_MESSAGES[error] ?? 'Unable to redeem that code. Please try again.';
+}
 
 function formatTokens(n: number) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -109,8 +124,12 @@ export default function StoreScreen() {
   const router = useRouter();
   const tokens = usePlayStore((state) => state.tokens);
   const grantTokens = usePlayStore((state) => state.grantTokens);
+  const redeemPromoCode = useMutation(api.promo.redeemCode);
 
   const [voucherCode, setVoucherCode] = useState('');
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
   const formattedTokens = formatTokens(tokens);
 
   const canvas = T.colors.canvas;
@@ -118,31 +137,52 @@ export default function StoreScreen() {
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
 
-  if (!isLoaded && !authDisabled) {
-    return null;
-  }
+  const handleVoucherChange = useCallback((text: string) => {
+    setVoucherCode(text);
+    if (promoError) setPromoError('');
+    if (promoSuccess) setPromoSuccess('');
+  }, [promoError, promoSuccess]);
 
-  if (!isSignedIn && !authDisabled) {
-    return <Redirect href="/(auth)/sign-in" />;
-  }
+  const applyVoucher = useCallback(async () => {
+    setPromoError('');
+    setPromoSuccess('');
 
-
-
-  const applyVoucher = useCallback(() => {
-    const key = voucherCode.trim().toUpperCase();
-    if (!key) {
-      Alert.alert(t('store.voucherInvalid'));
+    const code = voucherCode.trim();
+    if (!code || isRedeeming) {
+      if (!code) setPromoError(t('store.voucherInvalid'));
       return;
     }
-    const amount = VOUCHER_CODES[key];
-    if (amount === undefined) {
-      Alert.alert(t('store.voucherInvalid'));
+
+    if (!isSignedIn) {
+      Alert.alert(SIGN_IN_TO_REDEEM_MESSAGE);
+      router.push('/(auth)/sign-in');
       return;
     }
-    grantTokens(amount);
-    setVoucherCode('');
-    Alert.alert(t('store.voucherSuccess'));
-  }, [grantTokens, t, voucherCode]);
+
+    setIsRedeeming(true);
+    try {
+      const result = await redeemPromoCode({
+        code,
+        clientRequestId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      });
+
+      if (!result.success) {
+        setPromoError(getPromoErrorMessage(result.error));
+        return;
+      }
+
+      if (typeof result.tokensGranted === 'number' && result.tokensGranted > 0 && !result.duplicate) {
+        grantTokens(result.tokensGranted);
+      }
+      setVoucherCode('');
+      setPromoSuccess(t('store.voucherSuccess'));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      setPromoError(message.includes('Not authenticated') ? SIGN_IN_TO_REDEEM_MESSAGE : 'Unable to redeem that code. Please try again.');
+    } finally {
+      setIsRedeeming(false);
+    }
+  }, [grantTokens, isRedeeming, isSignedIn, redeemPromoCode, router, t, voucherCode]);
 
   const onBuyBundle = useCallback(
     (bundle: StoreBundle) => {
@@ -159,6 +199,14 @@ export default function StoreScreen() {
     }
     router.replace('/(app)/');
   }, [router]);
+
+  if (!isLoaded && !authDisabled) {
+    return null;
+  }
+
+  if (!isSignedIn && !authDisabled) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
 
   return (
     <SafeAreaView
@@ -225,7 +273,7 @@ export default function StoreScreen() {
             <View style={[styles.redeemCard, SOFT_SURFACE_FACE, { backgroundColor: surface }, softSurfaceLift()]}>
               <TextInput
                 value={voucherCode}
-                onChangeText={setVoucherCode}
+                onChangeText={handleVoucherChange}
                 placeholder="Enter code here..."
                 placeholderTextColor={textMuted}
                 autoCapitalize="characters"
@@ -234,27 +282,38 @@ export default function StoreScreen() {
                   styles.redeemInput,
                   {
                     color: textPrimary,
-                    borderColor: 'rgba(0,0,0,0.08)',
-                    borderWidth: 1,
+                    borderColor: promoError ? '#D32F2F' : 'rgba(0,0,0,0.08)',
+                    borderWidth: promoError ? 1.5 : 1,
                   },
                 ]}
               />
               <Pressable
                 onPress={applyVoucher}
+                disabled={isRedeeming}
                 style={({ pressed }) => [
                   styles.applyButton,
                   SOFT_SURFACE_FACE,
                   softSurfaceLift(),
                   {
                     backgroundColor: '#6D8EB1',
-                    opacity: pressed ? 0.92 : 1,
-                    transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }]
+                    opacity: isRedeeming ? 0.65 : pressed ? 0.92 : 1,
+                    transform: pressed && !isRedeeming ? [{ scale: 0.98 }] : [{ scale: 1 }]
                   },
                 ]}
               >
-                <Text style={styles.applyButtonText}>APPLY CODE</Text>
+                {isRedeeming ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.applyButtonText}>APPLY CODE</Text>
+                )}
               </Pressable>
             </View>
+            {promoError ? (
+              <Text style={styles.promoErrorText}>{promoError}</Text>
+            ) : null}
+            {promoSuccess ? (
+              <Text style={styles.promoSuccessText}>{promoSuccess}</Text>
+            ) : null}
           </View>
         </ScrollView>
       </ScreenContent>
@@ -428,6 +487,24 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.ui,
     fontSize: 12,
     backgroundColor: '#FFFFFF',
+  },
+  promoErrorText: {
+    alignSelf: 'stretch',
+    fontFamily: FONTS.ui,
+    fontSize: 12,
+    color: '#D32F2F',
+    textAlign: 'center',
+    marginTop: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
+  },
+  promoSuccessText: {
+    alignSelf: 'stretch',
+    fontFamily: FONTS.ui,
+    fontSize: 12,
+    color: '#388E3C',
+    textAlign: 'center',
+    marginTop: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
   },
   applyButton: {
     height: 40,
