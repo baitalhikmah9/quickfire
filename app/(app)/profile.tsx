@@ -1,4 +1,12 @@
-import { ActivityIndicator, Image, View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import {
+  Image,
+  Platform,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  useWindowDimensions,
+} from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
@@ -9,8 +17,8 @@ import { contentLocalePriorityToArray } from '@/lib/i18n/config';
 import { getChevronName, getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
-import { useClerkOAuthFlow } from '@/lib/hooks/useClerkOAuthFlow';
 import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
+import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { ScreenContent } from '@/components/ScreenContent';
 import { useLocaleStore } from '@/store/locale';
 import { usePlayStore } from '@/store/play';
@@ -38,7 +46,6 @@ export default function ProfileScreen() {
   const { user } = useUser();
   const { signOut } = useClerk();
   const authDisabled = isAuthDisabled();
-  const { busy: authBusy, signInWithOAuthStrategy } = useClerkOAuthFlow();
   const router = useRouter();
   const paletteId = useThemeStore((s) => s.paletteId);
   const { direction, getLocaleName, t, uiLocale } = useI18n();
@@ -269,66 +276,53 @@ export default function ProfileScreen() {
 
               </View>
 
-              <View
-                style={[
-                  styles.authCard,
-                  SOFT_SURFACE_FACE,
-                  softSurfaceLift(),
-                  { backgroundColor: surface },
-                ]}
-              >
+              {isSignedIn ? (
+                <View
+                  style={[
+                    styles.authCard,
+                    SOFT_SURFACE_FACE,
+                    softSurfaceLift(),
+                    { backgroundColor: surface },
+                  ]}
+                >
                   <Pressable
-                    testID={isSignedIn ? 'settings-sign-out-button' : 'settings-sign-in-button'}
+                    testID="settings-sign-out-button"
                     accessibilityRole="button"
-                    accessibilityLabel={isSignedIn ? t('common.signOut') : t('auth.signUp.signIn')}
+                    accessibilityLabel={t('common.signOut')}
                     style={({ pressed }) => [
                       styles.prefRowLast,
                       { flexDirection: rowDir },
                       pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
                     ]}
-                    disabled={!isSignedIn && authBusy}
                     onPress={() => {
-                      if (isSignedIn) {
-                        void signOut?.();
-                        return;
-                      }
-                      void signInWithOAuthStrategy('oauth_google');
+                      void signOut?.();
                     }}
                   >
                     <View style={[styles.prefMain, { flexDirection: rowDir }]}>
-                      <Ionicons
-                        name={isSignedIn ? 'log-out-outline' : 'log-in-outline'}
-                        size={20}
-                        color={isSignedIn ? '#DC2626' : textPrimary}
-                      />
+                      <Ionicons name="log-out-outline" size={20} color="#DC2626" />
                       <View style={styles.prefTextBlock}>
                         <Text
-                          style={[styles.prefLabel, { color: isSignedIn ? '#DC2626' : textPrimary }]}
+                          style={[styles.prefLabel, { color: '#DC2626' }]}
                           numberOfLines={1}
                           ellipsizeMode="tail"
                         >
-                          {isSignedIn ? t('common.signOut') : t('auth.signUp.signIn')}
+                          {t('common.signOut')}
                         </Text>
-                        {!isSignedIn ? (
-                          <Text
-                            style={[styles.prefMeta, { color: textMuted }]}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >
-                            {t('auth.signIn.google')}
-                          </Text>
-                        ) : null}
                       </View>
                       <View style={styles.prefTrailingSlot}>
-                        {!isSignedIn && authBusy ? (
-                          <ActivityIndicator size="small" color={textMuted} />
-                        ) : (
-                          <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
-                        )}
+                        <Ionicons name={getChevronName(direction)} size={18} color={textMuted} />
                       </View>
                     </View>
                   </Pressable>
-              </View>
+                </View>
+              ) : !authDisabled ? (
+                <View style={styles.publicAuthInSettings}>
+                  <PublicAuthEntry
+                    showCreateAccount={Platform.OS === 'web'}
+                    style={styles.publicAuthEntry}
+                  />
+                </View>
+              ) : null}
             </View>
           </View>
         </ScrollView>
@@ -403,7 +397,18 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     overflow: 'hidden',
     paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+  },
+  publicAuthInSettings: {
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: SPACING.sm,
+  },
+  publicAuthEntry: {
+    alignSelf: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    maxWidth: '100%',
   },
   userProfileCard: {
     alignItems: 'center',

@@ -13,7 +13,7 @@ const T = HOME_SOFT_UI;
 
 const WAGER_HEADER_ART = require('@/assets/wager.png');
 const HOT_SEAT_HEADER_ART = require('@/assets/hot seat.png');
-const QF_LOGO = require('@/assets/QF logo.png');
+const BACKFIRE_IN_GAME_LOGO = require('@/assets/BF in game logo.png');
 
 function isHotSeatConfigured(session: GameSessionState): boolean {
   if (!SHOW_HOT_SEAT_UI) return false;
@@ -46,7 +46,7 @@ export interface PlayMatchTopBarProps {
 }
 
 /**
- * Shared top bar: team scores + wager/hot-seat chips, QuickFire logo, mirrored team card.
+ * Shared top bar: team scores + wager/hot-seat chips, Backfire wordmark, mirrored team card.
  * Matches `app/(app)/play/board.tsx` game header chrome.
  */
 export function PlayMatchTopBar({
@@ -204,10 +204,10 @@ export function PlayMatchTopBar({
           onPress={onLogoPress}
           style={styles.rumbleLogoContainer}
           accessibilityRole="button"
-          accessibilityLabel="QuickFire"
+          accessibilityLabel="Backfire"
         >
           <Image
-            source={QF_LOGO}
+            source={BACKFIRE_IN_GAME_LOGO}
             style={[styles.rumbleLogo, compact && styles.rumbleLogoCompact]}
             contentFit="contain"
           />
@@ -232,9 +232,13 @@ export function PlayMatchTopBar({
         onPress={onLogoPress}
         style={[styles.headerLogoContainer, { width: logoWidth }]}
         accessibilityRole="button"
-        accessibilityLabel="QuickFire"
+        accessibilityLabel="Backfire"
       >
-        <Image source={QF_LOGO} style={[styles.headerLogo, { width: logoWidth, height: logoHeight }]} contentFit="contain" />
+        <Image
+          source={BACKFIRE_IN_GAME_LOGO}
+          style={[styles.headerLogo, { width: logoWidth, height: logoHeight }]}
+          contentFit="contain"
+        />
       </Pressable>
 
       <View style={[styles.topBarSide, compactQuestionHeader && styles.topBarSideCompact, styles.topBarSideRight]}>

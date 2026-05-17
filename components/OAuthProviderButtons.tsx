@@ -1,25 +1,24 @@
-import { View, Text, StyleSheet, Image, Platform } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
-import { SPACING, BORDER_RADIUS, FONTS } from '@/constants';
+import { SPACING } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
-/** Raised plastic tile shadow tier. */
-function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill'): any {
-  const m =
-    tier === 'hero'
-      ? { h: 14, op: 0.14, r: 28, el: 18 }
-      : tier === 'header'
-      ? { h: 8, op: 0.12, r: 18, el: 12 }
-      : { h: 6, op: 0.1, r: 14, el: 8 };
-
+/** Raised plastic tile shadow — compact control (matches header squircle depth). */
+function neumorphicLift3D(shadowColor: string): {
+  shadowColor: string;
+  shadowOffset: { width: number; height: number };
+  shadowOpacity: number;
+  shadowRadius: number;
+  elevation: number;
+} {
   return {
     shadowColor,
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: m.op,
-    shadowRadius: m.r,
-    elevation: m.el,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 8,
   };
 }
 
@@ -36,8 +35,14 @@ const APPLE_LOGO_URI =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#000000" d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>`
   );
 
-const LOGO_SIZE = 26;
-const ICON_SLOT = 44;
+const LOGO_SIZE = 24;
+const ICON_BUTTON = 44;
+const ICON_RADIUS = 14;
+
+function accessibilityHint(primary?: string, secondary?: string): string {
+  const parts = [primary, secondary].filter(Boolean) as string[];
+  return parts.join('. ');
+}
 
 export type OAuthProviderButtonsProps = {
   onGooglePress: () => void;
@@ -48,6 +53,10 @@ export type OAuthProviderButtonsProps = {
   appleSecondaryLabel?: string;
 };
 
+/**
+ * Icon-only OAuth entry points (Google / Apple). Labels are used for accessibility only.
+ * Visual: brand squircle raised tiles (`docs/BRAND_GUIDELINES.md`).
+ */
 export function OAuthProviderButtons({
   onGooglePress,
   onApplePress,
@@ -57,74 +66,54 @@ export function OAuthProviderButtons({
   appleSecondaryLabel,
 }: OAuthProviderButtonsProps) {
   const surface = T.colors.surface;
-  const textPrimary = T.colors.textPrimary;
-  const textMuted = T.colors.textMuted;
   const shadowHex = T.colors.shadowStrong;
 
   return (
-    <View style={styles.stack}>
+    <View style={styles.row} accessibilityRole="toolbar">
       <Pressable
         style={({ pressed }) => [
-          styles.button,
+          styles.iconButton,
           styles.plasticFace,
           {
             backgroundColor: surface,
-            opacity: pressed ? 0.94 : 1,
-            transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }]
+            opacity: pressed ? 0.92 : 1,
+            transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
           },
-          neumorphicLift3D(shadowHex, 'pill'),
+          neumorphicLift3D(shadowHex),
         ]}
         onPress={onGooglePress}
         accessibilityRole="button"
+        accessibilityLabel={accessibilityHint(googlePrimaryLabel, googleSecondaryLabel)}
       >
-        <View style={styles.row}>
-          <View style={styles.iconSlot}>
-            <Image
-              source={{ uri: GOOGLE_LOGO_URI }}
-              style={styles.brandImage}
-              resizeMode="contain"
-              accessibilityIgnoresInvertColors
-            />
-          </View>
-          <View style={styles.textBlock}>
-            <Text style={[styles.primaryLabel, { color: textPrimary }]}>{googlePrimaryLabel.toUpperCase()}</Text>
-            {googleSecondaryLabel ? (
-              <Text style={[styles.secondaryLabel, { color: textMuted }]}>{googleSecondaryLabel}</Text>
-            ) : null}
-          </View>
-        </View>
+        <Image
+          source={{ uri: GOOGLE_LOGO_URI }}
+          style={styles.brandImage}
+          resizeMode="contain"
+          accessibilityIgnoresInvertColors
+        />
       </Pressable>
 
       <Pressable
         style={({ pressed }) => [
-          styles.button,
+          styles.iconButton,
           styles.plasticFace,
           {
             backgroundColor: surface,
-            opacity: pressed ? 0.94 : 1,
-            transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }]
+            opacity: pressed ? 0.92 : 1,
+            transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
           },
-          neumorphicLift3D(shadowHex, 'pill'),
+          neumorphicLift3D(shadowHex),
         ]}
         onPress={onApplePress}
         accessibilityRole="button"
+        accessibilityLabel={accessibilityHint(applePrimaryLabel, appleSecondaryLabel)}
       >
-        <View style={styles.row}>
-          <View style={styles.iconSlot}>
-            <Image
-              source={{ uri: APPLE_LOGO_URI }}
-              style={styles.brandImage}
-              resizeMode="contain"
-              accessibilityIgnoresInvertColors
-            />
-          </View>
-          <View style={styles.textBlock}>
-            <Text style={[styles.primaryLabel, { color: textPrimary }]}>{applePrimaryLabel.toUpperCase()}</Text>
-            {appleSecondaryLabel ? (
-              <Text style={[styles.secondaryLabel, { color: textMuted }]}>{appleSecondaryLabel}</Text>
-            ) : null}
-          </View>
-        </View>
+        <Image
+          source={{ uri: APPLE_LOGO_URI }}
+          style={styles.brandImage}
+          resizeMode="contain"
+          accessibilityIgnoresInvertColors
+        />
       </Pressable>
     </View>
   );
@@ -137,45 +126,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth * 2,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
-  stack: {
-    gap: SPACING.md,
-  },
-  button: {
-    borderRadius: 32,
-    overflow: 'hidden',
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
-    minHeight: 64,
+    justifyContent: 'center',
+    gap: SPACING.lg,
   },
-  iconSlot: {
-    width: ICON_SLOT,
-    height: ICON_SLOT,
-    borderRadius: ICON_SLOT / 2,
+  iconButton: {
+    width: ICON_BUTTON,
+    height: ICON_BUTTON,
+    borderRadius: ICON_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.md,
-    backgroundColor: 'rgba(0,0,0,0.03)',
+    overflow: 'hidden',
   },
   brandImage: {
     width: LOGO_SIZE,
     height: LOGO_SIZE,
-  },
-  textBlock: {
-    flex: 1,
-  },
-  primaryLabel: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 14,
-    letterSpacing: 1.2,
-  },
-  secondaryLabel: {
-    fontFamily: FONTS.ui,
-    fontSize: 12,
-    marginTop: 1,
-    opacity: 0.6,
   },
 });

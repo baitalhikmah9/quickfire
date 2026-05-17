@@ -1,6 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { render, screen } from '@testing-library/react-native';
+import { Platform } from 'react-native';
 
 import ProfileScreen from '@/app/(app)/profile';
 
@@ -8,7 +9,7 @@ const mockBack = jest.fn();
 const mockPush = jest.fn();
 const mockSignOut = jest.fn();
 const mockIsAuthDisabled = jest.fn(() => false);
-const mockUseAuth = jest.fn(() => ({ isSignedIn: true }));
+const mockUseAuth = jest.fn(() => ({ isLoaded: true, isSignedIn: true }));
 const mockUseUser = jest.fn(() => ({
   user: {
     createdAt: new Date('2026-01-15T00:00:00.000Z'),
@@ -103,6 +104,8 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'settings.languagesUpToThreeTitle': 'Languages (up to 3)',
         'settings.noTriviaLanguagesSelected': 'No trivia languages selected',
         'settings.themeSelectionTitle': 'Theme selection',
+        'auth.signUp.signIn': 'Sign in',
+        'profile.guest.createAccount': 'CREATE ACCOUNT',
       };
       return messages[key] ?? key;
     },
@@ -116,7 +119,7 @@ describe('ProfileScreen settings', () => {
     mockPush.mockClear();
     mockSignOut.mockClear();
     mockIsAuthDisabled.mockReturnValue(false);
-    mockUseAuth.mockReturnValue({ isSignedIn: true });
+    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: true });
     mockUseClerk.mockReturnValue({ signOut: mockSignOut });
     mockUseUser.mockReturnValue({
       user: {
@@ -141,9 +144,24 @@ describe('ProfileScreen settings', () => {
     expect(screen.queryByText('ACCURACY')).toBeNull();
   });
 
+  it('shows public sign-in entry on the settings screen when signed out', () => {
+    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
+    mockUseUser.mockReturnValue({ user: null } as any);
+
+    render(<ProfileScreen />);
+
+    expect(screen.getByTestId('public-auth-entry')).toBeTruthy();
+    expect(screen.getByTestId('public-auth-entry-sign-in')).toHaveTextContent('Sign in');
+    if (Platform.OS === 'web') {
+      expect(screen.getByTestId('public-auth-entry-sign-up')).toHaveTextContent('CREATE ACCOUNT');
+    } else {
+      expect(screen.queryByTestId('public-auth-entry-sign-up')).toBeNull();
+    }
+  });
+
   it('stays usable in guest mode when auth is disabled', () => {
     mockIsAuthDisabled.mockReturnValue(true);
-    mockUseAuth.mockReturnValue({ isSignedIn: false });
+    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
     mockUseClerk.mockReturnValue({ signOut: undefined } as any);
     mockUseUser.mockReturnValue({ user: null } as any);
 
