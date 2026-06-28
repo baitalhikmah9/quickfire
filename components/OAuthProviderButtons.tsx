@@ -4,6 +4,9 @@ import { Pressable } from '@/components/ui/Pressable';
 import { SPACING } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
 
+/** Official multicolor Google "G" from Google Identity branding assets. */
+const GOOGLE_G_LOGO = require('@/assets/brand/google-g.png');
+
 const T = HOME_SOFT_UI;
 
 /** Raised plastic tile shadow — compact control (matches header squircle depth). */
@@ -23,11 +26,11 @@ function neumorphicLift3D(shadowColor: string): {
   };
 }
 
-/** Multicolor Google “G” — `data:` SVG for web only; native uses `Ionicons` (RN `Image` cannot decode SVG data URIs). */
+/** Official multicolor Google "G" — SVG data URI for crisp scaling on web. */
 const GOOGLE_LOGO_URI =
   'data:image/svg+xml,' +
   encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.42 32.658 29.122 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.119 0-9.59-3.368-11.164-8.082l-6.563 5.233C9.176 39.86 16.007 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-4.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`
   );
 
 const APPLE_LOGO_URI =
@@ -45,7 +48,7 @@ function accessibilityHint(primary?: string, secondary?: string): string {
   return parts.join('. ');
 }
 
-/** RN `Image` does not render SVG `data:` URIs on iOS/Android — use vector marks there. */
+/** RN `Image` does not render SVG `data:` URIs on iOS/Android — use bundled official PNG there. */
 function GoogleBrandMark() {
   if (Platform.OS === 'web') {
     return (
@@ -57,7 +60,14 @@ function GoogleBrandMark() {
       />
     );
   }
-  return <Ionicons name="logo-google" size={LOGO_SIZE} color="#4285F4" accessibilityIgnoresInvertColors />;
+  return (
+    <Image
+      source={GOOGLE_G_LOGO}
+      style={styles.brandImage}
+      resizeMode="contain"
+      accessibilityIgnoresInvertColors
+    />
+  );
 }
 
 function AppleBrandMark() {

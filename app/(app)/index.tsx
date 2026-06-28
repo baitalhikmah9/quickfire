@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FONTS, SPACING, LAYOUT } from '@/constants';
+import { FONTS, SPACING, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { GameHeader } from '@/components/GameHeader';
 import { HubTokenChip } from '@/components/HubTokenChip';
@@ -129,6 +129,7 @@ export default function AppHubScreen() {
 
   const rowDir = getRowDirection(direction);
   const formattedTokens = tokens.toLocaleString(uiLocale, { maximumFractionDigits: 0 });
+  const needsSignIn = !authDisabled && !isSignedIn;
 
   const isWeb = Platform.OS === 'web';
 
@@ -336,15 +337,22 @@ export default function AppHubScreen() {
                   <View key={mode.id} style={[styles.modeTileContainer, isWeb && { aspectRatio: 0.95 }]}>
                     {(() => {
                       const minimumCost = minimumTokenCostForMode(mode.id);
-                      const canAffordMode = tokens >= minimumCost;
+                      const canPlayMode = needsSignIn || tokens >= minimumCost;
+                      const signInLabel = t('home.signInToPlay').toUpperCase();
                       return (
                         <Pressable
                           onPress={() => onSelectMode(mode.id)}
-                          disabled={!canAffordMode}
+                          disabled={!canPlayMode}
                           accessibilityRole="button"
-                          accessibilityLabel={t(mode.titleKey)}
-                          accessibilityHint={`${t(mode.copyKey)} ${getHomeModeTokenCostLabel(mode.id)} ${t('common.tokens')}.`}
-                          accessibilityState={{ disabled: !canAffordMode }}
+                          accessibilityLabel={
+                            needsSignIn ? `${t(mode.titleKey)}. ${signInLabel}` : t(mode.titleKey)
+                          }
+                          accessibilityHint={
+                            needsSignIn
+                              ? signInLabel
+                              : `${t(mode.copyKey)} ${getHomeModeTokenCostLabel(mode.id)} ${t('common.tokens')}.`
+                          }
+                          accessibilityState={{ disabled: !canPlayMode }}
                           testID={`home-mode-card-${mode.id}`}
                           style={({ pressed }) => [
                             styles.modeTile,
@@ -352,7 +360,7 @@ export default function AppHubScreen() {
                             {
                               backgroundColor: surface,
                               borderRadius: 44,
-                              opacity: !canAffordMode ? 0.45 : pressed ? 0.94 : 1,
+                              opacity: !canPlayMode ? 0.45 : pressed ? 0.94 : 1,
                               transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
                               ...(isWeb ? { paddingVertical: SPACING.md } : {}),
                             },
@@ -401,21 +409,44 @@ export default function AppHubScreen() {
                           >
                             {t(mode.copyKey)}
                           </Text>
-                          <View style={[styles.modeTileCostRow, isWeb && { marginTop: SPACING.xs }]}>
-                            <Ionicons name="diamond" size={compact ? 9 : (isWeb ? 11 : 11)} color={textPrimary} />
-                            <Text
-                              testID={`home-mode-token-cost-${mode.id}`}
+                          {needsSignIn ? (
+                            <View
                               style={[
-                                styles.modeTileCostText,
-                                compact && styles.modeTileCostTextCompact,
-                                { color: textPrimary },
-                                isWeb && { fontSize: 11, lineHeight: 14 },
+                                styles.modeTileSignInButton,
+                                SOFT_SURFACE_FACE,
+                                softSurfaceLift(),
+                                { backgroundColor: T.colors.accentGlow },
+                                isWeb && { marginTop: SPACING.xs },
                               ]}
-                              numberOfLines={1}
                             >
-                              {`${getHomeModeTokenCostLabel(mode.id)} ${t('common.tokens').toUpperCase()}`}
-                            </Text>
-                          </View>
+                              <Text
+                                testID={`home-mode-sign-in-${mode.id}`}
+                                style={[
+                                  styles.modeTileSignInText,
+                                  compact && styles.modeTileSignInTextCompact,
+                                  isWeb && { fontSize: 11 },
+                                ]}
+                              >
+                                {signInLabel}
+                              </Text>
+                            </View>
+                          ) : (
+                            <View style={[styles.modeTileCostRow, isWeb && { marginTop: SPACING.xs }]}>
+                              <Ionicons name="diamond" size={compact ? 9 : (isWeb ? 11 : 11)} color={textPrimary} />
+                              <Text
+                                testID={`home-mode-token-cost-${mode.id}`}
+                                style={[
+                                  styles.modeTileCostText,
+                                  compact && styles.modeTileCostTextCompact,
+                                  { color: textPrimary },
+                                  isWeb && { fontSize: 11, lineHeight: 14 },
+                                ]}
+                                numberOfLines={1}
+                              >
+                                {`${getHomeModeTokenCostLabel(mode.id)} ${t('common.tokens').toUpperCase()}`}
+                              </Text>
+                            </View>
+                          )}
                         </Pressable>
                       );
                     })()}
@@ -680,6 +711,29 @@ const styles = StyleSheet.create({
     fontSize: 9,
     lineHeight: 12,
     letterSpacing: 0.4,
+  },
+  modeTileSignInButton: {
+    marginTop: SPACING.sm,
+    minWidth: 88,
+    minHeight: 28,
+    paddingHorizontal: SPACING.md,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  modeTileSignInText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 10,
+    lineHeight: 13,
+    letterSpacing: 0.8,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  modeTileSignInTextCompact: {
+    fontSize: 9,
+    lineHeight: 12,
+    letterSpacing: 0.6,
   },
   rumblePeopleIcon: {
     position: 'relative',

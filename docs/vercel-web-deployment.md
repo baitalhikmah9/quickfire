@@ -43,7 +43,7 @@ Do not add these as Vercel static web client variables unless the app starts rea
 
 - Add the production Vercel origin to Clerk allowed origins: `https://<production-domain>`.
 - Add Vercel preview origins if previews use real auth: `https://<project>-git-<branch>-<team>.vercel.app`, or the team's chosen preview pattern.
-- Under **Allowlist for mobile SSO redirect**, add the native callback URL your build uses (Clerk `useSSO` default path): `backfire:///sso-callback`. Keep `clerk://com.playbackfire.app.callback` only if you still ship builds that redirect there; current app code uses the `backfire` scheme and `app/sso-callback.tsx`.
+- Android OAuth uses `clerk://com.playbackfire.app.callback` (auto-provisioned when `com.playbackfire.app` is registered under Native applications). `app/+native-intent.tsx` rewrites that callback to `app/sso-callback.tsx`.
 - Add HTTPS web redirects for the hosted domain, including `https://<production-domain>/` and any app paths used as OAuth return locations.
 - Confirm Google and Apple OAuth provider settings include the hosted Vercel domain where those providers require it.
 - If the production publishable key encodes a custom Clerk Frontend API host such as `clerk.playbackfire.com`, verify that host resolves before deploying:

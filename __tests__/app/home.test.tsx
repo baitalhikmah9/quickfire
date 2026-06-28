@@ -61,6 +61,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'common.settings': 'Settings',
         'profile.guest.createAccount': 'CREATE ACCOUNT',
         'auth.signUp.signIn': 'Sign in',
+        'home.signInToPlay': 'Sign in',
       };
       return messages[key] ?? key;
     },
@@ -288,16 +289,18 @@ describe('AppHubScreen', () => {
     expect(screen.queryByTestId('public-auth-entry')).toBeNull();
   });
 
-  it('disables mode choices when signed out so players cannot start a lobby', () => {
+  it('shows sign in on mode cards and routes to auth when signed out', () => {
     mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
 
     render(<AppHubScreen />);
 
-    fireEvent.press(screen.getByLabelText('Quick Play'));
+    expect(screen.getAllByText('SIGN IN')).toHaveLength(4);
+    expect(screen.getByLabelText('Quick Play. SIGN IN')).toHaveAccessibilityState({ disabled: false });
+
+    fireEvent.press(screen.getByLabelText('Quick Play. SIGN IN'));
 
     expect(usePlayStore.getState().session).toBeNull();
-    expect(mockPush).not.toHaveBeenCalled();
-    expect(screen.getByLabelText('Quick Play')).toHaveAccessibilityState({ disabled: true });
+    expect(mockPush).toHaveBeenCalledWith('/(auth)/sign-in');
   });
 
   it('lets signed-out players start a game when auth is disabled', async () => {

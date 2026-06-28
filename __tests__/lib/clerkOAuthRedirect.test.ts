@@ -7,9 +7,18 @@ describe('rewriteNativeOAuthCallbackPath', () => {
     ).toBe('/sso-callback');
   });
 
+  it('rewrites Clerk callback when app is already open (OAuth return)', () => {
+    expect(
+      rewriteNativeOAuthCallbackPath('clerk://com.playbackfire.app.callback?rotating_token_nonce=abc', false)
+    ).toBe('/sso-callback');
+  });
+
   it('rewrites backfire sso-callback deep links on cold start', () => {
     expect(
       rewriteNativeOAuthCallbackPath('backfire:///sso-callback?rotating_token_nonce=abc', true)
+    ).toBe('/sso-callback');
+    expect(
+      rewriteNativeOAuthCallbackPath('backfire://sso-callback?rotating_token_nonce=abc', true)
     ).toBe('/sso-callback');
   });
 

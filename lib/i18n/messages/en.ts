@@ -162,6 +162,7 @@ const enBase = {
   'home.resumeModalTitle': 'Continue or start fresh?',
   'home.resumeModalBody':
     'You have a game in progress. Continue where you left off or start a new game.',
+  'home.signInToPlay': 'Sign in',
   'home.newGame': 'New Game',
   'home.playTriviaA11yResume':
     'Play trivia. You have a game in progress; opens a choice to continue or start new.',
