@@ -136,11 +136,11 @@ const enBase = {
   'auth.signUp.signIn': 'Sign in',
 
   'auth.forgot.title': 'Forgot password',
-  'auth.forgot.subtitle': "Enter your email and we'll send you a link to reset your password.",
+  'auth.forgot.subtitle': "Enter your email and we'll send you a code to reset your password.",
   'auth.forgot.emailLabel': 'Email address',
   'auth.forgot.emailPlaceholder': 'Enter email',
-  'auth.forgot.sendReset': 'Send reset link',
-  'auth.forgot.success': "If an account exists for that email, you'll receive a password reset link.",
+  'auth.forgot.sendReset': 'Send reset code',
+  'auth.forgot.success': "If an account exists for that email, you'll receive a password reset code.",
   'auth.forgot.backToSignIn': 'Back to Sign in',
 
   'legal.termsTitle': 'Terms of Service',
@@ -287,6 +287,20 @@ const enBase = {
   'store.demoDescription': 'Token purchases are simulated during development. In production, connect to real payment processing.',
   'store.typicalGameTokensHint':
     'A regular 6 topic game (45-60 mins) is typically around 10 tokens',
+  'store.proTitle': 'Backfire Pro',
+  'store.proActive': 'Active subscription',
+  'store.proInactive': 'Unlock premium features and support the game.',
+  'store.upgradeToPro': 'Upgrade to Pro',
+  'store.manageSubscription': 'Manage subscription',
+  'store.restorePurchases': 'Restore purchases',
+  'store.proUpgradeFailed': 'Unable to open the subscription paywall.',
+  'store.restoreFailed': 'Unable to restore purchases.',
+  'store.restoreSuccess': 'Purchases restored.',
+  'store.restoreNoSubscription': 'No active subscription was found for this account.',
+
+  'settings.subscriptionTitle': 'Subscription',
+  'settings.manageBackfirePro': 'Manage Backfire Pro',
+  'settings.restorePurchases': 'Restore purchases',
 
   'play.hubTitle': 'Play Backfire',
   'play.hubSubtitle': 'A modern game-night shell with the full TriviaApp flow inside it.',

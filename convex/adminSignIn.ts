@@ -71,11 +71,28 @@ export const passwordSignInRecordFailure = mutation({
   },
 });
 
-/** Call after a successful Clerk session activation for this identifier. */
+/**
+ * Clear rate-limit failures after a successful Clerk password sign-in.
+ * Requires Convex auth identity (must be called AFTER `setActive`).
+ * Only the authenticated user's own rate-limit record is cleared.
+ */
 export const passwordSignInClearFailures = mutation({
   args: { identifier: v.string() },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Not authenticated');
+    }
+
     const identifierKey = resolveIdentifierKey(args.identifier);
+    const normalizedIdentity = normalizeAdminSignInIdentifier(
+      identity.email ?? identity.subject
+    );
+
+    // Only allow clearing the rate limit record tied to the authenticated user
+    if (identifierKey !== normalizedIdentity) {
+      throw new Error('Forbidden');
+    }
 
     const existing = await ctx.db
       .query('admin_password_sign_in_rates')

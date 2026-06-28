@@ -1,5 +1,8 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'expo-router';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { BORDER_RADIUS, FONT_SIZES, SPACING, FONTS } from '@/constants';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
@@ -7,12 +10,32 @@ import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
+import { consumeGameEntry } from '@/lib/wallet/gameEntry';
 
 export default function PlayEndScreen() {
   const router = useRouter();
   const colors = useTheme();
   const { getTextStyle, t } = useI18n();
-  const { session, resetSession, ensureDraft, reopenLastResolvedTurn } = usePlayStore();
+  const { session, resetSession, ensureDraft, reopenLastResolvedTurn, entryReservationId } = usePlayStore();
+  const consumeEntryMutation = useMutation(api.wallet.consumeEntry);
+  const consumedRef = useRef(false);
+
+  const consumeCurrentEntry = useCallback(async () => {
+    if (consumedRef.current || !entryReservationId) return;
+    consumedRef.current = true;
+    try {
+      await consumeGameEntry(consumeEntryMutation, {
+        reservationId: entryReservationId,
+        completedSessionId: session?.id ?? '',
+      });
+    } catch {
+      // Non-fatal — the reservation expires server-side eventually.
+    }
+  }, [consumeEntryMutation, entryReservationId, session?.id]);
+
+  useEffect(() => {
+    void consumeCurrentEntry();
+  }, [consumeCurrentEntry]);
 
   if (!session) {
     return <PlayScaffold title={t('play.matchComplete')}><Text>{t('play.sessionCleared')}</Text></PlayScaffold>;
@@ -83,16 +106,20 @@ export default function PlayEndScreen() {
           title={t('play.backToHome')}
           variant="secondary"
           onPress={() => {
-            resetSession();
-            router.replace('/(app)/');
+            void consumeCurrentEntry().then(() => {
+              resetSession();
+              router.replace('/(app)/');
+            });
           }}
         />
         <Button
           title={t('play.startAnotherMatch')}
           onPress={() => {
-            resetSession();
-            ensureDraft();
-            router.replace('/play/mode');
+            void consumeCurrentEntry().then(() => {
+              resetSession();
+              ensureDraft();
+              router.replace('/play/mode');
+            });
           }}
         />
       </View>

@@ -5,6 +5,7 @@ import {
   buildPurchaseReversalIdempotencyKey,
   mergePurchaserBalances,
   normalizeRevenueCatAliases,
+  normalizeRevenueCatStore,
 } from '@/convex/lib/paymentWebhook';
 
 describe('paymentWebhook helpers', () => {
@@ -16,6 +17,12 @@ describe('paymentWebhook helpers', () => {
         aliases: ['guest-a', 'user-b', 'user-b'],
       })
     ).toEqual(['guest-a', 'user-b']);
+  });
+
+  it('normalizes RevenueCat store identifiers including test store', () => {
+    expect(normalizeRevenueCatStore('PLAY_STORE')).toBe('play_store');
+    expect(normalizeRevenueCatStore('TEST_STORE')).toBe('test_store');
+    expect(normalizeRevenueCatStore('unknown')).toBeNull();
   });
 
   it('builds deterministic idempotency keys for purchase grants and reversals', () => {

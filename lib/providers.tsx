@@ -10,6 +10,8 @@ import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useGameHydration } from '@/store/game';
 import { usePlayHydration } from '@/store/play';
+import { useRevenueCatSync } from '@/lib/hooks/useRevenueCatSync';
+import { useWalletSync } from '@/lib/hooks/useWalletSync';
 import { PALETTES } from '@/constants/theme';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
@@ -64,6 +66,8 @@ function ProvidersContent({ children }: { children: React.ReactNode }) {
 function AppHydration({ children }: { children: React.ReactNode }) {
   useThemeHydration();
   useConvexUserProfileSync();
+  useRevenueCatSync();
+  useWalletSync();
   usePlayHydration();
   useGameHydration();
   return <>{children}</>;

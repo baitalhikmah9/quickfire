@@ -240,6 +240,95 @@ export const consumeEntry = mutation({
   },
 });
 
+export const adjustEntryReservation = mutation({
+  args: {
+    reservationId: v.string(),
+    additionalCost: v.number(),
+  },
+  returns: v.union(
+    v.object({
+      ok: v.literal(true),
+      balance: v.number(),
+    }),
+    v.object({
+      ok: v.literal(false),
+      error: v.string(),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const purchaserAccount = await ensureCanonicalPurchaserAccountForUser(ctx, user);
+    if (!purchaserAccount) {
+      return { ok: false as const, error: 'forbidden' };
+    }
+
+    if (args.additionalCost <= 0) {
+      const wallet = await ctx.db
+        .query('wallets')
+        .withIndex('by_purchaser_account', (q) =>
+          q.eq('purchaserAccountId', purchaserAccount.appUserId)
+        )
+        .unique();
+      return { ok: true as const, balance: wallet?.balance ?? 0 };
+    }
+
+    const tx = await ctx.db
+      .query('wallet_transactions')
+      .withIndex('by_reservation', (q) => q.eq('reservationId', args.reservationId))
+      .unique();
+
+    if (!tx) return { ok: false as const, error: 'reservation_not_found' };
+    const wallet = await ctx.db.get(tx.walletId);
+    if (!wallet || wallet.purchaserAccountId !== purchaserAccount.appUserId) {
+      return { ok: false as const, error: 'forbidden' };
+    }
+    if (!canRefundReservation(tx.status as 'reserved' | 'consumed' | 'refunded' | undefined)) {
+      return { ok: false as const, error: 'invalid_reservation_state' };
+    }
+
+    const currentCost = -tx.amount;
+    const targetCost = currentCost + args.additionalCost;
+    const idempotencyKey = `adjust:${args.reservationId}:${targetCost}`;
+
+    const existingAdjust = await ctx.db
+      .query('wallet_transactions')
+      .withIndex('by_wallet_idempotency', (q) =>
+        q.eq('walletId', wallet._id).eq('idempotencyKey', idempotencyKey)
+      )
+      .unique();
+
+    if (existingAdjust) {
+      const latest = await ctx.db.get(wallet._id);
+      return { ok: true as const, balance: latest?.balance ?? wallet.balance };
+    }
+
+    if (targetCost <= currentCost) {
+      return { ok: true as const, balance: wallet.balance };
+    }
+
+    const reserve = tryReserveFromBalance(wallet.balance, args.additionalCost);
+    if (!reserve.ok) {
+      return { ok: false as const, error: reserve.reason };
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(tx._id, { amount: -targetCost });
+    await ctx.db.insert('wallet_transactions', {
+      walletId: wallet._id,
+      type: 'game_entry_adjust',
+      amount: -args.additionalCost,
+      createdAt: now,
+      status: 'posted',
+      source: 'gameplay',
+      idempotencyKey,
+      metadata: { reservationId: args.reservationId, previousCost: currentCost, targetCost },
+    });
+    await ctx.db.patch(wallet._id, { balance: reserve.balanceAfter });
+
+    return { ok: true as const, balance: reserve.balanceAfter };
+  },
+});
+
 export const refundEntry = mutation({
   args: {
     reservationId: v.string(),

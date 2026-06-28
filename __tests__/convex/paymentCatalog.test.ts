@@ -26,7 +26,7 @@ describe('paymentCatalog', () => {
       findTokenProductByStoreProductId(
         DEFAULT_TOKEN_PRODUCTS,
         'app_store',
-        'com.backfire.tokens.50'
+        'consumable_4'
       )?.productKey
     ).toBe('bundle_50');
 
@@ -34,9 +34,17 @@ describe('paymentCatalog', () => {
       findTokenProductByStoreProductId(
         DEFAULT_TOKEN_PRODUCTS,
         'play_store',
-        'backfire_tokens_70'
+        'consumable_5'
       )?.productKey
     ).toBe('bundle_70');
+
+    expect(
+      findTokenProductByStoreProductId(
+        DEFAULT_TOKEN_PRODUCTS,
+        'test_store',
+        'consumable'
+      )?.productKey
+    ).toBe('bundle_10');
   });
 
   it('ignores inactive products during store id lookup', () => {
@@ -48,7 +56,7 @@ describe('paymentCatalog', () => {
       findTokenProductByStoreProductId(
         disabled,
         'app_store',
-        'com.backfire.tokens.20'
+        'consumable_2'
       )
     ).toBeUndefined();
   });

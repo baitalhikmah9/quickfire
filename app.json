@@ -5,28 +5,29 @@
     "scheme": "backfire",
     "version": "1.0.0",
     "orientation": "landscape",
-    "icon": "./assets/BF app logo.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/BF app logo.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": true,
       "requireFullScreen": true,
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "bundleIdentifier": "com.playbackfire.app"
     },
     "android": {
-      "package": "com.mikhailspeaks.backfire",
+      "package": "com.playbackfire.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/BF app logo.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F1C84A"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/BF app logo.png",
+      "favicon": "./assets/icon.png",
       "bundler": "metro",
       "output": "static"
     },

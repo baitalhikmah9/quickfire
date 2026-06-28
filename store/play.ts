@@ -42,6 +42,7 @@ import {
 } from '@/store/gameSessionPersistence';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { useLocaleStore } from '@/store/locale';
+import { isAuthDisabled } from '@/lib/authMode';
 
 const DEFAULT_TEAMS: TeamState[] = [
   { id: 'team_1', name: 'Team 1', playerNames: ['Player 1'], score: 0, wagersUsed: 0 },
@@ -441,6 +442,9 @@ interface PlayStore {
   ensureDraft: () => void;
   resetSession: () => void;
   grantTokens: (amount: number) => void;
+  setTokenBalance: (amount: number) => void;
+  entryReservationId: string | null;
+  setEntryReservationId: (id: string | null) => void;
   startModeSession: (mode: GameMode) => { ok: boolean; error?: string };
   setMode: (mode: GameMode) => void;
   setTeamCount: (count: number) => void;
@@ -504,11 +508,18 @@ function mergePersistedPlayState(
       ? currentState.rapidFire
       : deserializeRapidFire(partialState.rapidFire);
 
+  const nextEntryReservationId =
+    'entryReservationId' in partialState &&
+    typeof (partialState as Record<string, unknown>).entryReservationId === 'string'
+      ? (partialState as Record<string, unknown>).entryReservationId as string
+      : currentState.entryReservationId;
+
   return {
     ...currentState,
     tokens: nextTokens,
     session: nextSession,
     rapidFire: nextRapidFire,
+    entryReservationId: nextEntryReservationId,
   };
 }
 
@@ -520,6 +531,7 @@ function createPlayStore() {
       tokens: 100,
       session: null,
       rapidFire: null,
+      entryReservationId: null,
       hydrate: async () => {
         await usePlayStore.persist.rehydrate();
       },
@@ -536,10 +548,13 @@ function createPlayStore() {
         }
       },
 
-      resetSession: () => set({ session: null, rapidFire: null }),
+      resetSession: () => set({ session: null, rapidFire: null, entryReservationId: null }),
 
       grantTokens: (amount) =>
         set((state) => ({ tokens: Math.max(0, state.tokens + amount) })),
+      setTokenBalance: (amount) =>
+        set({ tokens: Math.max(0, Math.floor(Number.isFinite(amount) ? amount : 0)) }),
+      setEntryReservationId: (id) => set({ entryReservationId: id }),
 
       startModeSession: (mode) => {
         const state = get();
@@ -575,7 +590,7 @@ function createPlayStore() {
             },
           });
           return {
-            tokens: current.tokens - tokenCost,
+            tokens: isAuthDisabled() ? current.tokens - tokenCost : current.tokens,
             session: nextSession,
           };
         });
@@ -838,9 +853,15 @@ function createPlayStore() {
           lastResolvedTurn: undefined,
           seed: `seed_${Date.now()}`,
         };
-        nextSession.config = syncConfig(nextSession);
+        nextSession.config = syncConfig({
+          ...nextSession,
+          config: {
+            ...nextSession.config,
+            entryTokenCharge: tokenCost,
+          },
+        });
         set({
-          tokens: state.tokens - remainingTokenCost,
+          tokens: isAuthDisabled() ? state.tokens - remainingTokenCost : state.tokens,
           session: nextSession,
         });
         return { ok: true };
@@ -1320,6 +1341,7 @@ function createPlayStore() {
         tokens: state.tokens,
         session: serializeGameSession(state.session),
         rapidFire: serializeRapidFire(state.rapidFire),
+        entryReservationId: state.entryReservationId,
       }),
       merge: (persistedState, currentState) =>
         mergePersistedPlayState(persistedState, currentState as PlayStore),

@@ -311,6 +311,19 @@ export const updatePromoCode = mutation({
       throw new Error(validation.reason);
     }
 
+    // Validate perUserLimit <= usageCap when perUserLimit is set
+    const effectiveUsageCap = args.usageCap ?? promo.usageCap;
+    const effectivePerUserLimit = args.perUserLimit ?? promo.perUserLimit;
+    if (effectivePerUserLimit !== undefined) {
+      if (
+        effectiveUsageCap === undefined ||
+        !Number.isFinite(effectiveUsageCap) ||
+        effectivePerUserLimit > effectiveUsageCap
+      ) {
+        throw new Error('per_user_limit_exceeds_cap');
+      }
+    }
+
     const patch: Record<string, unknown> = {};
     if (args.rewardAmount !== undefined) patch.rewardAmount = args.rewardAmount;
     if (args.usageCap !== undefined) patch.usageCap = args.usageCap;
@@ -405,6 +418,39 @@ export const adjustWallet = mutation({
     const balance = wallet.balance + args.amount;
     await ctx.db.patch(wallet._id, { balance });
     return { balance, transactionId };
+  },
+});
+
+export const getWallet = query({
+  args: {
+    walletId: v.id('wallets'),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const wallet = await ctx.db.get(args.walletId);
+    if (!wallet) return null;
+
+    const user = wallet.userId
+      ? await ctx.db.get(wallet.userId)
+      : null;
+    const recentTransactions = await ctx.db
+      .query('wallet_transactions')
+      .withIndex('by_wallet_created', (q) => q.eq('walletId', wallet._id))
+      .order('desc')
+      .take(5);
+
+    return {
+      wallet,
+      user: user
+        ? {
+            _id: user._id,
+            email: user.email,
+            name: user.name,
+            clerkId: user.clerkId,
+          }
+        : null,
+      recentTransactions,
+    };
   },
 });
 

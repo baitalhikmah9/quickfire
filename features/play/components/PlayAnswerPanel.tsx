@@ -12,6 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { Image } from 'expo-image';
 import { Button } from '@/components/ui/Button';
 import { FONTS, BORDER_RADIUS, FONT_SIZES, SPACING, COLORS, TYPE_SCALE } from '@/constants';
@@ -21,6 +23,7 @@ import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
+import { abandonGameEntry } from '@/lib/wallet/gameEntry';
 import { HOME_SOFT_UI } from '@/themes';
 import type { GameSessionState, TeamState } from '@/features/shared';
 
@@ -289,6 +292,7 @@ export function PlayAnswerPanel({
   const { direction, getTextStyle, t } = useI18n();
   const session = usePlayStore((state) => state.session);
   const resetSession = usePlayStore((state) => state.resetSession);
+  const refundEntryMutation = useMutation(api.wallet.refundEntry);
   const awardStandardQuestion = usePlayStore((state) => state.awardStandardQuestion);
   const continueAfterStandardQuestion = usePlayStore((state) => state.continueAfterStandardQuestion);
   const initiateWager = usePlayStore((state) => state.initiateWager);
@@ -387,8 +391,12 @@ export function PlayAnswerPanel({
   const pageColumnGap = sectionGap;
 
   const confirmLeaveMatch = () => {
-    const performLeave = () => {
-      resetSession();
+    const performLeave = async () => {
+      await abandonGameEntry(refundEntryMutation, {
+        reservationId: usePlayStore.getState().entryReservationId,
+        reason: 'user_abandoned',
+        resetSession: () => resetSession(),
+      });
       router.replace('/(app)/');
     };
 
@@ -397,7 +405,7 @@ export function PlayAnswerPanel({
         `${t('play.leaveMatchTitle')}\n\n${t('play.leaveMatchBody')}`
       );
       if (confirmed) {
-        performLeave();
+        void performLeave();
       }
       return;
     }
@@ -407,7 +415,9 @@ export function PlayAnswerPanel({
       {
         text: t('common.leave'),
         style: 'destructive',
-        onPress: performLeave,
+        onPress: () => {
+          void performLeave();
+        },
       },
     ]);
   };

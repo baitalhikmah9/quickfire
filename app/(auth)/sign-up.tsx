@@ -11,6 +11,7 @@ import { AuthOrDivider } from '@/components/auth/AuthCard';
 import { AuthEmailSignUpForm } from '@/components/auth/AuthEmailSignUpForm';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useClerkOAuthFlow } from '@/lib/hooks/useClerkOAuthFlow';
+import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
@@ -45,7 +46,7 @@ export default function SignUpScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace(router, '/(app)/')}
           style={({ pressed }) => [
             styles.headerSquircleInner,
             SOFT_SURFACE_FACE,

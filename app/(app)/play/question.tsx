@@ -28,6 +28,9 @@ import { PlayMatchTopBar } from '@/features/play/components/PlayMatchTopBar';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { usePlayStore } from '@/store/play';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { abandonGameEntry } from '@/lib/wallet/gameEntry';
 
 /** Brand colors from docs/BRAND_GUIDELINES.md */
 const BRAND = {
@@ -138,9 +141,15 @@ export default function PlayQuestionScreen() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
 
+  const refundEntryMutation = useMutation(api.wallet.refundEntry);
+
   const leaveMatch = useCallback(() => {
-    const performLeave = () => {
-      resetSession();
+    const performLeave = async () => {
+      await abandonGameEntry(refundEntryMutation, {
+        reservationId: usePlayStore.getState().entryReservationId,
+        reason: 'user_abandoned',
+        resetSession: () => resetSession(),
+      });
       router.replace('/(app)/');
     };
 
@@ -162,7 +171,7 @@ export default function PlayQuestionScreen() {
         onPress: performLeave,
       },
     ]);
-  }, [resetSession, router, t]);
+  }, [refundEntryMutation, resetSession, router, t]);
 
   const openHotSeatInfo = useCallback(() => {
     Alert.alert(t('play.hotSeatInfoTitle'), t('play.hotSeatInfoBody'), [{ text: t('common.close') }]);

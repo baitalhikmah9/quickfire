@@ -4,10 +4,11 @@ import { ensureWalletDoc } from './lib/ensureWallet';
 import {
   buildPurchaseGrantIdempotencyKey,
   buildPurchaseReversalIdempotencyKey,
-  mergePurchaserBalances,
   normalizeRevenueCatAliases,
   normalizeRevenueCatStore,
 } from './lib/paymentWebhook';
+import { mergePurchaserAccountIntoTarget } from './lib/purchaserAccountMerge';
+import { grantConsumablePurchase } from './lib/grantConsumablePurchase';
 import {
   DEFAULT_TOKEN_PRODUCTS,
   findTokenProductByStoreProductId,
@@ -213,9 +214,57 @@ export const getPurchaseSupportState = query({
   },
 });
 
+export const syncConsumablePurchase = mutation({
+  args: {
+    purchaserAccountId: v.string(),
+    productId: v.string(),
+    transactionId: v.string(),
+    store: v.union(
+      v.literal('app_store'),
+      v.literal('play_store'),
+      v.literal('test_store')
+    ),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const purchaserAccount = await getPurchaserAccountByAppUserId(ctx, args.purchaserAccountId);
+    if (!purchaserAccount) {
+      throw new Error('Purchaser account not found');
+    }
+
+    const canonical = await ensureCanonicalPurchaserAccountForUser(ctx, user);
+    const allowedIds = new Set<string>([purchaserAccount.appUserId]);
+    if (canonical) {
+      allowedIds.add(canonical.appUserId);
+    }
+    if (purchaserAccount.mergedIntoId) {
+      allowedIds.add(purchaserAccount.mergedIntoId);
+    }
+
+    if (!allowedIds.has(args.purchaserAccountId)) {
+      throw new Error('Forbidden');
+    }
+
+    const targetPurchaserAccountId = canonical?.appUserId ?? purchaserAccount.appUserId;
+    const products = await listTokenProducts(ctx);
+
+    return await grantConsumablePurchase(ctx, {
+      products,
+      purchaserAccountId: targetPurchaserAccountId,
+      linkedUserId: user._id,
+      store: args.store,
+      productId: args.productId,
+      transactionId: args.transactionId,
+      revenueCatEventId: `client:${args.store}:${args.transactionId}`,
+      rawEvent: { source: 'client_sync', productId: args.productId },
+    });
+  },
+});
+
 export const linkGuestToCurrentUser = mutation({
   args: {
     purchaserAccountId: v.string(),
+    installationId: v.string(),
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
@@ -224,6 +273,20 @@ export const linkGuestToCurrentUser = mutation({
 
     if (!canonicalPurchaserAccount || !sourcePurchaserAccount) {
       throw new Error('Purchaser account not found');
+    }
+
+    // Verify the installation exists and is bound to the source purchaser account
+    const installation = await ctx.db
+      .query('device_installations')
+      .withIndex('by_device', (q) => q.eq('deviceId', args.installationId))
+      .unique();
+
+    if (!installation) {
+      throw new Error('Installation not found');
+    }
+
+    if (installation.purchaserAccountId !== sourcePurchaserAccount.appUserId) {
+      throw new Error('Installation is not bound to the source purchaser account');
     }
 
     if (sourcePurchaserAccount.appUserId === canonicalPurchaserAccount.appUserId) {
@@ -243,91 +306,16 @@ export const linkGuestToCurrentUser = mutation({
       };
     }
 
-    const sourceWallet = await ensureWalletDoc(
-      ctx,
-      sourcePurchaserAccount.appUserId,
-      sourcePurchaserAccount.linkedUserId
-    );
-    const targetWallet = await ensureWalletDoc(ctx, canonicalPurchaserAccount.appUserId, user._id);
-    const merge = mergePurchaserBalances({
-      sourceBalance: sourceWallet.balance,
-      targetBalance: targetWallet.balance,
-    });
-    const now = Date.now();
-
-    if (merge.transferAmount !== 0) {
-      await ctx.db.insert('wallet_transactions', {
-        walletId: sourceWallet._id,
-        type: 'account_merge_debit',
-        amount: -merge.transferAmount,
-        createdAt: now,
-        status: 'posted',
-        source: 'system',
-        idempotencyKey: `merge:${sourcePurchaserAccount.appUserId}:${canonicalPurchaserAccount.appUserId}:debit`,
-        metadata: { targetPurchaserAccountId: canonicalPurchaserAccount.appUserId },
-      });
-      await ctx.db.insert('wallet_transactions', {
-        walletId: targetWallet._id,
-        type: 'account_merge_credit',
-        amount: merge.transferAmount,
-        createdAt: now,
-        status: 'posted',
-        source: 'system',
-        idempotencyKey: `merge:${sourcePurchaserAccount.appUserId}:${canonicalPurchaserAccount.appUserId}:credit`,
-        metadata: { sourcePurchaserAccountId: sourcePurchaserAccount.appUserId },
-      });
-
-      await ctx.db.patch(sourceWallet._id, { balance: merge.sourceBalanceAfter });
-      await ctx.db.patch(targetWallet._id, { balance: merge.targetBalanceAfter });
-    }
-
-    const linkedInstallations = await ctx.db
-      .query('device_installations')
-      .withIndex('by_purchaser_account', (q) =>
-        q.eq('purchaserAccountId', sourcePurchaserAccount.appUserId)
-      )
-      .collect();
-
-    for (const installation of linkedInstallations) {
-      await ctx.db.patch(installation._id, {
-        purchaserAccountId: canonicalPurchaserAccount.appUserId,
-        userId: user._id,
-      });
-    }
-
-    const linkedPurchases = await ctx.db
-      .query('store_purchases')
-      .withIndex('by_purchaser_account', (q) =>
-        q.eq('purchaserAccountId', sourcePurchaserAccount.appUserId)
-      )
-      .collect();
-
-    for (const purchase of linkedPurchases) {
-      await ctx.db.patch(purchase._id, {
-        purchaserAccountId: canonicalPurchaserAccount.appUserId,
-      });
-    }
-
-    await ctx.db.patch(sourcePurchaserAccount._id, {
-      state: 'merged',
-      mergedIntoId: canonicalPurchaserAccount.appUserId,
+    const mergeResult = await mergePurchaserAccountIntoTarget(ctx, {
+      sourceAppUserId: sourcePurchaserAccount.appUserId,
+      targetAppUserId: canonicalPurchaserAccount.appUserId,
       linkedUserId: user._id,
-      lastSeenAt: now,
-    });
-    await ctx.db.patch(canonicalPurchaserAccount._id, {
-      kind: 'identified',
-      linkedUserId: user._id,
-      linkedAt: canonicalPurchaserAccount.linkedAt ?? now,
-      lastSeenAt: now,
-    });
-    await ctx.db.patch(user._id, {
-      canonicalPurchaserAccountId: canonicalPurchaserAccount.appUserId,
     });
 
     return {
       canonicalPurchaserAccountId: canonicalPurchaserAccount.appUserId,
       mergeResult: {
-        transferredAmount: merge.transferAmount,
+        transferredAmount: mergeResult.transferredAmount,
         sourcePurchaserAccountId: sourcePurchaserAccount.appUserId,
         targetPurchaserAccountId: canonicalPurchaserAccount.appUserId,
       },
@@ -403,23 +391,12 @@ export const processRevenueCatWebhook = internalMutation({
           continue;
         }
 
-        await ctx.db.patch(source._id, {
-          state: 'merged',
-          mergedIntoId: target.appUserId,
-          lastSeenAt: Date.now(),
+        await mergePurchaserAccountIntoTarget(ctx, {
+          sourceAppUserId: source.appUserId,
+          targetAppUserId: target.appUserId,
+          linkedUserId: target.linkedUserId,
+          purchaseStatus: 'transferred',
         });
-
-        const purchases = await ctx.db
-          .query('store_purchases')
-          .withIndex('by_purchaser_account', (q) => q.eq('purchaserAccountId', source.appUserId))
-          .collect();
-
-        for (const purchase of purchases) {
-          await ctx.db.patch(purchase._id, {
-            purchaserAccountId: target.appUserId,
-            status: 'transferred',
-          });
-        }
       }
 
       return await markWebhook('processed');
@@ -449,51 +426,23 @@ export const processRevenueCatWebhook = internalMutation({
         return await markWebhook('failed', 'invalid_product');
       }
 
-      const existingPurchase = await ctx.db
-        .query('store_purchases')
-        .withIndex('by_store_transaction', (q) =>
-          q.eq('store', store).eq('storeTransactionId', transactionId)
-        )
-        .unique();
-
-      if (existingPurchase) {
-        return await markWebhook('processed');
+      try {
+        await grantConsumablePurchase(ctx, {
+          products,
+          purchaserAccountId: purchaserAccount.appUserId,
+          linkedUserId: purchaserAccount.linkedUserId,
+          store,
+          productId,
+          transactionId,
+          revenueCatEventId: eventId,
+          purchasedAt:
+            typeof event.purchased_at_ms === 'number' ? event.purchased_at_ms : Date.now(),
+          rawEvent: event,
+        });
+      } catch {
+        return await markWebhook('failed', 'grant_failed');
       }
 
-      const wallet = await ensureWalletDoc(
-        ctx,
-        purchaserAccount.appUserId,
-        purchaserAccount.linkedUserId
-      );
-      const purchaseId = await ctx.db.insert('store_purchases', {
-        purchaserAccountId: purchaserAccount.appUserId,
-        productKey: product.productKey,
-        store,
-        environment: asString(event.environment),
-        storeTransactionId: transactionId,
-        originalStoreTransactionId: asString(event.original_transaction_id),
-        revenueCatEventId: eventId,
-        purchasedAt: typeof event.purchased_at_ms === 'number' ? event.purchased_at_ms : Date.now(),
-        status: 'granted',
-        rawEvent: event,
-      });
-
-      await ctx.db.insert('wallet_transactions', {
-        walletId: wallet._id,
-        type: 'purchase_grant',
-        amount: product.tokensGranted,
-        createdAt: Date.now(),
-        status: 'posted',
-        source: 'purchase',
-        idempotencyKey: buildPurchaseGrantIdempotencyKey({ store, transactionId }),
-        productKey: product.productKey,
-        store,
-        storeTransactionId: transactionId,
-        originalStoreTransactionId: asString(event.original_transaction_id),
-        purchaseId,
-      });
-
-      await ctx.db.patch(wallet._id, { balance: wallet.balance + product.tokensGranted });
       return await markWebhook('processed');
     }
 
@@ -578,7 +527,7 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
   const configuredAuthorization = process.env.REVENUECAT_WEBHOOK_AUTH_HEADER;
   const requestAuthorization = request.headers.get('authorization');
 
-  if (configuredAuthorization && requestAuthorization !== configuredAuthorization) {
+  if (!configuredAuthorization || requestAuthorization !== configuredAuthorization) {
     return new Response('Unauthorized', { status: 401 });
   }
 

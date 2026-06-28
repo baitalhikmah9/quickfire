@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   useWindowDimensions,
+  Alert,
 } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
@@ -79,7 +80,8 @@ export default function SettingsScreen() {
   const contentLocales = useLocaleStore((state) => state.contentLocales);
   const setContentLocales = useLocaleStore((state) => state.setContentLocales);
   const moveContentLocale = useLocaleStore((state) => state.moveContentLocale);
-  const tokens = usePlayStore((state) => state.tokens);
+  const storedTokens = usePlayStore((state) => state.tokens);
+  const tokens = !authDisabled && !isSignedIn ? 0 : storedTokens;
 
   const themeSummary = t(getPaletteNameKey(paletteId));
   const selectedContentLocaleValues = contentLocalePriorityToArray(contentLocales);

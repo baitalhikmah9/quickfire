@@ -56,7 +56,11 @@ Thumbs.db
 .env.local
 .env.development.local
 .env.test.local
+.env.production
 .env.production.local
+.env.prod
+context.md
+tmp_apk_check/
 
 # Build Artifacts
 *.apk

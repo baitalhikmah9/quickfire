@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,27 +7,32 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@clerk/clerk-expo';
 import { Redirect, useRouter } from 'expo-router';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SPACING, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { HubTokenChip } from '@/components/HubTokenChip';
-import { STORE_BUNDLES, type StoreBundle } from '@/features/play/storeBundles';
+import {
+  formatTokens,
+  buildDisplayBundles,
+  type DisplayBundle,
+} from '@/features/play/storeBundles';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
 import { usePlayStore } from '@/store/play';
+import { useTokenPurchases } from '@/lib/hooks/useTokenPurchases';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 const COMPACT_BUNDLES_ROW_MAX_WIDTH = 584;
-
 
 const SIGN_IN_TO_REDEEM_MESSAGE = 'Sign in to redeem promo codes.';
 
@@ -48,25 +53,34 @@ function getPromoErrorMessage(error?: string) {
   return PROMO_ERROR_MESSAGES[error] ?? 'Unable to redeem that code. Please try again.';
 }
 
-function formatTokens(n: number) {
-  return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
-}
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+const IS_NATIVE_PLATFORM = Platform.OS === 'ios' || Platform.OS === 'android';
+
+// ── Sub-components ─────────────────────────────────────────────────────────
 
 function BundleCard({
   bundle,
   onPress,
-  isFeatured = false,
-  isFirst = false,
+  isPurchasing,
+  isPurchaseUnavailable,
 }: {
-  bundle: StoreBundle;
+  bundle: DisplayBundle;
   onPress: () => void;
-  isFeatured?: boolean;
-  isFirst?: boolean;
+  isPurchasing: boolean;
+  isPurchaseUnavailable: boolean;
 }) {
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
   const accentGlow = T.colors.accentGlow;
+
+  const buyDisabled = isPurchasing || isPurchaseUnavailable;
+  const buyLabel = isPurchasing
+    ? '...'
+    : isPurchaseUnavailable
+      ? '—'
+      : 'BUY';
 
   return (
     <View style={styles.bundleCardWrapper}>
@@ -77,44 +91,46 @@ function BundleCard({
           softSurfaceLift(),
           {
             backgroundColor: surface,
-            opacity: pressed ? 0.96 : 1,
-            transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+            opacity: buyDisabled ? 0.6 : pressed ? 0.96 : 1,
+            transform: pressed && !buyDisabled ? [{ scale: 0.98 }] : [{ scale: 1 }],
           },
         ]}
-        onPress={onPress}
+        onPress={buyDisabled ? undefined : onPress}
+        disabled={buyDisabled}
       >
         <Text style={[styles.bundleAmount, { color: textPrimary }]}>
-          {formatTokens(bundle.tokens)}
+          {formatTokens(bundle.tokensGranted)}
         </Text>
         <Text style={[styles.bundleLabel, { color: textMuted }]}>
           TOKENS
         </Text>
-        
-        {bundle.bonus ? (
-          <Text style={[styles.bundleBonus, { color: textMuted }]}>
-            (+{bundle.bonus} FREE)
-          </Text>
-        ) : (
-          <View style={styles.bundleBonusSpacer} />
-        )}
+
+        {/* Bonus display not available from catalog; kept for layout parity */}
+        <View style={styles.bundleBonusSpacer} />
 
         <Text style={[styles.bundlePrice, { color: textPrimary }]}>
           {bundle.priceLabel}
         </Text>
 
-        <View 
+        <View
           style={[
-            styles.buyButton, 
+            styles.buyButton,
             SOFT_SURFACE_FACE,
-            { backgroundColor: accentGlow }
+            { backgroundColor: isPurchaseUnavailable ? textMuted : accentGlow },
           ]}
         >
-          <Text style={styles.buyButtonText}>BUY</Text>
+          {isPurchasing ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buyButtonText}>{buyLabel}</Text>
+          )}
         </View>
       </Pressable>
     </View>
   );
 }
+
+// ── Screen ─────────────────────────────────────────────────────────────────
 
 export default function StoreScreen() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -122,26 +138,124 @@ export default function StoreScreen() {
   const { direction, t } = useI18n();
   const rowDir = getRowDirection(direction);
   const router = useRouter();
-  const tokens = usePlayStore((state) => state.tokens);
-  const grantTokens = usePlayStore((state) => state.grantTokens);
+
+  // Local play store (fallback token display).
+  const localTokens = usePlayStore((state) => state.tokens);
+
+  // Convex queries.
+  const catalog = useQuery(api.payments.getCatalog);
+  const balanceData = useQuery(api.wallet.getBalance, {});
+
+  // Promo redemption.
   const redeemPromoCode = useMutation(api.promo.redeemCode);
+
+  // Display token balance: signed-out users always see 0.
+  const displayTokens =
+    !authDisabled && !isSignedIn
+      ? 0
+      : balanceData && typeof balanceData.balance === 'number'
+        ? balanceData.balance
+        : localTokens;
+  const formattedDisplayTokens = formatTokens(displayTokens);
+
+  // ── RevenueCat purchases ────────────────────────────────────────────────
+
+  const catalogProducts = useMemo(() => {
+    if (!catalog) return undefined;
+    return catalog.map((p) => ({
+      productKey: p.productKey,
+      tokensGranted: p.tokensGranted,
+      iosProductId: p.iosProductId,
+      androidProductId: p.androidProductId,
+      sortOrder: p.sortOrder,
+    }));
+  }, [catalog]);
+
+  const {
+    products: nativeProducts,
+    isReady: rcReady,
+    isPurchasing,
+    isSupported: rcSupported,
+    error: rcError,
+    purchase,
+  } = useTokenPurchases({
+    catalog: catalogProducts,
+    enabled: IS_NATIVE_PLATFORM && !!catalogProducts?.length,
+  });
+
+  const isPurchaseUnavailable = !IS_NATIVE_PLATFORM || !rcReady || !!rcError;
+  const purchaseUnavailableReason = !IS_NATIVE_PLATFORM
+    ? 'Available on iOS & Android'
+    : rcError
+      ? rcError
+      : !rcReady
+        ? 'Loading store…'
+        : null;
+
+  // Build display bundles from Convex catalog + native prices.
+  const displayBundles: DisplayBundle[] = useMemo(() => {
+    if (!catalog) return [];
+    return buildDisplayBundles(catalog, nativeProducts, Platform.OS);
+  }, [catalog, nativeProducts]);
+
+  // ── Buy handler ─────────────────────────────────────────────────────────
+
+  const [buyingKey, setBuyingKey] = useState<string | null>(null);
+
+  const onBuyBundle = useCallback(
+    async (bundle: DisplayBundle) => {
+      if (!rcSupported || !rcReady || !catalogProducts) {
+        if (!rcSupported) {
+          Alert.alert('Unavailable', 'In-app purchases are only available on iOS and Android.');
+        } else if (!rcReady) {
+          Alert.alert('Not Ready', 'The store is still loading. Please try again shortly.');
+        }
+        return;
+      }
+
+      const catalogProduct = catalogProducts.find(
+        (p) => p.productKey === bundle.productKey
+      );
+      if (!catalogProduct) {
+        Alert.alert('Error', 'This product is no longer available.');
+        return;
+      }
+
+      setBuyingKey(bundle.productKey);
+      try {
+        await purchase(catalogProduct);
+        Alert.alert(
+          'Purchase Complete',
+          `${formatTokens(bundle.tokensGranted)} tokens have been added to your balance.`
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : '';
+        if (message.toLowerCase().includes('cancelled')) {
+          return; // Silent on user cancellation.
+        }
+        Alert.alert('Purchase Failed', message || 'An unexpected error occurred. Please try again.');
+      } finally {
+        setBuyingKey(null);
+      }
+    },
+    [catalogProducts, purchase, rcReady, rcSupported]
+  );
+
+  // ── Voucher / promo redemption ──────────────────────────────────────────
 
   const [voucherCode, setVoucherCode] = useState('');
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [promoError, setPromoError] = useState('');
   const [promoSuccess, setPromoSuccess] = useState('');
-  const formattedTokens = formatTokens(tokens);
 
-  const canvas = T.colors.canvas;
-  const surface = T.colors.surface;
-  const textPrimary = T.colors.textPrimary;
-  const textMuted = T.colors.textMuted;
-
-  const handleVoucherChange = useCallback((text: string) => {
-    setVoucherCode(text);
-    if (promoError) setPromoError('');
-    if (promoSuccess) setPromoSuccess('');
-  }, [promoError, promoSuccess]);
+  const handleVoucherChange = useCallback(
+    (text: string) => {
+      setVoucherCode(text);
+      if (promoError) setPromoError('');
+      if (promoSuccess) setPromoSuccess('');
+    },
+    [promoError, promoSuccess]
+  );
 
   const applyVoucher = useCallback(async () => {
     setPromoError('');
@@ -171,26 +285,34 @@ export default function StoreScreen() {
         return;
       }
 
-      if (typeof result.tokensGranted === 'number' && result.tokensGranted > 0 && !result.duplicate) {
-        grantTokens(result.tokensGranted);
-      }
+      // Do NOT grant tokens locally — the Convex mutation already patched the
+      // wallet balance, and the useQuery subscription will update automatically.
       setVoucherCode('');
-      setPromoSuccess(t('store.voucherSuccess'));
+
+      // If duplicate (idempotent replay), don't imply new tokens were added
+      if (result.duplicate) {
+        setPromoSuccess('That code has already been redeemed.');
+        return;
+      }
+
+      const tokenHint =
+        typeof result.tokensGranted === 'number' && result.tokensGranted > 0
+          ? ` ${formatTokens(result.tokensGranted)} tokens added.`
+          : '';
+      setPromoSuccess(`${t('store.voucherSuccess')}${tokenHint}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
-      setPromoError(message.includes('Not authenticated') ? SIGN_IN_TO_REDEEM_MESSAGE : 'Unable to redeem that code. Please try again.');
+      setPromoError(
+        message.includes('Not authenticated')
+          ? SIGN_IN_TO_REDEEM_MESSAGE
+          : 'Unable to redeem that code. Please try again.'
+      );
     } finally {
       setIsRedeeming(false);
     }
-  }, [grantTokens, isRedeeming, isSignedIn, redeemPromoCode, router, t, voucherCode]);
+  }, [isRedeeming, isSignedIn, redeemPromoCode, router, t, voucherCode]);
 
-  const onBuyBundle = useCallback(
-    (bundle: StoreBundle) => {
-      const total = bundle.tokens + (bundle.bonus ?? 0);
-      grantTokens(total);
-    },
-    [grantTokens]
-  );
+  // ── Navigation ──────────────────────────────────────────────────────────
 
   const handleBack = useCallback(() => {
     if (router.canGoBack()) {
@@ -200,6 +322,8 @@ export default function StoreScreen() {
     router.replace('/(app)/');
   }, [router]);
 
+  // ── Auth guards ─────────────────────────────────────────────────────────
+
   if (!isLoaded && !authDisabled) {
     return null;
   }
@@ -208,6 +332,13 @@ export default function StoreScreen() {
     return <Redirect href="/(auth)/sign-in" />;
   }
 
+  // ── Render ──────────────────────────────────────────────────────────────
+
+  const canvas = T.colors.canvas;
+  const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
+  const textMuted = T.colors.textMuted;
+
   return (
     <SafeAreaView
       collapsable={false}
@@ -215,6 +346,7 @@ export default function StoreScreen() {
       style={[styles.safeArea, { backgroundColor: canvas }]}
     >
       <ScreenContent fullWidth style={styles.viewport}>
+        {/* ── Header ─────────────────────────────────────── */}
         <View style={styles.header}>
           <View style={styles.headerSide}>
             <Pressable
@@ -230,7 +362,11 @@ export default function StoreScreen() {
                 },
               ]}
             >
-              <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
+              <Ionicons
+                name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'}
+                size={22}
+                color={textPrimary}
+              />
             </Pressable>
           </View>
           <View style={styles.headerCenter}>
@@ -239,10 +375,10 @@ export default function StoreScreen() {
           <View style={[styles.headerSide, styles.headerSideRight]}>
             <HubTokenChip
               label={t('common.tokens')}
-              value={formattedTokens}
+              value={formattedDisplayTokens}
               rowDirection={rowDir}
               variant="softUi"
-              accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
+              accessibilityLabel={`${t('common.tokens')}: ${formattedDisplayTokens}`}
             />
           </View>
         </View>
@@ -253,24 +389,71 @@ export default function StoreScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator
         >
-          <View style={styles.bundlesContainer}>
-            {STORE_BUNDLES.map((bundle, index) => (
-              <BundleCard
-                key={bundle.id}
-                bundle={bundle}
-                isFirst={index === 0}
-                onPress={() => onBuyBundle(bundle)}
-              />
-            ))}
-          </View>
+          {/* ── Status banner (non-native / error) ──────── */}
+          {!IS_NATIVE_PLATFORM && (
+            <View style={[styles.statusBanner, { backgroundColor: surface }]}>
+              <Ionicons name="information-circle-outline" size={16} color={textMuted} />
+              <Text style={[styles.statusBannerText, { color: textMuted }]}>
+                In-app purchases are only available on iOS and Android. Promo codes can be
+                redeemed on any platform.
+              </Text>
+            </View>
+          )}
+          {rcError && (
+            <View style={[styles.statusBanner, styles.statusBannerWarning, { backgroundColor: surface }]}>
+              <Ionicons name="warning-outline" size={16} color="#D32F2F" />
+              <Text style={[styles.statusBannerText, { color: '#D32F2F' }]}>
+                {rcError}
+              </Text>
+            </View>
+          )}
+          {IS_NATIVE_PLATFORM && !rcReady && !rcError && (
+            <View style={[styles.statusBanner, { backgroundColor: surface }]}>
+              <ActivityIndicator size="small" color={textMuted} />
+              <Text style={[styles.statusBannerText, { color: textMuted }]}>
+                {purchaseUnavailableReason}
+              </Text>
+            </View>
+          )}
+
+          {/* ── Loading skeleton ───────────────────────── */}
+          {!catalog && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={textMuted} />
+              <Text style={[styles.loadingText, { color: textMuted }]}>Loading store…</Text>
+            </View>
+          )}
+
+          {/* ── Bundle cards ───────────────────────────── */}
+          {catalog && (
+            <View style={styles.bundlesContainer}>
+              {displayBundles.map((bundle) => (
+                <BundleCard
+                  key={bundle.productKey}
+                  bundle={bundle}
+                  onPress={() => onBuyBundle(bundle)}
+                  isPurchasing={isPurchasing || buyingKey === bundle.productKey}
+                  isPurchaseUnavailable={isPurchaseUnavailable}
+                />
+              ))}
+            </View>
+          )}
 
           <Text style={[styles.tokenBalanceHint, { color: textMuted }]}>
             {t('store.typicalGameTokensHint')}
           </Text>
 
+          {/* ── Promo redemption ───────────────────────── */}
           <View style={styles.redeemSection}>
             <Text style={[styles.redeemTitle, { color: textPrimary }]}>REDEEM CODE</Text>
-            <View style={[styles.redeemCard, SOFT_SURFACE_FACE, { backgroundColor: surface }, softSurfaceLift()]}>
+            <View
+              style={[
+                styles.redeemCard,
+                SOFT_SURFACE_FACE,
+                { backgroundColor: surface },
+                softSurfaceLift(),
+              ]}
+            >
               <TextInput
                 value={voucherCode}
                 onChangeText={handleVoucherChange}
@@ -297,7 +480,7 @@ export default function StoreScreen() {
                   {
                     backgroundColor: '#6D8EB1',
                     opacity: isRedeeming ? 0.65 : pressed ? 0.92 : 1,
-                    transform: pressed && !isRedeeming ? [{ scale: 0.98 }] : [{ scale: 1 }]
+                    transform: pressed && !isRedeeming ? [{ scale: 0.98 }] : [{ scale: 1 }],
                   },
                 ]}
               >
@@ -308,18 +491,16 @@ export default function StoreScreen() {
                 )}
               </Pressable>
             </View>
-            {promoError ? (
-              <Text style={styles.promoErrorText}>{promoError}</Text>
-            ) : null}
-            {promoSuccess ? (
-              <Text style={styles.promoSuccessText}>{promoSuccess}</Text>
-            ) : null}
+            {promoError ? <Text style={styles.promoErrorText}>{promoError}</Text> : null}
+            {promoSuccess ? <Text style={styles.promoSuccessText}>{promoSuccess}</Text> : null}
           </View>
         </ScrollView>
       </ScreenContent>
     </SafeAreaView>
   );
 }
+
+// ── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -382,21 +563,41 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     textAlign: 'center',
   },
-  balanceCornerCard: {
+
+  // ── Status banner ─────────────────────────────────────────────────────
+  statusBanner: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: SPACING.sm,
+    width: '100%',
+    maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,
     borderRadius: 16,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 6,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
   },
-  balanceCornerIcon: {
-    marginRight: 4,
+  statusBannerWarning: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#D32F2F',
   },
-  balanceCornerText: {
-    fontFamily: FONTS.uiBold,
+  statusBannerText: {
+    flex: 1,
+    fontFamily: FONTS.ui,
     fontSize: 11,
-    letterSpacing: 0.4,
+    lineHeight: 15,
   },
+
+  // ── Loading ───────────────────────────────────────────────────────────
+  loadingContainer: {
+    paddingVertical: SPACING.xxl,
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  loadingText: {
+    fontFamily: FONTS.ui,
+    fontSize: 13,
+  },
+
+  // ── Bundle cards ──────────────────────────────────────────────────────
   bundlesContainer: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
@@ -459,6 +660,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.4,
   },
+
+  // ── Promo redemption ──────────────────────────────────────────────────
   redeemSection: {
     width: '100%',
     maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,

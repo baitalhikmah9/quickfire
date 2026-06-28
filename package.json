@@ -14,6 +14,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "eas-build-post-install": "node scripts/patch-standalone-debug-bundle.mjs",
     "lint": "eslint .",
     "seed:normalize": "tsx scripts/normalize-questions.ts",
     "topics:transparent": "python3 scripts/transparency-topic-images.py"
@@ -61,6 +62,7 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.6",
+    "react-native-purchases": "^10.4.0",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.23.0",
     "react-native-web": "~0.21.0",

@@ -11,14 +11,17 @@ export const getCurrentProfile = query({
 
 export const upsertOnFirstSignIn = mutation({
   args: {
-    clerkId: v.string(),
     email: v.optional(v.string()),
     name: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error('Not authenticated');
+    const clerkId = identity.subject;
+
     const existing = await ctx.db
       .query('users')
-      .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.clerkId))
+      .withIndex('by_clerk_id', (q) => q.eq('clerkId', clerkId))
       .unique();
 
     if (existing) {
@@ -31,7 +34,7 @@ export const upsertOnFirstSignIn = mutation({
     }
 
     return await ctx.db.insert('users', {
-      clerkId: args.clerkId,
+      clerkId,
       email: args.email,
       name: args.name,
       lastActiveAt: Date.now(),

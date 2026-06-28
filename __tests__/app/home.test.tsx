@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Modal } from 'react-native';
 
 import AppHubScreen from '@/app/(app)/index';
@@ -92,24 +92,28 @@ describe('AppHubScreen', () => {
     await usePlayStore.getState().hydrate();
   });
 
-  it('starts quick play directly from the home mode choices', () => {
+  it('starts quick play directly from the home mode choices', async () => {
     render(<AppHubScreen />);
 
     fireEvent.press(screen.getByLabelText('Quick Play'));
 
-    expect(usePlayStore.getState().session?.mode).toBe('quickPlay');
-    expect(usePlayStore.getState().session?.step).toBe('quick-play-length');
-    expect(mockPush).toHaveBeenCalledWith('/play/quick-length');
+    await waitFor(() => {
+      expect(usePlayStore.getState().session?.mode).toBe('quickPlay');
+      expect(usePlayStore.getState().session?.step).toBe('quick-play-length');
+      expect(mockPush).toHaveBeenCalledWith('/play/quick-length');
+    });
   });
 
-  it('starts classic mode directly from the home mode choices', () => {
+  it('starts classic mode directly from the home mode choices', async () => {
     render(<AppHubScreen />);
 
     fireEvent.press(screen.getByLabelText('Classic'));
 
-    expect(usePlayStore.getState().session?.mode).toBe('classic');
-    expect(usePlayStore.getState().session?.step).toBe('team-setup');
-    expect(mockPush).toHaveBeenCalledWith('/play/team-setup');
+    await waitFor(() => {
+      expect(usePlayStore.getState().session?.mode).toBe('classic');
+      expect(usePlayStore.getState().session?.step).toBe('team-setup');
+      expect(mockPush).toHaveBeenCalledWith('/play/team-setup');
+    });
   });
 
   it('shows the token cost under each game mode', () => {
@@ -182,7 +186,7 @@ describe('AppHubScreen', () => {
     expect(usePlayStore.getState().session?.mode).toBe('classic');
   });
 
-  it('starts a fresh game from the resume prompt with the selected mode', () => {
+  it('starts a fresh game from the resume prompt with the selected mode', async () => {
     usePlayStore.getState().ensureDraft();
     const current = usePlayStore.getState().session;
     usePlayStore.setState({
@@ -200,9 +204,11 @@ describe('AppHubScreen', () => {
     fireEvent.press(screen.getByLabelText('Quick Play'));
     fireEvent.press(screen.getByLabelText('New Game'));
 
-    expect(mockPush).toHaveBeenCalledWith('/play/quick-length');
-    expect(usePlayStore.getState().session?.mode).toBe('quickPlay');
-    expect(usePlayStore.getState().session?.step).toBe('quick-play-length');
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/play/quick-length');
+      expect(usePlayStore.getState().session?.mode).toBe('quickPlay');
+      expect(usePlayStore.getState().session?.step).toBe('quick-play-length');
+    });
   });
 
   it('keeps the home mode choices in one horizontal row', () => {
@@ -282,7 +288,7 @@ describe('AppHubScreen', () => {
     expect(screen.queryByTestId('public-auth-entry')).toBeNull();
   });
 
-  it('routes signed-out players to sign-in instead of opening a game lobby', () => {
+  it('disables mode choices when signed out so players cannot start a lobby', () => {
     mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
 
     render(<AppHubScreen />);
@@ -290,10 +296,11 @@ describe('AppHubScreen', () => {
     fireEvent.press(screen.getByLabelText('Quick Play'));
 
     expect(usePlayStore.getState().session).toBeNull();
-    expect(mockPush).toHaveBeenCalledWith('/(auth)/sign-in');
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Quick Play')).toHaveAccessibilityState({ disabled: true });
   });
 
-  it('lets signed-out players start a game when auth is disabled', () => {
+  it('lets signed-out players start a game when auth is disabled', async () => {
     mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
     mockIsAuthDisabled.mockReturnValue(true);
 
@@ -301,8 +308,10 @@ describe('AppHubScreen', () => {
 
     fireEvent.press(screen.getByLabelText('Quick Play'));
 
-    expect(usePlayStore.getState().session?.mode).toBe('quickPlay');
-    expect(usePlayStore.getState().session?.step).toBe('quick-play-length');
-    expect(mockPush).toHaveBeenCalledWith('/play/quick-length');
+    await waitFor(() => {
+      expect(usePlayStore.getState().session?.mode).toBe('quickPlay');
+      expect(usePlayStore.getState().session?.step).toBe('quick-play-length');
+      expect(mockPush).toHaveBeenCalledWith('/play/quick-length');
+    });
   });
 });

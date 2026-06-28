@@ -128,8 +128,14 @@ export default function AdminSignInScreen() {
       try {
         const result = await signIn.create({ identifier, password });
         if (result.status === 'complete' && result.createdSessionId) {
-          await passwordSignInClearFailures({ identifier });
+          // Activate session first so Convex auth identity is available
           await setActive({ session: result.createdSessionId });
+          // Then clear rate-limit failures (requires Convex auth)
+          try {
+            await passwordSignInClearFailures({ identifier });
+          } catch {
+            // Non-critical: rate-limit record auto-expires after the window
+          }
           return;
         }
         setError('Additional verification is required for this account.');

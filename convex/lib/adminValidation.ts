@@ -102,7 +102,14 @@ export function validateCreatePromoCodeArgs(args: {
   if (!Number.isInteger(args.rewardAmount)) {
     return { ok: false, reason: 'reward_amount_integer' };
   }
+  if (!Number.isFinite(args.rewardAmount) || args.rewardAmount > 1_000_000_000) {
+    return { ok: false, reason: 'reward_amount_invalid' };
+  }
   if (args.usageCap < 0) return { ok: false, reason: 'usage_cap_nonnegative' };
+  if (!Number.isInteger(args.usageCap)) return { ok: false, reason: 'usage_cap_integer' };
+  if (!Number.isFinite(args.usageCap) || args.usageCap > 1_000_000_000) {
+    return { ok: false, reason: 'usage_cap_invalid' };
+  }
   if (args.mode !== undefined && !isPromoCodeMode(args.mode)) {
     return { ok: false, reason: 'mode_invalid' };
   }
@@ -129,8 +136,23 @@ export function validateUpdatePromoCodeArgs(
   ) {
     return { ok: false, reason: 'reward_amount_locked' };
   }
+  if (updates.rewardAmount !== undefined) {
+    if (!Number.isFinite(updates.rewardAmount) || updates.rewardAmount > 1_000_000_000) {
+      return { ok: false, reason: 'reward_amount_invalid' };
+    }
+    if (updates.rewardAmount <= 0) return { ok: false, reason: 'reward_amount_positive' };
+    if (!Number.isInteger(updates.rewardAmount)) return { ok: false, reason: 'reward_amount_integer' };
+  }
+  if (updates.usageCap !== undefined) {
+    if (!Number.isFinite(updates.usageCap) || updates.usageCap > 1_000_000_000) {
+      return { ok: false, reason: 'usage_cap_invalid' };
+    }
+    if (!Number.isInteger(updates.usageCap)) return { ok: false, reason: 'usage_cap_integer' };
+  }
   return { ok: true };
 }
+
+const MAX_WALLET_ADJUSTMENT = 1_000_000_000;
 
 export function validateWalletAdjustment(args: {
   currentBalance: number;
@@ -138,6 +160,10 @@ export function validateWalletAdjustment(args: {
   reason: string;
 }): { ok: true } | { ok: false; reason: string } {
   if (args.amount === 0) return { ok: false, reason: 'amount_nonzero' };
+  if (!Number.isFinite(args.amount) || Math.abs(args.amount) > MAX_WALLET_ADJUSTMENT) {
+    return { ok: false, reason: 'amount_invalid' };
+  }
+  if (!Number.isInteger(args.amount)) return { ok: false, reason: 'amount_integer' };
   if (!args.reason || args.reason.trim().length === 0) return { ok: false, reason: 'reason_required' };
   const newBalance = args.currentBalance + args.amount;
   if (newBalance < 0) return { ok: false, reason: 'insufficient_balance' };

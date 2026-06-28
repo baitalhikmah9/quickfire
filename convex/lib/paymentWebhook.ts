@@ -65,5 +65,9 @@ export function normalizeRevenueCatStore(store?: string | null): PaymentStore | 
     return 'play_store';
   }
 
+  if (normalized === 'test_store') {
+    return 'test_store';
+  }
+
   return null;
 }

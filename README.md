@@ -240,7 +240,10 @@ Copy `.env.example` to `.env` and fill in values. Never commit secrets.
 | `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk dashboard → API Keys |
 | `EXPO_PUBLIC_CONVEX_URL` | Convex dashboard → project URL |
 | `EXPO_PUBLIC_SITE_ORIGIN` | Production URL (default: `https://playbackfire.com`) — set for canonical SEO on preview deployments |
+| `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` | RevenueCat dashboard → API keys (iOS / Test Store for sandbox) |
+| `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` | RevenueCat dashboard → API keys (Android / Test Store for sandbox) |
 | `CLERK_JWT_ISSUER_DOMAIN` | Set in Convex dashboard env vars — your Clerk Frontend API URL |
+| `REVENUECAT_WEBHOOK_AUTH_HEADER` | Set in Convex dashboard env vars — shared secret for RevenueCat webhooks |
 
 ## Scripts
 

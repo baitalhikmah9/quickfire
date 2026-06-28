@@ -26,8 +26,14 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   default: mockAsyncStorage,
 }));
 
+const mockAuthDisabled = jest.fn(() => true);
+
 jest.mock('@/constants/featureFlags', () => ({
   SHOW_HOT_SEAT_UI: true,
+}));
+
+jest.mock('@/lib/authMode', () => ({
+  isAuthDisabled: () => mockAuthDisabled(),
 }));
 
 const { usePlayStore } = require('@/store/play') as typeof import('@/store/play');
@@ -142,6 +148,7 @@ function seedPlayStorage(tokens: number, session: GameSessionState | null) {
 }
 
 beforeEach(async () => {
+  mockAuthDisabled.mockReturnValue(true);
   mockStorage.clear();
   jest.clearAllMocks();
   usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
@@ -926,5 +933,23 @@ describe('usePlayStore', () => {
 
     expect(usePlayStore.getState().tokens).toBe(5);
     expect(usePlayStore.getState().session).toBeNull();
+  });
+
+  it('does not deduct local tokens when auth is enabled (server owns balance)', () => {
+    mockAuthDisabled.mockReturnValue(false);
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
+    usePlayStore.getState().startModeSession('classic');
+    const categories = usePlayStore.getState().session?.availableCategories.slice(0, 6) ?? [];
+
+    for (const category of categories) {
+      usePlayStore.getState().toggleCategory(category.slug);
+    }
+
+    expect(usePlayStore.getState().tokens).toBe(20);
+    expect(usePlayStore.getState().session?.config.entryTokenCharge).toBe(10);
+
+    const boardResult = usePlayStore.getState().startBoard();
+    expect(boardResult).toMatchObject({ ok: true });
+    expect(usePlayStore.getState().tokens).toBe(20);
   });
 });

@@ -18,9 +18,8 @@ const SOFT = HOME_SOFT_UI.colors;
 
 export default function WalletDetailScreen() {
   const { walletId } = useLocalSearchParams<{ walletId: string }>();
-  const wallet = useQuery(api.admin.searchWallets, {
-    query: walletId,
-    limit: 1,
+  const wallet = useQuery(api.admin.getWallet, {
+    walletId: walletId as any,
   });
   const transactions = useQuery(api.admin.listWalletTransactions, {
     walletId: walletId as any,
@@ -33,7 +32,7 @@ export default function WalletDetailScreen() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const walletData = wallet && wallet.length > 0 ? wallet[0] : null;
+  const walletData = wallet;
 
   const handleAdjust = async () => {
     setError('');

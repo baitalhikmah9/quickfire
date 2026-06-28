@@ -13,6 +13,9 @@ import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@clerk/clerk-expo';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SPACING, FONTS, FONT_SIZES, LAYOUT } from '@/constants';
 import { getCategoryPictureSource } from '@/constants/categoryPictures';
@@ -21,6 +24,9 @@ import type { GameMode } from '@/features/shared';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { isAuthDisabled } from '@/lib/authMode';
+import { adjustGameEntryReservation } from '@/lib/wallet/gameEntry';
+import { getGameTokenCost } from '@/features/play/tokenCosts';
 import { usePlayStore } from '@/store/play';
 import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
 
@@ -55,10 +61,14 @@ export default function CategorySelectionScreen() {
   const fontSizes = useResponsivePlayFontSizes();
 
   const session = usePlayStore((state) => state.session);
+  const entryReservationId = usePlayStore((state) => state.entryReservationId);
   const ensureDraft = usePlayStore((state) => state.ensureDraft);
   const toggleCategory = usePlayStore((state) => state.toggleCategory);
   const setCategories = usePlayStore((state) => state.setCategories);
   const startBoard = usePlayStore((state) => state.startBoard);
+  const { isLoaded, isSignedIn } = useAuth();
+  const authDisabled = isAuthDisabled();
+  const adjustEntryMutation = useMutation(api.wallet.adjustEntryReservation);
 
   useLayoutEffect(() => {
     ensureDraft();
@@ -446,7 +456,26 @@ export default function CategorySelectionScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('play.startBoard')}
-            onPress={() => {
+            onPress={async () => {
+              if (session && !authDisabled && isLoaded && isSignedIn && entryReservationId) {
+                const tokenCost = getGameTokenCost(
+                  session.mode,
+                  session.config.quickPlayTopicCount
+                );
+                const entryTokenCharge = session.config.entryTokenCharge ?? 0;
+                const delta = Math.max(0, tokenCost - entryTokenCharge);
+                if (delta > 0) {
+                  const adjusted = await adjustGameEntryReservation(adjustEntryMutation, {
+                    reservationId: entryReservationId,
+                    additionalCost: delta,
+                  });
+                  if (!adjusted.ok) {
+                    Alert.alert('', t('play.needTokens'));
+                    return;
+                  }
+                }
+              }
+
               const result = startBoard();
               if (result.ok) {
                 router.replace('/(app)/play/board');

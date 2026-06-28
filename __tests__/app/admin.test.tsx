@@ -3,6 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 
+// Desktop window dimensions so the admin sidebar renders in layout tests
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({ width: 1280, height: 800, scale: 1, fontScale: 1 })),
+}));
+
 import AdminLayout, { AdminAccessBoundary } from '@/app/(admin)/_layout';
 import AdminIndexScreen from '@/app/(admin)/index';
 import PromoCodesScreen from '@/app/(admin)/promo-codes';
@@ -29,7 +35,9 @@ const mockUseQuery = jest.fn<(...args: unknown[]) => unknown>(() => ({
   email: 'admin@example.com',
   items: [],
 }));
-const mockUseMutation = jest.fn<(...args: unknown[]) => unknown>(() => jest.fn());
+const mockUseMutation = jest.fn<(...args: unknown[]) => unknown>(
+  () => jest.fn(() => Promise.resolve({ allowed: true, failuresInWindow: 0 }))
+);
 const mockWarmUpAsync = jest.fn(() => Promise.resolve());
 const mockCoolDownAsync = jest.fn(() => Promise.resolve());
 type MockSignInResult = {
@@ -362,6 +370,10 @@ describe('Admin web routes', () => {
       email: 'admin@example.com',
       items: [],
     });
+    // Reset useMutation so admin sign-in gets a valid preflight response
+    mockUseMutation.mockReturnValue(
+      jest.fn(() => Promise.resolve({ allowed: true, failuresInWindow: 0 }))
+    );
   });
 
   afterEach(() => {
@@ -370,7 +382,8 @@ describe('Admin web routes', () => {
 
   it('exposes the overview dashboard at /admin', () => {
     render(<AdminRouteIndexScreen />);
-    expect(screen.getByText('Overview')).toBeTruthy();
+    // Sidebar nav and page title both say Overview; at least one is enough
+    expect(screen.getAllByText('Overview').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows a setup message when Convex admin functions are unavailable', () => {

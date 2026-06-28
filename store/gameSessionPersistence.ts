@@ -287,6 +287,9 @@ export interface PersistedPlayState {
   tokens: number;
   session: PersistedGameSessionState | null;
   rapidFire: RapidFireState | null;
+  /** Convex reservation ID for the current game entry, if any. Persisted so it
+   *  can be consumed or refunded after an app restart. */
+  entryReservationId?: string | null;
 }
 
 export interface PersistedLegacyGameState {

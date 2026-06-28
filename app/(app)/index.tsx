@@ -13,6 +13,8 @@ import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FONTS, SPACING, LAYOUT } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
@@ -22,6 +24,7 @@ import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
 import { usePlayStore } from '@/store/play';
+import { reserveGameEntry, refundGameEntry } from '@/lib/wallet/gameEntry';
 import { useThemeStore } from '@/store/theme';
 import { HOME_SOFT_UI } from '@/themes';
 import { getGameTokenCost, getHomeModeTokenCostLabel } from '@/features/play/tokenCosts';
@@ -106,13 +109,17 @@ function RumblePeopleIcon({ size, color, compact, isWeb }: { size: number; color
 
 export default function AppHubScreen() {
   const router = useRouter();
-  const { isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const authDisabled = isAuthDisabled();
   const { direction, t, uiLocale } = useI18n();
   useThemeStore((state) => state.paletteId);
-  const tokens = usePlayStore((state) => state.tokens);
+  const storedTokens = usePlayStore((state) => state.tokens);
+  const tokens = !authDisabled && !isSignedIn ? 0 : storedTokens;
   const session = usePlayStore((state) => state.session);
   const startModeSession = usePlayStore((state) => state.startModeSession);
+  const setEntryReservationId = usePlayStore((state) => state.setEntryReservationId);
+  const reserveGameEntryMutation = useMutation(api.wallet.reserveGameEntry);
+  const refundEntryMutation = useMutation(api.wallet.refundEntry);
   const [activeModeInfo, setActiveModeInfo] = useState<GameMode | null>(null);
   const [pendingMode, setPendingMode] = useState<GameMode | null>(null);
 
@@ -133,19 +140,65 @@ export default function AppHubScreen() {
     []
   );
 
-  const startNewGame = useCallback((mode: GameMode) => {
+  const startNewGame = useCallback(async (mode: GameMode) => {
     const minimumCost = minimumTokenCostForMode(mode);
     if (tokens < minimumCost) {
       Alert.alert('', t('play.needTokens'));
       return;
     }
+
+    const oldReservationId = usePlayStore.getState().entryReservationId;
+    if (oldReservationId && !authDisabled && isLoaded && isSignedIn) {
+      await refundGameEntry(refundEntryMutation, {
+        reservationId: oldReservationId,
+        reason: 'session_replaced',
+      }).catch(() => {});
+      setEntryReservationId(null);
+    }
+
+    // Reserve the game entry on Convex when the user is signed in.
+    // Local fallback (auth-disabled) uses the dummy reservation path inside reserveGameEntry.
+    if (!authDisabled && isLoaded && isSignedIn) {
+      const clientSessionId = `play_${Date.now()}`;
+      const reservation = await reserveGameEntry(reserveGameEntryMutation, {
+        mode,
+        clientSessionId,
+        cost: minimumCost,
+      });
+      if (!reservation.ok) {
+        Alert.alert('', t('play.needTokens'));
+        return;
+      }
+      setEntryReservationId(reservation.reservationId);
+    }
+
     const result = startModeSession(mode);
     if (!result.ok) {
+      const reservationId = usePlayStore.getState().entryReservationId;
+      if (reservationId && !authDisabled && isLoaded && isSignedIn) {
+        await refundGameEntry(refundEntryMutation, {
+          reservationId,
+          reason: 'start_mode_failed',
+        }).catch(() => {});
+        setEntryReservationId(null);
+      }
       Alert.alert('', result.error ?? t('play.needTokens'));
       return;
     }
     router.push(mode === 'quickPlay' ? '/play/quick-length' : '/play/team-setup');
-  }, [minimumTokenCostForMode, router, startModeSession, t, tokens]);
+  }, [
+    authDisabled,
+    isLoaded,
+    isSignedIn,
+    minimumTokenCostForMode,
+    refundEntryMutation,
+    reserveGameEntryMutation,
+    router,
+    setEntryReservationId,
+    startModeSession,
+    t,
+    tokens,
+  ]);
 
   const routeForSessionStep = useCallback((step: PlayRouteStep) => {
     switch (step) {

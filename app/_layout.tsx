@@ -113,6 +113,7 @@ export default function RootLayout() {
         />
         <Stack screenOptions={rootStackScreenOptions}>
           <Stack.Screen name="index" />
+          <Stack.Screen name="sso-callback" />
           <Stack.Screen name="how-to-play" />
           <Stack.Screen name="terms" />
           <Stack.Screen name="privacy" />

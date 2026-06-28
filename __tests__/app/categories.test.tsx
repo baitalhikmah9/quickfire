@@ -55,6 +55,10 @@ jest.mock('expo-image', () => ({
   Image: 'Image',
 }));
 
+jest.mock('@clerk/clerk-expo', () => ({
+  useAuth: jest.fn(() => ({ isLoaded: true, isSignedIn: true })),
+}));
+
 function hasAbsolutePositionedAncestor(node: ReturnType<typeof screen.getByText>): boolean {
   let current = node.parent;
 

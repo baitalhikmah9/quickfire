@@ -5,6 +5,8 @@ import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { BORDER_RADIUS, FONT_SIZES, LAYOUT, SPACING } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
@@ -20,6 +22,7 @@ import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
+import { abandonGameEntry } from '@/lib/wallet/gameEntry';
 import { HOME_SOFT_UI } from '@/themes';
 import { getResponsivePlayFontSizes, scaleFont } from '@/utils/responsiveTypography';
 
@@ -516,9 +519,15 @@ export default function PlayBoardScreen() {
     };
   }, [innerWidth, height, insets.top, insets.bottom, gridRows.length]);
 
+  const refundEntryMutation = useMutation(api.wallet.refundEntry);
+
   const leaveMatch = () => {
-    const performLeave = () => {
-      usePlayStore.getState().resetSession();
+    const performLeave = async () => {
+      await abandonGameEntry(refundEntryMutation, {
+        reservationId: usePlayStore.getState().entryReservationId,
+        reason: 'user_abandoned',
+        resetSession: () => usePlayStore.getState().resetSession(),
+      });
       router.replace('/(app)/');
     };
 

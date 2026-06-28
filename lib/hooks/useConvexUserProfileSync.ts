@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useUser } from '@clerk/clerk-expo';
 import type { UserResource } from '@clerk/types';
-import { useMutation } from 'convex/react';
+import { useConvexAuth, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 
 function getUserEmail(user: UserResource) {
@@ -22,22 +22,22 @@ function getUserName(user: UserResource) {
 
 export function useConvexUserProfileSync() {
   const { isLoaded, user } = useUser();
+  const { isAuthenticated, isLoading } = useConvexAuth();
   const upsertOnFirstSignIn = useMutation(api.users.upsertOnFirstSignIn);
   const syncedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!isLoaded || !user || syncedUserIdRef.current === user.id) {
+    if (!isLoaded || isLoading || !isAuthenticated || !user || syncedUserIdRef.current === user.id) {
       return;
     }
 
     syncedUserIdRef.current = user.id;
     void upsertOnFirstSignIn({
-      clerkId: user.id,
       email: getUserEmail(user),
       name: getUserName(user),
     }).catch((error) => {
       syncedUserIdRef.current = null;
       console.error('[Convex user sync]', error);
     });
-  }, [isLoaded, upsertOnFirstSignIn, user]);
+  }, [isAuthenticated, isLoaded, isLoading, upsertOnFirstSignIn, user]);
 }
