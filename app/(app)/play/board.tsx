@@ -702,7 +702,7 @@ export default function PlayBoardScreen() {
                 {
                   width: imgW,
                   height: imgH,
-                  backgroundColor: surfaceColors.imageMatte ?? surfaceColors.imageFrameBackground,
+                  backgroundColor: surfaceColors.topicImageMatte ?? surfaceColors.imageFrameBackground,
                   opacity: pressed ? 0.96 : 1,
                   transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
                 },
@@ -739,7 +739,7 @@ export default function PlayBoardScreen() {
                   <Image
                     source={picture}
                     style={styles.topicImageFill}
-                    contentFit="cover"
+                    contentFit={surfaceColors.topicImageContentFit}
                     transition={120}
                   />
                 ) : (

@@ -1,7 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { ScrollView, StyleSheet } from 'react-native';
+import { FlatList, ScrollView, StyleSheet } from 'react-native';
 import type { ReactTestInstance } from 'react-test-renderer';
 
 import CategorySelectionScreen from '@/app/(app)/play/categories';
@@ -80,22 +80,6 @@ function getResolvedStyle(node: ReturnType<typeof screen.getByLabelText>) {
       : node.props.style;
 
   return StyleSheet.flatten(style);
-}
-
-function hasNearbyColumnLayout(node: ReturnType<typeof screen.getByText>): boolean {
-  let current = node.parent;
-  let depth = 0;
-
-  while (current && depth < 6) {
-    const style = StyleSheet.flatten(current.props.style);
-    if (style?.flexDirection === 'column') {
-      return true;
-    }
-    current = current.parent;
-    depth += 1;
-  }
-
-  return false;
 }
 
 function hasMinHeightZeroInAncestorChain(node: ReactTestInstance, maxDepth = 4): boolean {
@@ -235,9 +219,12 @@ describe('CategorySelectionScreen', () => {
     const { UNSAFE_getAllByType } = render(<CategorySelectionScreen />);
 
     const scrollViews = UNSAFE_getAllByType(ScrollView);
-    const topicGridScrollView = scrollViews.find((node) => node.props.horizontal !== true);
+    const flatLists = UNSAFE_getAllByType(FlatList);
+    const topicGridScrollable =
+      flatLists.find((node) => node.props.horizontal !== true) ??
+      scrollViews.find((node) => node.props.horizontal !== true);
 
-    expect(topicGridScrollView).toBeDefined();
-    expect(hasMinHeightZeroInAncestorChain(topicGridScrollView!)).toBe(true);
+    expect(topicGridScrollable).toBeDefined();
+    expect(hasMinHeightZeroInAncestorChain(topicGridScrollable!)).toBe(true);
   });
 });

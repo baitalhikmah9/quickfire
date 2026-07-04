@@ -15,7 +15,7 @@ export function getPlaySurfaceColors() {
     imageFrameBackground: isDark ? 'rgba(255, 255, 255, 0.08)' : T.surface,
     imagePadding: isDark ? 2 : 6,
     isDark,
-    topicImageContentFit: 'cover' as const,
+    topicImageContentFit: 'contain' as const,
     /** Pixel-art tiles with light PNG backgrounds read better on dark with a soft matte frame. */
     topicImageMatte: isDark ? 'rgba(18, 18, 18, 0.92)' : undefined,
   };

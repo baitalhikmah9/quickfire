@@ -1,13 +1,14 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   Alert,
   useWindowDimensions,
   Platform,
   type ImageStyle,
+  type ListRenderItem,
 } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
@@ -20,10 +21,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SPACING, FONTS, FONT_SIZES, LAYOUT } from '@/constants';
 import { getCategoryPictureSource } from '@/constants/categoryPictures';
 import { getModeCategoryCount } from '@/features/play/data';
-import type { GameMode } from '@/features/shared';
+import type { CategoryOption, GameMode } from '@/features/shared';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
-import { groupCategoriesBySection } from '@/features/play/categorySections';
+import {
+  groupCategoriesBySection,
+  type CategorySection,
+} from '@/features/play/categorySections';
 import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
@@ -53,12 +57,192 @@ const WEB_GRID_INNER_PAD = 40; // padding inside the max-width container
 const WEB_CARD_HEIGHT = 190;
 const NATIVE_CARD_ASPECT = 0.72; // height = width * aspect
 const COLS = 4;
+const ANDROID_LIST_IMAGE_TRANSITION = 0;
+const WEB_LIST_IMAGE_TRANSITION = 200;
+
+type CategoryListItem =
+  | {
+      kind: 'header';
+      id: string;
+      title: string;
+      sectionWidth: number;
+      marginTop: number;
+      paddingBottom: number;
+    }
+  | {
+      kind: 'row';
+      id: string;
+      sectionWidth: number;
+      categories: CategoryOption[];
+      marginBottom: number;
+    };
+
+function buildCategoryListData(
+  sections: CategorySection[],
+  cols: number,
+  cardW: number,
+  cardH: number,
+  gridGap: number,
+  sectionTitleHeight: number
+): {
+  rows: CategoryListItem[];
+  layouts: { length: number; offset: number }[];
+  slugToIndex: Map<string, number>;
+} {
+  const rows: CategoryListItem[] = [];
+  const layouts: { length: number; offset: number }[] = [];
+  const slugToIndex = new Map<string, number>();
+  let offset = SPACING.xs;
+
+  sections.forEach((section, sectionIndex) => {
+    const marginTop = sectionIndex > 0 ? SPACING.md : 0;
+    const sectionCols = Math.min(cols, section.categories.length);
+    const sectionWidth = cardW * sectionCols + gridGap * Math.max(0, sectionCols - 1);
+
+    const headerLength = marginTop + sectionTitleHeight + SPACING.sm;
+    rows.push({
+      kind: 'header',
+      id: `header-${section.id}`,
+      title: section.title,
+      sectionWidth,
+      marginTop,
+      paddingBottom: SPACING.sm,
+    });
+    layouts.push({ length: headerLength, offset });
+    offset += headerLength;
+
+    const categoryRows = Math.ceil(section.categories.length / cols);
+    for (let rowIndex = 0; rowIndex < categoryRows; rowIndex += 1) {
+      const categories = section.categories.slice(rowIndex * cols, rowIndex * cols + cols);
+      const listIndex = rows.length;
+      for (const category of categories) {
+        slugToIndex.set(category.slug, listIndex);
+      }
+
+      const isLastRowInSection = rowIndex === categoryRows - 1;
+      const marginBottom = isLastRowInSection ? 0 : gridGap;
+      const rowLength = cardH + marginBottom;
+
+      rows.push({
+        kind: 'row',
+        id: `row-${section.id}-${rowIndex}`,
+        sectionWidth,
+        categories,
+        marginBottom,
+      });
+      layouts.push({ length: rowLength, offset });
+      offset += rowLength;
+    }
+  });
+
+  return { rows, layouts, slugToIndex };
+}
+
+interface CategoryCardProps {
+  category: CategoryOption;
+  selected: boolean;
+  disabled: boolean;
+  cardW: number;
+  cardH: number;
+  imageAreaH: number;
+  titleBarH: number;
+  surface: string;
+  textPrimary: string;
+  topicTitleSize: number;
+  topicImageMatte?: string;
+  topicImageContentFit: 'cover' | 'contain';
+  onToggle: (slug: string) => void;
+}
+
+const CategoryCard = memo(function CategoryCard({
+  category,
+  selected,
+  disabled,
+  cardW,
+  cardH,
+  imageAreaH,
+  titleBarH,
+  surface,
+  textPrimary,
+  topicTitleSize,
+  topicImageMatte,
+  topicImageContentFit,
+  onToggle,
+}: CategoryCardProps) {
+  const imageSource = getCategoryPictureSource(category.id);
+  const iconName = getCategoryIcon(category.id);
+  const useLightListSurface = Platform.OS === 'android';
+
+  return (
+    <Pressable
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={`Select ${category.title}`}
+      onPress={() => onToggle(category.slug)}
+      style={({ pressed }) => [
+        styles.topicCard,
+        {
+          width: cardW,
+          height: cardH,
+          backgroundColor: surface,
+          opacity: disabled ? 0.35 : pressed ? 0.94 : 1,
+          transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+        },
+        SOFT_SURFACE_STYLES.face,
+        !useLightListSurface && SOFT_SURFACE_STYLES.raised,
+        selected && styles.topicCardSelected,
+      ]}
+    >
+      <View
+        style={[
+          styles.cardImageArea,
+          { height: imageAreaH, backgroundColor: topicImageMatte ?? surface },
+        ]}
+      >
+        {imageSource ? (
+          <Image
+            source={imageSource}
+            recyclingKey={category.slug}
+            style={styles.cardImage as ImageStyle}
+            contentFit={topicImageContentFit}
+            transition={
+              Platform.OS === 'android' ? ANDROID_LIST_IMAGE_TRANSITION : WEB_LIST_IMAGE_TRANSITION
+            }
+          />
+        ) : (
+          <Ionicons name={iconName} size={28} color={textPrimary} />
+        )}
+      </View>
+
+      <View style={[styles.cardTitleBar, { height: titleBarH, backgroundColor: surface }]}>
+        <Text
+          style={[
+            styles.cardTitle,
+            {
+              color: textPrimary,
+              fontSize: topicTitleSize,
+              lineHeight: Math.round(topicTitleSize * 1.18),
+            },
+          ]}
+          numberOfLines={2}
+        >
+          {category.title.toUpperCase()}
+        </Text>
+      </View>
+
+      {selected ? (
+        <View style={styles.selectedBadge}>
+          <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+        </View>
+      ) : null}
+    </Pressable>
+  );
+});
 
 export default function CategorySelectionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const categoryScrollRef = useRef<ScrollView | null>(null);
-  const categoryOffsetsRef = useRef<Record<string, number>>({});
+  const categoryListRef = useRef<FlatList<CategoryListItem> | null>(null);
   const { direction, getTextStyle, t } = useI18n();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const fontSizes = useResponsivePlayFontSizes();
@@ -155,13 +339,31 @@ export default function CategorySelectionScreen() {
   };
 
   const scrollToCategory = (slug: string) => {
-    const offset = categoryOffsetsRef.current[slug];
-    if (offset === undefined) return;
-    categoryScrollRef.current?.scrollTo({
-      y: Math.max(offset - SPACING.sm, 0),
+    const index = categorySlugToIndex.get(slug);
+    if (index === undefined) return;
+    categoryListRef.current?.scrollToIndex({
+      index,
+      viewOffset: SPACING.sm,
       animated: true,
     });
   };
+
+  const onScrollToIndexFailed = useCallback(
+    (info: { index: number; averageItemLength: number }) => {
+      categoryListRef.current?.scrollToOffset({
+        offset: Math.max(info.averageItemLength * info.index - SPACING.sm, 0),
+        animated: false,
+      });
+      requestAnimationFrame(() => {
+        categoryListRef.current?.scrollToIndex({
+          index: info.index,
+          viewOffset: SPACING.sm,
+          animated: true,
+        });
+      });
+    },
+    []
+  );
 
   // ── Derived state ─────────────────────────────────────────────────────
 
@@ -188,6 +390,137 @@ export default function CategorySelectionScreen() {
   const categorySections = useMemo(
     () => (session ? groupCategoriesBySection(session.availableCategories) : []),
     [session]
+  );
+  const sectionTitleHeight = Math.round(fontSizes.subtitle * 1.2);
+  const { categoryListRows, categoryItemLayouts, categorySlugToIndex } = useMemo(() => {
+    if (!categorySections.length) {
+      return {
+        categoryListRows: [] as CategoryListItem[],
+        categoryItemLayouts: [] as { length: number; offset: number }[],
+        categorySlugToIndex: new Map<string, number>(),
+      };
+    }
+
+    const { rows, layouts, slugToIndex } = buildCategoryListData(
+      categorySections,
+      COLS,
+      cardW,
+      cardH,
+      gridGap,
+      sectionTitleHeight
+    );
+
+    return {
+      categoryListRows: rows,
+      categoryItemLayouts: layouts,
+      categorySlugToIndex: slugToIndex,
+    };
+  }, [cardH, cardW, categorySections, gridGap, sectionTitleHeight]);
+
+  const selectedCategoryIds = useMemo(
+    () => session?.selectedCategoryIds ?? [],
+    [session?.selectedCategoryIds]
+  );
+
+  const handleToggleCategory = useCallback(
+    (slug: string) => {
+      toggleCategory(slug);
+    },
+    [toggleCategory]
+  );
+
+  const getCategoryItemLayout = useCallback(
+    (_data: ArrayLike<CategoryListItem> | null | undefined, index: number) => {
+      const layout = categoryItemLayouts[index];
+      return layout ?? { length: cardH, offset: cardH * index };
+    },
+    [cardH, categoryItemLayouts]
+  );
+
+  const renderCategoryListItem: ListRenderItem<CategoryListItem> = useCallback(
+    ({ item }) => {
+      if (item.kind === 'header') {
+        return (
+          <View
+            style={[
+              styles.listItemWrap,
+              {
+                marginTop: item.marginTop,
+                paddingBottom: item.paddingBottom,
+                width: item.sectionWidth,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color: textPrimary,
+                  fontSize: fontSizes.subtitle,
+                  height: sectionTitleHeight,
+                  width: item.sectionWidth,
+                },
+              ]}
+            >
+              {item.title.toUpperCase()}
+            </Text>
+          </View>
+        );
+      }
+
+      return (
+        <View
+          style={[
+            styles.listItemWrap,
+            { marginBottom: item.marginBottom, width: item.sectionWidth },
+          ]}
+        >
+          <View style={[styles.sectionGrid, { gap: gridGap, width: item.sectionWidth }]}>
+            {item.categories.map((category) => {
+              const selected = selectedCategoryIds.includes(category.slug);
+              const disabled = !selected && selectedCount >= required;
+
+              return (
+                <CategoryCard
+                  key={category.slug}
+                  category={category}
+                  selected={selected}
+                  disabled={disabled}
+                  cardW={cardW}
+                  cardH={cardH}
+                  imageAreaH={imageAreaH}
+                  titleBarH={titleBarH}
+                  surface={surface}
+                  textPrimary={textPrimary}
+                  topicTitleSize={fontSizes.topicTitle}
+                  topicImageMatte={surfaceColors.topicImageMatte}
+                  topicImageContentFit={surfaceColors.topicImageContentFit}
+                  onToggle={handleToggleCategory}
+                />
+              );
+            })}
+          </View>
+        </View>
+      );
+    },
+    [
+      cardH,
+      cardW,
+      fontSizes.subtitle,
+      fontSizes.topicTitle,
+      gridGap,
+      handleToggleCategory,
+      imageAreaH,
+      required,
+      sectionTitleHeight,
+      selectedCategoryIds,
+      selectedCount,
+      surface,
+      surfaceColors.topicImageContentFit,
+      surfaceColors.topicImageMatte,
+      textPrimary,
+      titleBarH,
+    ]
   );
 
   // ── Render ────────────────────────────────────────────────────────────
@@ -409,125 +742,28 @@ export default function CategorySelectionScreen() {
 
           {/* Topic grid */}
           <View style={styles.gridContainer}>
-            <ScrollView
-              ref={categoryScrollRef}
+            <FlatList
+              ref={categoryListRef}
+              data={categoryListRows}
+              keyExtractor={(item) => item.id}
+              renderItem={renderCategoryListItem}
+              getItemLayout={getCategoryItemLayout}
+              onScrollToIndexFailed={onScrollToIndexFailed}
               showsVerticalScrollIndicator={false}
+              initialNumToRender={8}
+              maxToRenderPerBatch={10}
+              windowSize={7}
+              removeClippedSubviews={Platform.OS === 'android'}
               contentContainerStyle={[
                 styles.gridScrollContent,
+                useWebLayout && styles.gridScrollContentWeb,
                 { paddingBottom: 160 },
               ]}
-            >
-              <View
-                style={[
-                  styles.gridOuter,
-                  useWebLayout && { maxWidth: WEB_GRID_MAX_WIDTH, alignSelf: 'center' as const },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.grid,
-                    { gap: gridGap },
-                    useWebLayout && { paddingHorizontal: WEB_GRID_INNER_PAD },
-                  ]}
-                >
-                  {categorySections.map((section) => {
-                    const sectionCols = Math.min(COLS, section.categories.length);
-                    const sectionWidth = cardW * sectionCols + gridGap * Math.max(0, sectionCols - 1);
-
-                    return (
-                    <View key={section.id} style={styles.sectionBlock}>
-                      <Text
-                        style={[
-                          styles.sectionTitle,
-                          { color: textPrimary, fontSize: fontSizes.subtitle, width: sectionWidth },
-                        ]}
-                      >
-                        {section.title.toUpperCase()}
-                      </Text>
-                      <View style={[styles.sectionGrid, { gap: gridGap, width: sectionWidth }]}>
-                        {section.categories.map((category) => {
-                    const selected = (session.selectedCategoryIds ?? []).includes(category.slug);
-                    const disabled = !selected && selectedCount >= required;
-                    const imageSource = getCategoryPictureSource(category.id);
-                    const iconName = getCategoryIcon(category.id);
-
-                    return (
-                      <Pressable
-                        key={category.slug}
-                        disabled={disabled}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Select ${category.title}`}
-                        onPress={() => toggleCategory(category.slug)}
-                        onLayout={(event) => {
-                          categoryOffsetsRef.current[category.slug] =
-                            event.nativeEvent.layout.y;
-                        }}
-                        style={({ pressed }) => [
-                          styles.topicCard,
-                          {
-                            width: cardW,
-                            height: cardH,
-                            backgroundColor: surface,
-                            opacity: disabled ? 0.35 : pressed ? 0.94 : 1,
-                            transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
-                          },
-                          SOFT_SURFACE_STYLES.face,
-                          SOFT_SURFACE_STYLES.raised,
-                          selected && styles.topicCardSelected,
-                        ]}
-                      >
-                        {/* Image area */}
-                        <View style={[styles.cardImageArea, { height: imageAreaH, backgroundColor: surfaceColors.imageMatte ?? surface }]}>
-                          {imageSource ? (
-                            <Image
-                              source={imageSource}
-                              style={styles.cardImage as ImageStyle}
-                              contentFit="cover"
-                              transition={200}
-                            />
-                          ) : (
-                            <Ionicons name={iconName} size={28} color={textPrimary} />
-                          )}
-                        </View>
-
-                        {/* Title bar */}
-                        <View
-                          style={[
-                            styles.cardTitleBar,
-                            { height: titleBarH, backgroundColor: surface },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.cardTitle,
-                              {
-                                color: textPrimary,
-                                fontSize: fontSizes.topicTitle,
-                                lineHeight: Math.round(fontSizes.topicTitle * 1.18),
-                              },
-                            ]}
-                            numberOfLines={2}
-                          >
-                            {category.title.toUpperCase()}
-                          </Text>
-                        </View>
-
-                        {/* Selected checkmark badge */}
-                        {selected && (
-                          <View style={styles.selectedBadge}>
-                            <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-                          </View>
-                        )}
-                      </Pressable>
-                    );
-                        })}
-                      </View>
-                    </View>
-                    );
-                  })}
-                </View>
-              </View>
-            </ScrollView>
+              style={[
+                styles.categoryList,
+                useWebLayout && { maxWidth: WEB_GRID_MAX_WIDTH, alignSelf: 'center' as const },
+              ]}
+            />
           </View>
         </View>
       )}
@@ -816,17 +1052,16 @@ const styles = StyleSheet.create({
   gridScrollContent: {
     paddingBottom: SPACING.xl,
     paddingTop: SPACING.xs,
-  },
-  gridOuter: {
     width: '100%',
   },
-  grid: {
-    flexDirection: 'column',
-    gap: SPACING.md,
+  gridScrollContentWeb: {
+    paddingHorizontal: WEB_GRID_INNER_PAD,
   },
-  sectionBlock: {
+  categoryList: {
     width: '100%',
-    gap: SPACING.sm,
+  },
+  listItemWrap: {
+    alignSelf: 'center',
   },
   sectionTitle: {
     alignSelf: 'center',
