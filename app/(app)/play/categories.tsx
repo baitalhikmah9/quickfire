@@ -430,17 +430,21 @@ export default function CategorySelectionScreen() {
                     useWebLayout && { paddingHorizontal: WEB_GRID_INNER_PAD },
                   ]}
                 >
-                  {categorySections.map((section) => (
+                  {categorySections.map((section) => {
+                    const sectionCols = Math.min(COLS, section.categories.length);
+                    const sectionWidth = cardW * sectionCols + gridGap * Math.max(0, sectionCols - 1);
+
+                    return (
                     <View key={section.id} style={styles.sectionBlock}>
                       <Text
                         style={[
                           styles.sectionTitle,
-                          { color: textPrimary, fontSize: fontSizes.subtitle },
+                          { color: textPrimary, fontSize: fontSizes.subtitle, width: sectionWidth },
                         ]}
                       >
                         {section.title.toUpperCase()}
                       </Text>
-                      <View style={[styles.sectionGrid, { gap: gridGap }]}>
+                      <View style={[styles.sectionGrid, { gap: gridGap, width: sectionWidth }]}>
                         {section.categories.map((category) => {
                     const selected = (session.selectedCategoryIds ?? []).includes(category.slug);
                     const disabled = !selected && selectedCount >= required;
@@ -519,7 +523,8 @@ export default function CategorySelectionScreen() {
                         })}
                       </View>
                     </View>
-                  ))}
+                    );
+                  })}
                 </View>
               </View>
             </ScrollView>
@@ -824,12 +829,14 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   sectionTitle: {
+    alignSelf: 'center',
     fontFamily: FONTS.uiBold,
     letterSpacing: 1.1,
     textTransform: 'uppercase',
     paddingHorizontal: 2,
   },
   sectionGrid: {
+    alignSelf: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
