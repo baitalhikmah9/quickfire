@@ -1,5 +1,5 @@
 const enBase = {
-  'common.appName': 'Backfire',
+  'common.appName': 'BackFire',
   'common.back': 'Back',
   'common.close': 'Close',
   'common.cancel': 'Cancel',
@@ -149,7 +149,7 @@ const enBase = {
 
   'hub.play': 'Play',
 
-  'home.logoWordmark': 'Backfire',
+  'home.logoWordmark': 'BackFire',
   'home.logoCapline': 'TRIVIA',
   'home.playTriviaCta': 'PLAY TRIVIA',
   'home.playTriviaSub': 'Start a new challenge',

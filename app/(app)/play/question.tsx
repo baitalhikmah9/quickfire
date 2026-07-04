@@ -28,18 +28,14 @@ import { PlayMatchTopBar } from '@/features/play/components/PlayMatchTopBar';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { usePlayStore } from '@/store/play';
+import { useThemeStore } from '@/store/theme';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { abandonGameEntry } from '@/lib/wallet/gameEntry';
+import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
+import { HOME_SOFT_UI } from '@/themes';
 
-/** Brand colors from docs/BRAND_GUIDELINES.md */
-const BRAND = {
-  canvas: '#FAF9F6',
-  surface: '#FFFFFF',
-  charcoal: '#333333',
-  amber: '#FFB347',
-  shadowStrong: 'rgba(51, 51, 51, 0.15)',
-};
+const T = HOME_SOFT_UI.colors;
 
 /** Deeper solid depth - matches extruded raised plastic pattern. */
 function neumorphicLift3D(tier: 'hero' | 'pill'): ViewStyle {
@@ -131,6 +127,15 @@ export default function PlayQuestionScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { getTextStyle, t } = useI18n();
+  useThemeStore((state) => state.paletteId);
+  const surfaceColors = getPlaySurfaceColors();
+  const BRAND = {
+    canvas: surfaceColors.canvas,
+    surface: surfaceColors.surface,
+    charcoal: surfaceColors.textPrimary,
+    amber: HOME_SOFT_UI.colors.accentGlow,
+    shadowStrong: HOME_SOFT_UI.colors.shadowStrong,
+  };
   const session = usePlayStore((state) => state.session);
   const cancelCurrentQuestion = usePlayStore((state) => state.cancelCurrentQuestion);
   const revealAnswer = usePlayStore((state) => state.revealAnswer);
@@ -374,10 +379,19 @@ export default function PlayQuestionScreen() {
     </View>
   );
 
-  const answerQuestionFontSize = Math.min(
-    Platform.OS === 'web' ? 38 : 34,
-    Math.max(18, Math.round(promptLayoutWidth * (isCompactHeader ? 0.04 : 0.034)))
-  );
+  const answerQuestionFontSize = useMemo(() => {
+    const base = Math.min(
+      Platform.OS === 'web' ? 38 : 34,
+      Math.max(18, Math.round(promptLayoutWidth * (isCompactHeader ? 0.04 : 0.034)))
+    );
+    if (session?.phase === 'scoring' || session?.phase === 'answerLock') {
+      return Math.max(14, Math.round(base * 0.68));
+    }
+    if (isAnswerPhase) {
+      return Math.max(16, Math.round(base * 0.82));
+    }
+    return base;
+  }, [isAnswerPhase, isCompactHeader, promptLayoutWidth, session?.phase]);
   const answerQuestionLineHeight = Math.round(answerQuestionFontSize * 1.14);
 
   const promptBlock = (
@@ -395,7 +409,7 @@ export default function PlayQuestionScreen() {
           styles.questionTextReveal,
           getTextStyle(q.locale, 'display', 'center'),
           {
-            color: BRAND.charcoal,
+            color: T.textPrimary,
             fontSize: answerQuestionFontSize,
             lineHeight: answerQuestionLineHeight,
             maxWidth: promptLayoutWidth,
@@ -420,7 +434,7 @@ export default function PlayQuestionScreen() {
   );
 
   return (
-    <View style={styles.canvas}>
+    <View style={[styles.canvas, { backgroundColor: surfaceColors.canvas }]}>
       <View
         style={[
           styles.matchTopWrap,
@@ -434,6 +448,7 @@ export default function PlayQuestionScreen() {
         <PlayMatchTopBar
           session={session}
           compact
+          showTeamScores={false}
           onLogoPress={leaveMatch}
           onWagerInfoPress={session.config.wagerEnabled ? () => setWagerInfoOpen(true) : undefined}
           onHotSeatInfoPress={SHOW_HOT_SEAT_UI ? openHotSeatInfo : undefined}
@@ -460,7 +475,7 @@ export default function PlayQuestionScreen() {
                 styles.backButtonInline,
                 SOFT_SURFACE_STYLES.face,
                 SOFT_SURFACE_STYLES.raised,
-                { opacity: pressed ? 0.88 : 1 },
+                { backgroundColor: BRAND.surface, opacity: pressed ? 0.88 : 1 },
               ]}
             >
               <Ionicons name="chevron-back" size={16} color={BRAND.charcoal} />
@@ -485,6 +500,7 @@ export default function PlayQuestionScreen() {
                 SOFT_SURFACE_STYLES.raised,
                 {
                   left: Math.max(insets.left + SPACING.sm, SPACING.xl),
+                  backgroundColor: BRAND.surface,
                   opacity: pressed ? 0.88 : 1,
                 },
               ]}
@@ -511,7 +527,7 @@ export default function PlayQuestionScreen() {
               </Text>
             )}
             {hotSeatNames ? (
-              <View style={styles.hotSeatBanner}>
+              <View style={[styles.hotSeatBanner, { backgroundColor: BRAND.surface }]}>
                 <Text style={styles.hotSeatTitle}>{t('play.hotSeatActiveTitle').toUpperCase()}</Text>
                 <Text style={styles.hotSeatNames}>{hotSeatNames}</Text>
               </View>
@@ -558,8 +574,8 @@ export default function PlayQuestionScreen() {
                 paddingHorizontal: answerPhaseScrollPaddingH,
               },
             ]}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
+            showsVerticalScrollIndicator
+            bounces
           >
             <View
               style={[
@@ -678,8 +694,9 @@ export default function PlayQuestionScreen() {
                 styles.questionScrollContent,
                 Platform.OS === 'web' ? styles.questionScrollContentWeb : null,
               ]}
-              showsVerticalScrollIndicator={false}
-              bounces={false}
+            showsVerticalScrollIndicator
+            bounces
+            nestedScrollEnabled
             >
               <View style={styles.questionBox}>
                 {q.promptImageUrl ? (
@@ -695,7 +712,7 @@ export default function PlayQuestionScreen() {
                     styles.questionText,
                     getTextStyle(q.locale, 'display', 'center'),
                     {
-                      color: BRAND.charcoal,
+                      color: T.textPrimary,
                       fontSize: unrevealedActiveQuestionTypography.fontSize,
                       lineHeight: unrevealedActiveQuestionTypography.lineHeight,
                       maxWidth: promptLayoutWidth,
@@ -728,7 +745,7 @@ export default function PlayQuestionScreen() {
                     styles.answerButton,
                     SOFT_SURFACE_STYLES.face,
                     {
-                      backgroundColor: BRAND.surface,
+                      backgroundColor: T.surface,
                       transform: [{ scale: pressed ? 0.98 : 1 }],
                       opacity: !canShowAnswer ? 0.45 : pressed ? 0.95 : 1,
                     },
@@ -753,7 +770,7 @@ export default function PlayQuestionScreen() {
 const styles = StyleSheet.create({
   canvas: {
     flex: 1,
-    backgroundColor: BRAND.canvas,
+    backgroundColor: T.canvas,
     position: 'relative',
   },
   matchTopWrap: {
@@ -792,7 +809,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: SPACING.xs,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: T.surface,
     alignSelf: 'flex-start',
   },
   metaPill: {
@@ -806,7 +823,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.pill,
-    backgroundColor: BRAND.surface,
+    backgroundColor: T.surface,
     gap: SPACING.xs,
   },
   metaPillText: {
@@ -814,7 +831,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 15,
     letterSpacing: 0.75,
-    color: BRAND.charcoal,
+    color: T.textPrimary,
     flexShrink: 1,
     textAlign: 'center',
   },
@@ -831,7 +848,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(51, 51, 51, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: BRAND.surface,
+    backgroundColor: T.surface,
     paddingHorizontal: 8,
     ...SOFT_SURFACE_STYLES.face,
     ...SOFT_SURFACE_STYLES.raised,
@@ -927,7 +944,7 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     maxWidth: 320,
     borderRadius: 18,
-    backgroundColor: BRAND.surface,
+    backgroundColor: T.surface,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: SPACING.lg,
@@ -937,7 +954,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.uiBold,
     fontSize: 14,
     letterSpacing: 1.2,
-    color: BRAND.charcoal,
+    color: T.textPrimary,
     textAlign: 'center',
   },
   revealPromptBlock: {
@@ -965,7 +982,7 @@ const styles = StyleSheet.create({
   timeoutBody: {
     fontFamily: FONTS.ui,
     fontSize: 13,
-    color: BRAND.charcoal,
+    color: T.textPrimary,
     textAlign: 'center',
   },
   promptImageReveal: {
@@ -998,12 +1015,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: SPACING.xs,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: T.surface,
   },
   backButtonText: {
     fontFamily: FONTS.uiBold,
     fontSize: 11,
-    color: BRAND.charcoal,
+    color: T.textPrimary,
   },
   teamTag: {
     fontFamily: FONTS.uiBold,
@@ -1027,7 +1044,7 @@ const styles = StyleSheet.create({
   hotSeatBanner: {
     marginTop: SPACING.xs,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: T.surface,
     paddingHorizontal: SPACING.md,
     paddingVertical: 6,
     alignItems: 'center',
@@ -1038,14 +1055,14 @@ const styles = StyleSheet.create({
   hotSeatTitle: {
     fontFamily: FONTS.uiBold,
     fontSize: 10,
-    color: BRAND.charcoal,
+    color: T.textPrimary,
     letterSpacing: 1,
     opacity: 0.65,
   },
   hotSeatNames: {
     fontFamily: FONTS.displayBold,
     fontSize: 15,
-    color: BRAND.charcoal,
+    color: T.textPrimary,
     textAlign: 'center',
   },
   topicText: {

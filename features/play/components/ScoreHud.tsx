@@ -7,6 +7,7 @@ import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import type { GameSessionState } from '@/features/shared';
+import { getLeadingTeamId } from '@/features/play/categorySections';
 import { usePlayStore } from '@/store/play';
 import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
 
@@ -96,7 +97,9 @@ export function ScoreHud({ session, compact, dense }: ScoreHudProps) {
         accessibilityRole="summary"
       >
         {session.teams.map((team, index) => {
-          const isActive = team.id === session.currentTeamId;
+          const highlightTeamId =
+            session.mode === 'rumble' ? getLeadingTeamId(session.teams) : session.currentTeamId;
+          const isActive = team.id === highlightTeamId;
           const wagerLabel = showWagerMeta
             ? t('play.wagersUsed', {
                 used: team.wagersUsed,
@@ -240,8 +243,9 @@ const styles = StyleSheet.create({
   },
   teamSegmentCompact: {
     paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    minHeight: 52,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.xs,
+    minHeight: 64,
   },
   teamSegmentRelaxed: {
     paddingHorizontal: SPACING.md,

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, View, Text, StyleSheet, ScrollView, useWindowDimensions, Animated, Platform } from 'react-native';
+import { Alert, View, Text, StyleSheet, useWindowDimensions, Animated, Platform, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
@@ -17,11 +17,13 @@ import type { GameConfig, LifelineId, QuestionCard } from '@/features/shared';
 import { PlayMatchTopBar } from '@/features/play/components/PlayMatchTopBar';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
+import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
+import { useThemeStore } from '@/store/theme';
 import { abandonGameEntry } from '@/lib/wallet/gameEntry';
 import { HOME_SOFT_UI } from '@/themes';
 import { getResponsivePlayFontSizes, scaleFont } from '@/utils/responsiveTypography';
@@ -151,7 +153,8 @@ function computeTopicFit(
   const groupWidth = horizontalChrome + centerWidth;
   const topicImageSize = Math.max(48, Math.min(m.topicImageSize, centerWidth));
   const titleWidth = Math.min(Math.max(centerWidth, web ? 218 : 160), cellWidth);
-  const titleHeight = Math.round(m.topicTitleFont * 2.45);
+  const lineHeight = Math.round(m.topicTitleFont * 1.12);
+  const titleHeight = Math.max(Math.round(lineHeight * 3.1), Math.round(m.topicTitleFont * 2.85));
   return { cellWidth, groupWidth, topicImageSize, centerWidth, titleWidth, titleHeight, railWidth, artGap };
 }
 
@@ -380,9 +383,11 @@ export default function PlayBoardScreen() {
   const insets = useSafeAreaInsets();
   const colors = useTheme();
   const { direction, getTextStyle, t, uiLocale } = useI18n();
+  useThemeStore((state) => state.paletteId);
   const session = usePlayStore((state) => state.session);
   const tokens = usePlayStore((state) => state.tokens);
   const selectQuestion = usePlayStore((state) => state.selectQuestion);
+  const reviewBoardQuestion = usePlayStore((state) => state.reviewBoardQuestion);
   const confirmRandomWagerQuestion = usePlayStore((state) => state.confirmRandomWagerQuestion);
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
   const selectorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -390,6 +395,7 @@ export default function PlayBoardScreen() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
   const [hotSeatInfoOpen, setHotSeatInfoOpen] = useState(false);
+  const [gridViewport, setGridViewport] = useState({ width: 0, height: 0 });
 
   // Notch detection: Blank side is the one with smaller safe area insets.
   const isLeftBlank = insets.left <= insets.right;
@@ -451,6 +457,10 @@ export default function PlayBoardScreen() {
   }, [clearSelectorTimeout]);
 
   const showWagerSelector = Boolean(session?.wager && !session.wager.question);
+  const showRandomSelector = session?.mode === 'random' && !showWagerSelector;
+  const remainingQuestionCount = session
+    ? session.board.filter((question) => !session.usedQuestionIds.has(question.id)).length
+    : 0;
 
   useEffect(() => {
     if (showWagerSelector) {
@@ -458,11 +468,24 @@ export default function PlayBoardScreen() {
       return;
     }
 
+    if (showRandomSelector && remainingQuestionCount > 0 && randomSelectorState === 'idle') {
+      startRandomSelection('random');
+      return;
+    }
+
     if (session?.step !== 'board') {
       clearSelectorTimeout();
       setRandomSelectorState('idle');
     }
-  }, [clearSelectorTimeout, session?.step, showWagerSelector, startRandomSelection]);
+  }, [
+    clearSelectorTimeout,
+    remainingQuestionCount,
+    randomSelectorState,
+    session?.step,
+    showRandomSelector,
+    showWagerSelector,
+    startRandomSelection,
+  ]);
 
   const grouped = useMemo(() => (session ? groupBoardTrivia(session) : []), [session]);
   const responsiveFontSizes = useMemo(() => getResponsivePlayFontSizes(width, height), [height, width]);
@@ -500,8 +523,30 @@ export default function PlayBoardScreen() {
     () => computeTopicFit(boardLayoutWidth, metrics, gridColumnCount, width),
     [boardLayoutWidth, metrics, gridColumnCount, width]
   );
+  const gridBottomPadding = Platform.OS === 'web'
+    ? Math.max(SPACING.lg, SPACING.md)
+    : Math.max(insets.bottom, SPACING.xs) + SPACING.sm;
+  const maxQuestionRows = Math.max(1, ...grouped.map((column) => column.rows.length));
+  const fittedBoardRowHeight = Math.max(
+    1,
+    (Math.max(1, gridViewport.height) - gridBottomPadding - metrics.gridGap * Math.max(0, gridRows.length - 1)) /
+      Math.max(1, gridRows.length)
+  );
+  const fittedPointPillHeight = Math.max(
+    1,
+    (fittedBoardRowHeight - metrics.pointRailGap * Math.max(0, maxQuestionRows - 1) - metrics.pointRailClipBleed) /
+      maxQuestionRows
+  );
+  const handleGridLayout = (event: LayoutChangeEvent) => {
+    const { width: nextWidth, height: nextHeight } = event.nativeEvent.layout;
+    setGridViewport((current) =>
+      current.width === nextWidth && current.height === nextHeight
+        ? current
+        : { width: nextWidth, height: nextHeight }
+    );
+  };
 
-  /** Tighter rails + scroll on small landscape phones so columns and footer are not clipped. */
+  /** Tighter rails + no scroll on small landscape phones so columns and footer are not clipped. */
   const layoutTuning = useMemo(() => {
     const narrow = innerWidth < 720;
     const tight = innerWidth < 600;
@@ -561,8 +606,8 @@ export default function PlayBoardScreen() {
     activeTeamId == null ? undefined : session.teams.find((team) => team.id === activeTeamId);
 
   const wager = session.wager;
-  const remaining = session.board.filter((question) => !session.usedQuestionIds.has(question.id));
   const formattedTokens = tokens.toLocaleString(uiLocale, { maximumFractionDigits: 0 });
+  const surfaceColors = getPlaySurfaceColors();
 
   const renderTile = (column: CategoryColumn, question: QuestionCard) => {
     const used = session.usedQuestionIds.has(question.id);
@@ -575,26 +620,38 @@ export default function PlayBoardScreen() {
           SOFT_SURFACE_FACE,
           softSurfaceLift(),
           {
-            opacity: used ? 0.45 : pressed ? 0.9 : 1,
-            transform: pressed && !used ? [{ scale: 0.97 }] : [{ scale: 1 }],
+            backgroundColor: surfaceColors.tileBackground,
+            height: fittedPointPillHeight,
+            minHeight: 0,
+            borderRadius: Math.min(14, fittedPointPillHeight / 2),
+            paddingVertical: 0,
+            opacity: used ? 0.72 : pressed ? 0.9 : 1,
+            transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
           },
         ]}
         onPress={() => {
-          if (used) return;
+          if (used) {
+            reviewBoardQuestion(question);
+            router.replace('/play/question');
+            return;
+          }
           selectQuestion(question);
           router.replace('/play/question');
         }}
-        disabled={used}
         accessibilityRole="button"
-        accessibilityState={{ disabled: used }}
-        accessibilityLabel={`${question.pointValue} points`}
+        accessibilityState={{ disabled: false }}
+        accessibilityLabel={
+          used
+            ? `Review ${question.pointValue} point question`
+            : `${question.pointValue} points`
+        }
       >
         <Text
           style={[
             styles.topicPointPillText,
             {
-              fontSize: metrics.tileFont,
-              lineHeight: Math.round(metrics.tileFont * 1.1),
+              fontSize: Math.min(metrics.tileFont, Math.max(6, fittedPointPillHeight * 0.48)),
+              lineHeight: Math.round(Math.min(metrics.tileFont, Math.max(6, fittedPointPillHeight * 0.48)) * 1.1),
               color: used ? textMuted : T.colors.textPrimary,
               textDecorationLine: used ? 'line-through' : 'none',
               opacity: used ? 0.55 : 1,
@@ -614,12 +671,16 @@ export default function PlayBoardScreen() {
 
   const categoryCell = (column: (typeof grouped)[0]) => {
     const picture = getCategoryPictureSource(column.categoryId);
-    const textPrimary = T.colors.textPrimary;
-    const imgW = topicFit.centerWidth;
-    const imgH = Math.round(imgW * topicArtHeightRatio);
+    const surfaceColors = getPlaySurfaceColors();
+    const textPrimary = surfaceColors.textPrimary;
+    const titleHeight = Math.min(topicFit.titleHeight, Math.max(1, fittedBoardRowHeight * 0.34));
+    const maxImageHeight = Math.max(1, fittedBoardRowHeight - titleHeight - SPACING.xs);
+    const imgW = Math.max(1, Math.min(topicFit.centerWidth, Math.floor(maxImageHeight / topicArtHeightRatio)));
+    const imgH = Math.min(Math.round(imgW * topicArtHeightRatio), maxImageHeight);
+    const titleFontSize = Math.min(metrics.topicTitleFont, Math.max(6, titleHeight / 3.4));
 
     return (
-      <View key={column.categoryId} style={styles.categoryGridCell}>
+      <View key={column.categoryId} style={[styles.categoryGridCell, { height: fittedBoardRowHeight }]}>
         <View style={[styles.categoryBlock, { width: topicFit.groupWidth }]}> 
           <View style={[styles.topicArtRow, { columnGap: topicFit.artGap }]}>
           <View
@@ -641,6 +702,7 @@ export default function PlayBoardScreen() {
                 {
                   width: imgW,
                   height: imgH,
+                  backgroundColor: surfaceColors.imageMatte ?? surfaceColors.imageFrameBackground,
                   opacity: pressed ? 0.96 : 1,
                   transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
                 },
@@ -651,19 +713,33 @@ export default function PlayBoardScreen() {
                 const next = column.rows
                   .flatMap((row) => [row.left, row.right])
                   .find((candidate) => !session.usedQuestionIds.has(candidate.id));
-                if (!next) return;
+                if (!next) {
+                  const usedQuestion = column.rows
+                    .flatMap((row) => [row.left, row.right])
+                    .find((candidate) => session.usedQuestionIds.has(candidate.id));
+                  if (usedQuestion) {
+                    reviewBoardQuestion(usedQuestion);
+                    router.replace('/play/question');
+                  }
+                  return;
+                }
                 selectQuestion(next);
                 router.replace('/play/question');
               }}
               accessibilityRole="button"
               accessibilityLabel={column.categoryName}
             >
-              <View style={styles.topicImageInner}>
+              <View
+                style={[
+                  styles.topicImageInner,
+                  { paddingHorizontal: 0, paddingVertical: 0 },
+                ]}
+              >
                 {picture ? (
                   <Image
                     source={picture}
                     style={styles.topicImageFill}
-                    contentFit="contain"
+                    contentFit="cover"
                     transition={120}
                   />
                 ) : (
@@ -677,7 +753,7 @@ export default function PlayBoardScreen() {
             <View
               style={[
                 styles.topicTitleRow,
-                { width: topicFit.titleWidth, height: topicFit.titleHeight },
+                { width: topicFit.titleWidth, height: titleHeight },
               ]}
             >
               <Text
@@ -685,16 +761,16 @@ export default function PlayBoardScreen() {
                   styles.topicTitleText,
                   {
                     color: textPrimary,
-                    fontSize: metrics.topicTitleFont,
-                    lineHeight: Math.round(metrics.topicTitleFont * 1.12),
+                    fontSize: titleFontSize,
+                    lineHeight: Math.round(titleFontSize * 1.12),
                   },
                   Platform.OS === 'web'
                     ? ({ wordBreak: 'normal', overflowWrap: 'break-word' } as any)
                     : null,
                 ]}
-                numberOfLines={2}
+                numberOfLines={3}
                 adjustsFontSizeToFit
-                minimumFontScale={0.75}
+                minimumFontScale={0.65}
                 ellipsizeMode="tail"
               >
                 {column.categoryName.toUpperCase()}
@@ -726,6 +802,8 @@ export default function PlayBoardScreen() {
         onWagerInfoPress={session.config.wagerEnabled ? () => setWagerInfoOpen(true) : undefined}
         onHotSeatInfoPress={SHOW_HOT_SEAT_UI ? () => setHotSeatInfoOpen(true) : undefined}
         compact={Math.min(width, height) < 560}
+        showTeamScores={false}
+        scorePillsNextToLogo
       />
     </View>
   );
@@ -781,24 +859,20 @@ export default function PlayBoardScreen() {
           </View>
         ) : null}
 
-        <ScrollView
-          style={[styles.gridScroll, { backgroundColor: T.colors.canvas }]}
-          contentContainerStyle={[
+        <View
+          onLayout={handleGridLayout}
+          style={[
+            styles.gridScroll,
             styles.gridScrollContent,
             {
+              backgroundColor: T.colors.canvas,
               paddingLeft: bodyPadLeft,
               paddingRight: bodyPadRight,
               gap: metrics.gridGap,
               paddingTop: Platform.OS === 'web' ? 4 : 0,
-              paddingBottom: Platform.OS === 'web'
-                ? Math.max(SPACING.lg, SPACING.md)
-                : Math.max(insets.bottom, SPACING.xs) + SPACING.sm,
+              paddingBottom: gridBottomPadding,
             },
           ]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          nestedScrollEnabled
-          bounces
         >
           {showWagerSelector ? (
             <RandomQuestionSelector
@@ -813,7 +887,7 @@ export default function PlayBoardScreen() {
               })}
               isRolling
             />
-          ) : session.mode === 'random' ? (
+          ) : showRandomSelector ? (
             <RandomQuestionSelector
               title={
                 randomSelectorState === 'rolling'
@@ -825,10 +899,7 @@ export default function PlayBoardScreen() {
                   ? t('play.randomSelectorRollingBody')
                   : t('play.randomSelectorIdleBody')
               }
-              actionLabel={remaining.length ? t('play.randomSelectorAction') : t('play.noQuestionsLeft')}
-              disabled={!remaining.length}
               isRolling={randomSelectorState === 'rolling'}
-              onAction={() => startRandomSelection('random')}
             />
           ) : (
             <View
@@ -844,7 +915,7 @@ export default function PlayBoardScreen() {
               {gridRows.map((row, ri) => (
                 <View
                   key={`row-${ri}`}
-                  style={[styles.gridRow, { gap: metrics.gridGap }]}
+                  style={[styles.gridRow, { gap: metrics.gridGap, height: fittedBoardRowHeight }]}
                 >
                   {row.map((col) => categoryCell(col))}
                   {row.length < gridColumnCount
@@ -856,7 +927,7 @@ export default function PlayBoardScreen() {
               ))}
             </View>
           )}
-        </ScrollView>
+        </View>
       </PlayScaffold>
 
       {showExitModal && (
@@ -865,9 +936,9 @@ export default function PlayBoardScreen() {
             style={styles.modalBackdrop}
             onPress={() => setShowExitModal(false)}
           />
-          <View style={[styles.modalCard, PLASTIC_FACE]}>
-             <Text style={styles.modalTitle}>EXIT GAME?</Text>
-             <Text style={styles.modalBody}>Are you sure you want to exit the current match?</Text>
+          <View style={[styles.modalCard, PLASTIC_FACE, { backgroundColor: surfaceColors.surface }]}>
+             <Text style={[styles.modalTitle, { color: surfaceColors.textPrimary }]}>EXIT GAME?</Text>
+             <Text style={[styles.modalBody, { color: surfaceColors.textMuted }]}>Are you sure you want to exit the current match?</Text>
              <View style={styles.modalButtonsRow}>
                 <Pressable 
                     onPress={leaveMatch}
@@ -882,10 +953,10 @@ export default function PlayBoardScreen() {
                     onPress={() => setShowExitModal(false)}
                     style={({ pressed }) => [
                         styles.exitCancelButton,
-                        { opacity: pressed ? 0.8 : 1 }
+                        { backgroundColor: surfaceColors.isDark ? 'rgba(255,255,255,0.12)' : '#F2F2F7', opacity: pressed ? 0.8 : 1 }
                     ]}
                 >
-                    <Text style={styles.exitCancelButtonText}>CANCEL</Text>
+                    <Text style={[styles.exitCancelButtonText, { color: surfaceColors.textPrimary }]}>CANCEL</Text>
                 </Pressable>
              </View>
           </View>
@@ -1165,9 +1236,10 @@ const styles = StyleSheet.create({
   },
   gridScroll: {
     flex: 1,
+    minHeight: 0,
+    overflow: 'hidden',
   },
   gridScrollContent: {
-    flexGrow: 1,
     width: '100%',
     minWidth: 0,
     paddingTop: 0,
@@ -1239,7 +1311,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Platform.OS === 'web' ? 4 : 8,
     minHeight: 38,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
   topicPointPillTight: {
@@ -1259,7 +1330,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
     alignSelf: 'center',
     flexGrow: 0,
   },
@@ -1268,14 +1338,13 @@ const styles = StyleSheet.create({
   },
   topicImageInner: {
     flex: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   topicImageFill: {
     width: '100%',
     height: '100%',
+    transform: [{ scale: 1.16 }],
   },
   pictureFallbackFill: {
     flex: 1,
@@ -1337,7 +1406,6 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '90%',
     maxWidth: 340,
-    backgroundColor: '#FFFFFF',
     borderRadius: 32,
     padding: SPACING.xl,
     alignItems: 'center',
@@ -1346,13 +1414,11 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontFamily: FONTS.displayBold,
     fontSize: 22,
-    color: '#333333',
     textAlign: 'center',
   },
   modalBody: {
     fontFamily: FONTS.ui,
     fontSize: 16,
-    color: '#666666',
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -1375,7 +1441,6 @@ const styles = StyleSheet.create({
   },
   exitCancelButton: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
     borderRadius: 16,
     paddingVertical: SPACING.md,
     alignItems: 'center',
@@ -1383,7 +1448,6 @@ const styles = StyleSheet.create({
   exitCancelButtonText: {
     fontFamily: FONTS.uiBold,
     fontSize: 14,
-    color: '#333333',
   },
   randomSelectorShell: {
     flex: 1,

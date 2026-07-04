@@ -15,7 +15,7 @@ import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
-const ALL_PALETTES: ThemePaletteId[] = ['default', 'warm', 'cool', 'green', 'red', 'dark'];
+const ALL_PALETTES: ThemePaletteId[] = ['dark', 'default', 'warm', 'cool', 'green', 'red'];
 
 function neumorphicLift3D(shadowColor: string, tier: 'header' | 'card'): any {
   const m = tier === 'header' ? { h: 6, op: 1, r: 0, el: 8 } : { h: 8, op: 1, r: 0, el: 10 };
@@ -164,7 +164,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.lg,
     borderRadius: 24,
-    width: 300,
+    width: '47%',
+    minWidth: 148,
     flexShrink: 1,
     flexGrow: 1,
     maxWidth: 360,

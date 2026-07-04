@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, BORDER_RADIUS, FONTS } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
+import { useThemeStore } from '@/store/theme';
 
 const T = HOME_SOFT_UI.colors;
 
@@ -37,6 +38,7 @@ export function HeaderBackButton({
   label,
   accessibilityLabel,
 }: HeaderBackButtonProps) {
+  useThemeStore((state) => state.paletteId);
   const backIcon: keyof typeof Ionicons.glyphMap =
     direction === 'rtl' ? 'chevron-forward' : 'chevron-back';
 
@@ -46,14 +48,14 @@ export function HeaderBackButton({
       style={({ pressed }) => [
         styles.backPill,
         BACK_PILL_SHADOW,
-        { flexDirection: rowDirection },
+        { backgroundColor: T.surface, flexDirection: rowDirection },
         { opacity: pressed ? 0.92 : 1 },
       ]}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
     >
       <Ionicons name={backIcon} size={20} color={T.textPrimary} />
-      <Text style={styles.backLabel}>{label}</Text>
+      <Text style={[styles.backLabel, { color: T.textPrimary }]}>{label}</Text>
     </Pressable>
   );
 }

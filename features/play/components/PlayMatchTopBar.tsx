@@ -8,14 +8,16 @@ import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { FONTS } from '@/constants/theme';
 import { useI18n } from '@/lib/i18n/useI18n';
 import type { GameSessionState, TeamState } from '@/features/shared';
+import { getLeadingTeamId } from '@/features/play/categorySections';
 import { HOME_SOFT_UI } from '@/themes';
 import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
+import { usePlayStore } from '@/store/play';
 
 const T = HOME_SOFT_UI;
 
 const WAGER_HEADER_ART = require('@/assets/wager.png');
 const HOT_SEAT_HEADER_ART = require('@/assets/hot seat.png');
-const BACKFIRE_IN_GAME_LOGO = require('@/assets/BF in game logo.png');
+const BACKFIRE_IN_GAME_LOGO = require('@/assets/BF in game logo safe.png');
 
 function isHotSeatConfigured(session: GameSessionState): boolean {
   if (!SHOW_HOT_SEAT_UI) return false;
@@ -45,6 +47,9 @@ export interface PlayMatchTopBarProps {
   onHotSeatInfoPress?: () => void;
   /** Smaller logo when vertical space is tight (e.g. question chrome below). */
   compact?: boolean;
+  /** When false, only the centered BackFire logo is shown unless scorePillsNextToLogo is true. */
+  showTeamScores?: boolean;
+  scorePillsNextToLogo?: boolean;
 }
 
 /**
@@ -57,10 +62,13 @@ export function PlayMatchTopBar({
   onWagerInfoPress,
   onHotSeatInfoPress,
   compact,
+  showTeamScores = true,
+  scorePillsNextToLogo = false,
 }: PlayMatchTopBarProps) {
   const { t } = useI18n();
   const { width, height } = useWindowDimensions();
   const fontSizes = useResponsivePlayFontSizes();
+  const adjustScoreByPoints = usePlayStore((state) => state.adjustScoreByPoints);
   const isRumble = session.mode === 'rumble';
   const compactQuestionHeader = Boolean(compact && !isRumble);
   const shortSide = Math.min(width, height);
@@ -123,7 +131,10 @@ export function PlayMatchTopBar({
   };
 
   const renderScoreCard = (team: TeamState, alignRight = false, compactScore = false) => {
-    const isActive = session.currentTeamId === team.id;
+    const highlightTeamId = isRumble
+      ? getLeadingTeamId(session.teams)
+      : session.currentTeamId;
+    const isActive = highlightTeamId === team.id;
     const useCompactScore = compactScore || compactQuestionHeader;
     const teamInitial = team.name.trim().charAt(0).toUpperCase() || 'T';
     const teamNameFontSize = useCompactScore
@@ -202,14 +213,76 @@ export function PlayMatchTopBar({
     );
   };
 
+  const renderLogoScorePill = (team: TeamState) => {
+    const highlightTeamId = isRumble ? getLeadingTeamId(session.teams) : session.currentTeamId;
+    const isActive = highlightTeamId === team.id;
+
+    return (
+      <View
+        key={team.id}
+        style={[
+          styles.logoScorePill,
+          isActive && { borderColor: T.colors.accentGlow, backgroundColor: T.colors.surface },
+        ]}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${team.name} minus 50`}
+          onPress={() => adjustScoreByPoints(team.id, -50, 'board header decrement')}
+          style={({ pressed }) => [styles.logoScoreAdjust, pressed && styles.logoScoreAdjustPressed]}
+        >
+          <Text style={styles.logoScoreAdjustText}>−</Text>
+        </Pressable>
+        <View style={styles.logoScoreTextBlock}>
+          <Text style={styles.logoScoreName} numberOfLines={1}>{team.name}</Text>
+          <Text style={styles.logoScoreValue} numberOfLines={1}>{team.score}</Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${team.name} plus 50`}
+          onPress={() => adjustScoreByPoints(team.id, 50, 'board header increment')}
+          style={({ pressed }) => [styles.logoScoreAdjust, pressed && styles.logoScoreAdjustPressed]}
+        >
+          <Text style={styles.logoScoreAdjustText}>+</Text>
+        </Pressable>
+      </View>
+    );
+  };
+
   if (isRumble) {
+    if (scorePillsNextToLogo) {
+      const team0 = session.teams[0];
+      const team1 = session.teams[1];
+      const extraTeams = session.teams.slice(2);
+
+      return (
+        <View style={styles.logoOnlyTopBar}>
+          {team0 ? <View style={styles.logoScoreSide}>{renderLogoScorePill(team0)}</View> : null}
+          <Pressable
+            onPress={onLogoPress}
+            style={styles.rumbleLogoContainer}
+            accessibilityRole="button"
+            accessibilityLabel="BackFire"
+          >
+            <Image
+              source={BACKFIRE_IN_GAME_LOGO}
+              style={[styles.rumbleLogo, compact && styles.rumbleLogoCompact]}
+              contentFit="contain"
+            />
+          </Pressable>
+          {team1 ? <View style={[styles.logoScoreSide, styles.logoScoreSideRight]}>{renderLogoScorePill(team1)}</View> : null}
+          {extraTeams.length ? <View style={styles.logoScorePills}>{extraTeams.map(renderLogoScorePill)}</View> : null}
+        </View>
+      );
+    }
+
     return (
       <View style={styles.rumbleTopBar}>
         <Pressable
           onPress={onLogoPress}
           style={styles.rumbleLogoContainer}
           accessibilityRole="button"
-          accessibilityLabel="Backfire"
+          accessibilityLabel="BackFire"
         >
           <Image
             source={BACKFIRE_IN_GAME_LOGO}
@@ -217,9 +290,39 @@ export function PlayMatchTopBar({
             contentFit="contain"
           />
         </Pressable>
-        <View style={styles.rumbleScoresWrap}>
-          {session.teams.map((team) => renderScoreCard(team, false, true))}
-        </View>
+        {showTeamScores ? (
+          <View style={styles.rumbleScoresWrap}>
+            {session.teams.map((team) => renderScoreCard(team, false, true))}
+          </View>
+        ) : null}
+      </View>
+    );
+  }
+
+  if (!showTeamScores) {
+    const team0 = session.teams[0];
+    const team1 = session.teams[1];
+    const extraTeams = session.teams.slice(2);
+
+    return (
+      <View style={styles.logoOnlyTopBar}>
+        {scorePillsNextToLogo && team0 ? (
+          <View style={styles.logoScoreSide}>{renderLogoScorePill(team0)}</View>
+        ) : null}
+        <Pressable
+          onPress={onLogoPress}
+          style={styles.headerLogoContainer}
+          accessibilityRole="button"
+          accessibilityLabel="BackFire"
+        >
+          <BackfireTitleLogo width={logoWidth} accessibilityLabel="BackFire" />
+        </Pressable>
+        {scorePillsNextToLogo && team1 ? (
+          <View style={[styles.logoScoreSide, styles.logoScoreSideRight]}>{renderLogoScorePill(team1)}</View>
+        ) : null}
+        {scorePillsNextToLogo && extraTeams.length ? (
+          <View style={styles.logoScorePills}>{extraTeams.map(renderLogoScorePill)}</View>
+        ) : null}
       </View>
     );
   }
@@ -240,7 +343,7 @@ export function PlayMatchTopBar({
           onPress={onLogoPress}
           style={styles.headerLogoContainer}
           accessibilityRole="button"
-          accessibilityLabel="Backfire"
+          accessibilityLabel="BackFire"
         >
           <BackfireTitleLogo width={logoWidth} accessibilityLabel="Backfire" />
         </Pressable>
@@ -265,16 +368,27 @@ const styles = StyleSheet.create({
   gameTopBarCompact: {
     gap: 6,
   },
+  logoOnlyTopBar: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 2,
+  },
   topBarSide: {
-    flexGrow: 0,
+    flex: 1,
+    flexGrow: 1,
     flexShrink: 1,
     minWidth: 0,
   },
   topBarTitle: {
-    flex: 1,
+    flexGrow: 0,
+    flexShrink: 0,
     minWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 4,
   },
   topBarSideCompact: {
     alignItems: 'flex-start',
@@ -298,6 +412,81 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+  },
+  logoScorePills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minWidth: 0,
+  },
+  logoScoreSide: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'flex-start',
+  },
+  logoScoreSideRight: {
+    alignItems: 'flex-end',
+  },
+  logoScorePill: {
+    minWidth: 138,
+    maxWidth: 220,
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: T.colors.surface,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: 'rgba(15, 23, 42, 0.1)',
+    shadowColor: T.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  logoScoreAdjust: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.06)',
+    flexShrink: 0,
+  },
+  logoScoreAdjustPressed: {
+    opacity: 0.72,
+    transform: [{ scale: 0.94 }],
+  },
+  logoScoreAdjustText: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 20,
+    lineHeight: 22,
+    color: T.colors.textPrimary,
+  },
+  logoScoreTextBlock: {
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 1,
+  },
+  logoScoreName: {
+    maxWidth: 104,
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    lineHeight: 14,
+    color: T.colors.textMuted,
+  },
+  logoScoreValue: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 18,
+    lineHeight: 21,
+    fontVariant: ['tabular-nums'],
+    color: T.colors.textPrimary,
   },
   teamScoreHeader: {
     flexDirection: 'row',

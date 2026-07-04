@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { ActivityIndicator, AppState, Platform, StyleSheet, View } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -42,7 +42,7 @@ export default function RootLayout() {
     );
   }, []);
 
-  const [loaded, error] = useFonts({
+  useFonts({
     [FONTS.display]: require('../assets/fonts/ClashDisplay-Semibold.ttf'),
     [FONTS.displayBold]: require('../assets/fonts/ClashDisplay-Bold.ttf'),
     [FONTS.ui]: require('../assets/fonts/GeneralSans-Regular.ttf'),
@@ -51,15 +51,11 @@ export default function RootLayout() {
     [FONTS.uiBold]: require('../assets/fonts/GeneralSans-Bold.ttf'),
   });
 
-  const fontsSettled = loaded || Boolean(error);
-
   useEffect(() => {
-    // Web: splash + `return null` while fonts load often reads as a stuck white screen;
-    // custom fonts still apply once `useFonts` resolves.
-    if (Platform.OS === 'web' || fontsSettled) {
+    if (Platform.OS === 'web') {
       void SplashScreen.hideAsync();
     }
-  }, [fontsSettled]);
+  }, []);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -90,20 +86,6 @@ export default function RootLayout() {
     };
   }, []);
 
-  const waitOnFonts = !fontsSettled && Platform.OS !== 'web';
-  if (waitOnFonts) {
-    return (
-      <View
-        style={[
-          styles.fontWaitRoot,
-          { backgroundColor: PALETTES.default.background },
-        ]}
-      >
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
   return (
     <ErrorBoundary>
       <Providers>
@@ -126,11 +108,3 @@ export default function RootLayout() {
     </ErrorBoundary>
   );
 }
-
-const styles = StyleSheet.create({
-  fontWaitRoot: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

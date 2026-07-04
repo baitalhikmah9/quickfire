@@ -302,6 +302,8 @@ export interface GameSessionState {
   lifelineRuntime?: LifelineRuntimeState;
   hotSeat?: HotSeatState;
   lastResolvedTurn?: AnswerReviewState;
+  /** Read-only Q+A when reopening a used board tile (no re-scoring). */
+  reviewingUsedQuestion?: boolean;
 }
 
 export interface WalletBalance {

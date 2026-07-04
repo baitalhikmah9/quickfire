@@ -3,7 +3,9 @@ import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ActivityIndicator, View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { BootScreen } from '@/components/BootScreen';
+import { SplashHider } from '@/components/SplashHider';
 import { useThemeHydration } from '@/lib/hooks/useTheme';
 import { useConvexUserProfileSync } from '@/lib/hooks/useConvexUserProfileSync';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
@@ -12,7 +14,6 @@ import { useGameHydration } from '@/store/game';
 import { usePlayHydration } from '@/store/play';
 import { useRevenueCatSync } from '@/lib/hooks/useRevenueCatSync';
 import { useWalletSync } from '@/lib/hooks/useWalletSync';
-import { PALETTES } from '@/constants/theme';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
 const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL ?? '';
@@ -31,6 +32,7 @@ function ProvidersContent({ children }: { children: React.ReactNode }) {
   if (!publishableKey || !convexUrl) {
     return (
       <SafeAreaProvider>
+        <SplashHider />
         <SetupRequired />
       </SafeAreaProvider>
     );
@@ -41,14 +43,8 @@ function ProvidersContent({ children }: { children: React.ReactNode }) {
       <>
         <ClerkLoading>
           <SafeAreaProvider>
-            <View
-              style={[
-                clerkBootstrapStyles.fill,
-                { backgroundColor: PALETTES.default.background },
-              ]}
-            >
-              <ActivityIndicator size="large" />
-            </View>
+            <SplashHider />
+            <BootScreen />
           </SafeAreaProvider>
         </ClerkLoading>
         <ClerkLoaded>
@@ -95,14 +91,6 @@ function SetupRequired() {
     </View>
   );
 }
-
-const clerkBootstrapStyles = StyleSheet.create({
-  fill: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
 
 const setupStyles = StyleSheet.create({
   container: {

@@ -201,7 +201,7 @@ describe('CategorySelectionScreen', () => {
     render(<CategorySelectionScreen />);
 
     expect(screen.queryByText('ALL')).toBeNull();
-    expect(screen.queryByText('HISTORY')).toBeNull();
+    expect(screen.getByText('HISTORY')).toBeTruthy();
 
     const category = usePlayStore.getState().session?.availableCategories[0];
 

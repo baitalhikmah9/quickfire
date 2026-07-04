@@ -39,7 +39,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'common.tokens': 'Tokens',
         'home.continueGame': 'Continue Game',
         'home.logoCapline': 'TRIVIA',
-        'home.logoWordmark': 'Backfire',
+        'home.logoWordmark': 'BackFire',
         'home.newGame': 'New Game',
         'home.playTriviaA11yResume':
           'Play trivia. You have a game in progress; opens a choice to continue or start new.',
@@ -221,11 +221,11 @@ describe('AppHubScreen', () => {
     });
   });
 
-  it('shows the Backfire logo image in the home header title area', () => {
+  it('shows the BackFire logo image in the home header title area', () => {
     render(<AppHubScreen />);
 
-    expect(screen.getByLabelText('Backfire')).toBeTruthy();
-    expect(screen.queryByText('Backfire')).toBeNull();
+    expect(screen.getByLabelText('BackFire')).toBeTruthy();
+    expect(screen.queryByText('BackFire')).toBeNull();
   });
 
   it('uses the brand raised surface treatment for mode choices', () => {

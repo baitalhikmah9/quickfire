@@ -1,10 +1,11 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render, screen } from '@testing-library/react-native';
-import { Modal, Platform } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Modal, Platform, StyleSheet } from 'react-native';
 
 import TeamSetupScreen from '@/app/(app)/play/team-setup';
 import { usePlayStore } from '@/store/play';
+import { useThemeStore } from '@/store/theme';
 
 const mockBack = jest.fn();
 const mockCanGoBack = jest.fn(() => false);
@@ -92,6 +93,7 @@ describe('TeamSetupScreen', () => {
     mockPush.mockClear();
     mockReplace.mockClear();
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
+    useThemeStore.setState({ paletteId: 'default' });
     await usePlayStore.getState().hydrate();
     usePlayStore.getState().ensureDraft();
   });
@@ -132,6 +134,20 @@ describe('TeamSetupScreen', () => {
     expect(usePlayStore.getState().session?.teams).toHaveLength(6);
     expect(screen.getByLabelText('6 teams').props.accessibilityState).toMatchObject({ selected: true });
     expect(screen.getByLabelText('2 teams').props.accessibilityState).toMatchObject({ selected: false });
+  });
+
+  it('updates team card color when the theme changes', () => {
+    useThemeStore.setState({ paletteId: 'dark' });
+    const { rerender } = render(<TeamSetupScreen />);
+
+    expect(StyleSheet.flatten(screen.getAllByTestId('team-setup-team-card')[0].props.style).backgroundColor).toBe('#1C1C1E');
+
+    act(() => {
+      useThemeStore.setState({ paletteId: 'default' });
+    });
+    rerender(<TeamSetupScreen />);
+
+    expect(StyleSheet.flatten(screen.getAllByTestId('team-setup-team-card')[0].props.style).backgroundColor).toBe('#FFFFFF');
   });
 
   it('uses distinct controls for adding and removing players', () => {

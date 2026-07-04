@@ -2,15 +2,15 @@ import { Image, View, Text, StyleSheet, type FlexStyle, type ImageSourcePropType
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, BORDER_RADIUS, FONTS, COLORS } from '@/constants';
+import { relativeLuminance } from '@/constants/theme';
 import { HOME_SOFT_UI } from '@/themes';
+import { useThemeStore } from '@/store/theme';
 
 /** Match `HubActionCard` pill3d chrome (squared + lip). */
 const CHIP_RADIUS = BORDER_RADIUS.sm;
 const SOFT_CHIP_RADIUS = BORDER_RADIUS.md;
 const DEPTH_LIP = 8;
 const DEPTH_TOP_INSET = 4;
-
-const SOFT = HOME_SOFT_UI.colors;
 
 type HubTokenChipProps = {
   label: string;
@@ -29,13 +29,22 @@ type HubTokenChipProps = {
   artworkSource?: ImageSourcePropType;
 };
 
-const softShadow: ViewStyle = {
-  shadowColor: 'rgba(51, 51, 51, 0.15)',
-  shadowOffset: { width: 0, height: 6 },
-  shadowOpacity: 1,
-  shadowRadius: 0,
-  elevation: 8,
-};
+function TokenMark({
+  artworkSource,
+  isDark,
+  iconColor,
+}: {
+  artworkSource?: ImageSourcePropType;
+  isDark: boolean;
+  iconColor: string;
+}) {
+  /** Wordmark PNG has an opaque black matte — use accent diamond on dark surfaces. */
+  if (!artworkSource || isDark) {
+    return <Ionicons name="diamond" size={14} color={iconColor} accessibilityIgnoresInvertColors />;
+  }
+
+  return <Image source={artworkSource} style={styles.artwork} resizeMode="contain" />;
+}
 
 /**
  * Token readout styled like hub 3D CTAs — primary face, accent depth lip, uppercase label.
@@ -50,6 +59,18 @@ export function HubTokenChip({
   outerStyle,
   artworkSource,
 }: HubTokenChipProps) {
+  useThemeStore((state) => state.paletteId);
+  const soft = HOME_SOFT_UI.colors;
+  const isDark = relativeLuminance(soft.canvas) < 0.3;
+  const tokenIconColor = isDark ? soft.accentGlow : soft.textPrimary;
+
+  const softFaceStyle: ViewStyle = {
+    backgroundColor: soft.surface,
+    borderTopColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.78)',
+    borderBottomColor: isDark ? 'rgba(0, 0, 0, 0.28)' : 'rgba(0, 0, 0, 0.08)',
+    shadowColor: isDark ? 'rgba(0, 0, 0, 0.36)' : 'rgba(51, 51, 51, 0.15)',
+  };
+
   const shadow = {
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 6 },
@@ -60,14 +81,10 @@ export function HubTokenChip({
 
   if (variant === 'softUi') {
     const innerSoft = (
-      <View style={[styles.softFace, softShadow]}>
+      <View style={[styles.softFace, softFaceStyle, styles.softShadow]}>
         <View style={[styles.row, styles.softRow, { flexDirection: rowDirection }]}>
-          {artworkSource ? (
-            <Image source={artworkSource} style={styles.artwork} resizeMode="contain" />
-          ) : (
-            <Ionicons name="diamond" size={14} color={SOFT.textPrimary} />
-          )}
-          <Text style={styles.softValue} numberOfLines={1}>
+          <TokenMark artworkSource={artworkSource} isDark={isDark} iconColor={tokenIconColor} />
+          <Text style={[styles.softValue, { color: soft.textPrimary }]} numberOfLines={1}>
             {value}
           </Text>
         </View>
@@ -113,7 +130,7 @@ export function HubTokenChip({
         />
         <View style={styles.face}>
           <View style={[styles.row, { flexDirection: rowDirection }]}>
-            {artworkSource ? (
+            {artworkSource && !isDark ? (
               <Image source={artworkSource} style={styles.artwork} resizeMode="contain" />
             ) : (
               <View style={styles.iconTile}>
@@ -164,22 +181,23 @@ const styles = StyleSheet.create({
   },
   softFace: {
     borderRadius: SOFT_CHIP_RADIUS,
-    backgroundColor: SOFT.surface,
     borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
     borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
+  },
+  softShadow: {
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 8,
   },
   softRow: {
     gap: 6,
   },
-
   softValue: {
     fontFamily: FONTS.uiBold,
     fontSize: 15,
-    color: SOFT.textPrimary,
     fontVariant: ['tabular-nums'],
   },
   artwork: {
@@ -216,7 +234,6 @@ const styles = StyleSheet.create({
     gap: 8,
     justifyContent: 'center',
   },
-
   iconTile: {
     width: 22,
     height: 22,

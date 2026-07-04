@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -327,12 +327,7 @@ export default function GameScreen() {
             </View>
           </View>
         ) : (
-          <ScrollView
-            horizontal
-            style={styles.boardScroll}
-            contentContainerStyle={styles.boardScrollContent}
-            showsHorizontalScrollIndicator={false}
-          >
+          <View style={styles.boardArea}>
             <Board
               questions={session.board.map((q) => ({
                 ...q,
@@ -341,7 +336,7 @@ export default function GameScreen() {
               onSelectQuestion={handleSelectQuestion}
               selectedQuestionId={selectedQuestion?.id}
             />
-          </ScrollView>
+          </View>
         )}
       </View>
     </SafeAreaView>
@@ -400,11 +395,9 @@ const styles = StyleSheet.create({
   lobbyBody: {
     flex: 1,
   },
-  boardScroll: {
+  boardArea: {
     flex: 1,
-  },
-  boardScrollContent: {
-    paddingVertical: SPACING.lg,
+    minHeight: 0,
   },
   panelWrapper: {
     flex: 1,

@@ -28,12 +28,10 @@ import { HOME_SOFT_UI } from '@/themes';
 import type { GameSessionState, TeamState } from '@/features/shared';
 
 const T = HOME_SOFT_UI.colors;
-/** docs/BRAND_GUIDELINES.md — charcoal primary text */
-const BRAND_CHARCOAL = '#333333';
+const BRAND_CHARCOAL = T.textPrimary;
 const BRAND_BORDER = 'rgba(51, 51, 51, 0.12)';
-const BRAND_SUBTLE_TEXT = 'rgba(51, 51, 51, 0.72)';
-/** Slight fill so rail cells read as tiles on cream canvas. */
-const RAIL_IDLE = 'rgba(255, 255, 255, 0.65)';
+const BRAND_SUBTLE_TEXT = T.textMuted;
+const RAIL_IDLE = T.surface;
 const NEITHER_DASH = 'rgba(51, 51, 51, 0.22)';
 
 /** Deeper drop shadow — reads as a raised plastic tile (tier scales with control size). */
@@ -993,6 +991,7 @@ export function PlayAnswerPanel({
                       {answerTextBlockCombined}
                     </View>
                   </View>
+                  {session.phase === 'scoring' || (session.phase === 'answerLock' && !session.reviewingUsedQuestion) ? (
                   <View
                     style={[
                       styles.scoringSectionPlain,
@@ -1048,6 +1047,7 @@ export function PlayAnswerPanel({
                     ) : null}
                     <View style={styles.scoringPanelAwardRegion}>{renderAwardTargets()}</View>
                   </View>
+                  ) : null}
                 </View>
               )}
 
@@ -1203,7 +1203,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: T.surface,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: 24,
@@ -1214,7 +1214,7 @@ const styles = StyleSheet.create({
   questionMetaText: {
     fontFamily: FONTS.uiBold,
     fontSize: 12,
-    color: '#333333',
+    color: T.textPrimary,
     letterSpacing: 0.5,
   },
   questionMetaDivider: {
@@ -1227,7 +1227,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.displayBold,
     fontSize: 16,
     lineHeight: 24,
-    color: '#333333',
+    color: T.textPrimary,
     textAlign: 'center',
     paddingHorizontal: SPACING.md,
   },
@@ -1264,7 +1264,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
     alignSelf: 'stretch',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: T.surface,
     borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
     ...SOFT_SURFACE_FACE,
@@ -1306,7 +1306,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     borderRadius: BORDER_RADIUS.xl,
     alignSelf: 'stretch',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: T.surface,
     ...SOFT_SURFACE_FACE,
     ...softSurfaceLift(),
     shadowColor: COLORS.primary,
@@ -1361,7 +1361,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: T.surface,
     borderRadius: 14,
     ...SOFT_SURFACE_FACE,
     ...softSurfaceLift(),
@@ -1374,7 +1374,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: T.surface,
     borderRadius: 14,
     borderStyle: 'dashed',
     borderWidth: 1,
@@ -1423,13 +1423,13 @@ const styles = StyleSheet.create({
   },
   softUiBtn: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: T.surface,
     borderRadius: 32,
     ...PLASTIC_FACE,
     ...neumorphicLift('rgba(15, 23, 42, 0.14)', 'pill'),
   },
   softUiBtnText: {
-    color: '#333333',
+    color: T.textPrimary,
     fontFamily: FONTS.displayBold,
     letterSpacing: 2,
     fontSize: 14,

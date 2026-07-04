@@ -1,24 +1,25 @@
 {
   "expo": {
-    "name": "Backfire",
+    "name": "BackFire",
     "slug": "backfire",
     "scheme": "backfire",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/BF in game logo safe.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#FAF9F6"
     },
     "ios": {
       "supportsTablet": true,
       "requireFullScreen": true,
-      "buildNumber": "1",
+      "buildNumber": "2",
       "bundleIdentifier": "com.playbackfire.app"
     },
     "android": {
+      "versionCode": 2,
       "package": "com.playbackfire.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -45,8 +46,29 @@
       "output": "static"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FAF9F6",
+          "image": "./assets/BF in game logo safe.png",
+          "imageWidth": 280,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#000000",
+            "image": "./assets/BF in game logo safe.png"
+          }
+        }
+      ],
       "expo-router",
       "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "buildArchs": ["arm64-v8a", "armeabi-v7a"]
+          }
+        }
+      ],
       [
         "expo-screen-orientation",
         {

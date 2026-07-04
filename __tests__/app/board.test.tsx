@@ -198,7 +198,6 @@ describe('PlayBoardScreen', () => {
 
     expect(screen.getByTestId('random-question-selector')).toBeTruthy();
     expect(screen.getByText('Random Question Select')).toBeTruthy();
-    expect(screen.getByText('Reveal Random Question')).toBeTruthy();
     expect(screen.queryByText('Draw Random Question')).toBeNull();
   });
 
@@ -271,13 +270,13 @@ describe('PlayBoardScreen', () => {
 
     render(<PlayBoardScreen />);
 
-    expect(screen.getByText('Alpha')).toBeTruthy();
-    expect(screen.getByText('Beta')).toBeTruthy();
-    expect(screen.getByText('Gamma')).toBeTruthy();
-    expect(screen.getByText('Delta')).toBeTruthy();
-    expect(screen.getByText('10')).toBeTruthy();
-    expect(screen.getByText('20')).toBeTruthy();
-    expect(screen.getByText('30')).toBeTruthy();
-    expect(screen.getByText('40')).toBeTruthy();
+    expect(screen.getAllByText('Alpha').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Beta').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Gamma').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Delta').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('10').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('20').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('30').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('40').length).toBeGreaterThanOrEqual(1);
   });
 });

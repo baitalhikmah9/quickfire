@@ -459,6 +459,7 @@ interface PlayStore {
   setCategories: (slugs: string[]) => void;
   startBoard: () => { ok: boolean; error?: string };
   selectQuestion: (question: QuestionCard) => void;
+  reviewBoardQuestion: (question: QuestionCard) => void;
   cancelCurrentQuestion: () => void;
   revealAnswer: () => { ok: boolean; error?: string };
   expireCurrentQuestionForTimeout: () => void;
@@ -885,6 +886,24 @@ function createPlayStore() {
               phase: 'questionReveal',
               timerStartedAt: Date.now(),
               timedOutQuestionId: undefined,
+              reviewingUsedQuestion: false,
+            },
+          };
+        }),
+
+      reviewBoardQuestion: (question) =>
+        set((state) => {
+          if (!state.session) return state;
+          return {
+            session: {
+              ...state.session,
+              currentQuestion: question,
+              step: 'answer',
+              phase: 'answerLock',
+              reviewingUsedQuestion: true,
+              timerStartedAt: undefined,
+              timedOutQuestionId: undefined,
+              lastAwardedTeamId: undefined,
             },
           };
         }),
@@ -895,14 +914,10 @@ function createPlayStore() {
           const currentQuestion = session?.currentQuestion;
           if (!session || !currentQuestion) return state;
 
-          const usedQuestionIds = new Set(session.usedQuestionIds);
-          usedQuestionIds.delete(currentQuestion.id);
-
           return {
             session: {
               ...session,
               currentQuestion: undefined,
-              usedQuestionIds,
               step: 'board',
               phase: 'wagerDecision',
               timerStartedAt: undefined,
@@ -925,6 +940,7 @@ function createPlayStore() {
               ...state.session,
               step: 'answer',
               phase: 'answerLock',
+              reviewingUsedQuestion: false,
             },
           };
         });

@@ -48,7 +48,7 @@ import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
-const ALL_PALETTES: ThemePaletteId[] = ['default', 'warm', 'cool', 'green', 'red', 'dark'];
+const ALL_PALETTES: ThemePaletteId[] = ['dark', 'default', 'warm', 'cool', 'green', 'red'];
 const SELECTABLE_CONTENT_LOCALES = SUPPORTED_LOCALES.filter((locale) =>
   isNonEnglishContentLocale(locale)
 );
@@ -1094,13 +1094,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexGrow: 1,
     flexShrink: 1,
-    width: 300,
-    maxWidth: 340,
+    width: '47%',
+    minWidth: 148,
+    maxWidth: '100%',
     borderWidth: 1.5,
     borderRadius: 24,
     gap: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
   },
   themeSwatchRow: {
     flexDirection: 'row',

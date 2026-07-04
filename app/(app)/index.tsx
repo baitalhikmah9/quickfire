@@ -534,7 +534,6 @@ export default function AppHubScreen() {
           <View
             style={[
               styles.resumeModalCard,
-              styles.plasticFace,
               brandRaisedSurfaceShadow('hero'),
               { backgroundColor: surface },
               isWeb && { maxWidth: 480 },
@@ -569,10 +568,16 @@ export default function AppHubScreen() {
                   styles.raisedButton,
                   styles.secondaryRaisedButton,
                   styles.secondaryRaisedButtonDepth,
-                  { opacity: pressed ? 0.88 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
+                  {
+                    backgroundColor: surface,
+                    opacity: pressed ? 0.88 : 1,
+                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+                  },
                 ]}
               >
-                <Text style={styles.raisedButtonText}>{t('home.newGame').toUpperCase()}</Text>
+                <Text style={[styles.raisedButtonText, { color: textPrimary }]}>
+                  {t('home.newGame').toUpperCase()}
+                </Text>
               </Pressable>
             </View>
           </View>

@@ -11,12 +11,8 @@ import type { GameMode } from '@/features/shared';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { usePlayStore } from '@/store/play';
-import type { TranslationKey } from '@/lib/i18n/messages/en';
-
-/** docs/BRAND_GUIDELINES.md — warm cream canvas */
-const CANVAS_WARM_CREAM = '#FAF9F6';
-/** Primary copy / icons on light surfaces */
-const CHARCOAL = '#333333';
+import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
+import { useThemeStore } from '@/store/theme';
 
 type ModeDef = {
   id: GameMode;
@@ -33,6 +29,8 @@ export default function PlayModeScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
   const { t, direction, uiLocale } = useI18n();
+  useThemeStore((state) => state.paletteId);
+  const surfaceColors = getPlaySurfaceColors();
   const setMode = usePlayStore((state) => state.setMode);
   const storedMode = usePlayStore((state) => state.session?.mode);
   const tokens = usePlayStore((state) => state.tokens);
@@ -112,7 +110,7 @@ export default function PlayModeScreen() {
       : 24;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: CANVAS_WARM_CREAM }]} edges={['top', 'bottom', 'left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: surfaceColors.canvas }]} edges={['top', 'bottom', 'left', 'right']}>
       {/* ── Header ── compact, at top, no vertical centering of the combined group */}
       <GameHeader
         variant="title"
@@ -167,12 +165,18 @@ export default function PlayModeScreen() {
                     {
                       width: tileSide,
                       height: tileSide,
+                      backgroundColor: surfaceColors.surface,
                       opacity: pressed ? 0.94 : 1,
                     },
                   ]}
                 >
                   <View style={styles.tileInner} pointerEvents="none">
-                    <Text style={styles.tileLabel} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72}>
+                    <Text
+                      style={[styles.tileLabel, { color: surfaceColors.textPrimary }]}
+                      numberOfLines={2}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.72}
+                    >
                       {t(mode.titleKey).toUpperCase()}
                     </Text>
                   </View>
@@ -210,7 +214,6 @@ const styles = StyleSheet.create({
   },
   tile: {
     borderRadius: BORDER_RADIUS.xl,
-    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
   tileInner: {
@@ -224,7 +227,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     letterSpacing: 0.6,
     textAlign: 'center',
-    color: CHARCOAL,
     zIndex: 1,
   },
   tileShadow: {

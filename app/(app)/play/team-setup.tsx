@@ -24,6 +24,7 @@ import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softS
 import { useI18n } from '@/lib/i18n/useI18n';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { usePlayStore } from '@/store/play';
+import { useThemeStore } from '@/store/theme';
 import type { GameSessionState } from '@/features/shared';
 import { HOME_SOFT_UI } from '@/themes';
 
@@ -109,6 +110,8 @@ export default function TeamSetupScreen() {
   const isWebLayout = Platform.OS === 'web' && windowWidth >= 900;
   const viewportScale = Math.max(0.72, Math.min(1.08, Math.min(windowWidth / 860, windowHeight / 620)));
   const { direction, getTextStyle, t } = useI18n();
+  const paletteId = useThemeStore((state) => state.paletteId);
+  const themedStyles = useMemo(() => makeThemedStyles(), [paletteId]);
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
   const [hotSeatInfoOpen, setHotSeatInfoOpen] = useState(false);
 
@@ -161,6 +164,7 @@ export default function TeamSetupScreen() {
         <Pressable
           style={({ pressed }) => [
             styles.stepperButton,
+            themedStyles.stepperButton,
             { width: stepperBtn, height: stepperBtn, opacity: minusDisabled ? 0.4 : pressed ? 0.92 : 1 },
             neumorphicLift(T.shadowStrong, 'header'),
           ]}
@@ -169,14 +173,15 @@ export default function TeamSetupScreen() {
           accessibilityRole="button"
           accessibilityState={{ disabled: minusDisabled }}
         >
-          <Text style={styles.stepperGlyph}>−</Text>
+          <Text style={[styles.stepperGlyph, themedStyles.stepperGlyph]}>−</Text>
         </Pressable>
-        <Text style={[styles.stepperValue, { fontSize: stepperValueSize }, getTextStyle(undefined, 'displayBold', 'center')]}>
+        <Text style={[styles.stepperValue, themedStyles.stepperValue, { fontSize: stepperValueSize }, getTextStyle(undefined, 'displayBold', 'center')]}>
           {value}
         </Text>
         <Pressable
           style={({ pressed }) => [
             styles.stepperButton,
+            themedStyles.stepperButton,
             { width: stepperBtn, height: stepperBtn, opacity: plusDisabled ? 0.4 : pressed ? 0.92 : 1 },
             neumorphicLift(T.shadowStrong, 'header'),
           ]}
@@ -185,23 +190,24 @@ export default function TeamSetupScreen() {
           accessibilityRole="button"
           accessibilityState={{ disabled: plusDisabled }}
         >
-          <Text style={styles.stepperGlyph}>+</Text>
+          <Text style={[styles.stepperGlyph, themedStyles.stepperGlyph]}>+</Text>
         </Pressable>
       </View>
     ),
-    [getTextStyle, stepperBtn, stepperValueSize, shortScreen]
+    [getTextStyle, stepperBtn, stepperValueSize, shortScreen, themedStyles]
   );
 
   const teamCard = (team: GameSessionState['teams'][number]) => {
     const memberCount = team.playerNames?.length ?? 0;
     return (
-      <View style={[styles.teamCard, { padding: cardPad }]}>
+      <View testID="team-setup-team-card" style={[styles.teamCard, themedStyles.teamCard, { padding: cardPad }]}>
         <View style={styles.editableInputWrap}>
           <TextInput
             value={team.name}
             onChangeText={(value) => updateTeamName(team.id, value)}
             style={[
               styles.teamTitleInput,
+              themedStyles.teamTitleInput,
               styles.inputWithEditIcon,
               { fontSize: shortScreen ? 18 : compact ? 20 : 22 },
               shortScreen && styles.teamTitleInputTight,
@@ -226,6 +232,7 @@ export default function TeamSetupScreen() {
                   multiline={false}
                   style={[
                     styles.playerInput,
+                    themedStyles.playerInput,
                     styles.inputWithEditIcon,
                     {
                       minHeight: inputMinH,
@@ -252,12 +259,13 @@ export default function TeamSetupScreen() {
               style={({ pressed }) => [
                 styles.playerActionButton,
                 styles.removePlayerAction,
+                themedStyles.removePlayerAction,
                 pressed && styles.playerActionPressed,
               ]}
               accessibilityRole="button"
               accessibilityLabel={t('play.removeTeamMemberA11y')}
             >
-              <Text style={[styles.removePlayerActionText, getTextStyle()]}>
+              <Text style={[styles.removePlayerActionText, themedStyles.removePlayerActionText, getTextStyle()]}>
                 {t('play.removeLastPlayerLink')}
               </Text>
             </Pressable>
@@ -267,12 +275,13 @@ export default function TeamSetupScreen() {
             style={({ pressed }) => [
               styles.playerActionButton,
               styles.addPlayerAction,
+              themedStyles.addPlayerAction,
               pressed && styles.playerActionPressed,
             ]}
             accessibilityRole="button"
             accessibilityLabel={t('play.addTeamMemberA11y')}
           >
-            <Text style={[styles.addPlayerActionText, getTextStyle()]}>{t('play.addPlayerLink')}</Text>
+            <Text style={[styles.addPlayerActionText, themedStyles.addPlayerActionText, getTextStyle()]}>{t('play.addPlayerLink')}</Text>
           </Pressable>
         </View>
       </View>
@@ -290,6 +299,7 @@ export default function TeamSetupScreen() {
       <View
         style={[
           styles.rumblePanel,
+          themedStyles.rumblePanel,
           {
             maxWidth: d.panelMaxWidth,
             paddingHorizontal: d.panelPadH,
@@ -303,6 +313,7 @@ export default function TeamSetupScreen() {
         <Text
           style={[
             styles.rumbleCardHeading,
+            themedStyles.rumbleCardHeading,
             { fontSize: d.cardHeadingSize },
             getTextStyle(undefined, 'displayBold', 'center'),
           ]}
@@ -332,6 +343,7 @@ export default function TeamSetupScreen() {
                   onChangeText={(value) => updateTeamName(team.id, value)}
                   style={[
                     styles.rumbleNameInput,
+                    themedStyles.rumbleNameInput,
                     styles.inputWithEditIcon,
                     {
                       minHeight: d.nameMinH,
@@ -376,7 +388,9 @@ export default function TeamSetupScreen() {
                     height: d.countSize,
                     borderRadius: d.countSize / 2,
                   },
+                  themedStyles.rumbleCountButton,
                   selected && styles.rumbleCountButtonSelected,
+                  selected && themedStyles.rumbleCountButtonSelected,
                   pressed && styles.rumbleCountButtonPressed,
                 ]}
                 accessibilityRole="button"
@@ -386,8 +400,10 @@ export default function TeamSetupScreen() {
                 <Text
                   style={[
                     styles.rumbleCountText,
+                    themedStyles.rumbleCountText,
                     { fontSize: d.countFontSize },
                     selected && styles.rumbleCountTextSelected,
+                    selected && themedStyles.rumbleCountTextSelected,
                     getTextStyle(undefined, 'displayBold', 'center'),
                   ]}
                 >
@@ -399,7 +415,7 @@ export default function TeamSetupScreen() {
         </View>
       </View>
     );
-  }, [rumbleDensity, session, rumbleMode, getTextStyle, setTeamCount, t, tightContinueStrip, updateTeamName]);
+  }, [rumbleDensity, session, rumbleMode, getTextStyle, setTeamCount, t, themedStyles, tightContinueStrip, updateTeamName]);
 
   const centerColumn = useMemo(() => {
     if (!session) return null;
@@ -412,8 +428,9 @@ export default function TeamSetupScreen() {
       <View style={[stackStyle, { gap }]}>
         {hotSeatAvailable ? (
           <View style={[
-            styles.centerCard, 
-            shortScreen && styles.centerCardTight, 
+            styles.centerCard,
+            themedStyles.centerCard,
+            shortScreen && styles.centerCardTight,
             isBothCenter && shortScreen && styles.centerCardHalfWidth,
             { padding: cardPad }
           ]}>
@@ -423,7 +440,7 @@ export default function TeamSetupScreen() {
               contentFit="contain"
               accessible={false}
             />
-            <Text style={[styles.centerCardTitle, { fontSize: centerTitleSize }, getTextStyle(undefined, 'display', 'center')]}>
+            <Text style={[styles.centerCardTitle, themedStyles.centerCardTitle, { fontSize: centerTitleSize }, getTextStyle(undefined, 'display', 'center')]}>
               {t('play.hotSeatTitle')}
             </Text>
             {renderStepper(
@@ -434,15 +451,16 @@ export default function TeamSetupScreen() {
               hotSeatRounds >= MAX_HOT_SEAT_ROUNDS
             )}
             <Pressable onPress={() => setHotSeatInfoOpen(true)} style={styles.helpHit} accessibilityRole="button">
-              <Text style={[styles.linkText, getTextStyle()]}>{t('play.hotSeatInfoLink')}</Text>
+              <Text style={[styles.linkText, themedStyles.linkText, getTextStyle()]}>{t('play.hotSeatInfoLink')}</Text>
             </Pressable>
           </View>
         ) : null}
 
         {wagerEnabled ? (
           <View style={[
-            styles.centerCard, 
-            shortScreen && styles.centerCardTight, 
+            styles.centerCard,
+            themedStyles.centerCard,
+            shortScreen && styles.centerCardTight,
             isBothCenter && shortScreen && styles.centerCardHalfWidth,
             { padding: cardPad }
           ]}>
@@ -452,7 +470,7 @@ export default function TeamSetupScreen() {
               contentFit="contain"
               accessible={false}
             />
-            <Text style={[styles.centerCardTitle, { fontSize: centerTitleSize }, getTextStyle(undefined, 'display', 'center')]}>
+            <Text style={[styles.centerCardTitle, themedStyles.centerCardTitle, { fontSize: centerTitleSize }, getTextStyle(undefined, 'display', 'center')]}>
               {t('play.wagerCardTitle')}
             </Text>
             {renderStepper(
@@ -467,7 +485,7 @@ export default function TeamSetupScreen() {
               style={styles.helpHit}
               accessibilityRole="button"
             >
-              <Text style={[styles.linkText, getTextStyle(undefined, 'bodySemibold')]}>{t('play.wagerHelpLink')}</Text>
+              <Text style={[styles.linkText, themedStyles.linkText, getTextStyle(undefined, 'bodySemibold')]}>{t('play.wagerHelpLink')}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -488,6 +506,7 @@ export default function TeamSetupScreen() {
     cardPad,
     centerTitleSize,
     centerIconSize,
+    themedStyles,
   ]);
 
   if (!session) {
@@ -534,9 +553,10 @@ export default function TeamSetupScreen() {
                   title={t('common.continue').toUpperCase()}
                   onPress={() => router.push('/play/categories')}
                   disabled={!canContinue}
-                  style={StyleSheet.flatten([styles.continueBtn, styles.webContinueBtn, !canContinue && { opacity: 0.5 }])}
+                  style={StyleSheet.flatten([styles.continueBtn, themedStyles.continueBtn, styles.webContinueBtn, !canContinue && { opacity: 0.5 }])}
                   textStyle={StyleSheet.flatten([
                     styles.continueBtnText,
+                    themedStyles.continueBtnText,
                     getTextStyle(undefined, 'bodySemibold', 'center'),
                   ])}
                 />
@@ -582,9 +602,10 @@ export default function TeamSetupScreen() {
             title={t('common.continue').toUpperCase()}
             onPress={() => router.push('/play/categories')}
             disabled={!canContinue}
-            style={StyleSheet.flatten([styles.continueBtn, !canContinue && { opacity: 0.5 }])}
+            style={StyleSheet.flatten([styles.continueBtn, themedStyles.continueBtn, !canContinue && { opacity: 0.5 }])}
             textStyle={StyleSheet.flatten([
               styles.continueBtnText,
+              themedStyles.continueBtnText,
               getTextStyle(undefined, 'bodySemibold', 'center'),
             ])}
           />
@@ -640,7 +661,7 @@ export default function TeamSetupScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('common.close')}
           />
-          <View style={[styles.modalCard, { borderColor: 'rgba(51,51,51,0.12)' }]}>
+          <View style={[styles.modalCard, themedStyles.modalCard, { borderColor: 'rgba(51,51,51,0.12)' }]}>
             <Text
               style={[
                 styles.modalTitle,
@@ -661,6 +682,70 @@ export default function TeamSetupScreen() {
       <View style={styles.bodyFill}>{mainContent}</View>
     </PlayScaffold>
   );
+}
+
+function makeThemedStyles() {
+  return StyleSheet.create({
+    rumblePanel: {
+      backgroundColor: T.surface,
+      ...neumorphicLift(T.shadowStrong, 'card'),
+    },
+    rumbleCardHeading: { color: T.textPrimary },
+    rumbleNameInput: {
+      backgroundColor: 'rgba(0,0,0,0.045)',
+      color: T.textPrimary,
+    },
+    rumbleCountButton: {
+      backgroundColor: T.surface,
+      borderColor: 'rgba(51,51,51,0.12)',
+    },
+    rumbleCountButtonSelected: {
+      backgroundColor: T.textPrimary,
+      borderColor: T.textPrimary,
+    },
+    rumbleCountText: { color: T.textPrimary },
+    rumbleCountTextSelected: { color: T.surface },
+    teamCard: {
+      backgroundColor: T.surface,
+      ...neumorphicLift(T.shadowStrong, 'card'),
+    },
+    teamTitleInput: { color: T.textPrimary },
+    playerInput: {
+      backgroundColor: 'rgba(0,0,0,0.03)',
+      color: T.textPrimary,
+    },
+    addPlayerAction: {
+      backgroundColor: T.textPrimary,
+      borderColor: T.textPrimary,
+    },
+    removePlayerAction: {
+      backgroundColor: 'rgba(0,0,0,0.03)',
+      borderColor: 'rgba(51,51,51,0.14)',
+    },
+    addPlayerActionText: { color: T.canvas },
+    removePlayerActionText: { color: T.textMuted },
+    linkText: { color: T.textPrimary },
+    centerCard: {
+      backgroundColor: T.surface,
+      ...neumorphicLift(T.shadowStrong, 'card'),
+    },
+    centerCardTitle: { color: T.textPrimary },
+    stepperButton: {
+      backgroundColor: T.surface,
+      ...neumorphicLift(T.shadowStrong, 'header'),
+    },
+    stepperGlyph: { color: T.textPrimary },
+    stepperValue: { color: T.textPrimary },
+    continueBtn: {
+      backgroundColor: T.surface,
+      ...neumorphicLift(T.shadowStrong, 'pill'),
+    },
+    continueBtnText: { color: T.textPrimary },
+    modalCard: {
+      backgroundColor: T.surface,
+      ...neumorphicLift(T.shadowStrong, 'hero'),
+    },
+  });
 }
 
 const styles = StyleSheet.create({
