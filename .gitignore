@@ -105,3 +105,4 @@ pids/
 # generated native folders
 /ios
 /android
+tmp-*.png
