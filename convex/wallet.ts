@@ -180,9 +180,7 @@ export const reserveGameEntry = mutation({
       }
     }
 
-    const balance = wallet.balance;
-
-    const reserve = tryReserveFromBalance(balance, cost);
+    const reserve = tryReserveFromBalance(wallet.balance, cost);
     if (!reserve.ok) {
       return { ok: false as const, error: reserve.reason };
     }
@@ -197,11 +195,10 @@ export const reserveGameEntry = mutation({
       source: 'gameplay',
       idempotencyKey,
       reservationId,
-      metadata: { mode: args.mode, deviceId: args.deviceId },
+      metadata: { mode: args.mode, deviceId: args.deviceId, chargeTiming: 'on_board' },
     });
 
-    await ctx.db.patch(wallet._id, { balance: reserve.balanceAfter });
-    return { ok: true as const, reservationId, balance: reserve.balanceAfter };
+    return { ok: true as const, reservationId, balance: wallet.balance };
   },
 });
 
@@ -227,11 +224,20 @@ export const consumeEntry = mutation({
       return { ok: false as const, error: 'invalid_reservation_state' };
     }
 
+    const metadata = typeof tx.metadata === 'object' && tx.metadata !== null ? tx.metadata : {};
+    if ((metadata as Record<string, unknown>).chargeTiming === 'on_board') {
+      const charge = tryReserveFromBalance(wallet.balance, -tx.amount);
+      if (!charge.ok) {
+        return { ok: false as const, error: charge.reason };
+      }
+      await ctx.db.patch(wallet._id, { balance: charge.balanceAfter });
+    }
+
     await ctx.db.patch(tx._id, {
       status: 'consumed',
       sessionId: args.completedSessionId,
       metadata: {
-        ...(typeof tx.metadata === 'object' && tx.metadata !== null ? tx.metadata : {}),
+        ...metadata,
         completedSessionId: args.completedSessionId,
       },
     });
@@ -306,7 +312,7 @@ export const adjustEntryReservation = mutation({
       return { ok: true as const, balance: wallet.balance };
     }
 
-    const reserve = tryReserveFromBalance(wallet.balance, args.additionalCost);
+    const reserve = tryReserveFromBalance(wallet.balance, targetCost);
     if (!reserve.ok) {
       return { ok: false as const, error: reserve.reason };
     }
@@ -316,16 +322,15 @@ export const adjustEntryReservation = mutation({
     await ctx.db.insert('wallet_transactions', {
       walletId: wallet._id,
       type: 'game_entry_adjust',
-      amount: -args.additionalCost,
+      amount: 0,
       createdAt: now,
       status: 'posted',
       source: 'gameplay',
       idempotencyKey,
-      metadata: { reservationId: args.reservationId, previousCost: currentCost, targetCost },
+      metadata: { reservationId: args.reservationId, previousCost: currentCost, targetCost, chargeTiming: 'on_board' },
     });
-    await ctx.db.patch(wallet._id, { balance: reserve.balanceAfter });
 
-    return { ok: true as const, balance: reserve.balanceAfter };
+    return { ok: true as const, balance: wallet.balance };
   },
 });
 
@@ -352,14 +357,19 @@ export const refundEntry = mutation({
       return { ok: false as const, error: 'forbidden' };
     }
 
-    const refundAmount = -tx.amount;
-    const nextBalance = applyRefundToBalance(wallet.balance, refundAmount);
+    const metadata = typeof tx.metadata === 'object' && tx.metadata !== null ? tx.metadata : {};
+    const nextBalance =
+      (metadata as Record<string, unknown>).chargeTiming === 'on_board'
+        ? wallet.balance
+        : applyRefundToBalance(wallet.balance, -tx.amount);
 
-    await ctx.db.patch(wallet._id, { balance: nextBalance });
+    if (nextBalance !== wallet.balance) {
+      await ctx.db.patch(wallet._id, { balance: nextBalance });
+    }
     await ctx.db.patch(tx._id, {
       status: 'refunded',
       metadata: {
-        ...(typeof tx.metadata === 'object' && tx.metadata !== null ? tx.metadata : {}),
+        ...metadata,
         refundReason: args.reason,
       },
     });

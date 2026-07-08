@@ -16,22 +16,33 @@ export default function PlayEndScreen() {
   const router = useRouter();
   const colors = useTheme();
   const { getTextStyle, t } = useI18n();
-  const { session, resetSession, ensureDraft, reopenLastResolvedTurn, entryReservationId } = usePlayStore();
+  const {
+    session,
+    resetSession,
+    ensureDraft,
+    reopenLastResolvedTurn,
+    entryReservationId,
+    commitEntryCharge,
+  } = usePlayStore();
   const consumeEntryMutation = useMutation(api.wallet.consumeEntry);
   const consumedRef = useRef(false);
 
   const consumeCurrentEntry = useCallback(async () => {
-    if (consumedRef.current || !entryReservationId) return;
+    if (consumedRef.current) return;
     consumedRef.current = true;
     try {
-      await consumeGameEntry(consumeEntryMutation, {
-        reservationId: entryReservationId,
-        completedSessionId: session?.id ?? '',
-      });
+      if (entryReservationId) {
+        const result = await consumeGameEntry(consumeEntryMutation, {
+          reservationId: entryReservationId,
+          completedSessionId: session?.id ?? '',
+        });
+        if (!result.ok) throw new Error(result.error);
+      }
+      commitEntryCharge();
     } catch {
       // Non-fatal — the reservation expires server-side eventually.
     }
-  }, [consumeEntryMutation, entryReservationId, session?.id]);
+  }, [consumeEntryMutation, entryReservationId, commitEntryCharge, session?.id]);
 
   useEffect(() => {
     void consumeCurrentEntry();

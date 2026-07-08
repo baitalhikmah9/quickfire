@@ -24,14 +24,10 @@ import {
   RUMBLE_TRANSITION_SECONDS,
 } from '@/features/play/rumble';
 import { PlayAnswerPanel } from '@/features/play/components/PlayAnswerPanel';
-import { PlayMatchTopBar } from '@/features/play/components/PlayMatchTopBar';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { abandonGameEntry } from '@/lib/wallet/gameEntry';
 import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { HOME_SOFT_UI } from '@/themes';
 
@@ -116,8 +112,8 @@ function scaleUpQuestionEmphasis(phase: { fontSize: number; lineHeight: number }
   };
 }
 
-/** Visual height of `PlayMatchTopBar` + padding — positions legacy absolute timer below it. */
-const MATCH_TOP_BAR_EST_HEIGHT = 64;
+/** No logo top bar on the question screen; keep legacy absolute timer below the safe area. */
+const MATCH_TOP_BAR_EST_HEIGHT = 0;
 const QUESTION_MAX_SECONDS = 10 * 60;
 
 const WAGER_FAB_ICON = require('@/assets/wager.png');
@@ -140,43 +136,11 @@ export default function PlayQuestionScreen() {
   const cancelCurrentQuestion = usePlayStore((state) => state.cancelCurrentQuestion);
   const revealAnswer = usePlayStore((state) => state.revealAnswer);
   const expireCurrentQuestionForTimeout = usePlayStore((state) => state.expireCurrentQuestionForTimeout);
-  const resetSession = usePlayStore((state) => state.resetSession);
   const initiateWager = usePlayStore((state) => state.initiateWager);
   const continueAfterStandardQuestion = usePlayStore((state) => state.continueAfterStandardQuestion);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
 
-  const refundEntryMutation = useMutation(api.wallet.refundEntry);
-
-  const leaveMatch = useCallback(() => {
-    const performLeave = async () => {
-      await abandonGameEntry(refundEntryMutation, {
-        reservationId: usePlayStore.getState().entryReservationId,
-        reason: 'user_abandoned',
-        resetSession: () => resetSession(),
-      });
-      router.replace('/(app)/');
-    };
-
-    if (Platform.OS === 'web' && typeof globalThis.confirm === 'function') {
-      const confirmed = globalThis.confirm(
-        `${t('play.leaveMatchTitle')}\n\n${t('play.leaveMatchBody')}`
-      );
-      if (confirmed) {
-        performLeave();
-      }
-      return;
-    }
-
-    Alert.alert(t('play.leaveMatchTitle'), t('play.leaveMatchBody'), [
-      { text: t('common.stay'), style: 'cancel' },
-      {
-        text: t('common.leave'),
-        style: 'destructive',
-        onPress: performLeave,
-      },
-    ]);
-  }, [refundEntryMutation, resetSession, router, t]);
 
   const openHotSeatInfo = useCallback(() => {
     Alert.alert(t('play.hotSeatInfoTitle'), t('play.hotSeatInfoBody'), [{ text: t('common.close') }]);
@@ -279,6 +243,8 @@ export default function PlayQuestionScreen() {
     [compactQuestionPhaseTypography]
   );
 
+  const isAnswerPhase = session?.step === 'answer';
+
   /** Same rules as `PlayAnswerPanel` canWager — after points are awarded, offer wager for the next team. */
   const answerPhaseCanWager = useMemo(() => {
     if (!session) return false;
@@ -292,6 +258,20 @@ export default function PlayQuestionScreen() {
     if (used >= session.wagersPerTeam) return false;
     return session.teams.length >= 2;
   }, [session]);
+
+  const answerQuestionFontSize = useMemo(() => {
+    const base = Math.min(
+      Platform.OS === 'web' ? 38 : 34,
+      Math.max(18, Math.round(promptLayoutWidth * (isCompactHeader ? 0.04 : 0.034)))
+    );
+    if (session?.phase === 'scoring' || session?.phase === 'answerLock') {
+      return Math.max(14, Math.round(base * 0.68));
+    }
+    if (isAnswerPhase) {
+      return Math.max(16, Math.round(base * 0.82));
+    }
+    return base;
+  }, [isAnswerPhase, isCompactHeader, promptLayoutWidth, session?.phase]);
 
   if (!session?.currentQuestion) {
     return (
@@ -337,7 +317,6 @@ export default function PlayQuestionScreen() {
   const hotSeatNames = hotSeatChallenge?.participants
     .map((participant) => participant.playerName)
     .join(' vs ');
-  const isAnswerPhase = session.step === 'answer';
   const showAnswerPhaseNextTurnDock = isAnswerPhase && !session.wager && session.phase === 'scoring';
 
   /** Two-row QuickFire pill header — not used for rumble / hot seat. */
@@ -379,19 +358,6 @@ export default function PlayQuestionScreen() {
     </View>
   );
 
-  const answerQuestionFontSize = useMemo(() => {
-    const base = Math.min(
-      Platform.OS === 'web' ? 38 : 34,
-      Math.max(18, Math.round(promptLayoutWidth * (isCompactHeader ? 0.04 : 0.034)))
-    );
-    if (session?.phase === 'scoring' || session?.phase === 'answerLock') {
-      return Math.max(14, Math.round(base * 0.68));
-    }
-    if (isAnswerPhase) {
-      return Math.max(16, Math.round(base * 0.82));
-    }
-    return base;
-  }, [isAnswerPhase, isCompactHeader, promptLayoutWidth, session?.phase]);
   const answerQuestionLineHeight = Math.round(answerQuestionFontSize * 1.14);
 
   const promptBlock = (
@@ -435,32 +401,12 @@ export default function PlayQuestionScreen() {
 
   return (
     <View style={[styles.canvas, { backgroundColor: surfaceColors.canvas }]}>
-      <View
-        style={[
-          styles.matchTopWrap,
-          {
-            paddingTop: Math.max(insets.top, Platform.OS === 'web' ? SPACING.sm : insets.top),
-            paddingLeft: Math.max(insets.left, headerHorizontalPadding),
-            paddingRight: Math.max(insets.right, headerHorizontalPadding),
-          },
-        ]}
-      >
-        <PlayMatchTopBar
-          session={session}
-          compact
-          showTeamScores={false}
-          onLogoPress={leaveMatch}
-          onWagerInfoPress={session.config.wagerEnabled ? () => setWagerInfoOpen(true) : undefined}
-          onHotSeatInfoPress={SHOW_HOT_SEAT_UI ? openHotSeatInfo : undefined}
-        />
-      </View>
-
       {usePillHeader ? (
         <View
           style={[
             styles.pillChromeRow,
             {
-              paddingTop: isCompactHeader ? SPACING.xs : SPACING.sm,
+              paddingTop: insets.top + (isCompactHeader ? SPACING.xs : SPACING.sm),
               paddingLeft: Math.max(insets.left, headerHorizontalPadding),
               paddingRight: Math.max(insets.right, headerHorizontalPadding),
             },
@@ -489,7 +435,7 @@ export default function PlayQuestionScreen() {
         </View>
       ) : (
         <>
-          <View style={[styles.header, { paddingTop: SPACING.sm }]}>
+          <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
             <Pressable
               onPress={onBackToBoard}
               accessibilityRole="button"
@@ -772,11 +718,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: T.canvas,
     position: 'relative',
-  },
-  matchTopWrap: {
-    width: '100%',
-    flexShrink: 0,
-    zIndex: 15,
   },
   pillChromeRow: {
     flexDirection: 'row',

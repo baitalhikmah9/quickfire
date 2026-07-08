@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, View, Text, StyleSheet, useWindowDimensions, Animated, Platform, type LayoutChangeEvent } from 'react-native';
+import { AccessibilityInfo, Alert, View, Text, StyleSheet, useWindowDimensions, Animated, Easing, Platform, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
@@ -19,6 +19,7 @@ import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
+import { hapticButtonPress, hapticSuccess, hapticTick } from '@/lib/haptics';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
@@ -256,63 +257,112 @@ function getBoardMetrics(screenHeight: number, screenWidth: number): BoardMetric
 type RandomQuestionSelectorProps = {
   title: string;
   reels: string[][];
-  actionLabel?: string;
-  disabled?: boolean;
-  isRolling: boolean;
-  onAction?: () => void;
+  /** Final label per reel; when set, reels decelerate and land on these, then onLanded fires. */
+  targets: string[] | null;
+  onLanded: () => void;
 };
 
-function RandomQuestionSelector({
-  title,
-  reels,
-  actionLabel,
-  disabled = false,
-  isRolling,
-  onAction,
-}: RandomQuestionSelectorProps) {
-  const spin = useRef(new Animated.Value(0)).current;
+const REEL_TILE_H = 36;
+/** translateY that centers a tile in the pick band.
+ * Band inner center = 56 + 21 = 77 (reels container coords); reel window top = (152 - 136) / 2 = 8.
+ * Tile top within window = 77 - 18 - 8 = 51. */
+const REEL_LAND_Y = 51;
+/** Spin tiles scrolled past before the target tile lands. */
+const REEL_SPIN_TILES = 40;
+/** Tiles covered during the deceleration phase. */
+const REEL_DECEL_TILES = 4;
+/** Fast linear spin duration before deceleration begins. */
+const REEL_SPIN_MS = 3000;
+
+function RandomQuestionSelector({ title, reels, targets, onLanded }: RandomQuestionSelectorProps) {
+  const reelValues = useRef(reels.map(() => new Animated.Value(REEL_LAND_Y))).current;
+  const onLandedRef = useRef(onLanded);
+  onLandedRef.current = onLanded;
+
+  const reelLists = useMemo(
+    () =>
+      reels.map((items, index) => {
+        const pool = items.length ? items : ['—'];
+        const spinTiles: string[] = [];
+        // 2 extra tiles after the target so the reel lands mid-list, not at the end.
+        while (spinTiles.length < REEL_SPIN_TILES + 2) spinTiles.push(...pool);
+        const list = spinTiles.slice(0, REEL_SPIN_TILES);
+        list.push(targets?.[index] ?? pool[0]);
+        list.push(...spinTiles.slice(REEL_SPIN_TILES, REEL_SPIN_TILES + 2));
+        return list;
+      }),
+    [reels, targets]
+  );
+
+  const targetsKey = targets ? targets.join('|') : null;
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.timing(spin, {
-        toValue: 1,
-        duration: 720,
-        useNativeDriver: true,
-      })
-    );
+    if (!targetsKey) return;
+    let cancelled = false;
+    let holdTimer: ReturnType<typeof setTimeout> | null = null;
+    const tickTimers: ReturnType<typeof setTimeout>[] = [];
+    const finalY = REEL_LAND_Y - REEL_SPIN_TILES * REEL_TILE_H;
 
-    loop.start();
+    Promise.resolve(AccessibilityInfo.isReduceMotionEnabled())
+      .catch(() => false)
+      .then((reduceMotion) => {
+        if (cancelled) return;
+        if (reduceMotion) {
+          reelValues.forEach((value) => value.setValue(finalY));
+          holdTimer = setTimeout(() => onLandedRef.current(), 450);
+          return;
+        }
+        const decelStartY = finalY + REEL_DECEL_TILES * REEL_TILE_H;
+        // Ratchet ticks: steady during the spin, sparser through the slowdown.
+        for (let t = 150; t < REEL_SPIN_MS; t += 150) {
+          tickTimers.push(setTimeout(() => hapticTick(), t));
+        }
+        for (const t of [180, 420, 760]) {
+          tickTimers.push(setTimeout(() => hapticTick(), REEL_SPIN_MS + t));
+        }
+        reelValues.forEach((value, index) => {
+          Animated.sequence([
+            Animated.timing(value, {
+              toValue: decelStartY,
+              duration: REEL_SPIN_MS,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.timing(value, {
+              toValue: finalY,
+              duration: 850 + index * 300,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+          ]).start(({ finished }) => {
+            if (!finished || cancelled) return;
+            if (index < reelValues.length - 1) {
+              hapticButtonPress();
+            } else {
+              hapticSuccess();
+              holdTimer = setTimeout(() => onLandedRef.current(), 1000);
+            }
+          });
+        });
+      });
+
     return () => {
-      loop.stop();
-      spin.stopAnimation();
+      cancelled = true;
+      if (holdTimer) clearTimeout(holdTimer);
+      tickTimers.forEach(clearTimeout);
+      reelValues.forEach((value) => value.stopAnimation());
     };
-  }, [spin]);
+  }, [reelValues, targetsKey]);
 
-  const translateY = spin.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -72],
-  });
-  const pulse = spin.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.92, 1.04, 0.92],
-  });
-  const glowOpacity = spin.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.35, 0.85, 0.35],
-  });
   return (
     <View testID="random-question-selector" style={styles.randomSelectorShell}>
       <View style={[styles.randomSelectorCard, PLASTIC_FACE, neumorphicLift3D('card')]}> 
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.randomSelectorGlow, { opacity: glowOpacity, transform: [{ scale: pulse }] }]}
-        />
         <Text style={styles.randomSelectorTitle}>{title}</Text>
         <View style={styles.randomSelectorReels}>
-          {reels.map((items, index) => (
+          {reelLists.map((items, index) => (
             <View key={index} style={styles.randomSelectorReelWindow}>
-              <Animated.View style={{ transform: [{ translateY }] }}>
-                {[...items, ...items].map((item, itemIndex) => (
+              <Animated.View style={{ transform: [{ translateY: reelValues[index] }] }}>
+                {items.map((item, itemIndex) => (
                   <View key={`${item}-${itemIndex}`} style={styles.randomSelectorReelTile}>
                     <Text style={styles.randomSelectorReelText} numberOfLines={1} adjustsFontSizeToFit>
                       {item}
@@ -329,27 +379,6 @@ function RandomQuestionSelector({
           <View style={[styles.randomSelectorDot, styles.randomSelectorPillGold]} />
           <View style={[styles.randomSelectorDot, styles.randomSelectorPillCool]} />
         </View>
-
-        {actionLabel ? (
-          <Pressable
-            testID="random-question-selector-action"
-            disabled={disabled || isRolling || !onAction}
-            accessibilityRole="button"
-            accessibilityLabel={actionLabel}
-            accessibilityState={{ disabled: disabled || isRolling || !onAction }}
-            onPress={onAction}
-            style={({ pressed }) => [
-              styles.randomSelectorButton,
-              PLASTIC_FACE,
-              neumorphicLift3D('pill'),
-              {
-                opacity: disabled || isRolling ? 0.48 : pressed ? 0.88 : 1,
-              },
-            ]}
-          >
-            <Text style={styles.randomSelectorButtonText}>{actionLabel}</Text>
-          </Pressable>
-        ) : null}
       </View>
     </View>
   );
@@ -368,8 +397,9 @@ export default function PlayBoardScreen() {
   const reviewBoardQuestion = usePlayStore((state) => state.reviewBoardQuestion);
   const confirmRandomWagerQuestion = usePlayStore((state) => state.confirmRandomWagerQuestion);
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
-  const selectorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [randomSelectorState, setRandomSelectorState] = useState<'idle' | 'rolling'>('idle');
+  const [drawnQuestion, setDrawnQuestion] = useState<{ mode: 'random' | 'wager'; question: QuestionCard } | null>(
+    null
+  );
   const [showExitModal, setShowExitModal] = useState(false);
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
   const [hotSeatInfoOpen, setHotSeatInfoOpen] = useState(false);
@@ -390,50 +420,6 @@ export default function PlayBoardScreen() {
     }
   }, [router, session?.step]);
 
-  const clearSelectorTimeout = useCallback(() => {
-    if (selectorTimeoutRef.current) {
-      clearTimeout(selectorTimeoutRef.current);
-      selectorTimeoutRef.current = null;
-    }
-  }, []);
-
-  const startRandomSelection = useCallback(
-    (mode: 'random' | 'wager') => {
-      if (!session || randomSelectorState === 'rolling') {
-        return;
-      }
-
-      clearSelectorTimeout();
-      setRandomSelectorState('rolling');
-      selectorTimeoutRef.current = setTimeout(() => {
-        if (mode === 'random') {
-          const randomQuestion = getRandomRemainingQuestion(session.board, session.usedQuestionIds);
-          if (randomQuestion) {
-            selectQuestion(randomQuestion);
-          } else {
-            setRandomSelectorState('idle');
-          }
-        } else {
-          confirmRandomWagerQuestion();
-        }
-        selectorTimeoutRef.current = null;
-      }, 1150);
-    },
-    [
-      clearSelectorTimeout,
-      confirmRandomWagerQuestion,
-      randomSelectorState,
-      selectQuestion,
-      session,
-    ]
-  );
-
-  useEffect(() => {
-    return () => {
-      clearSelectorTimeout();
-    };
-  }, [clearSelectorTimeout]);
-
   const showWagerSelector = Boolean(session?.wager && !session.wager.question);
   const remainingQuestions = useMemo(
     () => session?.board.filter((question) => !session.usedQuestionIds.has(question.id) && !question.used) ?? [],
@@ -448,35 +434,52 @@ export default function PlayBoardScreen() {
       return out.slice(0, 4);
     };
     return [
-      pad([...new Set(remainingQuestions.map((q) => String(q.pointValue)))], ['200', '400', '600', '800']),
       pad([...new Set(remainingQuestions.map((q) => q.categoryName.toUpperCase()))], ['QUESTION']),
-      pad([...new Set(remainingQuestions.map((q) => (q.boardSide ?? 'tile').toUpperCase()))], ['LEFT', 'RIGHT']),
+      pad([...new Set(remainingQuestions.map((q) => String(q.pointValue)))], ['200', '400', '600', '800']),
     ];
   }, [remainingQuestions]);
+  const randomSelectorTargets = useMemo(
+    () =>
+      drawnQuestion
+        ? [drawnQuestion.question.categoryName.toUpperCase(), String(drawnQuestion.question.pointValue)]
+        : null,
+    [drawnQuestion]
+  );
+
+  const handleSelectorLanded = useCallback(() => {
+    if (!drawnQuestion) return;
+    if (drawnQuestion.mode === 'wager') {
+      confirmRandomWagerQuestion(drawnQuestion.question);
+    } else {
+      selectQuestion(drawnQuestion.question);
+    }
+  }, [confirmRandomWagerQuestion, drawnQuestion, selectQuestion]);
 
   useEffect(() => {
-    if (showWagerSelector) {
-      startRandomSelection('wager');
+    if (!session || session.step !== 'board') {
+      setDrawnQuestion(null);
       return;
     }
 
-    if (showRandomSelector && remainingQuestionCount > 0 && randomSelectorState === 'idle') {
-      startRandomSelection('random');
+    const mode = showWagerSelector ? 'wager' : showRandomSelector ? 'random' : null;
+    if (!mode) {
+      setDrawnQuestion(null);
       return;
     }
+    if (drawnQuestion?.mode === mode) return;
 
-    if (session?.step !== 'board') {
-      clearSelectorTimeout();
-      setRandomSelectorState('idle');
+    // Draw the result up-front so the reels can land on the real outcome.
+    const question = getRandomRemainingQuestion(session.board, session.usedQuestionIds);
+    setDrawnQuestion(question ? { mode, question } : null);
+    if (!question && mode === 'wager') {
+      confirmRandomWagerQuestion(); // no questions left — store ends the game
     }
   }, [
-    clearSelectorTimeout,
-    remainingQuestionCount,
-    randomSelectorState,
-    session?.step,
+    confirmRandomWagerQuestion,
+    drawnQuestion?.mode,
+    session,
     showRandomSelector,
     showWagerSelector,
-    startRandomSelection,
   ]);
 
   const grouped = useMemo(() => (session ? groupBoardTrivia(session) : []), [session]);
@@ -865,17 +868,12 @@ export default function PlayBoardScreen() {
             },
           ]}
         >
-          {showWagerSelector ? (
+          {showWagerSelector || showRandomSelector ? (
             <RandomQuestionSelector
-              title="WAGER DRAW"
+              title={showWagerSelector ? 'WAGER DRAW' : 'SELECTING QUESTION'}
               reels={randomSelectorReels}
-              isRolling
-            />
-          ) : showRandomSelector ? (
-            <RandomQuestionSelector
-              title="SELECTING QUESTION"
-              reels={randomSelectorReels}
-              isRolling={randomSelectorState === 'rolling'}
+              targets={randomSelectorTargets}
+              onLanded={handleSelectorLanded}
             />
           ) : (
             <View
@@ -1443,13 +1441,6 @@ const styles = StyleSheet.create({
     gap: SPACING.lg,
     overflow: 'hidden',
   },
-  randomSelectorGlow: {
-    position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(255, 180, 17, 0.2)',
-  },
   randomSelectorReels: {
     width: '100%',
     height: 152,
@@ -1517,21 +1508,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textTransform: 'uppercase',
     zIndex: 1,
-  },
-  randomSelectorButton: {
-    minWidth: 220,
-    minHeight: 58,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: T.colors.surface,
-  },
-  randomSelectorButtonText: {
-    fontFamily: FONTS.displayBold,
-    fontSize: FONT_SIZES.md,
-    letterSpacing: 0.8,
-    color: T.colors.textPrimary,
-    textAlign: 'center',
   },
 });

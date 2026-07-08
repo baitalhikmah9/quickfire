@@ -10,3 +10,23 @@ export function hapticButtonPress(): void {
     /* Haptics are optional; tapping should never crash when the native module is unavailable. */
   }
 }
+
+/** Tiny selection tick (e.g. randomizer reel passing tiles); no-op on web/unsupported. */
+export function hapticTick(): void {
+  if (Platform.OS === 'web') return;
+  try {
+    void Haptics.selectionAsync().catch(() => {});
+  } catch {
+    /* optional */
+  }
+}
+
+/** Success notification haptic (e.g. randomizer landing); no-op on web/unsupported. */
+export function hapticSuccess(): void {
+  if (Platform.OS === 'web') return;
+  try {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  } catch {
+    /* optional */
+  }
+}

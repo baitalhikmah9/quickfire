@@ -577,7 +577,7 @@ describe('usePlayStore', () => {
     expect(Array.from(hydrated?.usedQuestionIds ?? [])).toEqual(['q-board-1']);
   });
 
-  it('requires the correct topic count and consumes a token when the board starts', () => {
+  it('requires the correct topic count and charges tokens when the entry is committed', () => {
     usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
     const store = usePlayStore.getState();
     store.setMode('classic');
@@ -591,9 +591,13 @@ describe('usePlayStore', () => {
     result = usePlayStore.getState().startBoard();
 
     expect(result).toMatchObject({ ok: true });
-    expect(usePlayStore.getState().tokens).toBe(10);
+    expect(usePlayStore.getState().tokens).toBe(20);
     expect(usePlayStore.getState().session?.step).toBe('board');
     expect(usePlayStore.getState().session?.board.length).toBeGreaterThan(0);
+
+    usePlayStore.getState().commitEntryCharge();
+
+    expect(usePlayStore.getState().tokens).toBe(10);
   });
 
   it('charges quick play based on the selected topic count', () => {
@@ -614,6 +618,8 @@ describe('usePlayStore', () => {
       const result = usePlayStore.getState().startBoard();
 
       expect(result).toMatchObject({ ok: true });
+      expect(usePlayStore.getState().tokens).toBe(20);
+      usePlayStore.getState().commitEntryCharge();
       expect(usePlayStore.getState().tokens).toBe(expectedTokens);
       expect(usePlayStore.getState().session?.selectedCategoryIds).toHaveLength(topicCount);
     }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
@@ -11,9 +11,24 @@ jest.mock('@/lib/haptics', () => ({
 }));
 
 describe('Pressable', () => {
-  it('does not trigger haptics by default', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+  it('triggers haptics by default', () => {
     render(
       <Pressable accessibilityRole="button">
+        <Text>Tap</Text>
+      </Pressable>
+    );
+
+    fireEvent(screen.getByRole('button'), 'pressIn');
+
+    expect(hapticButtonPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not trigger haptics when explicitly disabled', () => {
+    render(
+      <Pressable accessibilityRole="button" hapticFeedback={false}>
         <Text>Tap</Text>
       </Pressable>
     );

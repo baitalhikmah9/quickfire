@@ -443,6 +443,7 @@ interface PlayStore {
   hydrate: () => Promise<void>;
   ensureDraft: () => void;
   resetSession: () => void;
+  commitEntryCharge: () => void;
   grantTokens: (amount: number) => void;
   setTokenBalance: (amount: number) => void;
   entryReservationId: string | null;
@@ -470,7 +471,7 @@ interface PlayStore {
   adjustScoreByPoints: (teamId: string, delta: number, note?: string) => void;
   reopenLastResolvedTurn: () => void;
   initiateWager: () => { ok: boolean; error?: string };
-  confirmRandomWagerQuestion: () => void;
+  confirmRandomWagerQuestion: (drawnQuestion?: QuestionCard) => void;
   resolveWager: (correct: boolean) => void;
 }
 
@@ -552,6 +553,19 @@ function createPlayStore() {
       },
 
       resetSession: () => set({ session: null, rapidFire: null, entryReservationId: null }),
+      commitEntryCharge: () =>
+        set((state) => {
+          if (!isAuthDisabled() || !state.session) return state;
+          const charge = state.session.config.entryTokenCharge ?? 0;
+          if (charge <= 0) return state;
+          return {
+            tokens: Math.max(0, state.tokens - charge),
+            session: {
+              ...state.session,
+              config: { ...state.session.config, entryTokenCharge: 0 },
+            },
+          };
+        }),
 
       grantTokens: (amount) =>
         set((state) => ({ tokens: Math.max(0, state.tokens + amount) })),
@@ -592,10 +606,7 @@ function createPlayStore() {
               entryTokenCharge: tokenCost,
             },
           });
-          return {
-            tokens: isAuthDisabled() ? current.tokens - tokenCost : current.tokens,
-            session: nextSession,
-          };
+          return { session: nextSession };
         });
         return { ok: true };
       },
@@ -815,7 +826,8 @@ function createPlayStore() {
         const tokenCost = getGameTokenCost(session.mode, quickPlayTopicCount);
         const entryTokenCharge = session.config.entryTokenCharge ?? 0;
         const remainingTokenCost = Math.max(0, tokenCost - entryTokenCharge);
-        if (state.tokens < remainingTokenCost) {
+        const requiredBalance = isAuthDisabled() ? tokenCost : remainingTokenCost;
+        if (state.tokens < requiredBalance) {
           return { ok: false, error: 'You need more tokens to start a new game.' };
         }
         if (session.mode === 'rumble' && !isSupportedRumbleTeamCount(session.teams.length)) {
@@ -863,10 +875,7 @@ function createPlayStore() {
             entryTokenCharge: tokenCost,
           },
         });
-        set({
-          tokens: isAuthDisabled() ? state.tokens - remainingTokenCost : state.tokens,
-          session: nextSession,
-        });
+        set({ session: nextSession });
         return { ok: true };
       },
 
@@ -1296,11 +1305,14 @@ function createPlayStore() {
         return { ok: true };
       },
 
-      confirmRandomWagerQuestion: () =>
+      confirmRandomWagerQuestion: (drawnQuestion) =>
         set((state) => {
           const session = state.session;
           if (!session?.wager || session.wager.question) return state;
-          const question = getRandomRemainingQuestion(session.board, session.usedQuestionIds);
+          const question =
+            drawnQuestion && !session.usedQuestionIds.has(drawnQuestion.id)
+              ? drawnQuestion
+              : getRandomRemainingQuestion(session.board, session.usedQuestionIds);
           if (!question) {
             return {
               session: {
@@ -1387,7 +1399,9 @@ const playStoreSingletonHolder = globalThis as typeof globalThis & {
 const existingPlayStore = playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__;
 
 export const usePlayStore =
-  existingPlayStore && typeof existingPlayStore.getState().expireCurrentQuestionForTimeout === 'function'
+  // Check the newest store method so a stale cached instance from before a code
+  // update is discarded instead of reused across Fast Refresh.
+  existingPlayStore && typeof existingPlayStore.getState().commitEntryCharge === 'function'
     ? existingPlayStore
     : (playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__ = createPlayStore());
 

@@ -60,6 +60,10 @@ const LOCAL: Record<string, ImageSource> = {
   gen2: require('../assets/topics/geography.png'),
   gen3: require('../assets/topics/science.png'),
   gen4: require('../assets/topics/UK.png'),
+  gen5: require('../assets/topics/USA.png'),
+  h14: require('../assets/topics/ww1.png'),
+  h15: require('../assets/topics/ww2.png'),
+  s11: require('../assets/topics/which_player.png'),
 };
 
 // ── Remote URL fallbacks for categories without a local image ──────────
@@ -68,8 +72,6 @@ const FALLBACK_URIS: Record<string, string> = {
   h6: 'https://i.postimg.cc/7YGkmWrV/arab-history.png',
   h9: 'https://i.postimg.cc/J7JNW18H/south-asian-history.png',
   h10: 'https://i.postimg.cc/j5yLBSfy/middle-ages-europe.png',
-  h14: 'https://i.postimg.cc/261P51Gz/world-war-i.png',
-  h15: 'https://i.postimg.cc/WprHfLfK/world-war-ii.png',
   g2: 'https://i.postimg.cc/1z73TN4F/call-of-duty.png',
   g4: 'https://i.postimg.cc/nhcZJcyc/grand-theft-auto.png',
   g10: 'https://i.postimg.cc/gjnRQWGs/super-mario-bros.png',
@@ -83,8 +85,6 @@ const FALLBACK_URIS: Record<string, string> = {
   pc30: 'https://i.postimg.cc/0jkSw59C/shakespeare.png',
   s6: 'https://i.postimg.cc/bY4T5kY6/nfl.png',
   s8: 'https://i.postimg.cc/rwVtZw4Q/tennis.png',
-  s11: 'https://i.postimg.cc/Pr3thXc4/which-player.png',
-  gen5: 'https://i.postimg.cc/PxTxJ6Mg/usa.png',
 };
 
 export function getCategoryPictureSource(categoryId: string): ImageSource | null {

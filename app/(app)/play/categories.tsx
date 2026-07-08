@@ -31,7 +31,7 @@ import {
 import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
-import { adjustGameEntryReservation } from '@/lib/wallet/gameEntry';
+import { adjustGameEntryReservation, consumeGameEntry } from '@/lib/wallet/gameEntry';
 import { getGameTokenCost } from '@/features/play/tokenCosts';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
@@ -250,6 +250,8 @@ export default function CategorySelectionScreen() {
 
   const session = usePlayStore((state) => state.session);
   const entryReservationId = usePlayStore((state) => state.entryReservationId);
+  const setEntryReservationId = usePlayStore((state) => state.setEntryReservationId);
+  const commitEntryCharge = usePlayStore((state) => state.commitEntryCharge);
   const ensureDraft = usePlayStore((state) => state.ensureDraft);
   const toggleCategory = usePlayStore((state) => state.toggleCategory);
   const setCategories = usePlayStore((state) => state.setCategories);
@@ -257,6 +259,7 @@ export default function CategorySelectionScreen() {
   const { isLoaded, isSignedIn } = useAuth();
   const authDisabled = isAuthDisabled();
   const adjustEntryMutation = useMutation(api.wallet.adjustEntryReservation);
+  const consumeEntryMutation = useMutation(api.wallet.consumeEntry);
 
   useLayoutEffect(() => {
     ensureDraft();
@@ -792,7 +795,7 @@ export default function CategorySelectionScreen() {
                     reservationId: entryReservationId,
                     additionalCost: delta,
                   });
-                  if (!adjusted.ok) {
+                  if (!adjusted.ok && adjusted.error === 'insufficient_balance') {
                     Alert.alert('', t('play.needTokens'));
                     return;
                   }
@@ -801,6 +804,20 @@ export default function CategorySelectionScreen() {
 
               const result = startBoard();
               if (result.ok) {
+                if (!authDisabled && isLoaded && isSignedIn && entryReservationId) {
+                  const consumed = await consumeGameEntry(consumeEntryMutation, {
+                    reservationId: entryReservationId,
+                    completedSessionId: usePlayStore.getState().session?.id ?? '',
+                  }).catch(() => ({ ok: false as const, error: 'network' }));
+                  // Only a real balance failure blocks entry; stale reservation states
+                  // (already consumed/refunded from a previous run) are non-fatal.
+                  if (!consumed.ok && consumed.error === 'insufficient_balance') {
+                    Alert.alert('', t('play.needTokens'));
+                    return;
+                  }
+                }
+                commitEntryCharge();
+                setEntryReservationId(null);
                 router.replace('/(app)/play/board');
                 return;
               }

@@ -7,7 +7,7 @@ type AppPressableProps = PressableProps & {
 };
 
 export const Pressable = forwardRef<View, AppPressableProps>(function Pressable(
-  { onPressIn, disabled, hapticFeedback = false, ...rest },
+  { onPressIn, disabled, hapticFeedback = true, ...rest },
   ref,
 ) {
   const handlePressIn: PressableProps['onPressIn'] = (event) => {

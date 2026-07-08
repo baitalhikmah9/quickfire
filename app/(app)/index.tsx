@@ -163,7 +163,6 @@ export default function AppHubScreen() {
     }
 
     // Reserve the game entry on Convex when the user is signed in.
-    // Local fallback (auth-disabled) uses the dummy reservation path inside reserveGameEntry.
     if (!authDisabled && isLoaded && isSignedIn) {
       const clientSessionId = `play_${Date.now()}`;
       const reservation = await reserveGameEntry(reserveGameEntryMutation, {
