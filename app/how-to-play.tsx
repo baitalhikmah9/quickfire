@@ -10,6 +10,7 @@ import { ScreenContent } from '@/components/ScreenContent';
 import { PillCollapsibleSection } from '@/components/PillCollapsibleSection';
 import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { useTheme } from '@/lib/hooks/useTheme';
+import { HOME_SOFT_UI } from '@/themes';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { getRowDirection } from '@/lib/i18n/direction';
 import type { SupportedLocale } from '@/lib/i18n/config';
@@ -76,7 +77,7 @@ export default function HowToPlayScreen() {
   return (
     <SafeAreaView
       edges={['top', 'bottom', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
+      style={[styles.safeArea, { backgroundColor: HOME_SOFT_UI.colors.canvas }]}
     >
       <ScreenContent fullWidth style={styles.viewport}>
         <ScrollView

@@ -5,7 +5,7 @@ import { Pressable } from '@/components/ui/Pressable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useSignIn } from '@clerk/clerk-expo';
-import { SPACING, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import { SPACING, FONTS, LAYOUT, COLORS, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
@@ -89,7 +89,7 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: FONTS.uiSemibold,
     fontSize: 14,
-    color: '#DC2626',
+    color: COLORS.error,
     textAlign: 'center',
   },
   linkButton: {

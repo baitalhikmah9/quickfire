@@ -502,7 +502,7 @@ export function PlayAnswerPanel({
             router.replace('/play/board');
           }}
           style={[styles.softUiBtn, { backgroundColor: '#FEE2E2' }]}
-          textStyle={[styles.softUiBtnText, { color: '#DC2626' }, getTextStyle(undefined, 'bodySemibold', 'center')]}
+          textStyle={[styles.softUiBtnText, { color: COLORS.error }, getTextStyle(undefined, 'bodySemibold', 'center')]}
         />
       </View>
     </View>
@@ -547,7 +547,7 @@ export function PlayAnswerPanel({
                 router.replace('/play/board');
               }
             }}
-            style={[styles.softUiBtn, { backgroundColor: '#FF8A00' }]}
+            style={[styles.softUiBtn, { backgroundColor: COLORS.secondary }]}
             textStyle={[styles.softUiBtnText, { color: '#FFFFFF' }, getTextStyle(undefined, 'bodySemibold', 'center')]}
           />
         </View>

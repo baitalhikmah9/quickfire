@@ -1,25 +1,18 @@
 import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Platform, useWindowDimensions, type TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
-import { GameHeader } from '@/components/GameHeader';
-import { HeaderBackButton } from '@/components/HeaderBackButton';
-import { HubTokenChip } from '@/components/HubTokenChip';
-import { ScreenContent } from '@/components/ScreenContent';
 import { BORDER_RADIUS, FONT_SIZES, SPACING, LAYOUT, FONTS } from '@/constants';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import { QUICK_PLAY_TOPIC_OPTIONS } from '@/features/play/tokenCosts';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { usePlayStore } from '@/store/play';
-import { getRowDirection } from '@/lib/i18n/direction';
 import type { SupportedLocale } from '@/lib/i18n/config';
+import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI.colors;
-
-const BACKFIRE_TOKEN_ART = require('@/assets/BF in game logo.png');
 
 const QUICK_LENGTH_LABEL_KEYS = {
   3: 'play.quickLength.option3',
@@ -32,10 +25,6 @@ const QUICK_LENGTH_COPY_KEYS = {
   4: 'play.quickLength.option4Copy',
   5: 'play.quickLength.option5Copy',
 } as const;
-
-function formatTokens(n: number, locale: string) {
-  return n.toLocaleString(locale, { maximumFractionDigits: 0 });
-}
 
 /** Web-only option row with hover tracking — extracted to keep hooks at top level. */
 function OptionRow({
@@ -140,17 +129,12 @@ function OptionRow({
 export default function QuickLengthScreen() {
   const router = useRouter();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
-  const { t, direction, uiLocale, getTextStyle } = useI18n();
+  const { t, getTextStyle } = useI18n();
   const setQuickPlayTopicCount = usePlayStore((state) => state.setQuickPlayTopicCount);
-  const tokens = usePlayStore((state) => state.tokens);
-  const rowDir = getRowDirection(direction);
-
   const isWeb = Platform.OS === 'web';
   const compact = windowHeight < 720;
   const tokensText = t('common.tokens');
   const tokenLabel = tokensText.toUpperCase();
-  const formattedTokens = formatTokens(tokens, uiLocale);
-
   const options = QUICK_PLAY_TOPIC_OPTIONS.map(({ topicCount, tokenCost }) => ({
     count: topicCount,
     tokenCost,
@@ -175,48 +159,14 @@ export default function QuickLengthScreen() {
   );
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: T.canvas }]}
-      edges={['top', 'bottom', 'left', 'right']}
+    <PlayScaffold
+      title={t('play.quickLengthTitle')}
+      subtitle={t('play.quickLengthSubtitle')}
+      onBack={handleBack}
+      bodyFrame={false}
+      bodyScrollEnabled={false}
     >
-      <ScreenContent fullWidth style={styles.viewport}>
-        <GameHeader
-          variant="title"
-          title={t('play.quickLengthTitle')}
-          leftSlot={
-            <HeaderBackButton
-              onPress={handleBack}
-              direction={direction}
-              rowDirection={rowDir}
-              label={t('common.back')}
-            />
-          }
-          rightSlot={
-            <HubTokenChip
-              label={t('common.tokens')}
-              value={formattedTokens}
-              rowDirection={rowDir}
-              variant="softUi"
-              artworkSource={BACKFIRE_TOKEN_ART}
-              onPress={() => router.push('/(app)/store')}
-              accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
-            />
-          }
-        />
-
-        {/* Subtitle — flat on cream canvas */}
-        <Text
-          style={[
-            styles.subtitle,
-            isWeb && styles.subtitleWeb,
-            { color: T.textMuted },
-          ]}
-        >
-          {t('play.quickLengthSubtitle')}
-        </Text>
-
-        {/* Options list */}
-        <View style={[styles.listWrap, isWeb && styles.listWrapWeb]}>
+      <View style={[styles.listWrap, isWeb && styles.listWrapWeb]}>
           <View
             style={[
               styles.list,
@@ -236,22 +186,12 @@ export default function QuickLengthScreen() {
               />
             ))}
           </View>
-        </View>
-      </ScreenContent>
-    </SafeAreaView>
+      </View>
+    </PlayScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  viewport: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 0,
-  },
-
   /* ── Subtitle ── */
   subtitle: {
     fontSize: FONT_SIZES.sm,
@@ -271,7 +211,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     minWidth: 0,
-    paddingHorizontal: LAYOUT.screenGutter,
   },
   listWrapWeb: {
     alignItems: 'center',

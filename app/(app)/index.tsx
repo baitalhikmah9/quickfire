@@ -31,6 +31,8 @@ import { getGameTokenCost, getHomeModeTokenCostLabel } from '@/features/play/tok
 import type { GameMode, PlayRouteStep } from '@/features/shared';
 import type { TranslationKey } from '@/lib/i18n/messages/en';
 
+import { markOnce } from '@/lib/startupTiming';
+
 const T = HOME_SOFT_UI;
 
 type ModeDef = {
@@ -108,8 +110,11 @@ function RumblePeopleIcon({ size, color, compact, isWeb }: { size: number; color
 }
 
 export default function AppHubScreen() {
+  markOnce('home screen first render');
   const router = useRouter();
+
   const { isLoaded, isSignedIn } = useAuth();
+  if (isLoaded) markOnce('home screen: auth loaded');
   const authDisabled = isAuthDisabled();
   const { direction, t, uiLocale } = useI18n();
   useThemeStore((state) => state.paletteId);

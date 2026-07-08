@@ -1,6 +1,6 @@
 import { Modal, Platform, View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
-import { FONT_SIZES, SPACING, FONTS } from '@/constants';
+import { FONT_SIZES, SPACING, FONTS, COLORS } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { HOME_SOFT_UI } from '@/themes';
 import type { ViewStyle } from 'react-native';
@@ -203,11 +203,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   cellPos: {
-    color: '#16A34A',
+    color: COLORS.success,
     fontFamily: FONTS.uiBold,
   },
   cellNeg: {
-    color: '#DC2626',
+    color: COLORS.error,
     fontFamily: FONTS.uiBold,
   },
   warning: {

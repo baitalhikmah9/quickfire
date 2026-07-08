@@ -75,7 +75,7 @@ export default function CreateGameScreen() {
           id: c.id,
           slug: c.slug,
           title: c.title,
-          illustration: c.illustration,
+          illustration: (c as any).illustration,
           flag: (c as any).flag,
         }));
 
@@ -201,7 +201,7 @@ export default function CreateGameScreen() {
     );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
       <View style={[styles.header, SOFT_SURFACE_FACE, { backgroundColor: surface }, softSurfaceLift()]}>
         <View style={styles.headerLeft}>
           <Pressable

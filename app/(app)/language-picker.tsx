@@ -1,12 +1,12 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { SPACING, FONTS } from '@/constants';
+import { SPACING, FONTS, LAYOUT } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { SUPPORTED_LOCALES } from '@/lib/i18n/config';
 import { useLocaleStore } from '@/store/locale';
+import { Screen } from '@/components/ScreenContent';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
@@ -37,7 +37,6 @@ export default function LanguagePickerScreen() {
   const uiLocale = useLocaleStore((state) => state.uiLocale);
   const setUiLocale = useLocaleStore((state) => state.setUiLocale);
 
-  const canvas = T.colors.canvas;
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
@@ -51,8 +50,9 @@ export default function LanguagePickerScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
-      <View style={styles.header}>
+    <Screen
+      header={(
+        <View style={styles.header}>
         <Pressable
           onPress={handleBack}
           style={({ pressed }) => [
@@ -68,9 +68,10 @@ export default function LanguagePickerScreen() {
           {t('settings.appLanguageTitle').toUpperCase()}
         </Text>
         <View style={styles.headerSpacer} />
-      </View>
-
-      <View style={styles.body}>
+        </View>
+      )}
+      contentStyle={styles.body}
+    >
         <Text
           style={[
             styles.description,
@@ -124,8 +125,7 @@ export default function LanguagePickerScreen() {
             );
           })}
         </ScrollView>
-      </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -136,12 +136,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
-  safeArea: {
-    flex: 1,
-  },
   header: {
     height: 72,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: LAYOUT.screenGutter,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -164,7 +161,7 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    padding: SPACING.lg,
+    paddingVertical: LAYOUT.screenGutter,
     gap: SPACING.xl,
     justifyContent: 'center',
   },

@@ -12,6 +12,8 @@ import { useGameHydration } from '@/store/game';
 import { usePlayHydration } from '@/store/play';
 import { useRevenueCatSync } from '@/lib/hooks/useRevenueCatSync';
 import { useWalletSync } from '@/lib/hooks/useWalletSync';
+import { markOnce } from '@/lib/startupTiming';
+import { useEffect } from 'react';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
 const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL ?? '';
@@ -47,6 +49,11 @@ function ProvidersContent({ children }: { children: React.ReactNode }) {
 }
 
 function AppHydration({ children }: { children: React.ReactNode }) {
+  markOnce('providers mounted (Clerk/Convex initialized)');
+  const { isLoaded } = useAuth();
+  useEffect(() => {
+    if (isLoaded) markOnce('clerk session resolved');
+  }, [isLoaded]);
   useThemeHydration();
   useConvexUserProfileSync();
   useRevenueCatSync();

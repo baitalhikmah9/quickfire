@@ -1,18 +1,19 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import {
   SPACING,
   BORDER_RADIUS,
   PALETTES,
   FONTS,
+  LAYOUT,
   type ThemePaletteId,
 } from '@/constants';
 import { useThemePicker } from '@/lib/hooks/useTheme';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
+import { Screen } from '@/components/ScreenContent';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
@@ -34,7 +35,6 @@ export default function ThemePickerModal() {
   const router = useRouter();
   const { direction, t } = useI18n();
   const { paletteId, setPalette } = useThemePicker();
-  const canvas = T.colors.canvas;
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
@@ -43,8 +43,9 @@ export default function ThemePickerModal() {
   const handleBack = () => goBackOrReplace(router, '/(app)/settings');
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
-      <View style={styles.header}>
+    <Screen
+      header={(
+        <View style={styles.header}>
         <Pressable
           onPress={handleBack}
           accessibilityRole="button"
@@ -64,8 +65,10 @@ export default function ThemePickerModal() {
         </Pressable>
         <Text style={[styles.title, { color: textPrimary }]}>THEME</Text>
         <View style={styles.headerSpacer} />
-      </View>
-      <View style={styles.content}>
+        </View>
+      )}
+      contentStyle={styles.content}
+    >
         <Text style={[styles.subtitle, { color: textMuted }]}>Choose a color palette</Text>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.paletteGrid}>
           {ALL_PALETTES.map((id) => {
@@ -103,8 +106,7 @@ export default function ThemePickerModal() {
             );
           })}
         </ScrollView>
-      </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -115,12 +117,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
-  safeArea: {
-    flex: 1,
-  },
   header: {
     height: 72,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: LAYOUT.screenGutter,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -142,7 +141,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: SPACING.xl,
+    paddingVertical: LAYOUT.screenGutter,
   },
   subtitle: {
     fontSize: 14,

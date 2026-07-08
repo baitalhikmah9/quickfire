@@ -46,7 +46,7 @@ export default function AdminSignOutScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}

@@ -7,7 +7,7 @@ import { useGameStore } from '@/store/game';
 import { LobbyBuilder } from '@/features/lobby/LobbyBuilder';
 import { Board } from '@/features/gameplay/Board';
 import type { GameConfig, QuestionCard } from '@/features/shared';
-import { SPACING, FONTS } from '@/constants';
+import { SPACING, FONTS, LAYOUT, COLORS } from '@/constants';
 import { getResolvedContentLocaleChain } from '@/lib/i18n/config';
 import { HOME_SOFT_UI } from '@/themes';
 import { useLocaleStore } from '@/store/locale';
@@ -109,7 +109,7 @@ export default function GameScreen() {
 
   if (!session) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
         <View style={[styles.header, styles.plasticFace, { backgroundColor: surface }]}>
           <Pressable onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={textPrimary} />
@@ -136,7 +136,7 @@ export default function GameScreen() {
   const panelQuestion = showQuestionPanel && session.currentQuestion ? session.currentQuestion : null;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
       <View style={[styles.header, styles.plasticFace, { backgroundColor: surface }]}>
         <Pressable onPress={handleBack} style={styles.backButton}>
           <Ionicons name="close" size={24} color={textPrimary} />
@@ -224,7 +224,7 @@ export default function GameScreen() {
                         }
                       }}
                     >
-                      <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                      <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
                       <Text style={[styles.actionBtnText, { color: textPrimary }]}>CORRECT</Text>
                     </Pressable>
                     <Pressable
@@ -245,7 +245,7 @@ export default function GameScreen() {
                         }
                       }}
                     >
-                      <Ionicons name="close-circle" size={24} color="#EF4444" />
+                      <Ionicons name="close-circle" size={24} color={COLORS.error} />
                       <Text style={[styles.actionBtnText, { color: textPrimary }]}>INCORRECT</Text>
                     </Pressable>
                   </View>
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.xl,
+    paddingHorizontal: LAYOUT.screenGutter,
     height: 80,
   },
   headerTitle: {

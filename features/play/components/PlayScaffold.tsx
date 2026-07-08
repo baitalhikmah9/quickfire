@@ -10,6 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SPACING, BORDER_RADIUS, FONT_SIZES, LAYOUT } from '@/constants';
+import { HOME_SOFT_UI } from '@/themes';
 import { ScreenContent } from '@/components/ScreenContent';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
@@ -87,7 +88,7 @@ export function PlayScaffold({
   chromeColumnStyle,
 }: PlayScaffoldProps) {
   const colors = useTheme();
-  const shellBackground = backgroundColor ?? colors.background;
+  const shellBackground = backgroundColor ?? HOME_SOFT_UI.colors.canvas;
   const { getTextStyle } = useI18n();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -222,7 +223,7 @@ export function PlayScaffold({
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: shellBackground }]}
-      edges={bodyEdgeToEdge ? ['top', 'bottom'] : undefined}
+      edges={bodyEdgeToEdge ? ['top', 'bottom'] : ['top', 'bottom', 'left', 'right']}
     >
       <ScreenContent fullWidth style={styles.screenInner}>
         <View style={styles.fitRoot}>

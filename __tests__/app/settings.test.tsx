@@ -69,9 +69,6 @@ jest.mock('expo-image', () => ({
   Image: 'Image',
 }));
 
-jest.mock('@/components/ProfileAuthGate', () => ({
-  ProfileAuthGate: () => null,
-}));
 
 jest.mock('@/lib/i18n/useI18n', () => ({
   useI18n: () => ({

@@ -1,3 +1,4 @@
+import { mark } from '@/lib/startupTiming';
 import rawQuestions from '@/constants/questions.json';
 import type { CategoryOption, QuestionCard } from '@/features/shared';
 import type { SupportedLocale } from '@/lib/i18n/config';
@@ -37,7 +38,9 @@ function dedupeQuestionGroups(groups: SourceGroup[]) {
   return Array.from(unique.values());
 }
 
+mark('play data module evaluating (questions.json already parsed)');
 const QUESTION_GROUPS = dedupeQuestionGroups(rawQuestions as SourceGroup[]);
+mark('questions deduped');
 const CATEGORY_TRANSLATIONS: Partial<Record<SupportedLocale, Record<string, string>>> = {};
 const QUESTION_TRANSLATIONS: Partial<
   Record<SupportedLocale, Record<string, LocalizedQuestion>>

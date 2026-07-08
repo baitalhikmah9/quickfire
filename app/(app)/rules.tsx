@@ -2,7 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPACING, FONT_SIZES, FONTS, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import { SPACING, FONT_SIZES, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
@@ -21,8 +21,8 @@ export default function RulesModal() {
   const textMuted = T.colors.textMuted;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
-      <View style={[styles.header, SOFT_SURFACE_FACE, softSurfaceLift(), { backgroundColor: surface, marginHorizontal: SPACING.lg, marginTop: SPACING.sm, borderRadius: 14 }]}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
+      <View style={[styles.header, SOFT_SURFACE_FACE, softSurfaceLift(), { backgroundColor: surface, marginHorizontal: LAYOUT.screenGutter, marginTop: SPACING.sm, borderRadius: 14 }]}>
         <Pressable
           onPress={handleClose}
           accessibilityRole="button"
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: LAYOUT.screenGutter,
     height: 64,
   },
   closeButton: {
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     gap: SPACING.lg,
-    padding: SPACING.lg,
+    padding: LAYOUT.screenGutter,
     minHeight: 0,
   },
   column: {

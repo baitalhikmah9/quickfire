@@ -119,7 +119,6 @@ export const SPACING = {
   xxl: 32,
   xxxl: 40,
   huge: 48,
-  screenPadding: 20,
 };
 
 /**

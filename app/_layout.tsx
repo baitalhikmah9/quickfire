@@ -10,11 +10,14 @@ import { SplashHider } from '@/components/SplashHider';
 import { WebSeoHead } from '@/components/WebSeoHead';
 import { Providers } from '@/lib/providers';
 import { useThemeStore } from '@/store/theme';
+import { mark, markOnce } from '@/lib/startupTiming';
 import {
   FONTS,
   PALETTES,
   paletteUsesLightStatusBarContent,
 } from '@/constants/theme';
+
+mark('root layout module loaded');
 
 SplashScreen.preventAutoHideAsync();
 void SplashScreen.hideAsync();
@@ -23,6 +26,7 @@ void SplashScreen.hideAsync();
 const ROOT_NESTED_STACK_SCREEN_OPTIONS = { headerShown: false };
 
 export default function RootLayout() {
+  markOnce('RootLayout first render');
   const paletteId = useThemeStore((state) => state.paletteId);
   const rootStackScreenOptions = useMemo(
     () => ({
@@ -44,7 +48,7 @@ export default function RootLayout() {
     );
   }, []);
 
-  useFonts({
+  const [fontsLoaded] = useFonts({
     [FONTS.display]: require('../assets/fonts/ClashDisplay-Semibold.ttf'),
     [FONTS.displayBold]: require('../assets/fonts/ClashDisplay-Bold.ttf'),
     [FONTS.ui]: require('../assets/fonts/GeneralSans-Regular.ttf'),
@@ -52,6 +56,8 @@ export default function RootLayout() {
     [FONTS.uiSemibold]: require('../assets/fonts/GeneralSans-Semibold.ttf'),
     [FONTS.uiBold]: require('../assets/fonts/GeneralSans-Bold.ttf'),
   });
+
+  if (fontsLoaded) markOnce('fonts loaded');
 
   useEffect(() => {
     if (Platform.OS === 'web') return;

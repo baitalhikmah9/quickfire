@@ -14,15 +14,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
-import { GameHeader } from '@/components/GameHeader';
-import { HeaderBackButton } from '@/components/HeaderBackButton';
 import { FONT_SIZES, FONTS, SPACING } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { getRowDirection } from '@/lib/i18n/direction';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
 import type { GameSessionState } from '@/features/shared';
@@ -109,7 +106,7 @@ export default function TeamSetupScreen() {
   /** Desktop web: three-column balanced layout with constrained panel widths. */
   const isWebLayout = Platform.OS === 'web' && windowWidth >= 900;
   const viewportScale = Math.max(0.72, Math.min(1.08, Math.min(windowWidth / 860, windowHeight / 620)));
-  const { direction, getTextStyle, t } = useI18n();
+  const { getTextStyle, t } = useI18n();
   const paletteId = useThemeStore((state) => state.paletteId);
   const themedStyles = useMemo(() => makeThemedStyles(), [paletteId]);
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
@@ -629,20 +626,6 @@ export default function TeamSetupScreen() {
     <PlayScaffold
       title={t('play.teamSetupTitle')}
       onBack={() => router.replace('/(app)/')}
-      customHeader={
-        <GameHeader
-          variant="logoTitle"
-          title={t('play.teamSetupTitle')}
-          leftSlot={
-            <HeaderBackButton
-              onPress={() => router.replace('/(app)/')}
-              direction={direction}
-              rowDirection={getRowDirection(direction)}
-              label={t('common.back')}
-            />
-          }
-        />
-      }
       bodyScrollEnabled={false}
       bodyFrame={false}
       backgroundColor={T.canvas}

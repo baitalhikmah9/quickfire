@@ -9,6 +9,7 @@ import { ScreenContent } from '@/components/ScreenContent';
 import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { LegalDocumentBody } from '@/components/LegalDocumentBody';
 import { useTheme } from '@/lib/hooks/useTheme';
+import { HOME_SOFT_UI } from '@/themes';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { getRowDirection } from '@/lib/i18n/direction';
 import type { LegalSection } from '@/lib/legal/documentTypes';
@@ -37,7 +38,7 @@ export function LegalScrollScreen({ title, sections }: LegalScrollScreenProps) {
   return (
     <SafeAreaView
       edges={['top', 'bottom', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
+      style={[styles.safeArea, { backgroundColor: HOME_SOFT_UI.colors.canvas }]}
     >
       <ScreenContent fullWidth style={styles.viewport}>
         <ScrollView

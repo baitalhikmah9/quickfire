@@ -3,8 +3,8 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TextInput,
+  useWindowDimensions,
   Alert,
   ActivityIndicator,
   Platform,
@@ -32,7 +32,7 @@ import { useTokenPurchases } from '@/lib/hooks/useTokenPurchases';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
-const COMPACT_BUNDLES_ROW_MAX_WIDTH = 584;
+const COMPACT_BUNDLES_ROW_MAX_WIDTH = 720;
 
 const SIGN_IN_TO_REDEEM_MESSAGE = 'Sign in to redeem promo codes.';
 
@@ -64,11 +64,15 @@ function BundleCard({
   onPress,
   isPurchasing,
   isPurchaseUnavailable,
+  compact,
+  tight,
 }: {
   bundle: DisplayBundle;
   onPress: () => void;
   isPurchasing: boolean;
   isPurchaseUnavailable: boolean;
+  compact: boolean;
+  tight: boolean;
 }) {
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
@@ -87,6 +91,8 @@ function BundleCard({
       <Pressable
         style={({ pressed }) => [
           styles.bundleCard,
+          compact && styles.bundleCardCompact,
+          tight && styles.bundleCardTight,
           SOFT_SURFACE_FACE,
           softSurfaceLift(),
           {
@@ -98,23 +104,24 @@ function BundleCard({
         onPress={buyDisabled ? undefined : onPress}
         disabled={buyDisabled}
       >
-        <Text style={[styles.bundleAmount, { color: textPrimary }]}>
+        <Text style={[styles.bundleAmount, compact && styles.bundleAmountCompact, { color: textPrimary }]}>
           {formatTokens(bundle.tokensGranted)}
         </Text>
-        <Text style={[styles.bundleLabel, { color: textMuted }]}>
+        <Text style={[styles.bundleLabel, compact && styles.bundleLabelCompact, { color: textMuted }]}>
           TOKENS
         </Text>
 
         {/* Bonus display not available from catalog; kept for layout parity */}
         <View style={styles.bundleBonusSpacer} />
 
-        <Text style={[styles.bundlePrice, { color: textPrimary }]}>
+        <Text style={[styles.bundlePrice, compact && styles.bundlePriceCompact, { color: textPrimary }]}>
           {bundle.priceLabel}
         </Text>
 
         <View
           style={[
             styles.buyButton,
+            compact && styles.buyButtonCompact,
             SOFT_SURFACE_FACE,
             { backgroundColor: isPurchaseUnavailable ? textMuted : accentGlow },
           ]}
@@ -138,6 +145,9 @@ export default function StoreScreen() {
   const { direction, t } = useI18n();
   const rowDir = getRowDirection(direction);
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+  const isCompactViewport = height < 740 || width < 390;
+  const isTightViewport = height < 660;
 
   // Local play store (fallback token display).
   const localTokens = usePlayStore((state) => state.tokens);
@@ -385,11 +395,12 @@ export default function StoreScreen() {
           </View>
         </View>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator
+        <View
+          style={[
+            styles.pageContent,
+            isCompactViewport && styles.pageContentCompact,
+            isTightViewport && styles.pageContentTight,
+          ]}
         >
           {/* ── Status banner (non-native / error) ──────── */}
           {!IS_NATIVE_PLATFORM && (
@@ -428,7 +439,7 @@ export default function StoreScreen() {
 
           {/* ── Bundle cards ───────────────────────────── */}
           {catalog && (
-            <View style={styles.bundlesContainer}>
+            <View style={[styles.bundlesContainer, isCompactViewport && styles.bundlesContainerCompact]}>
               {displayBundles.map((bundle) => (
                 <BundleCard
                   key={bundle.productKey}
@@ -436,6 +447,8 @@ export default function StoreScreen() {
                   onPress={() => onBuyBundle(bundle)}
                   isPurchasing={isPurchasing || buyingKey === bundle.productKey}
                   isPurchaseUnavailable={isPurchaseUnavailable}
+                  compact={isCompactViewport}
+                  tight={isTightViewport}
                 />
               ))}
             </View>
@@ -446,8 +459,8 @@ export default function StoreScreen() {
           </Text>
 
           {/* ── Promo redemption ───────────────────────── */}
-          <View style={styles.redeemSection}>
-            <Text style={[styles.redeemTitle, { color: textPrimary }]}>REDEEM CODE</Text>
+          <View style={[styles.redeemSection, isCompactViewport && styles.redeemSectionCompact]}>
+            <Text style={[styles.redeemTitle, isCompactViewport && styles.redeemTitleCompact, { color: textPrimary }]}>REDEEM CODE</Text>
             <View
               style={[
                 styles.redeemCard,
@@ -465,6 +478,7 @@ export default function StoreScreen() {
                 autoCorrect={false}
                 style={[
                   styles.redeemInput,
+                  isCompactViewport && styles.redeemInputCompact,
                   {
                     color: textPrimary,
                     borderColor: promoError ? '#D32F2F' : 'rgba(0,0,0,0.08)',
@@ -477,6 +491,7 @@ export default function StoreScreen() {
                 disabled={isRedeeming}
                 style={({ pressed }) => [
                   styles.applyButton,
+                  isCompactViewport && styles.applyButtonCompact,
                   SOFT_SURFACE_FACE,
                   softSurfaceLift(),
                   {
@@ -496,7 +511,7 @@ export default function StoreScreen() {
             {promoError ? <Text style={styles.promoErrorText}>{promoError}</Text> : null}
             {promoSuccess ? <Text style={styles.promoSuccessText}>{promoSuccess}</Text> : null}
           </View>
-        </ScrollView>
+        </View>
       </ScreenContent>
     </SafeAreaView>
   );
@@ -511,22 +526,32 @@ const styles = StyleSheet.create({
   viewport: {
     flex: 1,
   },
-  scroll: {
+  pageContent: {
     flex: 1,
-  },
-  scrollContent: {
+    minHeight: 0,
+    paddingTop: SPACING.xl,
     paddingHorizontal: LAYOUT.screenGutter,
-    paddingBottom: SPACING.xxl,
-    gap: SPACING.lg,
+    paddingBottom: SPACING.md,
+    gap: SPACING.md,
     alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  pageContentCompact: {
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.sm,
+    gap: SPACING.sm,
+  },
+  pageContentTight: {
+    paddingTop: SPACING.sm,
+    gap: SPACING.xs,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    minHeight: 72,
-    paddingVertical: SPACING.md,
+    minHeight: 56,
+    paddingVertical: SPACING.sm,
   },
   headerSide: {
     width: 116,
@@ -558,7 +583,6 @@ const styles = StyleSheet.create({
   tokenBalanceHint: {
     width: '100%',
     maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,
-    marginTop: SPACING.xs,
     paddingHorizontal: SPACING.xs,
     fontFamily: FONTS.ui,
     fontSize: 11,
@@ -608,7 +632,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,
     alignSelf: 'center',
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  bundlesContainerCompact: {
+    paddingVertical: 0,
   },
   bundleCardWrapper: {
     flexBasis: '19%',
@@ -618,22 +645,36 @@ const styles = StyleSheet.create({
   },
   bundleCard: {
     borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     alignItems: 'center',
-    minHeight: 140,
+    minHeight: 150,
     justifyContent: 'space-between',
+  },
+  bundleCardCompact: {
+    minHeight: 138,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+  },
+  bundleCardTight: {
+    minHeight: 128,
   },
   bundleAmount: {
     fontFamily: FONTS.displayBold,
-    fontSize: 18,
+    fontSize: 24,
     textAlign: 'center',
+  },
+  bundleAmountCompact: {
+    fontSize: 21,
   },
   bundleLabel: {
     fontFamily: FONTS.uiBold,
-    fontSize: 8,
+    fontSize: 10,
     letterSpacing: 0.5,
     marginTop: -4,
+  },
+  bundleLabelCompact: {
+    fontSize: 9,
   },
   bundleBonus: {
     fontFamily: FONTS.ui,
@@ -645,20 +686,28 @@ const styles = StyleSheet.create({
   },
   bundlePrice: {
     fontFamily: FONTS.displayBold,
-    fontSize: 14,
+    fontSize: 17,
     marginTop: 4,
     marginBottom: 6,
   },
+  bundlePriceCompact: {
+    fontSize: 15,
+    marginTop: 2,
+    marginBottom: 4,
+  },
   buyButton: {
     alignSelf: 'stretch',
-    height: 24,
-    borderRadius: 12,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  buyButtonCompact: {
+    height: 28,
+  },
   buyButtonText: {
     fontFamily: FONTS.uiBold,
-    fontSize: 8,
+    fontSize: 10,
     color: '#FFFFFF',
     letterSpacing: 0.4,
   },
@@ -667,14 +716,20 @@ const styles = StyleSheet.create({
   redeemSection: {
     width: '100%',
     maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,
-    marginTop: SPACING.lg,
+    marginTop: SPACING.xl,
     alignItems: 'center',
+  },
+  redeemSectionCompact: {
+    marginTop: SPACING.lg,
   },
   redeemTitle: {
     fontFamily: FONTS.uiBold,
-    fontSize: 12,
+    fontSize: 14,
     letterSpacing: 1.2,
     marginBottom: SPACING.sm,
+  },
+  redeemTitleCompact: {
+    marginBottom: SPACING.xs,
   },
   redeemCard: {
     flexDirection: 'row',
@@ -686,12 +741,15 @@ const styles = StyleSheet.create({
   },
   redeemInput: {
     flex: 1,
-    height: 40,
-    borderRadius: 20,
+    height: 48,
+    borderRadius: 24,
     paddingHorizontal: SPACING.md,
     fontFamily: FONTS.ui,
-    fontSize: 12,
+    fontSize: 14,
     backgroundColor: '#FFFFFF',
+  },
+  redeemInputCompact: {
+    height: 44,
   },
   promoErrorText: {
     alignSelf: 'stretch',
@@ -712,15 +770,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xs,
   },
   applyButton: {
-    height: 40,
+    height: 48,
     paddingHorizontal: SPACING.lg,
-    borderRadius: 20,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  applyButtonCompact: {
+    height: 44,
+    paddingHorizontal: SPACING.md,
+  },
   applyButtonText: {
     fontFamily: FONTS.uiBold,
-    fontSize: 10,
+    fontSize: 12,
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },

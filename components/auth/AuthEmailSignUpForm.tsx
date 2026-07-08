@@ -4,7 +4,7 @@ import { useSignUp } from '@clerk/clerk-expo';
 import { AuthCard, AuthCardHeader, AuthField, AuthSubmitButton } from '@/components/auth/AuthCard';
 import { clerkErrorMessage } from '@/lib/auth/clerkErrorMessage';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { SPACING, FONTS } from '@/constants';
+import { COLORS, SPACING, FONTS } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
@@ -28,7 +28,7 @@ export function AuthEmailSignUpForm({ renderCollectFooter }: AuthEmailSignUpForm
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const textDanger = '#DC2626';
+  const textDanger = COLORS.error;
 
   const startSignUp = useCallback(async () => {
     setError('');

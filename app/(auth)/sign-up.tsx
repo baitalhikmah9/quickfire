@@ -39,7 +39,7 @@ export default function SignUpScreen() {
   const textMuted = T.colors.textMuted;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"

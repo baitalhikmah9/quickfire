@@ -2,10 +2,11 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
-import { BORDER_RADIUS, FONT_SIZES, SPACING, FONTS } from '@/constants';
+import { BORDER_RADIUS, FONT_SIZES, SPACING, FONTS, LAYOUT } from '@/constants';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { usePlayStore } from '@/store/play';
+import { HOME_SOFT_UI } from '@/themes';
 
 function formatReason(reason: string): string {
   switch (reason) {
@@ -23,13 +24,14 @@ function formatReason(reason: string): string {
 export default function GameRecapModal() {
   const router = useRouter();
   const colors = useTheme();
+  const canvas = HOME_SOFT_UI.colors.canvas;
   const handleClose = () => goBackOrReplace(router, '/(app)/');
   const session = usePlayStore((state) => state.session);
   const reopenLastResolvedTurn = usePlayStore((state) => state.reopenLastResolvedTurn);
 
   if (!session) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
         <View style={styles.emptyState}>
           <Text style={[styles.title, { color: colors.text }]}>Game Recap</Text>
           <Text style={[styles.emptyCopy, { color: colors.textSecondary }]}>
@@ -44,7 +46,7 @@ export default function GameRecapModal() {
   const winner = [...session.teams].sort((a, b) => b.score - a.score)[0] ?? null;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.text }]}>Game Recap</Text>
         <Button title="Close" variant="secondary" onPress={handleClose} />
@@ -161,7 +163,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: SPACING.lg,
+    padding: LAYOUT.screenGutter,
     borderBottomWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -173,7 +175,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.displayBold,
   },
   content: {
-    padding: SPACING.lg,
+    padding: LAYOUT.screenGutter,
     gap: SPACING.lg,
   },
   heroCard: {

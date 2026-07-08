@@ -102,7 +102,7 @@ function ErrorFallback({
   onReset: () => void;
 }) {
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: palette.background }]}>
       <View style={styles.container}>
         <Text
           style={[
