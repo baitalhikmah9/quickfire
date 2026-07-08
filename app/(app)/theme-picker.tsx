@@ -11,6 +11,8 @@ import {
   type ThemePaletteId,
 } from '@/constants';
 import { useThemePicker } from '@/lib/hooks/useTheme';
+import { useI18n } from '@/lib/i18n/useI18n';
+import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
@@ -30,25 +32,23 @@ function neumorphicLift3D(shadowColor: string, tier: 'header' | 'card'): any {
 
 export default function ThemePickerModal() {
   const router = useRouter();
+  const { direction, t } = useI18n();
   const { paletteId, setPalette } = useThemePicker();
   const canvas = T.colors.canvas;
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
   const shadowHex = T.colors.shadowStrong;
-  const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace('/(app)/settings');
-  };
+  const backIcon = direction === 'rtl' ? 'chevron-forward' : 'chevron-back';
+  const handleBack = () => goBackOrReplace(router, '/(app)/settings');
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
       <View style={styles.header}>
         <Pressable
           onPress={handleBack}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
           style={({ pressed }) => [
             styles.backButton,
             styles.plasticFace,
@@ -60,7 +60,7 @@ export default function ThemePickerModal() {
             neumorphicLift3D(shadowHex, 'header'),
           ]}
         >
-          <Ionicons name="chevron-back" size={22} color={textPrimary} />
+          <Ionicons name={backIcon} size={22} color={textPrimary} />
         </Pressable>
         <Text style={[styles.title, { color: textPrimary }]}>THEME</Text>
         <View style={styles.headerSpacer} />

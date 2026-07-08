@@ -4,12 +4,16 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SPACING, FONT_SIZES, FONTS, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
+import { useI18n } from '@/lib/i18n/useI18n';
+import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
 export default function RulesModal() {
   const router = useRouter();
+  const { t } = useI18n();
+  const handleClose = () => goBackOrReplace(router, '/(app)/');
 
   const canvas = T.colors.canvas;
   const surface = T.colors.surface;
@@ -19,7 +23,12 @@ export default function RulesModal() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: canvas }]}>
       <View style={[styles.header, SOFT_SURFACE_FACE, softSurfaceLift(), { backgroundColor: surface, marginHorizontal: SPACING.lg, marginTop: SPACING.sm, borderRadius: 14 }]}>
-        <Pressable onPress={() => router.back()} style={styles.closeButton}>
+        <Pressable
+          onPress={handleClose}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.close')}
+          style={styles.closeButton}
+        >
           <Text style={[styles.closeText, { color: textPrimary }]}>Close</Text>
         </Pressable>
         <Text style={[styles.title, { color: textPrimary }]}>RULES</Text>

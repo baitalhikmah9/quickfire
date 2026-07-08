@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING } from '@/constants';
-import { getBackfireTitleLogoWidth, getGameHeaderLogoDisplayWidth } from '@/lib/layout/backfireTitleLogoWidth';
+import { getGameHeaderLogoDisplayWidth } from '@/lib/layout/backfireTitleLogoWidth';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { FONTS } from '@/constants/theme';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -45,7 +45,7 @@ export interface PlayMatchTopBarProps {
   onLogoPress: () => void;
   onWagerInfoPress?: () => void;
   onHotSeatInfoPress?: () => void;
-  /** Smaller logo when vertical space is tight (e.g. question chrome below). */
+  /** Tighter score-card typography and rumble logo when vertical space is tight. Logo width always matches `<GameHeader />`. */
   compact?: boolean;
   /** When false, only the centered BackFire logo is shown unless scorePillsNextToLogo is true. */
   showTeamScores?: boolean;
@@ -74,11 +74,7 @@ export function PlayMatchTopBar({
   const shortSide = Math.min(width, height);
   const isTightHeader = compactQuestionHeader && (width < 760 || shortSide < 430);
   const isVeryTightHeader = compactQuestionHeader && shortSide < 390;
-  const homeLogoWidth = getBackfireTitleLogoWidth(width, height);
-  /** Classic board: same `BackfireTitleLogo` width as `<GameHeader />`; question view keeps tighter caps. */
-  const logoWidth = compactQuestionHeader
-    ? Math.min(homeLogoWidth, isVeryTightHeader ? 104 : isTightHeader ? 112 : 142)
-    : getGameHeaderLogoDisplayWidth(width, height);
+  const logoWidth = getGameHeaderLogoDisplayWidth(width, height);
   const sideMaxWidth = compactQuestionHeader ? (isVeryTightHeader ? 142 : isTightHeader ? 158 : 214) : undefined;
   const showWager = session.config.wagerEnabled && onWagerInfoPress;
   const showHotSeat = isHotSeatConfigured(session) && onHotSeatInfoPress;

@@ -51,7 +51,7 @@
         {
           "backgroundColor": "#FAF9F6",
           "image": "./assets/BF in game logo safe.png",
-          "imageWidth": 280,
+          "imageWidth": 240,
           "resizeMode": "contain",
           "dark": {
             "backgroundColor": "#000000",

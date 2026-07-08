@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { useFonts } from 'expo-font';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { SplashHider } from '@/components/SplashHider';
 import { WebSeoHead } from '@/components/WebSeoHead';
 import { Providers } from '@/lib/providers';
 import { useThemeStore } from '@/store/theme';
@@ -16,6 +17,7 @@ import {
 } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
+void SplashScreen.hideAsync();
 
 /** Stable reference for static layout groups — avoids navigation descriptor churn each render. */
 const ROOT_NESTED_STACK_SCREEN_OPTIONS = { headerShown: false };
@@ -52,12 +54,6 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      void SplashScreen.hideAsync();
-    }
-  }, []);
-
-  useEffect(() => {
     if (Platform.OS === 'web') return;
 
     let appStateSub: ReturnType<typeof AppState.addEventListener> | undefined;
@@ -88,6 +84,7 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
+      <SplashHider />
       <Providers>
         <WebSeoHead />
         <StatusBar

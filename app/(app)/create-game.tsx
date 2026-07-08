@@ -13,6 +13,8 @@ import type { GameConfig, TeamConfig, LifelineId, QuestionCard } from '@/feature
 import { FALLBACK_CATEGORIES } from '@/constants/categories';
 import { SPACING, FONTS, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { getResolvedContentLocaleChain } from '@/lib/i18n/config';
+import { useI18n } from '@/lib/i18n/useI18n';
+import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { useGameStore } from '@/store/game';
 import { useLocaleStore } from '@/store/locale';
 import { HOME_SOFT_UI } from '@/themes';
@@ -25,6 +27,7 @@ const STEPS = ['categories', 'teamInfo', 'splitTeams'] as const;
 
 export default function CreateGameScreen() {
   const router = useRouter();
+  const { direction, t } = useI18n();
   const contentLocaleChain = getResolvedContentLocaleChain(
     useLocaleStore.getState().contentLocales
   );
@@ -49,6 +52,15 @@ export default function CreateGameScreen() {
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
   const shadowHex = T.colors.shadowStrong;
+  const backIcon = direction === 'rtl' ? 'chevron-forward' : 'chevron-back';
+
+  const handleBack = () => {
+    if (step > 0) {
+      setStep(step - 1);
+      return;
+    }
+    goBackOrReplace(router, '/(app)/');
+  };
 
   const categories: CategoryOption[] =
     convexCategories && convexCategories.length > 0
@@ -193,7 +205,9 @@ export default function CreateGameScreen() {
       <View style={[styles.header, SOFT_SURFACE_FACE, { backgroundColor: surface }, softSurfaceLift()]}>
         <View style={styles.headerLeft}>
           <Pressable
-            onPress={() => (step > 0 ? setStep(step - 1) : router.back())}
+            onPress={handleBack}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.back')}
             style={({ pressed }) => [
               styles.backButton,
               SOFT_SURFACE_FACE,
@@ -201,7 +215,7 @@ export default function CreateGameScreen() {
               { backgroundColor: surface, opacity: pressed ? 0.94 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
             ]}
           >
-            <Ionicons name="chevron-back" size={20} color={textPrimary} />
+            <Ionicons name={backIcon} size={20} color={textPrimary} />
           </Pressable>
         </View>
 

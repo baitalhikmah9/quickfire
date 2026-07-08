@@ -50,10 +50,9 @@ export function groupCategoriesBySection(categories: CategoryOption[]): Category
   })).filter((section) => section.categories.length > 0);
 }
 
-/** Team with the highest score; ties favor the earliest team in roster order. */
+/** Only the sole highest-scoring team leads; ties do not highlight team 1 by default. */
 export function getLeadingTeamId(teams: { id: string; score: number }[]): string | undefined {
-  if (!teams.length) return undefined;
-  return teams.reduce((leader, team) =>
-    team.score > leader.score ? team : leader
-  ).id;
+  const highScore = Math.max(...teams.map((team) => team.score));
+  const leaders = teams.filter((team) => team.score === highScore);
+  return leaders.length === 1 ? leaders[0]?.id : undefined;
 }

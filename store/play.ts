@@ -14,7 +14,9 @@ import {
   normalizeQuickPlayTopicCount,
 } from '@/features/play/tokenCosts';
 import {
+  RUMBLE_SECOND_TEAM_REVEAL_SECONDS,
   canRevealRumbleAnswer,
+  getRumbleElapsedSeconds,
   groupRumbleQuestionsByValueBucket,
 } from '@/features/play/rumble';
 import type {
@@ -914,10 +916,20 @@ function createPlayStore() {
           const currentQuestion = session?.currentQuestion;
           if (!session || !currentQuestion) return state;
 
+          const usedQuestionIds = new Set(session.usedQuestionIds);
+          if (
+            session.mode === 'rumble' &&
+            session.step === 'question' &&
+            getRumbleElapsedSeconds(session.timerStartedAt) < RUMBLE_SECOND_TEAM_REVEAL_SECONDS
+          ) {
+            usedQuestionIds.delete(currentQuestion.id);
+          }
+
           return {
             session: {
               ...session,
               currentQuestion: undefined,
+              usedQuestionIds,
               step: 'board',
               phase: 'wagerDecision',
               timerStartedAt: undefined,

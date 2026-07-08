@@ -219,7 +219,6 @@ utils/                             # Utility helpers
 | convex | Backend / real-time database |
 | zustand | Client-side state management |
 | zod | Runtime validation |
-| @tanstack/react-query | Data fetching / cache |
 | react-native-screens | Native navigation containers |
 | expo-screen-orientation | Global landscape orientation |
 | expo-secure-store | Secure persistence |

@@ -47,6 +47,8 @@ export default function SignUpScreen() {
       >
         <Pressable
           onPress={() => goBackOrReplace(router, '/(app)/')}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
           style={({ pressed }) => [
             styles.headerSquircleInner,
             SOFT_SURFACE_FACE,

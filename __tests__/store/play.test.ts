@@ -374,6 +374,33 @@ describe('usePlayStore', () => {
     }
   });
 
+  it('does not spend a rumble question when leaving before the answer can reveal', () => {
+    jest.spyOn(Date, 'now').mockReturnValue(1_030_000);
+    const question = createQuestion({
+      id: 'q-rumble-cancel',
+      canonicalKey: 'science:200:rumble-cancel',
+      rumbleFirstTeamId: 'team_1',
+      rumbleSecondTeamId: 'team_2',
+    });
+
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'rumble',
+        currentQuestion: question,
+        board: [question],
+        usedQuestionIds: new Set([question.id]),
+        step: 'question',
+        phase: 'questionReveal',
+        timerStartedAt: 1_000_000,
+      }),
+    });
+
+    usePlayStore.getState().cancelCurrentQuestion();
+
+    expect(usePlayStore.getState().session?.usedQuestionIds.has(question.id)).toBe(false);
+    expect(usePlayStore.getState().session?.step).toBe('board');
+  });
+
   it('rejects rumble answer reveal before the second team appears and allows reveal after the round ends', () => {
     jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
     const question = createQuestion({

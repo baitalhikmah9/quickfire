@@ -61,6 +61,8 @@ Thumbs.db
 .env.prod
 context.md
 tmp_apk_check/
+tmp_*.png
+tmp_logo_audit/
 
 # Build Artifacts
 *.apk

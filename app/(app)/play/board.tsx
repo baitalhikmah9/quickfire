@@ -255,7 +255,7 @@ function getBoardMetrics(screenHeight: number, screenWidth: number): BoardMetric
 
 type RandomQuestionSelectorProps = {
   title: string;
-  body: string;
+  reels: string[][];
   actionLabel?: string;
   disabled?: boolean;
   isRolling: boolean;
@@ -264,92 +264,70 @@ type RandomQuestionSelectorProps = {
 
 function RandomQuestionSelector({
   title,
-  body,
+  reels,
   actionLabel,
   disabled = false,
   isRolling,
   onAction,
 }: RandomQuestionSelectorProps) {
-  const shimmer = useRef(new Animated.Value(0)).current;
+  const spin = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, {
-          toValue: 1,
-          duration: 950,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shimmer, {
-          toValue: 0,
-          duration: 950,
-          useNativeDriver: true,
-        }),
-      ])
+      Animated.timing(spin, {
+        toValue: 1,
+        duration: 720,
+        useNativeDriver: true,
+      })
     );
 
     loop.start();
     return () => {
       loop.stop();
-      shimmer.stopAnimation();
+      spin.stopAnimation();
     };
-  }, [shimmer]);
+  }, [spin]);
 
-  const warmScale = shimmer.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.94, 1.08, 0.94],
-  });
-  const coolScale = shimmer.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [1.04, 0.92, 1.04],
-  });
-  const highlightShift = shimmer.interpolate({
+  const translateY = spin.interpolate({
     inputRange: [0, 1],
-    outputRange: [-26, 26],
+    outputRange: [0, -72],
   });
-  const rollingOpacity = shimmer.interpolate({
+  const pulse = spin.interpolate({
     inputRange: [0, 0.5, 1],
-    outputRange: [0.42, 0.9, 0.42],
+    outputRange: [0.92, 1.04, 0.92],
   });
-
+  const glowOpacity = spin.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.35, 0.85, 0.35],
+  });
   return (
     <View testID="random-question-selector" style={styles.randomSelectorShell}>
-      <View style={[styles.randomSelectorCard, PLASTIC_FACE, neumorphicLift3D('card')]}>
-        <View style={styles.randomSelectorVisual}>
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.randomSelectorGlow,
-              {
-                opacity: rollingOpacity,
-                transform: [{ translateX: highlightShift }],
-              },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.randomSelectorOrb,
-              styles.randomSelectorOrbWarm,
-              { transform: [{ scale: warmScale }] },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.randomSelectorOrb,
-              styles.randomSelectorOrbCool,
-              { transform: [{ scale: coolScale }] },
-            ]}
-          />
-          <View style={styles.randomSelectorTrack}>
-            <View style={[styles.randomSelectorPill, styles.randomSelectorPillWarm]} />
-            <View style={[styles.randomSelectorPill, styles.randomSelectorPillGold]} />
-            <View style={[styles.randomSelectorPill, styles.randomSelectorPillCool]} />
-          </View>
+      <View style={[styles.randomSelectorCard, PLASTIC_FACE, neumorphicLift3D('card')]}> 
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.randomSelectorGlow, { opacity: glowOpacity, transform: [{ scale: pulse }] }]}
+        />
+        <Text style={styles.randomSelectorTitle}>{title}</Text>
+        <View style={styles.randomSelectorReels}>
+          {reels.map((items, index) => (
+            <View key={index} style={styles.randomSelectorReelWindow}>
+              <Animated.View style={{ transform: [{ translateY }] }}>
+                {[...items, ...items].map((item, itemIndex) => (
+                  <View key={`${item}-${itemIndex}`} style={styles.randomSelectorReelTile}>
+                    <Text style={styles.randomSelectorReelText} numberOfLines={1} adjustsFontSizeToFit>
+                      {item}
+                    </Text>
+                  </View>
+                ))}
+              </Animated.View>
+            </View>
+          ))}
+          <View pointerEvents="none" style={styles.randomSelectorPickBand} />
         </View>
-
-        <View style={styles.randomSelectorCopy}>
-          <Text style={styles.randomSelectorTitle}>{title}</Text>
-          <Text style={styles.randomSelectorBody}>{body}</Text>
+        <View style={styles.randomSelectorDots}>
+          <View style={[styles.randomSelectorDot, styles.randomSelectorPillWarm]} />
+          <View style={[styles.randomSelectorDot, styles.randomSelectorPillGold]} />
+          <View style={[styles.randomSelectorDot, styles.randomSelectorPillCool]} />
         </View>
 
         {actionLabel ? (
@@ -457,10 +435,24 @@ export default function PlayBoardScreen() {
   }, [clearSelectorTimeout]);
 
   const showWagerSelector = Boolean(session?.wager && !session.wager.question);
-  const showRandomSelector = session?.mode === 'random' && !showWagerSelector;
-  const remainingQuestionCount = session
-    ? session.board.filter((question) => !session.usedQuestionIds.has(question.id)).length
-    : 0;
+  const remainingQuestions = useMemo(
+    () => session?.board.filter((question) => !session.usedQuestionIds.has(question.id) && !question.used) ?? [],
+    [session?.board, session?.usedQuestionIds]
+  );
+  const remainingQuestionCount = remainingQuestions.length;
+  const showRandomSelector = session?.mode === 'random' && !showWagerSelector && remainingQuestionCount > 0;
+  const randomSelectorReels = useMemo(() => {
+    const pad = (items: string[], fallback: string[]) => {
+      const out = items.length ? [...items] : [...fallback];
+      while (out.length < 4) out.push(...out);
+      return out.slice(0, 4);
+    };
+    return [
+      pad([...new Set(remainingQuestions.map((q) => String(q.pointValue)))], ['200', '400', '600', '800']),
+      pad([...new Set(remainingQuestions.map((q) => q.categoryName.toUpperCase()))], ['QUESTION']),
+      pad([...new Set(remainingQuestions.map((q) => (q.boardSide ?? 'tile').toUpperCase()))], ['LEFT', 'RIGHT']),
+    ];
+  }, [remainingQuestions]);
 
   useEffect(() => {
     if (showWagerSelector) {
@@ -610,7 +602,7 @@ export default function PlayBoardScreen() {
   const surfaceColors = getPlaySurfaceColors();
 
   const renderTile = (column: CategoryColumn, question: QuestionCard) => {
-    const used = session.usedQuestionIds.has(question.id);
+    const used = session.usedQuestionIds.has(question.id) || question.used;
     const textMuted = T.colors.textMuted;
     return (
       <Pressable
@@ -712,11 +704,11 @@ export default function PlayBoardScreen() {
               onPress={() => {
                 const next = column.rows
                   .flatMap((row) => [row.left, row.right])
-                  .find((candidate) => !session.usedQuestionIds.has(candidate.id));
+                  .find((candidate) => !session.usedQuestionIds.has(candidate.id) && !candidate.used);
                 if (!next) {
                   const usedQuestion = column.rows
                     .flatMap((row) => [row.left, row.right])
-                    .find((candidate) => session.usedQuestionIds.has(candidate.id));
+                    .find((candidate) => session.usedQuestionIds.has(candidate.id) || candidate.used);
                   if (usedQuestion) {
                     reviewBoardQuestion(usedQuestion);
                     router.replace('/play/question');
@@ -801,7 +793,6 @@ export default function PlayBoardScreen() {
         onLogoPress={toggleExitModal}
         onWagerInfoPress={session.config.wagerEnabled ? () => setWagerInfoOpen(true) : undefined}
         onHotSeatInfoPress={SHOW_HOT_SEAT_UI ? () => setHotSeatInfoOpen(true) : undefined}
-        compact={Math.min(width, height) < 560}
         showTeamScores={false}
         scorePillsNextToLogo
       />
@@ -876,29 +867,14 @@ export default function PlayBoardScreen() {
         >
           {showWagerSelector ? (
             <RandomQuestionSelector
-              title={t('play.wagerSelectorTitle')}
-              body={t('play.wagerSelectorBody', {
-                wageringTeam:
-                  session.teams.find((team) => team.id === wager?.wageringTeamId)?.name ??
-                  t('common.teamOne'),
-                targetTeam:
-                  session.teams.find((team) => team.id === wager?.targetTeamId)?.name ??
-                  t('common.teamTwo'),
-              })}
+              title="WAGER DRAW"
+              reels={randomSelectorReels}
               isRolling
             />
           ) : showRandomSelector ? (
             <RandomQuestionSelector
-              title={
-                randomSelectorState === 'rolling'
-                  ? t('play.randomSelectorRollingTitle')
-                  : t('play.randomSelectorIdleTitle')
-              }
-              body={
-                randomSelectorState === 'rolling'
-                  ? t('play.randomSelectorRollingBody')
-                  : t('play.randomSelectorIdleBody')
-              }
+              title="SELECTING QUESTION"
+              reels={randomSelectorReels}
               isRolling={randomSelectorState === 'rolling'}
             />
           ) : (
@@ -1458,37 +1434,70 @@ const styles = StyleSheet.create({
   },
   randomSelectorCard: {
     width: '100%',
-    maxWidth: 360,
+    maxWidth: 520,
     borderRadius: 32,
     backgroundColor: T.colors.surface,
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.xl,
     alignItems: 'center',
     gap: SPACING.lg,
-  },
-  randomSelectorVisual: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 108,
     overflow: 'hidden',
   },
   randomSelectorGlow: {
     position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255, 180, 17, 0.18)',
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(255, 180, 17, 0.2)',
   },
-  randomSelectorTrack: {
+  randomSelectorReels: {
+    width: '100%',
+    height: 152,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    zIndex: 2,
+    justifyContent: 'center',
+    gap: SPACING.sm,
   },
-  randomSelectorPill: {
-    width: 56,
-    height: 16,
+  randomSelectorReelWindow: {
+    flex: 1,
+    height: 136,
+    maxWidth: 132,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#FFF8DE',
+    borderWidth: 2,
+    borderColor: 'rgba(51, 51, 51, 0.12)',
+  },
+  randomSelectorReelTile: {
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xs,
+  },
+  randomSelectorReelText: {
+    fontFamily: FONTS.displayBold,
+    fontSize: 18,
+    letterSpacing: 0.8,
+    color: T.colors.textPrimary,
+  },
+  randomSelectorPickBand: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 56,
+    height: 42,
+    borderTopWidth: 3,
+    borderBottomWidth: 3,
+    borderColor: '#FFB411',
+    backgroundColor: 'rgba(255, 214, 90, 0.2)',
+  },
+  randomSelectorDots: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  randomSelectorDot: {
+    width: 14,
+    height: 14,
     borderRadius: 999,
   },
   randomSelectorPillWarm: {
@@ -1500,41 +1509,14 @@ const styles = StyleSheet.create({
   randomSelectorPillCool: {
     backgroundColor: '#41C98C',
   },
-  randomSelectorOrb: {
-    position: 'absolute',
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    opacity: 0.9,
-  },
-  randomSelectorOrbWarm: {
-    top: 10,
-    left: 58,
-    backgroundColor: 'rgba(255, 180, 17, 0.18)',
-  },
-  randomSelectorOrbCool: {
-    right: 58,
-    bottom: 12,
-    backgroundColor: 'rgba(65, 201, 140, 0.18)',
-  },
-  randomSelectorCopy: {
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
   randomSelectorTitle: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 14,
-    letterSpacing: 1.2,
+    fontFamily: FONTS.displayBold,
+    fontSize: 22,
+    letterSpacing: 1.4,
     color: T.colors.textPrimary,
     textAlign: 'center',
     textTransform: 'uppercase',
-  },
-  randomSelectorBody: {
-    fontFamily: FONTS.ui,
-    fontSize: 14,
-    lineHeight: 20,
-    color: T.colors.textMuted,
-    textAlign: 'center',
+    zIndex: 1,
   },
   randomSelectorButton: {
     minWidth: 220,

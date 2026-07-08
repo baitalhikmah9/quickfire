@@ -3,12 +3,16 @@ import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SPACING, FONT_SIZES, BORDER_RADIUS, FONTS, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import { useI18n } from '@/lib/i18n/useI18n';
+import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
 export default function LobbySettingsModal() {
   const router = useRouter();
+  const { t } = useI18n();
+  const handleClose = () => goBackOrReplace(router, '/(app)/');
 
   const canvas = T.colors.canvas;
   const surface = T.colors.surface;
@@ -20,7 +24,12 @@ export default function LobbySettingsModal() {
       <View style={[styles.header, SOFT_SURFACE_FACE, softSurfaceLift(), { backgroundColor: surface, borderRadius: 14, marginHorizontal: SPACING.lg, marginTop: SPACING.sm }]}>
         <View style={styles.headerSpacer} />
         <Text style={[styles.title, { color: textPrimary }]}>LOBBY SETTINGS</Text>
-        <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.closeButton, { opacity: pressed ? 0.8 : 1 }]}>
+        <Pressable
+          onPress={handleClose}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.close')}
+          style={({ pressed }) => [styles.closeButton, { opacity: pressed ? 0.8 : 1 }]}
+        >
           <Text style={[styles.closeText, { color: textPrimary }]}>CLOSE</Text>
         </Pressable>
       </View>
@@ -37,7 +46,7 @@ export default function LobbySettingsModal() {
             { backgroundColor: surface },
             pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
           ]}
-          onPress={() => router.back()}
+          onPress={handleClose}
         >
           <Text style={[styles.placeholderButtonText, { color: textPrimary }]}>START GAME (PLACEHOLDER)</Text>
         </Pressable>

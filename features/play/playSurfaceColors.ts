@@ -16,7 +16,7 @@ export function getPlaySurfaceColors() {
     imagePadding: isDark ? 2 : 6,
     isDark,
     topicImageContentFit: 'contain' as const,
-    /** Pixel-art tiles with light PNG backgrounds read better on dark with a soft matte frame. */
-    topicImageMatte: isDark ? 'rgba(18, 18, 18, 0.92)' : undefined,
+    /** Many topic PNGs have dark transparent line art; keep a light matte in dark mode. */
+    topicImageMatte: isDark ? 'rgba(255, 255, 255, 0.92)' : undefined,
   };
 }

@@ -351,6 +351,8 @@ export default function StoreScreen() {
           <View style={styles.headerSide}>
             <Pressable
               onPress={handleBack}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.back')}
               style={({ pressed }) => [
                 styles.backButton,
                 SOFT_SURFACE_FACE,

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 import { BORDER_RADIUS, FONT_SIZES, SPACING, FONTS } from '@/constants';
 import { useTheme } from '@/lib/hooks/useTheme';
+import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { usePlayStore } from '@/store/play';
 
 function formatReason(reason: string): string {
@@ -22,6 +23,7 @@ function formatReason(reason: string): string {
 export default function GameRecapModal() {
   const router = useRouter();
   const colors = useTheme();
+  const handleClose = () => goBackOrReplace(router, '/(app)/');
   const session = usePlayStore((state) => state.session);
   const reopenLastResolvedTurn = usePlayStore((state) => state.reopenLastResolvedTurn);
 
@@ -33,7 +35,7 @@ export default function GameRecapModal() {
           <Text style={[styles.emptyCopy, { color: colors.textSecondary }]}>
             No finished session is available to review.
           </Text>
-          <Button title="Close" onPress={() => router.back()} />
+          <Button title="Close" onPress={handleClose} />
         </View>
       </SafeAreaView>
     );
@@ -45,7 +47,7 @@ export default function GameRecapModal() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.text }]}>Game Recap</Text>
-        <Button title="Close" variant="secondary" onPress={() => router.back()} />
+        <Button title="Close" variant="secondary" onPress={handleClose} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>

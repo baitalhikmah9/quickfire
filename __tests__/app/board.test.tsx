@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import type { GameConfig, GameSessionState, QuestionCard } from '@/features/shared';
 
 import PlayBoardScreen from '@/app/(app)/play/board';
@@ -189,7 +189,7 @@ describe('PlayBoardScreen', () => {
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
   });
 
-  it('uses the shared random selector panel for random mode instead of the old plain button', () => {
+  it('uses the animated random selector for random mode instead of the old plain button', () => {
     usePlayStore.setState({
       session: createSession({ mode: 'random' }),
     });
@@ -197,8 +197,10 @@ describe('PlayBoardScreen', () => {
     render(<PlayBoardScreen />);
 
     expect(screen.getByTestId('random-question-selector')).toBeTruthy();
-    expect(screen.getByText('Random Question Select')).toBeTruthy();
+    expect(screen.getByText('SELECTING QUESTION')).toBeTruthy();
+    expect(screen.getAllByText('SCIENCE').length).toBeGreaterThan(0);
     expect(screen.queryByText('Draw Random Question')).toBeNull();
+    expect(screen.queryByText('Random Question Select')).toBeNull();
   });
 
   it('reuses the same selector panel while a wager question is being drawn', () => {
@@ -230,8 +232,37 @@ describe('PlayBoardScreen', () => {
     render(<PlayBoardScreen />);
 
     expect(screen.getByTestId('random-question-selector')).toBeTruthy();
-    expect(screen.getByText('Random Question Select')).toBeTruthy();
-    expect(screen.getByText('Alpha is drawing a random question for Beta.')).toBeTruthy();
+    expect(screen.getByText('WAGER DRAW')).toBeTruthy();
+    expect(screen.getAllByText('SCIENCE').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Random Question Select')).toBeNull();
+    expect(screen.queryByText('Alpha is drawing a random question for Beta.')).toBeNull();
+  });
+
+  it('reopens a used question to review its answer', () => {
+    const usedQuestion = createQuestion({
+      id: 'q-used',
+      canonicalKey: 'science:200:used',
+      boardSide: 'left',
+      answer: 'Used answer',
+    });
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'classic',
+        board: [
+          usedQuestion,
+          createQuestion({ id: 'q-open', canonicalKey: 'science:200:open', boardSide: 'right' }),
+        ],
+        usedQuestionIds: new Set([usedQuestion.id]),
+      }),
+    });
+
+    render(<PlayBoardScreen />);
+    fireEvent.press(screen.getByLabelText('Review 200 point question'));
+
+    expect(usePlayStore.getState().session?.step).toBe('answer');
+    expect(usePlayStore.getState().session?.reviewingUsedQuestion).toBe(true);
+    expect(usePlayStore.getState().session?.currentQuestion?.answer).toBe('Used answer');
+    expect(mockReplace).toHaveBeenCalledWith('/play/question');
   });
 
   it('shows every rumble team name and score in the match header', () => {

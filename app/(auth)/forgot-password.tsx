@@ -97,6 +97,8 @@ export default function ForgotPasswordScreen() {
       >
         <Pressable
           onPress={() => goBackOrReplace(router, '/(auth)/sign-in')}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
           style={({ pressed }) => [
             styles.headerSquircleInner,
             SOFT_SURFACE_FACE,
