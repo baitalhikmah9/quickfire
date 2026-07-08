@@ -39,7 +39,22 @@ function TokenMark({
   iconColor: string;
 }) {
   /** Wordmark PNG has an opaque black matte — use accent diamond on dark surfaces. */
-  if (!artworkSource || isDark) {
+  if (isDark) {
+    return (
+      <View style={styles.darkDiamondMark} accessible={false}>
+        <Ionicons
+          name="diamond"
+          size={24}
+          color="#FFFFFF"
+          style={styles.darkDiamondUnderlay}
+          accessibilityIgnoresInvertColors
+        />
+        <Ionicons name="diamond" size={24} color={iconColor} accessibilityIgnoresInvertColors />
+      </View>
+    );
+  }
+
+  if (!artworkSource) {
     return <Ionicons name="diamond" size={14} color={iconColor} accessibilityIgnoresInvertColors />;
   }
 
@@ -180,6 +195,7 @@ const styles = StyleSheet.create({
     maxWidth: 240,
   },
   softFace: {
+    minWidth: 96,
     borderRadius: SOFT_CHIP_RADIUS,
     borderTopWidth: 2,
     borderBottomWidth: 3,
@@ -193,12 +209,21 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   softRow: {
-    gap: 6,
+    gap: 8,
   },
   softValue: {
     fontFamily: FONTS.uiBold,
-    fontSize: 15,
+    fontSize: 18,
     fontVariant: ['tabular-nums'],
+  },
+  darkDiamondMark: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  darkDiamondUnderlay: {
+    position: 'absolute',
   },
   artwork: {
     width: 22,

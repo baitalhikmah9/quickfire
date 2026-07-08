@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
   backPill: {
     alignItems: 'center',
     gap: SPACING.xs,
+    minWidth: 96,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.xl,

@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, Platform, useWindowDimensions } from 'react-nat
 import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
 import { HEADER, SPACING, FONTS, FONT_SIZES } from '@/constants';
 import { getGameHeaderLogoDisplayWidth } from '@/lib/layout/backfireTitleLogoWidth';
+import { useTheme } from '@/lib/hooks/useTheme';
 import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -70,6 +71,7 @@ export function GameHeader({
   style,
 }: GameHeaderProps) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const colors = useTheme();
   const isWeb = Platform.OS === 'web';
   const compact = windowHeight < 560;
 
@@ -114,7 +116,11 @@ export function GameHeader({
             {showCenterTitle ? (
               <Text
                 accessibilityRole="header"
-                style={[styles.centerTitle, compact && styles.centerTitleCompact]}
+                style={[
+                  styles.centerTitle,
+                  { color: colors.textOnBackground },
+                  compact && styles.centerTitleCompact,
+                ]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.75}
@@ -134,7 +140,11 @@ export function GameHeader({
         <View style={styles.subtitleRow}>
           <Text
             accessibilityRole="header"
-            style={[styles.subtitle, compact && styles.subtitleCompact]}
+            style={[
+              styles.subtitle,
+              { color: colors.textOnBackground },
+              compact && styles.subtitleCompact,
+            ]}
             numberOfLines={1}
           >
             {title!.toUpperCase()}
