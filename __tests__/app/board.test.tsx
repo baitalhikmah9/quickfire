@@ -1,6 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type { GameConfig, GameSessionState, QuestionCard } from '@/features/shared';
 
 import PlayBoardScreen from '@/app/(app)/play/board';
@@ -187,23 +188,74 @@ describe('PlayBoardScreen', () => {
     mockPush.mockClear();
     mockReplace.mockClear();
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
   });
 
-  it('uses the animated random selector for random mode instead of the old plain button', () => {
+  it('keeps the board visible in random mode and locks a random remaining tile after the flash', async () => {
     usePlayStore.setState({
       session: createSession({ mode: 'random' }),
     });
 
     render(<PlayBoardScreen />);
 
-    expect(screen.getByTestId('random-question-selector')).toBeTruthy();
-    expect(screen.getByText('SELECTING QUESTION')).toBeTruthy();
+    expect(screen.queryByTestId('random-question-selector')).toBeNull();
     expect(screen.getAllByText('SCIENCE').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('200').length).toBeGreaterThan(0);
     expect(screen.queryByText('Draw Random Question')).toBeNull();
-    expect(screen.queryByText('Random Question Select')).toBeNull();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId('board-random-pick-locked')).toBeTruthy();
+    expect(screen.getByLabelText('Selected 200 point question')).toBeTruthy();
   });
 
-  it('reuses the same selector panel while a wager question is being drawn', () => {
+  it('only opens the locked random tile when pressed in random mode', async () => {
+    const left = createQuestion({
+      id: 'q-left',
+      canonicalKey: 'science:200:left',
+      boardSide: 'left',
+      pointValue: 200,
+    });
+    const right = createQuestion({
+      id: 'q-right',
+      canonicalKey: 'science:400:right',
+      boardSide: 'right',
+      pointValue: 400,
+    });
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'random',
+        board: [left, right],
+      }),
+    });
+
+    render(<PlayBoardScreen />);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Single-sided point rows are mirrored onto both rails, so the locked id can appear twice.
+    const lockedTiles = screen.getAllByTestId('board-random-pick-locked');
+    const locked = lockedTiles[0]!;
+    const lockedLabel = locked.props.accessibilityLabel as string;
+    const otherLabel = lockedLabel.includes('200') ? '400 points' : '200 points';
+
+    fireEvent.press(screen.getAllByLabelText(otherLabel)[0]!);
+    expect(usePlayStore.getState().session?.step).toBe('board');
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    fireEvent.press(locked);
+    expect(usePlayStore.getState().session?.step).toBe('question');
+    expect(usePlayStore.getState().session?.currentQuestion?.id).toBeTruthy();
+    expect(mockReplace).toHaveBeenCalledWith('/play/question');
+  });
+
+  it('reuses the same board flash lock while a wager question is being drawn', async () => {
     usePlayStore.setState({
       session: createSession({
         mode: 'classic',
@@ -231,11 +283,16 @@ describe('PlayBoardScreen', () => {
 
     render(<PlayBoardScreen />);
 
-    expect(screen.getByTestId('random-question-selector')).toBeTruthy();
-    expect(screen.getByText('WAGER DRAW')).toBeTruthy();
+    expect(screen.queryByTestId('random-question-selector')).toBeNull();
     expect(screen.getAllByText('SCIENCE').length).toBeGreaterThan(0);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId('board-random-pick-locked')).toBeTruthy();
     expect(screen.queryByText('Random Question Select')).toBeNull();
-    expect(screen.queryByText('Alpha is drawing a random question for Beta.')).toBeNull();
   });
 
   it('reopens a used question to review its answer', () => {

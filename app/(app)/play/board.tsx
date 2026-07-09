@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Alert, View, Text, StyleSheet, useWindowDimensions, Animated, Easing, Platform, type LayoutChangeEvent } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AccessibilityInfo, Alert, View, Text, StyleSheet, useWindowDimensions, Platform, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
@@ -16,13 +16,21 @@ import {
   MISSING_CATEGORY_PICTURE_LABEL,
 } from '@/constants/categoryPictures';
 import { getRandomRemainingQuestion } from '@/features/play/data';
+import {
+  RANDOM_FLASH_GREEN,
+  RANDOM_FLASH_GREEN_TEXT,
+  RANDOM_FLASH_OFF_MS,
+  RANDOM_FLASH_ON_MS,
+  buildRandomFlashSequence,
+  type RandomPickMode,
+} from '@/features/play/randomQuestionFlash';
 import type { GameConfig, LifelineId, QuestionCard } from '@/features/shared';
 import { PlayMatchTopBar } from '@/features/play/components/PlayMatchTopBar';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
-import { hapticButtonPress, hapticSuccess, hapticTick } from '@/lib/haptics';
+import { hapticSuccess, hapticTick } from '@/lib/haptics';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
@@ -257,135 +265,12 @@ function getBoardMetrics(screenHeight: number, screenWidth: number): BoardMetric
   };
 }
 
-type RandomQuestionSelectorProps = {
-  title: string;
-  reels: string[][];
-  /** Final label per reel; when set, reels decelerate and land on these, then onLanded fires. */
-  targets: string[] | null;
-  onLanded: () => void;
+type BoardRandomPick = {
+  mode: RandomPickMode;
+  question: QuestionCard;
+  phase: 'flashing' | 'locked';
+  flashingId: string | null;
 };
-
-const REEL_TILE_H = 36;
-/** translateY that centers a tile in the pick band.
- * Band inner center = 56 + 21 = 77 (reels container coords); reel window top = (152 - 136) / 2 = 8.
- * Tile top within window = 77 - 18 - 8 = 51. */
-const REEL_LAND_Y = 51;
-/** Spin tiles scrolled past before the target tile lands. */
-const REEL_SPIN_TILES = 40;
-/** Tiles covered during the deceleration phase. */
-const REEL_DECEL_TILES = 4;
-/** Fast linear spin duration before deceleration begins. */
-const REEL_SPIN_MS = 3000;
-
-function RandomQuestionSelector({ title, reels, targets, onLanded }: RandomQuestionSelectorProps) {
-  const reelValues = useRef(reels.map(() => new Animated.Value(REEL_LAND_Y))).current;
-  const onLandedRef = useRef(onLanded);
-  onLandedRef.current = onLanded;
-
-  const reelLists = useMemo(
-    () =>
-      reels.map((items, index) => {
-        const pool = items.length ? items : ['—'];
-        const spinTiles: string[] = [];
-        // 2 extra tiles after the target so the reel lands mid-list, not at the end.
-        while (spinTiles.length < REEL_SPIN_TILES + 2) spinTiles.push(...pool);
-        const list = spinTiles.slice(0, REEL_SPIN_TILES);
-        list.push(targets?.[index] ?? pool[0]);
-        list.push(...spinTiles.slice(REEL_SPIN_TILES, REEL_SPIN_TILES + 2));
-        return list;
-      }),
-    [reels, targets]
-  );
-
-  const targetsKey = targets ? targets.join('|') : null;
-
-  useEffect(() => {
-    if (!targetsKey) return;
-    let cancelled = false;
-    let holdTimer: ReturnType<typeof setTimeout> | null = null;
-    const tickTimers: ReturnType<typeof setTimeout>[] = [];
-    const finalY = REEL_LAND_Y - REEL_SPIN_TILES * REEL_TILE_H;
-
-    Promise.resolve(AccessibilityInfo.isReduceMotionEnabled())
-      .catch(() => false)
-      .then((reduceMotion) => {
-        if (cancelled) return;
-        if (reduceMotion) {
-          reelValues.forEach((value) => value.setValue(finalY));
-          holdTimer = setTimeout(() => onLandedRef.current(), 450);
-          return;
-        }
-        const decelStartY = finalY + REEL_DECEL_TILES * REEL_TILE_H;
-        // Ratchet ticks: steady during the spin, sparser through the slowdown.
-        for (let t = 150; t < REEL_SPIN_MS; t += 150) {
-          tickTimers.push(setTimeout(() => hapticTick(), t));
-        }
-        for (const t of [180, 420, 760]) {
-          tickTimers.push(setTimeout(() => hapticTick(), REEL_SPIN_MS + t));
-        }
-        reelValues.forEach((value, index) => {
-          Animated.sequence([
-            Animated.timing(value, {
-              toValue: decelStartY,
-              duration: REEL_SPIN_MS,
-              easing: Easing.linear,
-              useNativeDriver: true,
-            }),
-            Animated.timing(value, {
-              toValue: finalY,
-              duration: 850 + index * 300,
-              easing: Easing.out(Easing.cubic),
-              useNativeDriver: true,
-            }),
-          ]).start(({ finished }) => {
-            if (!finished || cancelled) return;
-            if (index < reelValues.length - 1) {
-              hapticButtonPress();
-            } else {
-              hapticSuccess();
-              holdTimer = setTimeout(() => onLandedRef.current(), 1000);
-            }
-          });
-        });
-      });
-
-    return () => {
-      cancelled = true;
-      if (holdTimer) clearTimeout(holdTimer);
-      tickTimers.forEach(clearTimeout);
-      reelValues.forEach((value) => value.stopAnimation());
-    };
-  }, [reelValues, targetsKey]);
-
-  return (
-    <View testID="random-question-selector" style={styles.randomSelectorShell}>
-      <View style={[styles.randomSelectorCard, PLASTIC_FACE, neumorphicLift3D('card')]}> 
-        <Text style={styles.randomSelectorTitle}>{title}</Text>
-        <View style={styles.randomSelectorReels}>
-          {reelLists.map((items, index) => (
-            <View key={index} style={styles.randomSelectorReelWindow}>
-              <Animated.View style={{ transform: [{ translateY: reelValues[index] }] }}>
-                {items.map((item, itemIndex) => (
-                  <View key={`${item}-${itemIndex}`} style={styles.randomSelectorReelTile}>
-                    <Text style={styles.randomSelectorReelText} numberOfLines={1} adjustsFontSizeToFit>
-                      {item}
-                    </Text>
-                  </View>
-                ))}
-              </Animated.View>
-            </View>
-          ))}
-          <View pointerEvents="none" style={styles.randomSelectorPickBand} />
-        </View>
-        <View style={styles.randomSelectorDots}>
-          <View style={[styles.randomSelectorDot, styles.randomSelectorPillWarm]} />
-          <View style={[styles.randomSelectorDot, styles.randomSelectorPillGold]} />
-          <View style={[styles.randomSelectorDot, styles.randomSelectorPillCool]} />
-        </View>
-      </View>
-    </View>
-  );
-}
 
 export default function PlayBoardScreen() {
   const router = useRouter();
@@ -400,9 +285,7 @@ export default function PlayBoardScreen() {
   const reviewBoardQuestion = usePlayStore((state) => state.reviewBoardQuestion);
   const confirmRandomWagerQuestion = usePlayStore((state) => state.confirmRandomWagerQuestion);
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
-  const [drawnQuestion, setDrawnQuestion] = useState<{ mode: 'random' | 'wager'; question: QuestionCard } | null>(
-    null
-  );
+  const [randomPick, setRandomPick] = useState<BoardRandomPick | null>(null);
   const [showExitModal, setShowExitModal] = useState(false);
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
   const [hotSeatInfoOpen, setHotSeatInfoOpen] = useState(false);
@@ -430,59 +313,112 @@ export default function PlayBoardScreen() {
   );
   const remainingQuestionCount = remainingQuestions.length;
   const showRandomSelector = session?.mode === 'random' && !showWagerSelector && remainingQuestionCount > 0;
-  const randomSelectorReels = useMemo(() => {
-    const pad = (items: string[], fallback: string[]) => {
-      const out = items.length ? [...items] : [...fallback];
-      while (out.length < 4) out.push(...out);
-      return out.slice(0, 4);
-    };
-    return [
-      pad([...new Set(remainingQuestions.map((q) => q.categoryName.toUpperCase()))], ['QUESTION']),
-      pad([...new Set(remainingQuestions.map((q) => String(q.pointValue)))], ['200', '400', '600', '800']),
-    ];
-  }, [remainingQuestions]);
-  const randomSelectorTargets = useMemo(
-    () =>
-      drawnQuestion
-        ? [drawnQuestion.question.categoryName.toUpperCase(), String(drawnQuestion.question.pointValue)]
-        : null,
-    [drawnQuestion]
+  const usedQuestionKey = useMemo(
+    () => (session ? Array.from(session.usedQuestionIds).sort().join('|') : ''),
+    [session?.usedQuestionIds]
   );
 
-  const handleSelectorLanded = useCallback(() => {
-    if (!drawnQuestion) return;
-    if (drawnQuestion.mode === 'wager') {
-      confirmRandomWagerQuestion(drawnQuestion.question);
+  const openLockedRandomPick = useCallback(() => {
+    if (!randomPick || randomPick.phase !== 'locked') return;
+    if (randomPick.mode === 'wager') {
+      confirmRandomWagerQuestion(randomPick.question);
     } else {
-      selectQuestion(drawnQuestion.question);
+      selectQuestion(randomPick.question);
     }
-  }, [confirmRandomWagerQuestion, drawnQuestion, selectQuestion]);
+    router.replace('/play/question');
+  }, [confirmRandomWagerQuestion, randomPick, router, selectQuestion]);
 
+  // Random mode + wager: pre-draw a remaining question, flash available tiles, then lock the winner.
   useEffect(() => {
     if (!session || session.step !== 'board') {
-      setDrawnQuestion(null);
+      setRandomPick(null);
       return;
     }
 
-    const mode = showWagerSelector ? 'wager' : showRandomSelector ? 'random' : null;
+    const mode: RandomPickMode | null = showWagerSelector
+      ? 'wager'
+      : showRandomSelector
+        ? 'random'
+        : null;
     if (!mode) {
-      setDrawnQuestion(null);
+      setRandomPick(null);
       return;
     }
-    if (drawnQuestion?.mode === mode) return;
 
-    // Draw the result up-front so the reels can land on the real outcome.
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
     const question = getRandomRemainingQuestion(session.board, session.usedQuestionIds);
-    setDrawnQuestion(question ? { mode, question } : null);
-    if (!question && mode === 'wager') {
-      confirmRandomWagerQuestion(); // no questions left — store ends the game
+    if (!question) {
+      setRandomPick(null);
+      if (mode === 'wager') {
+        confirmRandomWagerQuestion();
+      }
+      return;
     }
+
+    const remainingIds = session.board
+      .filter((entry) => !session.usedQuestionIds.has(entry.id) && !entry.used)
+      .map((entry) => entry.id);
+
+    setRandomPick({ mode, question, phase: 'flashing', flashingId: null });
+
+    Promise.resolve(AccessibilityInfo.isReduceMotionEnabled())
+      .catch(() => false)
+      .then((reduceMotion) => {
+        if (cancelled) return;
+        if (reduceMotion) {
+          setRandomPick({ mode, question, phase: 'locked', flashingId: null });
+          hapticSuccess();
+          return;
+        }
+
+        const sequence = buildRandomFlashSequence(remainingIds, question.id);
+        let step = 0;
+
+        const finish = () => {
+          if (cancelled) return;
+          setRandomPick({ mode, question, phase: 'locked', flashingId: null });
+          hapticSuccess();
+        };
+
+        const flashNext = () => {
+          if (cancelled) return;
+          if (step >= sequence.length) {
+            finish();
+            return;
+          }
+          const flashId = sequence[step]!;
+          const isLast = step === sequence.length - 1;
+          step += 1;
+          setRandomPick({ mode, question, phase: 'flashing', flashingId: flashId });
+          hapticTick();
+          timers.push(
+            setTimeout(() => {
+              if (cancelled) return;
+              if (isLast) {
+                finish();
+                return;
+              }
+              setRandomPick({ mode, question, phase: 'flashing', flashingId: null });
+              timers.push(setTimeout(flashNext, RANDOM_FLASH_OFF_MS));
+            }, RANDOM_FLASH_ON_MS)
+          );
+        };
+
+        flashNext();
+      });
+
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+    };
   }, [
     confirmRandomWagerQuestion,
-    drawnQuestion?.mode,
-    session,
+    session?.id,
+    session?.step,
     showRandomSelector,
     showWagerSelector,
+    usedQuestionKey,
   ]);
 
   const grouped = useMemo(() => (session ? groupBoardTrivia(session) : []), [session]);
@@ -610,38 +546,53 @@ export default function PlayBoardScreen() {
   const renderTile = (column: CategoryColumn, question: QuestionCard) => {
     const used = session.usedQuestionIds.has(question.id) || question.used;
     const textMuted = T.colors.textMuted;
+    const isFlashing = randomPick?.phase === 'flashing' && randomPick.flashingId === question.id;
+    const isLocked = randomPick?.phase === 'locked' && randomPick.question.id === question.id;
+    const isGreenHighlight = isFlashing || isLocked;
+    const randomPickActive = Boolean(randomPick);
     return (
       <Pressable
+        testID={isLocked ? 'board-random-pick-locked' : isFlashing ? 'board-random-pick-flashing' : undefined}
         style={({ pressed }) => [
           styles.topicPointPill,
           topicFit.railWidth <= 56 && styles.topicPointPillTight,
           SOFT_SURFACE_FACE,
           softSurfaceLift(),
           {
-            backgroundColor: surfaceColors.tileBackground,
+            backgroundColor: isGreenHighlight ? RANDOM_FLASH_GREEN : surfaceColors.tileBackground,
             height: fittedPointPillHeight,
             minHeight: 0,
             borderRadius: Math.min(14, fittedPointPillHeight / 2),
             paddingVertical: 0,
-            opacity: used ? 0.72 : pressed ? 0.9 : 1,
-            transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+            opacity: used ? 0.72 : pressed && !randomPickActive ? 0.9 : 1,
+            transform: pressed && !randomPickActive ? [{ scale: 0.97 }] : [{ scale: 1 }],
           },
+          isLocked && styles.topicPointPillLocked,
         ]}
         onPress={() => {
           if (used) {
+            if (randomPickActive) return;
             reviewBoardQuestion(question);
             router.replace('/play/question');
+            return;
+          }
+          if (randomPick) {
+            if (randomPick.phase === 'locked' && randomPick.question.id === question.id) {
+              openLockedRandomPick();
+            }
             return;
           }
           selectQuestion(question);
           router.replace('/play/question');
         }}
         accessibilityRole="button"
-        accessibilityState={{ disabled: false }}
+        accessibilityState={{ disabled: randomPickActive && !isLocked, selected: isLocked }}
         accessibilityLabel={
-          used
-            ? `Review ${question.pointValue} point question`
-            : `${question.pointValue} points`
+          isLocked
+            ? `Selected ${question.pointValue} point question`
+            : used
+              ? `Review ${question.pointValue} point question`
+              : `${question.pointValue} points`
         }
       >
         <Text
@@ -650,9 +601,9 @@ export default function PlayBoardScreen() {
             {
               fontSize: Math.min(metrics.tileFont, Math.max(6, fittedPointPillHeight * 0.48)),
               lineHeight: Math.round(Math.min(metrics.tileFont, Math.max(6, fittedPointPillHeight * 0.48)) * 1.1),
-              color: used ? textMuted : T.colors.textPrimary,
+              color: isGreenHighlight ? RANDOM_FLASH_GREEN_TEXT : used ? textMuted : T.colors.textPrimary,
               textDecorationLine: used ? 'line-through' : 'none',
-              opacity: used ? 0.55 : 1,
+              opacity: used && !isGreenHighlight ? 0.55 : 1,
             },
             Platform.OS === 'web' ? ({ whiteSpace: 'nowrap' } as any) : null,
           ]}
@@ -708,6 +659,17 @@ export default function PlayBoardScreen() {
                 neumorphicLift3D('card'),
               ]}
               onPress={() => {
+                if (randomPick) {
+                  if (randomPick.phase !== 'locked') return;
+                  const hasLocked = column.rows.some(
+                    (row) =>
+                      row.left.id === randomPick.question.id || row.right.id === randomPick.question.id
+                  );
+                  if (hasLocked) {
+                    openLockedRandomPick();
+                  }
+                  return;
+                }
                 const next = column.rows
                   .flatMap((row) => [row.left, row.right])
                   .find((candidate) => !session.usedQuestionIds.has(candidate.id) && !candidate.used);
@@ -876,39 +838,30 @@ export default function PlayBoardScreen() {
             },
           ]}
         >
-          {showWagerSelector || showRandomSelector ? (
-            <RandomQuestionSelector
-              title={showWagerSelector ? 'WAGER DRAW' : 'SELECTING QUESTION'}
-              reels={randomSelectorReels}
-              targets={randomSelectorTargets}
-              onLanded={handleSelectorLanded}
-            />
-          ) : (
-            <View
-              style={[
-                styles.boardCenterContainer,
-                {
-                  width: boardLayoutWidth,
-                  maxWidth: centeredContentMaxWidth,
-                  gap: metrics.gridGap,
-                },
-              ]}
-            >
-              {gridRows.map((row, ri) => (
-                <View
-                  key={`row-${ri}`}
-                  style={[styles.gridRow, { gap: metrics.gridGap, height: fittedBoardRowHeight }]}
-                >
-                  {row.map((col) => categoryCell(col))}
-                  {row.length < gridColumnCount
-                    ? Array.from({ length: gridColumnCount - row.length }).map((_, ei) => (
-                        <View key={`empty-${ri}-${ei}`} style={styles.gridCellSpacer} />
-                      ))
-                    : null}
-                </View>
-              ))}
-            </View>
-          )}
+          <View
+            style={[
+              styles.boardCenterContainer,
+              {
+                width: boardLayoutWidth,
+                maxWidth: centeredContentMaxWidth,
+                gap: metrics.gridGap,
+              },
+            ]}
+          >
+            {gridRows.map((row, ri) => (
+              <View
+                key={`row-${ri}`}
+                style={[styles.gridRow, { gap: metrics.gridGap, height: fittedBoardRowHeight }]}
+              >
+                {row.map((col) => categoryCell(col))}
+                {row.length < gridColumnCount
+                  ? Array.from({ length: gridColumnCount - row.length }).map((_, ei) => (
+                      <View key={`empty-${ri}-${ei}`} style={styles.gridCellSpacer} />
+                    ))
+                  : null}
+              </View>
+            ))}
+          </View>
         </View>
       </PlayScaffold>
 
@@ -1301,6 +1254,13 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === 'android' ? 5 : 7,
     overflow: 'hidden',
   },
+  topicPointPillLocked: {
+    shadowColor: RANDOM_FLASH_GREEN,
+    shadowOpacity: 0.55,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
+  },
   topicPointPillText: {
     fontFamily: FONTS.displayBold,
     textAlign: 'center',
@@ -1438,91 +1398,5 @@ const styles = StyleSheet.create({
   exitCancelButtonText: {
     fontFamily: FONTS.uiBold,
     fontSize: 14,
-  },
-  randomSelectorShell: {
-    flex: 1,
-    minHeight: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.xl,
-  },
-  randomSelectorCard: {
-    width: '100%',
-    maxWidth: 520,
-    borderRadius: 32,
-    backgroundColor: T.colors.surface,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.xl,
-    alignItems: 'center',
-    gap: SPACING.lg,
-    overflow: 'hidden',
-  },
-  randomSelectorReels: {
-    width: '100%',
-    height: 152,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-  },
-  randomSelectorReelWindow: {
-    flex: 1,
-    height: 136,
-    maxWidth: 132,
-    borderRadius: 24,
-    overflow: 'hidden',
-    backgroundColor: '#FFF8DE',
-    borderWidth: 2,
-    borderColor: 'rgba(51, 51, 51, 0.12)',
-  },
-  randomSelectorReelTile: {
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.xs,
-  },
-  randomSelectorReelText: {
-    fontFamily: FONTS.displayBold,
-    fontSize: 18,
-    letterSpacing: 0.8,
-    color: T.colors.textPrimary,
-  },
-  randomSelectorPickBand: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 56,
-    height: 42,
-    borderTopWidth: 3,
-    borderBottomWidth: 3,
-    borderColor: '#FFB411',
-    backgroundColor: 'rgba(255, 214, 90, 0.2)',
-  },
-  randomSelectorDots: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  randomSelectorDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 999,
-  },
-  randomSelectorPillWarm: {
-    backgroundColor: '#FFB411',
-  },
-  randomSelectorPillGold: {
-    backgroundColor: '#FFD65A',
-  },
-  randomSelectorPillCool: {
-    backgroundColor: '#41C98C',
-  },
-  randomSelectorTitle: {
-    fontFamily: FONTS.displayBold,
-    fontSize: 22,
-    letterSpacing: 1.4,
-    color: T.colors.textPrimary,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    zIndex: 1,
   },
 });
