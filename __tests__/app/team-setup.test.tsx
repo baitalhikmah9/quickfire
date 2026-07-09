@@ -1,7 +1,20 @@
 import React from 'react';
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Modal, Platform, StyleSheet } from 'react-native';
+
+/** Controllable viewport so wide-web (`Platform.OS === 'web' && isWide`) can be exercised. */
+const mockUseWindowDimensions = jest.fn(() => ({
+  width: 390,
+  height: 844,
+  scale: 2,
+  fontScale: 1,
+}));
+
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => mockUseWindowDimensions(),
+}));
 
 import TeamSetupScreen from '@/app/(app)/play/team-setup';
 import { COLORS } from '@/constants';
@@ -94,10 +107,20 @@ describe('TeamSetupScreen', () => {
     mockCanGoBack.mockReturnValue(false);
     mockPush.mockClear();
     mockReplace.mockClear();
+    mockUseWindowDimensions.mockReturnValue({
+      width: 390,
+      height: 844,
+      scale: 2,
+      fontScale: 1,
+    });
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
     useThemeStore.setState({ paletteId: 'default' });
     await usePlayStore.getState().hydrate();
     usePlayStore.getState().ensureDraft();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('opens wager setup help in a full-screen overlay', () => {
@@ -145,6 +168,28 @@ describe('TeamSetupScreen', () => {
     expect(usePlayStore.getState().session?.teams).toHaveLength(6);
     expect(screen.getByLabelText('6 teams').props.accessibilityState).toMatchObject({ selected: true });
     expect(screen.getByLabelText('2 teams').props.accessibilityState).toMatchObject({ selected: false });
+  });
+
+  it('shows Continue for rumble setup on wide web (floating CTA is not classic-only)', () => {
+    // Classic wide-web embeds Continue in the 3-column row; rumble must still show a CTA.
+    const originalOS = Platform.OS;
+    Object.defineProperty(Platform, 'OS', { value: 'web', configurable: true });
+    mockUseWindowDimensions.mockReturnValue({
+      width: 1280,
+      height: 800,
+      scale: 1,
+      fontScale: 1,
+    });
+    try {
+      usePlayStore.getState().setMode('rumble');
+
+      render(<TeamSetupScreen />);
+
+      expect(screen.getByText('NUMBER OF TEAMS')).toBeTruthy();
+      expect(screen.getByText('CONTINUE')).toBeTruthy();
+    } finally {
+      Object.defineProperty(Platform, 'OS', { value: originalOS, configurable: true });
+    }
   });
 
   it('updates team card color when the theme changes', () => {

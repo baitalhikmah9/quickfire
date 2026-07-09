@@ -108,7 +108,7 @@ export default function TeamSetupScreen() {
   const shortScreen = !viewport.isTall;
   const landscape = windowWidth > windowHeight;
   const shortSide = viewport.shortSide;
-  /** Phones / mobile web narrow view — hug Continue CTA with no extra strip padding. */
+  /** Phones / mobile web narrow view — denser Continue strip (still keeps bottom inset). */
   const tightContinueStrip =
     Platform.OS === 'ios' || Platform.OS === 'android' || shortSide < 560;
   /** Desktop web: three-column balanced layout with constrained panel widths. */
@@ -664,11 +664,15 @@ export default function TeamSetupScreen() {
     </ScrollView>
   );
 
+  // Classic wide-web embeds Continue in the center column. Rumble (and non-web)
+  // use the floating strip — without this, rumble on desktop web has no CTA.
+  const showFloatingContinue = !isWebLayout || rumbleMode;
+
   const mainContent = (
     <View style={styles.fixedViewportLayout}>
       <View style={styles.cardsViewportSlot}>{teamSetupBody}</View>
 
-      {!isWebLayout && (
+      {showFloatingContinue && (
         <View style={[styles.floatingButtonWrap, tightContinueStrip && styles.floatingButtonWrapTight]}>
           <Button
             title={t('common.continue').toUpperCase()}
@@ -1180,13 +1184,15 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     paddingTop: SPACING.xs,
-    paddingBottom: 0,
+    /** Air under Continue on web / large viewports. */
+    paddingBottom: SPACING.lg,
     gap: 2,
     flexShrink: 0,
   },
   floatingButtonWrapTight: {
     paddingTop: SPACING.xs,
-    paddingBottom: 0,
+    /** Phone / narrow — keep CTA off the bottom edge and home indicator. */
+    paddingBottom: SPACING.md,
   },
   footerInner: {
     width: '100%',
@@ -1292,6 +1298,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     marginTop: 'auto',
+    paddingBottom: SPACING.lg,
   },
   /** Slightly wider Continue button on web, matching the center column scale. */
   webContinueBtn: {
