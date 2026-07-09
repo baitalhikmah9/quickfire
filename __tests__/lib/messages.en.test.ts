@@ -44,7 +44,7 @@ describe('English mode copy', () => {
     expect(en['play.mode.quickCopy']).toBe('Pick 3, 4, or 5 topics for a faster match with wagers.');
     expect(en['play.mode.randomCopy']).toBe('The app draws each question for you. Wagers stay off.');
     expect(en['play.mode.rumbleCopy']).toBe(
-      '2, 3, 4, or 6 teams. Each question assigns a first answer and a steal team.'
+      '2, 3, 4, or 6 teams. Each question assigns two teams who answer in turn.'
     );
   });
 

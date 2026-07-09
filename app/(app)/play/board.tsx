@@ -27,6 +27,7 @@ import {
   type RandomPickMode,
 } from '@/features/play/randomQuestionFlash';
 import type { GameConfig, LifelineId, QuestionCard } from '@/features/shared';
+import { PlayMatchMenuModal } from '@/features/play/components/PlayMatchMenuModal';
 import { PlayMatchTopBar } from '@/features/play/components/PlayMatchTopBar';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
@@ -295,7 +296,7 @@ export default function PlayBoardScreen() {
   const confirmRandomWagerQuestion = usePlayStore((state) => state.confirmRandomWagerQuestion);
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
   const [randomPick, setRandomPick] = useState<BoardRandomPick | null>(null);
-  const [showExitModal, setShowExitModal] = useState(false);
+  const [matchMenuOpen, setMatchMenuOpen] = useState(false);
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
   const [hotSeatInfoOpen, setHotSeatInfoOpen] = useState(false);
   const [gridViewport, setGridViewport] = useState({ width: 0, height: 0 });
@@ -616,7 +617,16 @@ export default function PlayBoardScreen() {
     ]);
   };
 
-  const toggleExitModal = () => setShowExitModal((prev) => !prev);
+  const openMatchMenu = () => setMatchMenuOpen(true);
+  const closeMatchMenu = () => setMatchMenuOpen(false);
+  const openSettingsFromMenu = () => {
+    setMatchMenuOpen(false);
+    router.push('/(app)/settings');
+  };
+  const exitGameFromMenu = () => {
+    setMatchMenuOpen(false);
+    leaveMatch();
+  };
 
   if (!session) {
     return <PlayScaffold title={t('common.loading')}><Text>{t('common.loading')}</Text></PlayScaffold>;
@@ -871,7 +881,7 @@ export default function PlayBoardScreen() {
     <View style={[styles.headerCenterWrap, { width: boardLayoutWidth, maxWidth: centeredContentMaxWidth }]}>
       <PlayMatchTopBar
         session={session}
-        onLogoPress={toggleExitModal}
+        onLogoPress={openMatchMenu}
         onWagerInfoPress={session.config.wagerEnabled ? () => setWagerInfoOpen(true) : undefined}
         onHotSeatInfoPress={SHOW_HOT_SEAT_UI ? () => setHotSeatInfoOpen(true) : undefined}
         showTeamScores={false}
@@ -976,38 +986,12 @@ export default function PlayBoardScreen() {
         </View>
       </PlayScaffold>
 
-      {showExitModal && (
-        <View style={styles.modalRoot} accessibilityViewIsModal>
-          <Pressable
-            style={styles.modalBackdrop}
-            onPress={() => setShowExitModal(false)}
-          />
-          <View style={[styles.modalCard, PLASTIC_FACE, { backgroundColor: surfaceColors.surface }]}>
-             <Text style={[styles.modalTitle, { color: surfaceColors.textPrimary }]}>EXIT GAME?</Text>
-             <Text style={[styles.modalBody, { color: surfaceColors.textMuted }]}>Are you sure you want to exit the current match?</Text>
-             <View style={styles.modalButtonsRow}>
-                <Pressable 
-                    onPress={leaveMatch}
-                    style={({ pressed }) => [
-                        styles.exitConfirmButton,
-                        { opacity: pressed ? 0.8 : 1 }
-                    ]}
-                >
-                    <Text style={styles.exitConfirmButtonText}>EXIT GAME</Text>
-                </Pressable>
-                <Pressable 
-                    onPress={() => setShowExitModal(false)}
-                    style={({ pressed }) => [
-                        styles.exitCancelButton,
-                        { backgroundColor: surfaceColors.isDark ? 'rgba(255,255,255,0.12)' : '#F2F2F7', opacity: pressed ? 0.8 : 1 }
-                    ]}
-                >
-                    <Text style={[styles.exitCancelButtonText, { color: surfaceColors.textPrimary }]}>CANCEL</Text>
-                </Pressable>
-             </View>
-          </View>
-        </View>
-      )}
+      <PlayMatchMenuModal
+        visible={matchMenuOpen}
+        onClose={closeMatchMenu}
+        onSettings={openSettingsFromMenu}
+        onExitGame={exitGameFromMenu}
+      />
 
       {activeTeam ? (
         <View style={styles.teamModalRoot} accessibilityViewIsModal>
@@ -1452,24 +1436,6 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
-  modalRoot: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1000,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.overlay,
-  },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  modalCard: {
-    width: '90%',
-    maxWidth: 340,
-    borderRadius: 32,
-    padding: SPACING.xl,
-    alignItems: 'center',
-    gap: SPACING.lg,
-  },
   modalTitle: {
     fontFamily: FONTS.displayBold,
     fontSize: 22,
@@ -1480,32 +1446,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 22,
-  },
-  modalButtonsRow: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-    width: '100%',
-  },
-  exitConfirmButton: {
-    flex: 1,
-    backgroundColor: '#FF3B30',
-    borderRadius: 16,
-    paddingVertical: SPACING.md,
-    alignItems: 'center',
-  },
-  exitConfirmButtonText: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 14,
-    color: '#FFFFFF',
-  },
-  exitCancelButton: {
-    flex: 1,
-    borderRadius: 16,
-    paddingVertical: SPACING.md,
-    alignItems: 'center',
-  },
-  exitCancelButtonText: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 14,
   },
 });

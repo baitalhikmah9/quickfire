@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Pressable } from '@/components/ui/Pressable';
-import { Ionicons } from '@expo/vector-icons';
+import { HeaderBackButton } from '@/components/HeaderBackButton';
 import { BORDER_RADIUS, LAYOUT, SPACING, FONTS } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
@@ -24,6 +24,7 @@ import {
 } from '@/features/play/rumble';
 import { PlayAnswerPanel } from '@/features/play/components/PlayAnswerPanel';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
+import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
@@ -100,14 +101,17 @@ function getSafeElapsedSeconds(timerStartedAt: number | undefined, now: number):
 
 /** Scales the compact answer-phase / reveal prompt for the pre-reveal “active play” question only. */
 const UNREVEALED_QUESTION_TYPE_SCALE = 1.28;
+/** Display size for pre-reveal question + Show Answer control (1 = original). */
+const UNREVEALED_QA_DISPLAY_SCALE = 0.8;
 
 function scaleUpQuestionEmphasis(phase: { fontSize: number; lineHeight: number }): {
   fontSize: number;
   lineHeight: number;
 } {
+  const scale = UNREVEALED_QUESTION_TYPE_SCALE * UNREVEALED_QA_DISPLAY_SCALE;
   return {
-    fontSize: Math.min(46, Math.round(phase.fontSize * UNREVEALED_QUESTION_TYPE_SCALE)),
-    lineHeight: Math.min(60, Math.round(phase.lineHeight * UNREVEALED_QUESTION_TYPE_SCALE)),
+    fontSize: Math.min(Math.round(46 * UNREVEALED_QA_DISPLAY_SCALE), Math.round(phase.fontSize * scale)),
+    lineHeight: Math.min(Math.round(60 * UNREVEALED_QA_DISPLAY_SCALE), Math.round(phase.lineHeight * scale)),
   };
 }
 
@@ -130,39 +134,25 @@ function RumblePartyChip({
   compact,
   t,
 }: {
-  role: 'first' | 'steal';
+  role: 'first' | 'second';
   teamName: string | null;
   active: boolean;
   locked: boolean;
   compact: boolean;
   t: RumbleChipTranslate;
 }) {
-  const roleLabel =
-    role === 'first'
-      ? t('play.rumbleChipAnswering')
-      : t('play.rumbleChipSteal');
   const displayName = locked
     ? t('play.rumbleChipHiddenName')
     : teamName?.trim() || t('play.rumbleChipHiddenName');
-  const subLabel = locked
-    ? t('play.rumbleChipLocked')
-    : active
-      ? roleLabel
-      : role === 'steal'
-        ? t('play.rumbleChipSteal')
-        : t('play.rumbleChipAnswering');
+  // Both party slots answer in turn — never label the second team as a "steal".
+  const subLabel = locked ? t('play.rumbleChipLocked') : t('play.rumbleChipAnswering');
 
+  const roleNoun = role === 'first' ? 'First team' : 'Second team';
   const a11yLabel = locked
-    ? role === 'first'
-      ? 'First team locked'
-      : 'Steal team locked'
+    ? `${roleNoun} locked`
     : active
-      ? role === 'first'
-        ? `First team answering: ${displayName}`
-        : `Steal team answering: ${displayName}`
-      : role === 'first'
-        ? `First team: ${displayName}`
-        : `Steal team: ${displayName}`;
+      ? `${roleNoun} answering: ${displayName}`
+      : `${roleNoun}: ${displayName}`;
 
   return (
     <View
@@ -207,7 +197,8 @@ export default function PlayQuestionScreen() {
   const router = useRouter();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { getTextStyle, t } = useI18n();
+  const { direction, getTextStyle, t } = useI18n();
+  const rowDirection = getRowDirection(direction);
   useThemeStore((state) => state.paletteId);
   const surfaceColors = getPlaySurfaceColors();
   const BRAND = {
@@ -225,7 +216,6 @@ export default function PlayQuestionScreen() {
   const continueAfterStandardQuestion = usePlayStore((state) => state.continueAfterStandardQuestion);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
-
 
   const openHotSeatInfo = useCallback(() => {
     Alert.alert(t('play.hotSeatInfoTitle'), t('play.hotSeatInfoBody'), [{ text: t('common.close') }]);
@@ -279,12 +269,13 @@ export default function PlayQuestionScreen() {
   const viewportShortSide = Math.min(windowWidth, windowHeight);
   const isCompactHeader = windowWidth < 760 || viewportShortSide < 430;
   const isVeryCompactHeader = viewportShortSide < 390;
-  const showBackLabel = windowWidth >= 560;
+  /** Match play-stack HeaderBackButton: labeled pill when there is room, icon squircle when tight. */
+  const backVariant = isCompactHeader ? 'icon' : 'labeled';
   const headerHorizontalPadding = Math.max(
     SPACING.sm,
     Math.min(SPACING.xl, Math.round(windowWidth * 0.025))
   );
-  const chromeSideWidth = isVeryCompactHeader ? 70 : isCompactHeader ? 78 : 104;
+  const chromeSideWidth = isVeryCompactHeader ? 70 : isCompactHeader ? 78 : 112;
   const questionContentWidth = Math.min(
     windowWidth - headerHorizontalPadding * 2,
     Platform.OS === 'web' ? LAYOUT.playMaxWidth : Math.min(LAYOUT.playMaxWidth, 980)
@@ -380,12 +371,22 @@ export default function PlayQuestionScreen() {
   const rumblePartySlots = isRumbleQuestion
     ? getRumblePartySlots(elapsedSeconds)
     : { firstRevealed: false, secondRevealed: false, activeSlot: null as const };
-  const rumbleMicroStatus =
+  const rumbleTimingGuide =
     rumblePartyPhase === 'waiting'
       ? t('play.rumbleWaiting')
-      : rumblePartyPhase === 'ended'
-        ? t('play.rumbleRoundEnded')
-        : null;
+      : rumblePartyPhase === 'firstAnswering'
+        ? t('play.rumbleFirstWindow', {
+            team: rumbleFirstTeam?.name ?? currentTeam?.name ?? 'Team',
+          })
+        : rumblePartyPhase === 'transition'
+          ? t('play.rumbleTransitionWindow')
+          : rumblePartyPhase === 'secondAnswering'
+            ? t('play.rumbleSecondWindow', {
+                team: rumbleSecondTeam?.name ?? 'Next team',
+              })
+            : rumblePartyPhase === 'ended'
+              ? t('play.rumbleRoundEnded')
+              : null;
   const canShowAnswer =
     !hasTimedOut &&
     (!isRumbleQuestion ||
@@ -458,7 +459,7 @@ export default function PlayQuestionScreen() {
         t={t}
       />
       <RumblePartyChip
-        role="steal"
+        role="second"
         teamName={rumblePartySlots.secondRevealed ? rumbleSecondTeam?.name ?? null : null}
         active={rumblePartySlots.activeSlot === 'second'}
         locked={!rumblePartySlots.secondRevealed}
@@ -524,20 +525,14 @@ export default function PlayQuestionScreen() {
         >
           <View style={styles.pillChromeRow}>
             <View style={[styles.chromeSide, { width: chromeSideWidth, minWidth: chromeSideWidth }]}>
-              <Pressable
+              <HeaderBackButton
                 onPress={onBackToBoard}
-                accessibilityRole="button"
+                direction={direction}
+                rowDirection={rowDirection}
+                label={t('common.back')}
                 accessibilityLabel="Back to question board"
-                style={({ pressed }) => [
-                  styles.backButtonInline,
-                  SOFT_SURFACE_STYLES.face,
-                  SOFT_SURFACE_STYLES.raised,
-                  { backgroundColor: BRAND.surface, opacity: pressed ? 0.88 : 1 },
-                ]}
-              >
-                <Ionicons name="chevron-back" size={16} color={BRAND.charcoal} />
-                {showBackLabel ? <Text style={styles.backButtonText}>{t('common.back')}</Text> : null}
-              </Pressable>
+                variant={backVariant}
+              />
             </View>
             <View style={styles.chromeCenter}>{metaPill}</View>
             <View
@@ -551,38 +546,36 @@ export default function PlayQuestionScreen() {
             </View>
           </View>
           {rumblePartyChips}
-          {rumbleMicroStatus ? (
+          {rumbleTimingGuide ? (
             <Text
+              testID="rumble-timing-guide"
               style={[styles.rumbleStatusUnderPill, { color: BRAND.charcoal }]}
               numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={0.75}
             >
-              {rumbleMicroStatus.toUpperCase()}
+              {rumbleTimingGuide.toUpperCase()}
             </Text>
           ) : null}
         </View>
       ) : (
         <>
           <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
-            <Pressable
-              onPress={onBackToBoard}
-              accessibilityRole="button"
-              accessibilityLabel="Back to question board"
-              style={({ pressed }) => [
-                styles.backButton,
-                SOFT_SURFACE_STYLES.face,
-                SOFT_SURFACE_STYLES.raised,
-                {
-                  left: Math.max(insets.left + SPACING.sm, SPACING.xl),
-                  backgroundColor: BRAND.surface,
-                  opacity: pressed ? 0.88 : 1,
-                },
+            <View
+              style={[
+                styles.backButtonSlot,
+                { left: Math.max(insets.left + SPACING.sm, SPACING.xl) },
               ]}
             >
-              <Ionicons name="chevron-back" size={15} color={BRAND.charcoal} />
-              <Text style={styles.backButtonText}>{t('common.back')}</Text>
-            </Pressable>
+              <HeaderBackButton
+                onPress={onBackToBoard}
+                direction={direction}
+                rowDirection={rowDirection}
+                label={t('common.back')}
+                accessibilityLabel="Back to question board"
+                variant={backVariant}
+              />
+            </View>
             <Text style={[styles.teamTag, { color: BRAND.charcoal }]}>
               {`[${currentTeam?.name || 'TEAM'}]`.toUpperCase()}
             </Text>
@@ -936,18 +929,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: SPACING.xs,
   },
-  backButtonInline: {
-    minWidth: 44,
-    height: 44,
-    borderRadius: 18,
-    paddingHorizontal: SPACING.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: SPACING.xs,
-    backgroundColor: T.surface,
-    alignSelf: 'flex-start',
-  },
   metaPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1139,24 +1120,12 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xs,
     zIndex: 10,
   },
-  backButton: {
+  backButtonSlot: {
     position: 'absolute',
     left: SPACING.lg,
     top: '50%',
-    marginTop: -15,
-    height: 30,
-    borderRadius: 12,
-    paddingHorizontal: SPACING.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: SPACING.xs,
-    backgroundColor: T.surface,
-  },
-  backButtonText: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 11,
-    color: T.textPrimary,
+    marginTop: -22,
+    zIndex: 12,
   },
   teamTag: {
     fontFamily: FONTS.uiBold,
@@ -1280,18 +1249,18 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   answerButton: {
-    width: 286,
+    width: Math.round(286 * UNREVEALED_QA_DISPLAY_SCALE),
     maxWidth: '88%',
-    minHeight: 58,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
+    minHeight: Math.round(58 * UNREVEALED_QA_DISPLAY_SCALE),
+    paddingHorizontal: Math.round(32 * UNREVEALED_QA_DISPLAY_SCALE),
+    paddingVertical: Math.round(16 * UNREVEALED_QA_DISPLAY_SCALE),
     borderRadius: BORDER_RADIUS.button,
     alignItems: 'center',
     justifyContent: 'center',
   },
   answerButtonText: {
     fontFamily: FONTS.uiBold,
-    fontSize: 15,
-    letterSpacing: 1.2,
+    fontSize: Math.round(15 * UNREVEALED_QA_DISPLAY_SCALE),
+    letterSpacing: 1.2 * UNREVEALED_QA_DISPLAY_SCALE,
   },
 });

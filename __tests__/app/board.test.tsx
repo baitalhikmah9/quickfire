@@ -47,6 +47,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'common.leave': 'Leave',
         'common.loading': 'Loading',
         'common.points': `${values?.count ?? 0} points`,
+        'common.settings': 'Settings',
         'common.stay': 'Stay',
         'common.teamOne': 'Team 1',
         'common.teamTwo': 'Team 2',
@@ -55,8 +56,10 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'play.boardExit': 'Exit',
         'play.boardLifelines': 'Lifelines',
         'play.drawRandomQuestion': 'Draw Random Question',
+        'play.exitGame': 'Exit Game',
         'play.leaveMatchBody': 'Leaving now will discard the active play session.',
         'play.leaveMatchTitle': 'Leave Match?',
+        'play.matchMenuA11y': 'Match menu',
         'play.noQuestionsLeft': 'No Questions Left',
         'play.questionBoardTitle': 'Question Board',
         'play.randomSelectorAction': 'Reveal Random Question',
@@ -189,6 +192,27 @@ describe('PlayBoardScreen', () => {
     mockReplace.mockClear();
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+  });
+
+  it('opens a match menu from the Backfire logo with Settings and Exit Game', () => {
+    usePlayStore.setState({
+      session: createSession({ mode: 'classic' }),
+    });
+
+    render(<PlayBoardScreen />);
+
+    expect(screen.queryByTestId('play-match-menu-modal')).toBeNull();
+
+    fireEvent.press(screen.getByLabelText('Match menu'));
+
+    expect(screen.getByTestId('play-match-menu-modal')).toBeTruthy();
+    expect(screen.getByLabelText('Settings')).toBeTruthy();
+    expect(screen.getByLabelText('Exit Game')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Settings'));
+
+    expect(mockPush).toHaveBeenCalledWith('/(app)/settings');
+    expect(screen.queryByTestId('play-match-menu-modal')).toBeNull();
   });
 
   it('keeps the board visible in random mode and locks a random remaining tile after the flash', async () => {

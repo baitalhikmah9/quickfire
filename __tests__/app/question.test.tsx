@@ -36,15 +36,18 @@ jest.mock('expo-image', () => ({
 
 jest.mock('@/lib/i18n/useI18n', () => ({
   useI18n: () => ({
+    direction: 'ltr',
     getTextStyle: () => ({}),
     t: (key: string, values?: Record<string, string | number>) => {
       const messages: Record<string, string> = {
         'common.back': 'Back',
         'common.loading': 'Loading',
         'play.rumbleWaiting': 'Teams appear after 30 seconds.',
+        'play.rumbleFirstWindow': `${values?.team ?? 'Team'} answers now.`,
+        'play.rumbleTransitionWindow': 'Next team appears at 01:16.',
+        'play.rumbleSecondWindow': `${values?.team ?? 'Team'} answers now. Round ends at 01:30.`,
         'play.rumbleRoundEnded': 'Round ended.',
         'play.rumbleChipAnswering': 'Answering',
-        'play.rumbleChipSteal': 'Steal',
         'play.rumbleChipLocked': 'Locked',
         'play.rumbleChipHiddenName': '?',
         'play.showAnswer': 'Show Answer',
@@ -164,7 +167,7 @@ describe('PlayQuestionScreen', () => {
     jest.restoreAllMocks();
   });
 
-  it('uses dual party chips for rumble reveals and keeps the meta pill topic-only', () => {
+  it('uses dual party chips for rumble reveals and restores the timing guide across windows', () => {
     const question = createQuestion({
       id: 'q-rumble',
       canonicalKey: 'science:200:rumble',
@@ -186,9 +189,10 @@ describe('PlayQuestionScreen', () => {
     expect(screen.getByText('TOPIC: SCIENCE | 200 POINTS')).toBeTruthy();
     expect(screen.getByTestId('rumble-party-chips')).toBeTruthy();
     expect(screen.getByLabelText('First team locked')).toBeTruthy();
-    expect(screen.getByLabelText('Steal team locked')).toBeTruthy();
+    expect(screen.getByLabelText('Second team locked')).toBeTruthy();
     expect(screen.queryByText('Beta')).toBeNull();
     expect(screen.queryByText('Gamma')).toBeNull();
+    expect(screen.getByTestId('rumble-timing-guide')).toBeTruthy();
     expect(screen.getByText('TEAMS APPEAR AFTER 30 SECONDS.')).toBeTruthy();
 
     jest.spyOn(Date, 'now').mockReturnValue(1_031_000);
@@ -199,8 +203,9 @@ describe('PlayQuestionScreen', () => {
     expect(screen.getByLabelText('First team answering: Beta')).toBeTruthy();
     expect(screen.getByText('Beta')).toBeTruthy();
     expect(screen.getByText('ANSWERING')).toBeTruthy();
-    expect(screen.getByLabelText('Steal team locked')).toBeTruthy();
+    expect(screen.getByLabelText('Second team locked')).toBeTruthy();
     expect(screen.queryByText('Gamma')).toBeNull();
+    expect(screen.getByText('BETA ANSWERS NOW.')).toBeTruthy();
     expect(screen.getByText('TOPIC: SCIENCE | 200 POINTS')).toBeTruthy();
 
     jest.spyOn(Date, 'now').mockReturnValue(1_061_000);
@@ -209,8 +214,9 @@ describe('PlayQuestionScreen', () => {
     });
 
     expect(screen.getByLabelText('First team: Beta')).toBeTruthy();
-    expect(screen.getByLabelText('Steal team locked')).toBeTruthy();
+    expect(screen.getByLabelText('Second team locked')).toBeTruthy();
     expect(screen.queryByText('Gamma')).toBeNull();
+    expect(screen.getByText('NEXT TEAM APPEARS AT 01:16.')).toBeTruthy();
 
     jest.spyOn(Date, 'now').mockReturnValue(1_076_000);
     act(() => {
@@ -218,9 +224,10 @@ describe('PlayQuestionScreen', () => {
     });
 
     expect(screen.getByLabelText('First team: Beta')).toBeTruthy();
-    expect(screen.getByLabelText('Steal team answering: Gamma')).toBeTruthy();
+    expect(screen.getByLabelText('Second team answering: Gamma')).toBeTruthy();
     expect(screen.getByText('Gamma')).toBeTruthy();
-    expect(screen.getByText('STEAL')).toBeTruthy();
+    expect(screen.getByText('GAMMA ANSWERS NOW. ROUND ENDS AT 01:30.')).toBeTruthy();
+    expect(screen.queryByText('STEAL')).toBeNull();
 
     jest.spyOn(Date, 'now').mockReturnValue(1_090_000);
     act(() => {
@@ -228,7 +235,7 @@ describe('PlayQuestionScreen', () => {
     });
 
     expect(screen.getByLabelText('First team: Beta')).toBeTruthy();
-    expect(screen.getByLabelText('Steal team: Gamma')).toBeTruthy();
+    expect(screen.getByLabelText('Second team: Gamma')).toBeTruthy();
     expect(screen.getByText('ROUND ENDED.')).toBeTruthy();
   });
 

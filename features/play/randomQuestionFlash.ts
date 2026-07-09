@@ -5,11 +5,11 @@ export const RANDOM_FLASH_GREEN_TEXT = '#FFFFFF';
 /** How many discrete green flashes run before the final tile stays solid. */
 export const RANDOM_FLASH_COUNT = 7;
 
-/** On-duration for each intermediate flash (~⅓ second). */
-export const RANDOM_FLASH_ON_MS = 300;
+/** On-duration for each intermediate flash. */
+export const RANDOM_FLASH_ON_MS = 150;
 
 /** Brief gap between flashes so the previous tile clearly turns off. */
-export const RANDOM_FLASH_OFF_MS = 100;
+export const RANDOM_FLASH_OFF_MS = 50;
 
 export type RandomPickMode = 'random' | 'wager';
 

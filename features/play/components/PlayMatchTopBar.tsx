@@ -270,11 +270,35 @@ export function PlayMatchTopBar({
     );
   };
 
-  // Board chrome (all modes): [team pills] logo [team pills], denser when 4+ teams.
+  // Board chrome: classic/quick split teams around the logo; Rumble keeps logo left and all scores right.
   if (!showTeamScores) {
     const team0 = session.teams[0];
     const team1 = session.teams[1];
     const extraTeams = session.teams.slice(2);
+
+    if (scorePillsNextToLogo && isRumble) {
+      return (
+        <View style={[styles.logoOnlyTopBar, styles.logoOnlyTopBarDense, styles.logoOnlyTopBarRumble]}>
+          <Pressable
+            onPress={onLogoPress}
+            style={styles.headerLogoContainer}
+            accessibilityRole="button"
+            accessibilityLabel={t('play.matchMenuA11y')}
+          >
+            <BackfireTitleLogo width={boardChromeLogoWidth} accessibilityLabel="BackFire" />
+          </Pressable>
+          <View
+            style={[
+              styles.logoScorePills,
+              styles.logoScorePillsRumble,
+              multiTeamDensePills && styles.logoScorePillsDense,
+            ]}
+          >
+            {session.teams.map((team) => renderLogoScorePill(team))}
+          </View>
+        </View>
+      );
+    }
 
     return (
       <View style={[styles.logoOnlyTopBar, scorePillsNextToLogo && styles.logoOnlyTopBarDense]}>
@@ -285,7 +309,7 @@ export function PlayMatchTopBar({
           onPress={onLogoPress}
           style={styles.headerLogoContainer}
           accessibilityRole="button"
-          accessibilityLabel="BackFire"
+          accessibilityLabel={t('play.matchMenuA11y')}
         >
           <BackfireTitleLogo
             width={scorePillsNextToLogo ? boardChromeLogoWidth : logoWidth}
@@ -326,7 +350,7 @@ export function PlayMatchTopBar({
           onPress={onLogoPress}
           style={styles.headerLogoContainer}
           accessibilityRole="button"
-          accessibilityLabel="BackFire"
+          accessibilityLabel={t('play.matchMenuA11y')}
         >
           <BackfireTitleLogo width={logoWidth} accessibilityLabel="Backfire" />
         </Pressable>
@@ -376,6 +400,11 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     minHeight: 0,
   },
+  /** Rumble: logo anchored left; every team score pill stays to its right. */
+  logoOnlyTopBarRumble: {
+    justifyContent: 'flex-start',
+    gap: 8,
+  },
   topBarSide: {
     flex: 1,
     flexGrow: 1,
@@ -404,6 +433,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     minWidth: 0,
+  },
+  logoScorePillsRumble: {
+    flex: 1,
+    justifyContent: 'flex-start',
   },
   logoScorePillsDense: {
     gap: 4,
