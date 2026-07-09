@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { AppState, Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar, setStatusBarHidden } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { useFonts } from 'expo-font';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -62,6 +62,14 @@ export default function RootLayout() {
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
+    // Immersive chrome: keep system status bar (time / battery / wifi) hidden so
+    // play UI gets vertical space. Users still open notifications / Control Center
+    // with an edge swipe; OS may flash bars briefly, then we re-hide on resume.
+    const hideStatusBar = () => {
+      setStatusBarHidden(true, 'fade');
+    };
+    hideStatusBar();
+
     let appStateSub: ReturnType<typeof AppState.addEventListener> | undefined;
     let cancelled = false;
 
@@ -75,11 +83,17 @@ export default function RootLayout() {
         };
         lockLandscape();
         appStateSub = AppState.addEventListener('change', (next) => {
-          if (next === 'active') lockLandscape();
+          if (next === 'active') {
+            lockLandscape();
+            hideStatusBar();
+          }
         });
       })
       .catch(() => {
         /* orientation optional; avoid breaking app bootstrap */
+        appStateSub = AppState.addEventListener('change', (next) => {
+          if (next === 'active') hideStatusBar();
+        });
       });
 
     return () => {
@@ -94,6 +108,7 @@ export default function RootLayout() {
       <Providers>
         <WebSeoHead />
         <StatusBar
+          hidden
           style={paletteUsesLightStatusBarContent(paletteId) ? 'light' : 'dark'}
         />
         <Stack screenOptions={rootStackScreenOptions}>
