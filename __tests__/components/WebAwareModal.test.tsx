@@ -24,21 +24,25 @@ describe('WebAwareModal', () => {
     );
 
     expect(screen.getByText('Open body')).toBeTruthy();
+    expect(screen.getByTestId('modal-child')).toBeTruthy();
+
+    const shell = screen.getByTestId('web-aware-modal-shell');
+    const shellStyle = StyleSheet.flatten(shell.props.style);
+
+    // Absolute edges and/or flex + 100% so scrim children cover the whole screen.
+    expect(shellStyle.width).toBe('100%');
+    expect(shellStyle.height).toBe('100%');
+    expect(shellStyle.flex === 1 || shellStyle.top === 0).toBe(true);
 
     if (Platform.OS === 'web') {
       expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
-      const child = screen.getByTestId('modal-child');
-      const shell = child.parent;
-      expect(shell).toBeTruthy();
-      const shellStyle = StyleSheet.flatten(shell!.props.style);
       expect(shellStyle.top).toBe(0);
       expect(shellStyle.right).toBe(0);
       expect(shellStyle.bottom).toBe(0);
       expect(shellStyle.left).toBe(0);
-      expect(shellStyle.width).toBe('100%');
-      expect(shellStyle.height).toBe('100%');
     } else {
       expect(screen.UNSAFE_queryByType(Modal)).not.toBeNull();
+      expect(shellStyle.flex).toBe(1);
     }
   });
 });

@@ -84,7 +84,11 @@ export function PlayMatchMenuModal({
 }
 
 const styles = StyleSheet.create({
+  /** Full-viewport dim scrim inside `WebAwareModal` (native Modal fill shell or web fixed shell). */
   overlay: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.overlay,
     justifyContent: 'center',
