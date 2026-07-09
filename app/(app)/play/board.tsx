@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { HubTokenChip } from '@/components/HubTokenChip';
-import { BORDER_RADIUS, BREAKPOINTS, FONT_SIZES, LAYOUT, SPACING } from '@/constants';
+import { BORDER_RADIUS, BREAKPOINTS, COLORS, FONT_SIZES, LAYOUT, SPACING } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { FONTS } from '@/constants/theme';
 import {
@@ -157,18 +157,25 @@ function computeTopicFit(
   const usableRow = Math.max(0, innerWidth);
   const safeCols = Math.max(1, cols);
   const cellWidth = Math.max(1, (usableRow - m.gridGap * (safeCols - 1)) / safeCols);
+  // Web wide: use nearly the full cell for art so fill-layout cards stay dense.
   const web = Platform.OS === 'web' && screenWidth >= 900;
-  const railWidth = web ? 64 : screenWidth < 620 ? 50 : 56;
-  const artGap = web ? 10 : screenWidth < 620 ? 6 : 8;
+  const railWidth = web ? 54 : screenWidth < 620 ? 50 : 56;
+  const artGap = web ? 6 : screenWidth < 620 ? 6 : 8;
   const horizontalChrome = railWidth * 2 + artGap * 2;
   const maxCenterWidth = Math.max(56, Math.floor(cellWidth - horizontalChrome));
-  const preferredCenterWidth = web ? 218 : screenWidth < 620 ? 116 : 152;
+  const preferredCenterWidth = web
+    ? Math.max(160, Math.floor(maxCenterWidth * 0.96))
+    : screenWidth < 620
+      ? 116
+      : 152;
   const centerWidth = Math.max(56, Math.min(preferredCenterWidth, maxCenterWidth));
   const groupWidth = horizontalChrome + centerWidth;
   const topicImageSize = Math.max(48, Math.min(m.topicImageSize, centerWidth));
-  const titleWidth = Math.min(Math.max(centerWidth, web ? 218 : 160), cellWidth);
+  // Title tracks art width so long names wrap like phone (not a wider orphan band).
+  const titleWidth = Math.min(Math.max(centerWidth, web ? centerWidth : 160), cellWidth);
   const lineHeight = Math.round(m.topicTitleFont * 1.12);
-  const titleHeight = Math.max(Math.round(lineHeight * 3.1), Math.round(m.topicTitleFont * 2.85));
+  // Two-line budget — phone-like density; avoids a tall empty title slab under art.
+  const titleHeight = Math.max(Math.round(lineHeight * 2.15), Math.round(m.topicTitleFont * 2.2));
   return { cellWidth, groupWidth, topicImageSize, centerWidth, titleWidth, titleHeight, railWidth, artGap };
 }
 
@@ -428,12 +435,28 @@ export default function PlayBoardScreen() {
   const metrics = useMemo(() => {
     const baseMetrics = getBoardMetrics(height, width);
     const isWebBoard = Platform.OS === 'web' && width >= BREAKPOINTS.wide;
+    // Cap roomy/tall desktop inflation so web board density tracks phone landscape.
+    // Web: allow larger preferred art tokens; vertical layout grows them further to fill height.
+    const webDense = isWebBoard
+      ? {
+          gridGap: Math.min(baseMetrics.gridGap, 16),
+          topicImageSize: Math.min(Math.max(baseMetrics.topicImageSize, 168), 200),
+          topicArtGap: Math.min(baseMetrics.topicArtGap, 12),
+          pointRailGap: Math.min(baseMetrics.pointRailGap, 12),
+          pointRailClipBleed: Math.min(baseMetrics.pointRailClipBleed, 6),
+          tileFont: Math.min(baseMetrics.tileFont, 17),
+          topicTitleFont: Math.min(baseMetrics.topicTitleFont, 15),
+        }
+      : null;
     const topicTitleFont = isWebBoard
-      ? scaleFont(16, 16, 20, width, height)
+      ? scaleFont(18, 15, 22, width, height)
       : scaleFont(20, 18, 26, width, height);
     return {
       ...baseMetrics,
-      tileFont: isWebBoard ? scaleFont(16, 14, 20, width, height) : responsiveFontSizes.pointValue,
+      ...webDense,
+      tileFont: isWebBoard
+        ? scaleFont(15, 13, 17, width, height)
+        : responsiveFontSizes.pointValue,
       topicTitleFont,
       scoreFont: responsiveFontSizes.scoreValue,
     };
@@ -462,12 +485,28 @@ export default function PlayBoardScreen() {
     () => computeTopicFit(boardLayoutWidth, metrics, gridColumnCount, width),
     [boardLayoutWidth, metrics, gridColumnCount, width]
   );
+  // Phone-like: minimal bottom chrome so packed topic rows sit denser on web too.
   const gridBottomPadding = Platform.OS === 'web'
-    ? Math.max(SPACING.lg, SPACING.md)
+    ? SPACING.sm
     : Math.max(insets.bottom, SPACING.xs) + SPACING.sm;
   const maxQuestionRows = Math.max(1, ...grouped.map((column) => column.rows.length));
   /** Matches topicCenterBlock gap so pill rail targets image + title stack. */
-  const topicCenterBlockGap = Platform.OS === 'web' ? SPACING.xs : 2;
+  const topicCenterBlockGap = 2;
+  /** Solve the tallest row content that still fits the cell width:
+   *   2*tileSide + 2*artGap + artWidth <= cellWidth
+   * where tileSide = (R - railChrome) / qRows and artWidth = (R - title - gap) / ratio.
+   * Without this, tall web viewports grow square tiles past the rails and overlap art. */
+  const railChrome =
+    metrics.pointRailGap * Math.max(0, maxQuestionRows - 1) + metrics.pointRailClipBleed;
+  const maxRowContentHeight = Math.max(
+    railChrome + maxQuestionRows * 24,
+    (topicFit.cellWidth -
+      2 - // rounding slack (ceil'd rail width)
+      2 * topicFit.artGap +
+      (2 * railChrome) / maxQuestionRows +
+      (topicFit.titleHeight + topicCenterBlockGap) / topicArtHeightRatio) /
+      (2 / maxQuestionRows + 1 / topicArtHeightRatio)
+  );
   const verticalLayout = useMemo(
     () =>
       computeBoardVerticalLayout({
@@ -482,9 +521,11 @@ export default function PlayBoardScreen() {
         topicArtHeightRatio,
         titleHeightBudget: topicFit.titleHeight,
         centerBlockGap: topicCenterBlockGap,
+        maxRowContentHeight,
       }),
     [
       gridBottomPadding,
+      maxRowContentHeight,
       gridRows.length,
       gridViewport.height,
       maxQuestionRows,
@@ -503,8 +544,13 @@ export default function PlayBoardScreen() {
   const topicRowGap = verticalLayout.topicRowGap;
   /** Rails must be at least as wide as the square tiles. */
   const pointRailWidth = Math.max(topicFit.railWidth, Math.ceil(pointTileSize));
-  const topicGroupWidth =
-    topicFit.groupWidth + 2 * Math.max(0, pointRailWidth - topicFit.railWidth);
+  /** Actual rendered art width — group and title track it so rails hug the art like phone. */
+  const topicArtWidth = Math.max(
+    48,
+    Math.min(topicFit.centerWidth, Math.floor(verticalLayout.topicImageHeight / topicArtHeightRatio))
+  );
+  const topicGroupWidth = 2 * (pointRailWidth + topicFit.artGap) + topicArtWidth;
+  const topicTitleWidth = Math.min(topicFit.titleWidth, Math.max(topicArtWidth, 120));
   /** Squircle corners (~14pt), never height/2 (that makes a pill). */
   const pointTileRadius = Math.min(14, Math.max(8, Math.round(pointTileSize * 0.18)));
   const handleGridLayout = (event: LayoutChangeEvent) => {
@@ -664,12 +710,15 @@ export default function PlayBoardScreen() {
     // Same image/title heights the pill rail is sized against.
     const titleHeight = verticalLayout.topicTitleHeight;
     const imgH = Math.max(1, Math.round(verticalLayout.topicImageHeight));
-    const imgW = Math.max(1, Math.min(topicFit.centerWidth, Math.floor(imgH / topicArtHeightRatio)));
-    const titleFontSize = Math.min(metrics.topicTitleFont, Math.max(6, titleHeight / 3.4));
+    const imgW = Math.max(1, topicArtWidth);
+    // titleHeight ≈ 2 lines at font*1.12*2.15 ≈ font*2.4 — divisor must match or the font shrinks.
+    const titleFontSize = Math.min(metrics.topicTitleFont, Math.max(6, titleHeight / 2.4));
+
+    const railHeight = imgH + topicCenterBlockGap + titleHeight;
 
     return (
       <View key={column.categoryId} style={[styles.categoryGridCell, { height: fittedBoardRowHeight }]}>
-        <View style={[styles.categoryBlock, { width: topicGroupWidth }]}> 
+        <View style={[styles.categoryBlock, { width: topicGroupWidth }]}>
           <View style={[styles.topicArtRow, { columnGap: topicFit.artGap }]}>
           <View
             style={[
@@ -679,7 +728,7 @@ export default function PlayBoardScreen() {
                 gap: metrics.pointRailGap,
                 paddingBottom: metrics.pointRailClipBleed,
                 // Rail height = image + gap + title so 3 tiles fill that stack.
-                height: imgH + topicCenterBlockGap + titleHeight,
+                height: railHeight,
               },
             ]}
           >
@@ -750,7 +799,10 @@ export default function PlayBoardScreen() {
                 ) : (
                   <View style={styles.pictureFallbackFill}>
                     <Text
-                      style={styles.missingPictureLabel}
+                      style={[
+                        styles.missingPictureLabel,
+                        { color: surfaceColors.missingPictureLabelColor },
+                      ]}
                       accessibilityLabel={MISSING_CATEGORY_PICTURE_LABEL}
                     >
                       {MISSING_CATEGORY_PICTURE_LABEL}
@@ -763,7 +815,7 @@ export default function PlayBoardScreen() {
             <View
               style={[
                 styles.topicTitleRow,
-                { width: topicFit.titleWidth, height: titleHeight },
+                { width: topicTitleWidth, height: titleHeight },
               ]}
             >
               <Text
@@ -778,9 +830,9 @@ export default function PlayBoardScreen() {
                     ? ({ wordBreak: 'normal', overflowWrap: 'break-word' } as any)
                     : null,
                 ]}
-                numberOfLines={3}
+                numberOfLines={2}
                 adjustsFontSizeToFit
-                minimumFontScale={0.65}
+                minimumFontScale={0.6}
                 ellipsizeMode="tail"
               >
                 {column.categoryName.toUpperCase()}
@@ -795,7 +847,7 @@ export default function PlayBoardScreen() {
                 width: pointRailWidth,
                 gap: metrics.pointRailGap,
                 paddingBottom: metrics.pointRailClipBleed,
-                height: imgH + topicCenterBlockGap + titleHeight,
+                height: railHeight,
               },
             ]}
           >
@@ -886,7 +938,7 @@ export default function PlayBoardScreen() {
               paddingLeft: bodyPadLeft,
               paddingRight: bodyPadRight,
               gap: topicRowGap,
-              paddingTop: Platform.OS === 'web' ? 4 : 0,
+              paddingTop: 0,
               paddingBottom: gridBottomPadding,
             },
           ]}
@@ -1267,7 +1319,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     maxWidth: '100%',
   },
-  /** Illustration + category title — grows to full width between rails; stretches vertically with the rail column (topicArtRow alignItems stretch). */
+  /** Illustration + category title — stacked between side rails. */
   topicCenterBlock: {
     flex: 1,
     flexDirection: 'column',
@@ -1337,7 +1389,8 @@ const styles = StyleSheet.create({
   topicImageFill: {
     width: '100%',
     height: '100%',
-    transform: [{ scale: 1.16 }],
+    // Mild zoom only — heavy scale crops portraits (e.g. Harry Potter) mid-torso.
+    transform: [{ scale: 1.04 }],
   },
   pictureFallbackFill: {
     flex: 1,
@@ -1349,7 +1402,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.uiBold,
     fontSize: 10,
     letterSpacing: 0.5,
-    color: 'rgba(15, 23, 42, 0.45)',
     textAlign: 'center',
     paddingHorizontal: 4,
   },
@@ -1382,7 +1434,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 55,
     elevation: 55,
-    backgroundColor: 'rgba(51, 51, 51, 0.45)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     padding: SPACING.lg,
   },
@@ -1399,7 +1451,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(51, 51, 51, 0.45)',
+    backgroundColor: COLORS.overlay,
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,

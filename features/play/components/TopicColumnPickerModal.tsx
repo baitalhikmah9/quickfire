@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
 import {
-  Modal,
-  Platform,
   View,
   Text,
   StyleSheet,
@@ -10,8 +8,9 @@ import {
   type PressableProps,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { WebAwareModal } from '@/components/WebAwareModal';
 import { Pressable } from '@/components/ui/Pressable';
-import { BORDER_RADIUS, FONT_SIZES, SPACING } from '@/constants';
+import { BORDER_RADIUS, COLORS, FONT_SIZES, SPACING } from '@/constants';
 import { FONTS } from '@/constants/theme';
 import {
   getCategoryBoardAccent,
@@ -58,13 +57,9 @@ export function TopicColumnPickerModal({
   const cardMaxWidth = useMemo(() => Math.min(width - SPACING.lg * 2, 680), [width]);
   const heroMinHeight = useMemo(() => Math.min(220, Math.max(160, height * 0.28)), [height]);
 
-  if (!visible || !column) {
-    return null;
-  }
-
-  const accent = getCategoryBoardAccent(column.categoryId);
-  const picture = getCategoryPictureSource(column.categoryId);
-  const locale = column.rows[0]?.left.locale ?? 'en';
+  const accent = column ? getCategoryBoardAccent(column.categoryId) : COLORS.primary;
+  const picture = column ? getCategoryPictureSource(column.categoryId) : null;
+  const locale = column?.rows[0]?.left.locale ?? 'en';
 
   const renderValueButton = (
     question: QuestionCard,
@@ -112,133 +107,119 @@ export function TopicColumnPickerModal({
     );
   };
 
-  const body = (
-    <View style={styles.overlay}>
-      <Pressable
-        style={StyleSheet.absoluteFill}
-        onPress={onClose}
-        accessibilityRole="button"
-        accessibilityLabel={t('play.boardTopicModalClose')}
-      />
-      <View
-        style={[
-          styles.sheet,
-          {
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.border,
-            maxWidth: cardMaxWidth,
-            width: '100%',
-          },
-        ]}
-      >
-        <ScrollView
-          style={styles.sheetScroll}
-          contentContainerStyle={styles.sheetScrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={[styles.hero, { minHeight: heroMinHeight, backgroundColor: colors.primary }]}>
-            <View style={styles.heroInner}>
-              {picture ? (
-                <Image source={picture} style={styles.heroImage as never} contentFit="cover" transition={120} />
-              ) : (
-                <View style={[styles.heroFallback, { backgroundColor: `${accent}28` }]}>
-                  <Text
-                    style={[styles.heroFallbackLetter, { color: accent }]}
-                    accessibilityLabel={MISSING_CATEGORY_PICTURE_LABEL}
-                  >
-                    {MISSING_CATEGORY_PICTURE_LABEL}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.heroTitleBar}>
-                <Text
-                  style={[
-                    styles.heroTitle,
-                    getTextStyle(locale, 'bodyBold', 'center'),
-                    { fontSize: FONT_SIZES.lg, lineHeight: FONT_SIZES.lg + 4 },
-                  ]}
-                  numberOfLines={3}
-                >
-                  {column.categoryName}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <Text style={[styles.hint, { color: colors.textSecondary }, getTextStyle(undefined, 'body', 'center')]}>
-            {t('play.boardTopicModalHint')}
-          </Text>
-
-          <View style={styles.rows}>
-            {column.rows.map((row) => {
-              const sameClue = row.left.id === row.right.id;
-              if (sameClue) {
-                return (
-                  <View key={row.pointValue} style={styles.rowFull}>
-                    {renderValueButton(row.left, 'single', 'full')}
-                  </View>
-                );
-              }
-              return (
-                <View key={row.pointValue} style={[styles.rowPair, { flexDirection: rowDir }]}>
-                  {renderValueButton(row.left, 'pairFirst', 'split')}
-                  <View style={styles.rowPairCenter}>
-                    <Text style={[styles.rowPointLabel, { color: colors.textSecondary }, getTextStyle()]}>
-                      {row.pointValue}
-                    </Text>
-                  </View>
-                  {renderValueButton(row.right, 'pairSecond', 'split')}
-                </View>
-              );
-            })}
-          </View>
-
+  return (
+    <WebAwareModal visible={visible && !!column} onRequestClose={onClose}>
+      {column ? (
+        <View style={styles.overlay}>
           <Pressable
+            style={StyleSheet.absoluteFill}
             onPress={onClose}
-            style={({ pressed }) => [
-              styles.closeButton,
-              {
-                borderColor: colors.border,
-                backgroundColor: colors.background,
-                opacity: pressed ? 0.88 : 1,
-              },
-            ]}
             accessibilityRole="button"
             accessibilityLabel={t('play.boardTopicModalClose')}
+          />
+          <View
+            style={[
+              styles.sheet,
+              {
+                backgroundColor: colors.cardBackground,
+                borderColor: colors.border,
+                maxWidth: cardMaxWidth,
+                width: '100%',
+              },
+            ]}
           >
-            <Text style={[styles.closeButtonLabel, { color: colors.text }, getTextStyle(undefined, 'bodySemibold', 'center')]}>
-              {t('play.boardTopicModalClose')}
-            </Text>
-          </Pressable>
-        </ScrollView>
-      </View>
-    </View>
-  );
+            <ScrollView
+              style={styles.sheetScroll}
+              contentContainerStyle={styles.sheetScrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={[styles.hero, { minHeight: heroMinHeight, backgroundColor: colors.primary }]}>
+                <View style={styles.heroInner}>
+                  {picture ? (
+                    <Image source={picture} style={styles.heroImage as never} contentFit="cover" transition={120} />
+                  ) : (
+                    <View style={[styles.heroFallback, { backgroundColor: `${accent}28` }]}>
+                      <Text
+                        style={[styles.heroFallbackLetter, { color: accent }]}
+                        accessibilityLabel={MISSING_CATEGORY_PICTURE_LABEL}
+                      >
+                        {MISSING_CATEGORY_PICTURE_LABEL}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.heroTitleBar}>
+                    <Text
+                      style={[
+                        styles.heroTitle,
+                        getTextStyle(locale, 'bodyBold', 'center'),
+                        { fontSize: FONT_SIZES.lg, lineHeight: FONT_SIZES.lg + 4 },
+                      ]}
+                      numberOfLines={3}
+                    >
+                      {column.categoryName}
+                    </Text>
+                  </View>
+                </View>
+              </View>
 
-  if (Platform.OS === 'web') {
-    return <View style={styles.webOverlayRoot}>{body}</View>;
-  }
+              <Text style={[styles.hint, { color: colors.textSecondary }, getTextStyle(undefined, 'body', 'center')]}>
+                {t('play.boardTopicModalHint')}
+              </Text>
 
-  return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      {body}
-    </Modal>
+              <View style={styles.rows}>
+                {column.rows.map((row) => {
+                  const sameClue = row.left.id === row.right.id;
+                  if (sameClue) {
+                    return (
+                      <View key={row.pointValue} style={styles.rowFull}>
+                        {renderValueButton(row.left, 'single', 'full')}
+                      </View>
+                    );
+                  }
+                  return (
+                    <View key={row.pointValue} style={[styles.rowPair, { flexDirection: rowDir }]}>
+                      {renderValueButton(row.left, 'pairFirst', 'split')}
+                      <View style={styles.rowPairCenter}>
+                        <Text style={[styles.rowPointLabel, { color: colors.textSecondary }, getTextStyle()]}>
+                          {row.pointValue}
+                        </Text>
+                      </View>
+                      {renderValueButton(row.right, 'pairSecond', 'split')}
+                    </View>
+                  );
+                })}
+              </View>
+
+              <Pressable
+                onPress={onClose}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                    opacity: pressed ? 0.88 : 1,
+                  },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t('play.boardTopicModalClose')}
+              >
+                <Text style={[styles.closeButtonLabel, { color: colors.text }, getTextStyle(undefined, 'bodySemibold', 'center')]}>
+                  {t('play.boardTopicModalClose')}
+                </Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      ) : null}
+    </WebAwareModal>
   );
 }
 
 const styles = StyleSheet.create({
-  webOverlayRoot: {
-    position: 'fixed' as 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 99999,
-  },
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.md,

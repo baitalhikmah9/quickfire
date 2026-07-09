@@ -144,6 +144,7 @@ interface CategoryCardProps {
   topicTitleSize: number;
   topicImageMatte?: string;
   topicImageContentFit: 'cover' | 'contain';
+  missingPictureLabelColor?: string;
   onToggle: (slug: string) => void;
 }
 
@@ -160,6 +161,7 @@ const CategoryCard = memo(function CategoryCard({
   topicTitleSize,
   topicImageMatte,
   topicImageContentFit,
+  missingPictureLabelColor,
   onToggle,
 }: CategoryCardProps) {
   const imageSource = getCategoryPictureSource(category.id);
@@ -203,7 +205,10 @@ const CategoryCard = memo(function CategoryCard({
           />
         ) : (
           <Text
-            style={[styles.missingPictureLabel, { color: textPrimary }]}
+            style={[
+              styles.missingPictureLabel,
+              { color: missingPictureLabelColor ?? textPrimary },
+            ]}
             accessibilityLabel={MISSING_CATEGORY_PICTURE_LABEL}
           >
             {MISSING_CATEGORY_PICTURE_LABEL}
@@ -501,6 +506,7 @@ export default function CategorySelectionScreen() {
                   topicTitleSize={fontSizes.topicTitle}
                   topicImageMatte={surfaceColors.topicImageMatte}
                   topicImageContentFit={surfaceColors.topicImageContentFit}
+                  missingPictureLabelColor={surfaceColors.missingPictureLabelColor}
                   onToggle={handleToggleCategory}
                 />
               );
@@ -522,6 +528,7 @@ export default function CategorySelectionScreen() {
       selectedCategoryIds,
       selectedCount,
       surface,
+      surfaceColors.missingPictureLabelColor,
       surfaceColors.topicImageContentFit,
       surfaceColors.topicImageMatte,
       textPrimary,

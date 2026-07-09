@@ -15,10 +15,11 @@ import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FONTS, SPACING, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import { COLORS, FONTS, SPACING, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { GameHeader } from '@/components/GameHeader';
 import { HubTokenChip } from '@/components/HubTokenChip';
+import { WebAwareModal } from '@/components/WebAwareModal';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
@@ -501,7 +502,7 @@ export default function AppHubScreen() {
         </ScreenContent>
       </SafeAreaView>
 
-      {activeMode ? (
+      <WebAwareModal visible={!!activeMode} onRequestClose={closeModeInfo}>
         <View
           accessibilityViewIsModal
           style={styles.infoModalRoot}
@@ -513,37 +514,39 @@ export default function AppHubScreen() {
             onPress={closeModeInfo}
             style={styles.infoModalBackdrop}
           />
-          <View
-            style={[
-              styles.infoModalCard,
-              styles.plasticFace,
-              brandRaisedSurfaceShadow('hero'),
-              { backgroundColor: surface },
-            ]}
-          >
-            <Text style={[styles.infoModalTitle, { color: textPrimary }]}>
-              {t(activeMode.titleKey)}
-            </Text>
-            <Text style={[styles.infoModalBody, { color: textPrimary }]}>
-              {t(activeMode.copyKey)}
-            </Text>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('common.close')}
-              onPress={closeModeInfo}
-              style={({ pressed }) => [
-                styles.infoModalCloseButton,
-                { opacity: pressed ? 0.7 : 1 },
+          {activeMode ? (
+            <View
+              style={[
+                styles.infoModalCard,
+                styles.plasticFace,
+                brandRaisedSurfaceShadow('hero'),
+                { backgroundColor: surface },
               ]}
             >
-              <Text style={styles.infoModalCloseText}>{t('common.close').toUpperCase()}</Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : null}
+              <Text style={[styles.infoModalTitle, { color: textPrimary }]}>
+                {t(activeMode.titleKey)}
+              </Text>
+              <Text style={[styles.infoModalBody, { color: textPrimary }]}>
+                {t(activeMode.copyKey)}
+              </Text>
 
-      {pendingMode ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('common.close')}
+                onPress={closeModeInfo}
+                style={({ pressed }) => [
+                  styles.infoModalCloseButton,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text style={styles.infoModalCloseText}>{t('common.close').toUpperCase()}</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      </WebAwareModal>
+
+      <WebAwareModal visible={!!pendingMode} onRequestClose={closeResumeChoice}>
         <View
           accessibilityViewIsModal
           style={styles.infoModalRoot}
@@ -606,7 +609,7 @@ export default function AppHubScreen() {
             </View>
           </View>
         </View>
-      ) : null}
+      </WebAwareModal>
     </View>
   );
 }
@@ -785,14 +788,16 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
+  /**
+   * Full-viewport scrim hosted by WebAwareModal (native Modal / web fixed shell).
+   * Must use absoluteFill — not flex-only — so elevated home chrome cannot sit above the dim.
+   */
   infoModalRoot: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 50,
-    elevation: 50,
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.xl,
-    backgroundColor: 'rgba(51, 51, 51, 0.45)',
+    backgroundColor: COLORS.overlay,
   },
   infoModalBackdrop: {
     ...StyleSheet.absoluteFillObject,

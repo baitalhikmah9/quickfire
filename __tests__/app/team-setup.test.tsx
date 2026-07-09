@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Modal, Platform, StyleSheet } from 'react-native';
 
 import TeamSetupScreen from '@/app/(app)/play/team-setup';
+import { COLORS } from '@/constants';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
 
@@ -110,8 +111,17 @@ describe('TeamSetupScreen', () => {
     } else {
       expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
     }
-    expect(screen.getByTestId('wager-info-overlay')).toBeTruthy();
+    const overlay = screen.getByTestId('wager-info-overlay');
+    expect(overlay).toBeTruthy();
     expect(screen.getByText('Wagers are a risky way to try and sabotage the other team!')).toBeTruthy();
+
+    const overlayStyle = StyleSheet.flatten(overlay.props.style);
+    // Full-viewport scrim (not flex-only) so web fixed shells and native Modal both dim the screen.
+    expect(overlayStyle.top).toBe(0);
+    expect(overlayStyle.right).toBe(0);
+    expect(overlayStyle.bottom).toBe(0);
+    expect(overlayStyle.left).toBe(0);
+    expect(overlayStyle.backgroundColor).toBe(COLORS.overlay);
 
     fireEvent.press(screen.getByLabelText('Close'));
   });

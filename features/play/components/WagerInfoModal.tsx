@@ -1,9 +1,10 @@
-import { Modal, Platform, View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import type { ViewStyle } from 'react-native';
+import { WebAwareModal } from '@/components/WebAwareModal';
 import { Pressable } from '@/components/ui/Pressable';
 import { FONT_SIZES, SPACING, FONTS, COLORS } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { HOME_SOFT_UI } from '@/themes';
-import type { ViewStyle } from 'react-native';
 
 const T = HOME_SOFT_UI.colors;
 
@@ -45,95 +46,75 @@ type WagerInfoModalProps = {
 export function WagerInfoModal({ visible, onClose }: WagerInfoModalProps) {
   const { t, getTextStyle } = useI18n();
 
-  if (!visible) {
-    return null;
-  }
-
-  const body = (
-    <View accessibilityViewIsModal style={styles.overlay} testID="wager-info-overlay">
-      <Pressable
-        style={StyleSheet.absoluteFill}
-        onPress={onClose}
-        accessibilityLabel={t('common.close')}
-        accessibilityRole="button"
-      />
-      <View
-        style={[styles.card, { backgroundColor: T.surface }, neumorphicLift(T.shadowStrong, 'header')]}
-      >
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={[styles.title, { color: T.textPrimary }, getTextStyle(undefined, 'display', 'start')]}>
-            {t('play.wagerInfoTitle')}
-          </Text>
-          <Text style={[styles.para, { color: T.textMuted }, getTextStyle()]}>
-            {t('play.wagerInfoParagraph1')}
-          </Text>
-          <Text style={[styles.para, { color: T.textMuted }, getTextStyle()]}>
-            {t('play.wagerInfoParagraph2')}
-          </Text>
-
-          <View style={[styles.table, { borderColor: T.shadow }]}>
-            <View style={[styles.tableRow, styles.tableHeaderRow, { borderBottomColor: T.shadow }]}>
-              <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
-                {t('play.wagerInfoColMultiplier')}
-              </Text>
-              <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
-                {t('play.wagerInfoColCorrect')}
-              </Text>
-              <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
-                {t('play.wagerInfoColWrong')}
-              </Text>
-            </View>
-            {(
-              [
-                ['0.5x', '+0.5x', '-0.5x'],
-                ['1.5x', '+1.5x', '-1x'],
-                ['2x', '+2x', '-1.5x'],
-              ] as const
-            ).map((row) => (
-              <View key={row[0]} style={[styles.tableRow, { borderBottomColor: T.shadow }]}>
-                <Text style={[styles.cell, { color: T.textPrimary }, getTextStyle()]}>{row[0]}</Text>
-                <Text style={[styles.cell, styles.cellPos, getTextStyle()]}>{row[1]}</Text>
-                <Text style={[styles.cell, styles.cellNeg, getTextStyle()]}>{row[2]}</Text>
-              </View>
-            ))}
-          </View>
-
-          <Text style={[styles.warning, { color: T.textMuted }, getTextStyle()]}>
-            {t('play.wagerInfoWarning')}
-          </Text>
-        </ScrollView>
-      </View>
-    </View>
-  );
-
-  if (Platform.OS === 'web') {
-    return <View style={styles.webOverlayRoot}>{body}</View>;
-  }
-
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      {body}
-    </Modal>
+    <WebAwareModal visible={visible} onRequestClose={onClose}>
+      <View accessibilityViewIsModal style={styles.overlay} testID="wager-info-overlay">
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityLabel={t('common.close')}
+          accessibilityRole="button"
+        />
+        <View
+          style={[styles.card, { backgroundColor: T.surface }, neumorphicLift(T.shadowStrong, 'header')]}
+        >
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={[styles.title, { color: T.textPrimary }, getTextStyle(undefined, 'display', 'start')]}>
+              {t('play.wagerInfoTitle')}
+            </Text>
+            <Text style={[styles.para, { color: T.textMuted }, getTextStyle()]}>
+              {t('play.wagerInfoParagraph1')}
+            </Text>
+            <Text style={[styles.para, { color: T.textMuted }, getTextStyle()]}>
+              {t('play.wagerInfoParagraph2')}
+            </Text>
+
+            <View style={[styles.table, { borderColor: T.shadow }]}>
+              <View style={[styles.tableRow, styles.tableHeaderRow, { borderBottomColor: T.shadow }]}>
+                <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
+                  {t('play.wagerInfoColMultiplier')}
+                </Text>
+                <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
+                  {t('play.wagerInfoColCorrect')}
+                </Text>
+                <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
+                  {t('play.wagerInfoColWrong')}
+                </Text>
+              </View>
+              {(
+                [
+                  ['0.5x', '+0.5x', '-0.5x'],
+                  ['1.5x', '+1.5x', '-1x'],
+                  ['2x', '+2x', '-1.5x'],
+                ] as const
+              ).map((row) => (
+                <View key={row[0]} style={[styles.tableRow, { borderBottomColor: T.shadow }]}>
+                  <Text style={[styles.cell, { color: T.textPrimary }, getTextStyle()]}>{row[0]}</Text>
+                  <Text style={[styles.cell, styles.cellPos, getTextStyle()]}>{row[1]}</Text>
+                  <Text style={[styles.cell, styles.cellNeg, getTextStyle()]}>{row[2]}</Text>
+                </View>
+              ))}
+            </View>
+
+            <Text style={[styles.warning, { color: T.textMuted }, getTextStyle()]}>
+              {t('play.wagerInfoWarning')}
+            </Text>
+          </ScrollView>
+        </View>
+      </View>
+    </WebAwareModal>
   );
 }
 
 const styles = StyleSheet.create({
-  /** Escapes padded `PlayScaffold` body — same pattern as `TopicColumnPickerModal`. */
-  webOverlayRoot: {
-    position: 'fixed' as 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 99999,
-  },
+  /** Full-viewport scrim inside `WebAwareModal` (native Modal or web fixed shell). */
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(51, 51, 51, 0.45)',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.md,

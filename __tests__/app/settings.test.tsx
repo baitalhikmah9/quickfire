@@ -1,9 +1,10 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 import SettingsScreen from '@/app/(app)/settings';
+import { COLORS } from '@/constants';
 
 const mockBack = jest.fn();
 const mockPush = jest.fn();
@@ -193,6 +194,15 @@ describe('SettingsScreen', () => {
     expect(mockPush).not.toHaveBeenCalled();
     expect(screen.getByText('Choose a color palette')).toBeTruthy();
     expect(screen.getByText('Warm')).toBeTruthy();
+
+    // Backdrop is the full-screen dim control; close icon reuses the same a11y label.
+    const backdrop = screen.getAllByLabelText('Close theme picker')[0];
+    const backdropStyle = StyleSheet.flatten(backdrop.props.style);
+    expect(backdropStyle.top).toBe(0);
+    expect(backdropStyle.right).toBe(0);
+    expect(backdropStyle.bottom).toBe(0);
+    expect(backdropStyle.left).toBe(0);
+    expect(backdropStyle.backgroundColor).toBe(COLORS.overlay);
   });
 
   it('opens app language choices inline as a modal instead of navigating away', () => {

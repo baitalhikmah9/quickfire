@@ -53,7 +53,8 @@ export const COLORS = {
   timerDanger: '#DC2626',
   timerRing: '#D4E5FA',
 
-  overlay: 'rgba(15, 23, 42, 0.4)',
+  /** Full-screen modal scrim — charcoal brand dim (matches Soft UI #333). */
+  overlay: 'rgba(51, 51, 51, 0.45)',
   cardShadow: 'rgba(0, 123, 255, 0.12)',
   modalShadow: 'rgba(15, 23, 42, 0.18)',
   activeTileGlow: 'rgba(255, 140, 0, 0.22)',

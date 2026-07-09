@@ -2,8 +2,9 @@
  * Pure vertical layout for the play board topic grid.
  *
  * Point pills (100/200/300) share the height of the topic image + title
- * (including in-rail gaps). Stacked topic rows keep a larger inter-row gap
- * so multi-row boards don't read as one continuous list.
+ * (including in-rail gaps). On tall viewports, topic art grows to fill the
+ * available row budget so free space becomes larger cards — not empty cream
+ * bands. Stacked topic rows keep a modest inter-row gap.
  */
 
 export type BoardVerticalLayoutInput = {
@@ -21,6 +22,8 @@ export type BoardVerticalLayoutInput = {
   titleHeightBudget: number;
   /** Gap between topic image and title in the center column. */
   centerBlockGap: number;
+  /** Optional width-derived cap on row content (image + gap + title) height. */
+  maxRowContentHeight?: number;
 };
 
 export type BoardVerticalLayout = {
@@ -41,14 +44,12 @@ function clamp(value: number, min: number, max: number): number {
 /**
  * Compute board row height, point-pill height, and inter-topic row gap.
  *
- * Pill formula (user intent):
+ * Pill formula:
  *   contentHeight = imageHeight + centerBlockGap + titleHeight
  *   pointPillHeight = (contentHeight - railGaps - clipBleed) / questionRows
  *
- * So the three buttons fill the center column, not leftover board-row chrome.
- *
- * When topics stack (2+ grid rows), the row gap is larger than the in-rail
- * pill gap so sections read as separate groups rather than one continuous list.
+ * Image height fills the available row budget (grows on tall web, shrinks on
+ * short phones) so the board uses vertical space instead of floating small.
  */
 export function computeBoardVerticalLayout(input: BoardVerticalLayoutInput): BoardVerticalLayout {
   const rows = Math.max(1, Math.floor(input.gridRowCount));
@@ -57,34 +58,42 @@ export function computeBoardVerticalLayout(input: BoardVerticalLayoutInput): Boa
   const baseGap = Math.max(0, input.baseGridGap);
   const centerGap = Math.max(0, input.centerBlockGap);
 
-  // Clearer separation between stacked topics than between pills in one rail.
+  // Phone-tight separation between stacked topics (stay near base grid gap).
   const preferredTopicRowGap =
-    rows > 1 ? Math.max(baseGap + 14, Math.round(baseGap * 1.9), 22) : baseGap;
+    rows > 1 ? Math.max(baseGap, Math.round(baseGap * 5.1), 16) : baseGap;
 
-  // Protect a minimum content budget per row on short multi-row boards.
   const minRowContent = Math.min(96, Math.floor(usable / rows));
   const maxAffordableGap =
     rows > 1 ? Math.max(baseGap, (usable - minRowContent * rows) / (rows - 1)) : baseGap;
   const topicRowGap = rows > 1 ? Math.min(preferredTopicRowGap, maxAffordableGap) : baseGap;
 
-  const boardRowHeight = Math.max(1, (usable - topicRowGap * (rows - 1)) / rows);
+  const stretchedRowHeight = Math.max(1, (usable - topicRowGap * (rows - 1)) / rows);
+  // Width cap: square point tiles scale with row height, so unbounded rows
+  // overflow the cell horizontally on wide/tall viewports (web).
+  const rowBudget = Math.max(
+    1,
+    Math.min(stretchedRowHeight, input.maxRowContentHeight ?? Number.POSITIVE_INFINITY)
+  );
 
-  // Match categoryCell: title takes up to 34% of the row, remainder for art.
+  // Title keeps a compact band; most of the row budget goes to art.
   const topicTitleHeight = Math.min(
     Math.max(1, input.titleHeightBudget),
-    Math.max(1, boardRowHeight * 0.34)
+    Math.max(1, rowBudget * 0.2)
   );
-  const maxImageHeight = Math.max(1, boardRowHeight - topicTitleHeight - centerGap);
+  const maxImageHeight = Math.max(1, rowBudget - topicTitleHeight - centerGap);
   const preferredArtHeight = Math.max(48, input.topicImageSize * input.topicArtHeightRatio);
-  const topicImageHeight = Math.min(preferredArtHeight, maxImageHeight);
+  // Fill the full row art budget (tall web grows cards; short phones shrink via max).
+  const topicImageHeight = Math.min(
+    maxImageHeight,
+    Math.max(preferredArtHeight, maxImageHeight)
+  );
 
-  // image + title (+ gap between them) is the rail target height.
   const contentHeight = topicImageHeight + centerGap + topicTitleHeight;
+  const boardRowHeight = Math.min(contentHeight, stretchedRowHeight);
 
   const railChrome =
     Math.max(0, input.pointRailGap) * Math.max(0, qRows - 1) + Math.max(0, input.pointRailClipBleed);
   const contentPillHeight = Math.max(1, (contentHeight - railChrome) / qRows);
-  // Never exceed full-row fill if content math ever overshoots.
   const fillPillHeight = Math.max(1, (boardRowHeight - railChrome) / qRows);
   const pointPillHeight = clamp(contentPillHeight, 1, fillPillHeight);
 

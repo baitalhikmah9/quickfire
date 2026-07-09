@@ -1,10 +1,10 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Modal } from 'react-native';
+import { Modal, Platform, StyleSheet } from 'react-native';
 
 import AppHubScreen from '@/app/(app)/index';
-import { FONTS } from '@/constants';
+import { COLORS, FONTS } from '@/constants';
 import { usePlayStore } from '@/store/play';
 
 const mockPush = jest.fn();
@@ -265,20 +265,69 @@ describe('AppHubScreen', () => {
     fireEvent.press(screen.getByLabelText('Quick Play info'));
 
     expect(mockPush).not.toHaveBeenCalled();
+    // Card copy + modal body share the same string once open.
     expect(
-      screen.getByText('Pick 3, 4, or 5 topics for a faster match with wagers.')
-    ).toBeTruthy();
+      screen.getAllByText('Pick 3, 4, or 5 topics for a faster match with wagers.').length
+    ).toBeGreaterThan(1);
+    expect(screen.getByTestId('home-mode-info-overlay')).toBeTruthy();
   });
 
-  it('keeps the mode explanation out of the native modal portal', () => {
+  it('presents mode explanations in a full-viewport scrim shell', () => {
     render(<AppHubScreen />);
 
     expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
 
     fireEvent.press(screen.getByLabelText('Random info'));
 
-    expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
-    expect(screen.getByText('Random questions each turn.')).toBeTruthy();
+    // Native uses RN Modal portal so elevated home chrome cannot punch through the dim.
+    // Web uses a fixed shell (no Modal) to avoid nested-layout paint crashes.
+    if (Platform.OS === 'web') {
+      expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
+    } else {
+      expect(screen.UNSAFE_queryByType(Modal)).not.toBeNull();
+    }
+    expect(screen.getAllByText('Random questions each turn.').length).toBeGreaterThan(0);
+
+    const overlay = screen.getByTestId('home-mode-info-overlay');
+    const overlayStyle = StyleSheet.flatten(overlay.props.style);
+    expect(overlayStyle.top).toBe(0);
+    expect(overlayStyle.right).toBe(0);
+    expect(overlayStyle.bottom).toBe(0);
+    expect(overlayStyle.left).toBe(0);
+    expect(overlayStyle.backgroundColor).toBe(COLORS.overlay);
+  });
+
+  it('dims the full viewport behind the continue-or-start-fresh modal', () => {
+    usePlayStore.getState().ensureDraft();
+    const current = usePlayStore.getState().session;
+    usePlayStore.setState({
+      session: current
+        ? {
+            ...current,
+            mode: 'classic',
+            step: 'board',
+          }
+        : null,
+    });
+
+    render(<AppHubScreen />);
+    fireEvent.press(screen.getByLabelText('Quick Play'));
+
+    const overlay = screen.getByTestId('home-resume-overlay');
+    expect(screen.getByText('Continue or start fresh?')).toBeTruthy();
+
+    const overlayStyle = StyleSheet.flatten(overlay.props.style);
+    expect(overlayStyle.top).toBe(0);
+    expect(overlayStyle.right).toBe(0);
+    expect(overlayStyle.bottom).toBe(0);
+    expect(overlayStyle.left).toBe(0);
+    expect(overlayStyle.backgroundColor).toBe(COLORS.overlay);
+
+    if (Platform.OS === 'web') {
+      expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
+    } else {
+      expect(screen.UNSAFE_queryByType(Modal)).not.toBeNull();
+    }
   });
 
   it('does not show public auth entry in the home header when signed out', () => {

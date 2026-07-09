@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
-import { FONT_SIZES, FONTS, SPACING } from '@/constants';
+import { COLORS, FONT_SIZES, FONTS, SPACING } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
@@ -1197,7 +1197,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 50,
     elevation: 50,
-    backgroundColor: 'rgba(250, 249, 246, 0.4)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     padding: SPACING.lg,
   },

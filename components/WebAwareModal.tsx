@@ -30,11 +30,15 @@ export function WebAwareModal({ visible, onRequestClose, children }: WebAwareMod
 
 const styles = StyleSheet.create({
   webOverlayRoot: {
+    // `fixed` escapes nested RN-web layouts (SafeAreaView, padded scaffolds).
+    // Explicit width/height keeps flex children and absoluteFill scrims full-viewport.
     position: 'fixed' as 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
+    width: '100%',
+    height: '100%',
     zIndex: 99999,
   },
 });

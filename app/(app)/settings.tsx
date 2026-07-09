@@ -17,6 +17,7 @@ import { useAuth, useClerk, useUser } from '@clerk/clerk-expo';
 import {
   SPACING,
   BORDER_RADIUS,
+  COLORS,
   PALETTES,
   FONTS,
   LAYOUT,
@@ -920,14 +921,15 @@ const styles = StyleSheet.create({
     opacity: 0.75,
   },
   modalRoot: {
-    flex: 1,
+    // Absolute fill (not flex-only) so web fixed shells always dim the full viewport.
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
     padding: SPACING.lg,
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.42)',
+    backgroundColor: COLORS.overlay,
   },
   themeModalCard: {
     width: '100%',
@@ -936,6 +938,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     padding: SPACING.xl,
     gap: SPACING.lg,
+    zIndex: 2,
   },
   themeModalHeader: {
     flexDirection: 'row',
