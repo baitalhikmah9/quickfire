@@ -167,6 +167,26 @@ export function getPlayableCategories(
   return Array.from(grouped.values()).sort((a, b) => a.title.localeCompare(b.title));
 }
 
+/**
+ * Some source topics ship multiple groups at the same point value.
+ * The play board needs exactly one left/right pair per (topic, value),
+ * so collapse extras before building tiles (required for balanced Rumble).
+ */
+function pickGroupsForBoard(categoryGroups: SourceGroup[]): SourceGroup[] {
+  const byPoints = new Map<number, SourceGroup[]>();
+
+  for (const group of categoryGroups) {
+    if (!group.questionAndanswer.length) continue;
+    const existing = byPoints.get(group.points) ?? [];
+    existing.push(group);
+    byPoints.set(group.points, existing);
+  }
+
+  return Array.from(byPoints.entries())
+    .sort(([pointsA], [pointsB]) => pointsA - pointsB)
+    .map(([, groups]) => pickRandom(groups));
+}
+
 export function buildBoard(
   categorySlugs: string[],
   localeChain: SupportedLocale[] = ['en']
@@ -177,9 +197,9 @@ export function buildBoard(
     const categoryGroups = QUESTION_GROUPS
       .filter((group) => slugify(group.name) === slug)
       .sort((a, b) => a.points - b.points);
+    const groupsForBoard = pickGroupsForBoard(categoryGroups);
 
-    for (const group of categoryGroups) {
-      if (!group.questionAndanswer.length) continue;
+    for (const group of groupsForBoard) {
       const pool = group.questionAndanswer;
       const [iLeft, iRight] = pickTwoDistinctIndices(pool.length);
       const categoryTranslation = resolveCategoryTranslation(slug, group.name, localeChain);

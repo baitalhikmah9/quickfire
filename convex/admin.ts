@@ -622,6 +622,8 @@ export const reversePurchaseGrant = mutation({
       metadata: { reason: args.reason },
     });
 
+    // Intentionally no floor: clawbacks may drive balance negative so ledger
+    // remains accurate (unlike adjustWallet, which rejects insufficient_balance).
     const balance = wallet.balance + reversalAmount;
     await ctx.db.patch(wallet._id, { balance });
     await ctx.db.patch(purchase._id, { status: 'reversed' });

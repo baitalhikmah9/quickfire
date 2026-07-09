@@ -4,7 +4,7 @@ import { computeBoardVerticalLayout } from '@/features/play/boardLayout';
 describe('computeBoardVerticalLayout', () => {
   const base = {
     viewportHeight: 360,
-    gridBottomPadding: 16,
+    gridVerticalPadding: 16,
     maxQuestionRows: 3,
     baseGridGap: 14,
     pointRailGap: 10,
@@ -40,7 +40,7 @@ describe('computeBoardVerticalLayout', () => {
       ...base,
       gridRowCount: 2,
       viewportHeight: 720,
-      gridBottomPadding: 12,
+      gridVerticalPadding: 12,
       topicImageSize: 120,
       topicArtHeightRatio: 1.1,
       titleHeightBudget: 48,
@@ -62,8 +62,31 @@ describe('computeBoardVerticalLayout', () => {
       stretchedRow - layout.topicTitleHeight - base.centerBlockGap;
     expect(layout.topicImageHeight).toBeCloseTo(maxImageBudget, 1);
     // Title stays a compact band so art owns most of the row.
-    expect(layout.topicTitleHeight).toBeLessThanOrEqual(contentHeight * 0.2);
+    expect(layout.topicTitleHeight).toBeLessThanOrEqual(contentHeight * 0.32);
     expect(layout.topicRowGap).toBeLessThanOrEqual(Math.round(base.baseGridGap * 5.1));
+  });
+
+  it('keeps category titles readable on two-row phone boards (classic/rumble 3×2)', () => {
+    // Phone landscape grid after match chrome: two stacked topic rows.
+    const layout = computeBoardVerticalLayout({
+      ...base,
+      gridRowCount: 2,
+      viewportHeight: 270,
+      gridVerticalPadding: 32,
+      baseGridGap: 10,
+      pointRailGap: 6,
+      pointRailClipBleed: 5,
+      topicImageSize: 96,
+      topicArtHeightRatio: 1.08,
+      titleHeightBudget: 47,
+    });
+
+    // ~2 lines at ~12pt needs roughly font * 2.4 ≥ 28px of title band height.
+    expect(layout.topicTitleHeight).toBeGreaterThanOrEqual(28);
+    const titleFontFromHeight = layout.topicTitleHeight / 2.4;
+    expect(titleFontFromHeight).toBeGreaterThanOrEqual(11.5);
+    // Art still gets the majority of the row.
+    expect(layout.topicImageHeight).toBeGreaterThan(layout.topicTitleHeight);
   });
 
   it('keeps stacked topic row gap near the base grid gap (phone-tight)', () => {
@@ -104,7 +127,7 @@ describe('computeBoardVerticalLayout', () => {
       ...base,
       gridRowCount: 2,
       viewportHeight: 200,
-      gridBottomPadding: 8,
+      gridVerticalPadding: 8,
       baseGridGap: 20,
       topicImageSize: 180,
       topicArtHeightRatio: 1.2,

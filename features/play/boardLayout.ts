@@ -9,7 +9,11 @@
 
 export type BoardVerticalLayoutInput = {
   viewportHeight: number;
-  gridBottomPadding: number;
+  /**
+   * Total vertical inset reserved outside topic rows (top + bottom).
+   * Phone boards use equal top/bottom padding so the grid is not flush under the header.
+   */
+  gridVerticalPadding: number;
   gridRowCount: number;
   maxQuestionRows: number;
   baseGridGap: number;
@@ -54,7 +58,7 @@ function clamp(value: number, min: number, max: number): number {
 export function computeBoardVerticalLayout(input: BoardVerticalLayoutInput): BoardVerticalLayout {
   const rows = Math.max(1, Math.floor(input.gridRowCount));
   const qRows = Math.max(1, Math.floor(input.maxQuestionRows));
-  const usable = Math.max(1, input.viewportHeight - input.gridBottomPadding);
+  const usable = Math.max(1, input.viewportHeight - Math.max(0, input.gridVerticalPadding));
   const baseGap = Math.max(0, input.baseGridGap);
   const centerGap = Math.max(0, input.centerBlockGap);
 
@@ -75,10 +79,16 @@ export function computeBoardVerticalLayout(input: BoardVerticalLayoutInput): Boa
     Math.min(stretchedRowHeight, input.maxRowContentHeight ?? Number.POSITIVE_INFINITY)
   );
 
-  // Title keeps a compact band; most of the row budget goes to art.
+  // Title band: compact on tall rows, but stay readable on dense 2-row phone
+  // boards (classic/rumble/random 3×2). A pure 20% share dropped titles to ~8pt.
+  const minArtHeight = 40;
+  const titleMax = Math.max(1, rowBudget - centerGap - minArtHeight);
+  const titleShare = Math.max(1, rowBudget * 0.28);
+  const readableFloor = Math.min(30, titleMax);
   const topicTitleHeight = Math.min(
     Math.max(1, input.titleHeightBudget),
-    Math.max(1, rowBudget * 0.2)
+    titleMax,
+    Math.max(titleShare, readableFloor)
   );
   const maxImageHeight = Math.max(1, rowBudget - topicTitleHeight - centerGap);
   const preferredArtHeight = Math.max(48, input.topicImageSize * input.topicArtHeightRatio);

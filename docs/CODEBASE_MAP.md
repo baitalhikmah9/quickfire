@@ -476,6 +476,8 @@ overtimeCheck -> completed
 | `wallets` | Virtual currency |
 | `wallet_transactions` | Token transactions |
 | `promo_codes` | Redeemable codes |
+| `promo_redeem_rates` | Per-user failed promo redeem attempts (sliding window) |
+| `admin_password_sign_in_rates` | Advisory admin password failure window (defense-in-depth) |
 | `rapid_fire_runs` | Rapid fire stats |
 | `devices` | Device registrations |
 

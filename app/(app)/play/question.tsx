@@ -18,10 +18,9 @@ import { BORDER_RADIUS, LAYOUT, SPACING, FONTS } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import {
-  RUMBLE_FIRST_TEAM_REVEAL_SECONDS,
-  RUMBLE_ROUND_END_SECONDS,
   RUMBLE_SECOND_TEAM_REVEAL_SECONDS,
-  RUMBLE_TRANSITION_SECONDS,
+  getRumblePartyPhase,
+  getRumblePartySlots,
 } from '@/features/play/rumble';
 import { PlayAnswerPanel } from '@/features/play/components/PlayAnswerPanel';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
@@ -117,6 +116,92 @@ const MATCH_TOP_BAR_EST_HEIGHT = 0;
 const QUESTION_MAX_SECONDS = 10 * 60;
 
 const WAGER_FAB_ICON = require('@/assets/wager.png');
+
+type RumbleChipTranslate = (
+  key: string,
+  values?: Record<string, string | number>
+) => string;
+
+function RumblePartyChip({
+  role,
+  teamName,
+  active,
+  locked,
+  compact,
+  t,
+}: {
+  role: 'first' | 'steal';
+  teamName: string | null;
+  active: boolean;
+  locked: boolean;
+  compact: boolean;
+  t: RumbleChipTranslate;
+}) {
+  const roleLabel =
+    role === 'first'
+      ? t('play.rumbleChipAnswering')
+      : t('play.rumbleChipSteal');
+  const displayName = locked
+    ? t('play.rumbleChipHiddenName')
+    : teamName?.trim() || t('play.rumbleChipHiddenName');
+  const subLabel = locked
+    ? t('play.rumbleChipLocked')
+    : active
+      ? roleLabel
+      : role === 'steal'
+        ? t('play.rumbleChipSteal')
+        : t('play.rumbleChipAnswering');
+
+  const a11yLabel = locked
+    ? role === 'first'
+      ? 'First team locked'
+      : 'Steal team locked'
+    : active
+      ? role === 'first'
+        ? `First team answering: ${displayName}`
+        : `Steal team answering: ${displayName}`
+      : role === 'first'
+        ? `First team: ${displayName}`
+        : `Steal team: ${displayName}`;
+
+  return (
+    <View
+      accessibilityRole="text"
+      accessibilityLabel={a11yLabel}
+      style={[
+        styles.rumblePartyChip,
+        compact && styles.rumblePartyChipCompact,
+        SOFT_SURFACE_STYLES.face,
+        SOFT_SURFACE_STYLES.raised,
+        locked && styles.rumblePartyChipLocked,
+        active && styles.rumblePartyChipActive,
+      ]}
+    >
+      <Text
+        style={[
+          styles.rumblePartyChipName,
+          compact && styles.rumblePartyChipNameCompact,
+          locked && styles.rumblePartyChipNameLocked,
+        ]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+      >
+        {displayName}
+      </Text>
+      <Text
+        style={[
+          styles.rumblePartyChipRole,
+          compact && styles.rumblePartyChipRoleCompact,
+          active && styles.rumblePartyChipRoleActive,
+        ]}
+        numberOfLines={1}
+      >
+        {subLabel.toUpperCase()}
+      </Text>
+    </View>
+  );
+}
 
 export default function PlayQuestionScreen() {
   const router = useRouter();
@@ -291,28 +376,16 @@ export default function PlayQuestionScreen() {
   const timeStr = formatQuestionTimer(displaySeconds);
 
   const isRumbleQuestion = session.mode === 'rumble';
-  const visibleRumbleTeams =
-    elapsedSeconds >= RUMBLE_SECOND_TEAM_REVEAL_SECONDS
-      ? [rumbleFirstTeam, rumbleSecondTeam].filter(Boolean)
-      : elapsedSeconds >= RUMBLE_FIRST_TEAM_REVEAL_SECONDS
-        ? [rumbleFirstTeam].filter(Boolean)
-        : [];
-  const rumbleStatus =
-    !isRumbleQuestion
-      ? null
-      : elapsedSeconds >= RUMBLE_ROUND_END_SECONDS
+  const rumblePartyPhase = isRumbleQuestion ? getRumblePartyPhase(elapsedSeconds) : null;
+  const rumblePartySlots = isRumbleQuestion
+    ? getRumblePartySlots(elapsedSeconds)
+    : { firstRevealed: false, secondRevealed: false, activeSlot: null as const };
+  const rumbleMicroStatus =
+    rumblePartyPhase === 'waiting'
+      ? t('play.rumbleWaiting')
+      : rumblePartyPhase === 'ended'
         ? t('play.rumbleRoundEnded')
-        : elapsedSeconds < RUMBLE_FIRST_TEAM_REVEAL_SECONDS
-        ? t('play.rumbleWaiting')
-        : elapsedSeconds < RUMBLE_TRANSITION_SECONDS
-          ? t('play.rumbleFirstWindow', {
-              team: rumbleFirstTeam?.name ?? currentTeam?.name ?? 'Team',
-            })
-          : elapsedSeconds < RUMBLE_SECOND_TEAM_REVEAL_SECONDS
-            ? t('play.rumbleTransitionWindow')
-          : t('play.rumbleSecondWindow', {
-              team: rumbleSecondTeam?.name ?? 'Next team',
-            });
+        : null;
   const canShowAnswer =
     !hasTimedOut &&
     (!isRumbleQuestion ||
@@ -322,8 +395,11 @@ export default function PlayQuestionScreen() {
     .join(' vs ');
   const showAnswerPhaseNextTurnDock = isAnswerPhase && !session.wager && session.phase === 'scoring';
 
-  /** Two-row QuickFire pill header — not used for rumble / hot seat. */
-  const usePillHeader = !isRumbleQuestion && !hotSeatNames;
+  /**
+   * Shared pill chrome for all modes (including rumble). Hot Seat still uses the
+   * multi-line banner so participant names stay readable.
+   */
+  const usePillHeader = !hotSeatNames;
 
   const onBackToBoard = () => {
     cancelCurrentQuestion();
@@ -342,6 +418,15 @@ export default function PlayQuestionScreen() {
     </View>
   );
 
+  /** Rumble keeps topic/points only — party chips show who is answering. */
+  const metaPillLabel = isRumbleQuestion
+    ? isVeryCompactHeader
+      ? `${q.categoryName} | ${q.pointValue} PTS`
+      : `TOPIC: ${q.categoryName} | ${q.pointValue} POINTS`
+    : isVeryCompactHeader
+      ? `${currentTeam?.name || 'TEAM'} | ${q.categoryName} | ${q.pointValue} PTS`
+      : `${currentTeam?.name || 'TEAM'} | TOPIC: ${q.categoryName} | ${q.pointValue} POINTS`;
+
   const metaPill = (
     <View
       style={[styles.metaPill, SOFT_SURFACE_STYLES.face, SOFT_SURFACE_STYLES.raised]}
@@ -351,15 +436,37 @@ export default function PlayQuestionScreen() {
         style={[styles.metaPillText, isCompactHeader && styles.metaPillTextCompact]}
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={0.78}
+        minimumFontScale={0.72}
       >
-        {(isVeryCompactHeader
-          ? `${currentTeam?.name || 'TEAM'} | ${q.categoryName} | ${q.pointValue} PTS`
-          : `${currentTeam?.name || 'TEAM'} | TOPIC: ${q.categoryName} | ${q.pointValue} POINTS`
-        ).toUpperCase()}
+        {metaPillLabel.toUpperCase()}
       </Text>
     </View>
   );
+
+  const rumblePartyChips = isRumbleQuestion ? (
+    <View
+      testID="rumble-party-chips"
+      style={styles.rumblePartyRow}
+      accessibilityRole="summary"
+    >
+      <RumblePartyChip
+        role="first"
+        teamName={rumblePartySlots.firstRevealed ? rumbleFirstTeam?.name ?? null : null}
+        active={rumblePartySlots.activeSlot === 'first'}
+        locked={!rumblePartySlots.firstRevealed}
+        compact={isCompactHeader}
+        t={t}
+      />
+      <RumblePartyChip
+        role="steal"
+        teamName={rumblePartySlots.secondRevealed ? rumbleSecondTeam?.name ?? null : null}
+        active={rumblePartySlots.activeSlot === 'second'}
+        locked={!rumblePartySlots.secondRevealed}
+        compact={isCompactHeader}
+        t={t}
+      />
+    </View>
+  ) : null;
 
   const answerQuestionLineHeight = Math.round(answerQuestionFontSize * 1.14);
 
@@ -407,7 +514,7 @@ export default function PlayQuestionScreen() {
       {usePillHeader ? (
         <View
           style={[
-            styles.pillChromeRow,
+            styles.pillChromeBlock,
             {
               paddingTop: insets.top + (isCompactHeader ? SPACING.xs : SPACING.sm),
               paddingLeft: Math.max(insets.left, headerHorizontalPadding),
@@ -415,26 +522,45 @@ export default function PlayQuestionScreen() {
             },
           ]}
         >
-          <View style={[styles.chromeSide, { width: chromeSideWidth, minWidth: chromeSideWidth }]}>
-            <Pressable
-              onPress={onBackToBoard}
-              accessibilityRole="button"
-              accessibilityLabel="Back to question board"
-              style={({ pressed }) => [
-                styles.backButtonInline,
-                SOFT_SURFACE_STYLES.face,
-                SOFT_SURFACE_STYLES.raised,
-                { backgroundColor: BRAND.surface, opacity: pressed ? 0.88 : 1 },
+          <View style={styles.pillChromeRow}>
+            <View style={[styles.chromeSide, { width: chromeSideWidth, minWidth: chromeSideWidth }]}>
+              <Pressable
+                onPress={onBackToBoard}
+                accessibilityRole="button"
+                accessibilityLabel="Back to question board"
+                style={({ pressed }) => [
+                  styles.backButtonInline,
+                  SOFT_SURFACE_STYLES.face,
+                  SOFT_SURFACE_STYLES.raised,
+                  { backgroundColor: BRAND.surface, opacity: pressed ? 0.88 : 1 },
+                ]}
+              >
+                <Ionicons name="chevron-back" size={16} color={BRAND.charcoal} />
+                {showBackLabel ? <Text style={styles.backButtonText}>{t('common.back')}</Text> : null}
+              </Pressable>
+            </View>
+            <View style={styles.chromeCenter}>{metaPill}</View>
+            <View
+              style={[
+                styles.chromeSide,
+                styles.chromeSideRight,
+                { width: chromeSideWidth, minWidth: chromeSideWidth },
               ]}
             >
-              <Ionicons name="chevron-back" size={16} color={BRAND.charcoal} />
-              {showBackLabel ? <Text style={styles.backButtonText}>{t('common.back')}</Text> : null}
-            </Pressable>
+              {timerNode}
+            </View>
           </View>
-          <View style={styles.chromeCenter}>{metaPill}</View>
-          <View style={[styles.chromeSide, styles.chromeSideRight, { width: chromeSideWidth, minWidth: chromeSideWidth }]}>
-            {timerNode}
-          </View>
+          {rumblePartyChips}
+          {rumbleMicroStatus ? (
+            <Text
+              style={[styles.rumbleStatusUnderPill, { color: BRAND.charcoal }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+            >
+              {rumbleMicroStatus.toUpperCase()}
+            </Text>
+          ) : null}
         </View>
       ) : (
         <>
@@ -457,24 +583,9 @@ export default function PlayQuestionScreen() {
               <Ionicons name="chevron-back" size={15} color={BRAND.charcoal} />
               <Text style={styles.backButtonText}>{t('common.back')}</Text>
             </Pressable>
-            {isRumbleQuestion ? (
-              <View style={styles.rumbleTeamWrap}>
-                {visibleRumbleTeams.map((team) => (
-                  <Text key={team!.id} style={[styles.teamTag, { color: BRAND.charcoal }]}>
-                    {`[${team!.name}]`.toUpperCase()}
-                  </Text>
-                ))}
-                {rumbleStatus ? (
-                  <Text style={[styles.rumbleStatus, { color: BRAND.charcoal }]}>
-                    {rumbleStatus.toUpperCase()}
-                  </Text>
-                ) : null}
-              </View>
-            ) : (
-              <Text style={[styles.teamTag, { color: BRAND.charcoal }]}>
-                {`[${currentTeam?.name || 'TEAM'}]`.toUpperCase()}
-              </Text>
-            )}
+            <Text style={[styles.teamTag, { color: BRAND.charcoal }]}>
+              {`[${currentTeam?.name || 'TEAM'}]`.toUpperCase()}
+            </Text>
             {hotSeatNames ? (
               <View style={[styles.hotSeatBanner, { backgroundColor: BRAND.surface }]}>
                 <Text style={styles.hotSeatTitle}>{t('play.hotSeatActiveTitle').toUpperCase()}</Text>
@@ -722,12 +833,93 @@ const styles = StyleSheet.create({
     backgroundColor: T.canvas,
     position: 'relative',
   },
+  pillChromeBlock: {
+    width: '100%',
+    paddingBottom: SPACING.xs,
+    zIndex: 10,
+    gap: 2,
+  },
   pillChromeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    paddingBottom: SPACING.xs,
-    zIndex: 10,
+  },
+  rumbleStatusUnderPill: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.4,
+    textAlign: 'center',
+    opacity: 0.72,
+    paddingHorizontal: SPACING.md,
+  },
+  rumblePartyRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 420,
+    gap: SPACING.sm,
+    paddingTop: 2,
+  },
+  rumblePartyChip: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 44,
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: SPACING.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: T.surface,
+    borderWidth: 1.5,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+    gap: 1,
+  },
+  rumblePartyChipCompact: {
+    minHeight: 40,
+    borderRadius: 14,
+    paddingVertical: 5,
+  },
+  rumblePartyChipLocked: {
+    opacity: 0.55,
+  },
+  rumblePartyChipActive: {
+    borderColor: T.accentGlow,
+    backgroundColor: T.surface,
+  },
+  rumblePartyChipName: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 14,
+    lineHeight: 17,
+    letterSpacing: 0.2,
+    color: T.textPrimary,
+    textAlign: 'center',
+    width: '100%',
+  },
+  rumblePartyChipNameCompact: {
+    fontSize: 12.5,
+    lineHeight: 15,
+  },
+  rumblePartyChipNameLocked: {
+    opacity: 0.85,
+    letterSpacing: 1.2,
+  },
+  rumblePartyChipRole: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 9,
+    lineHeight: 11,
+    letterSpacing: 0.7,
+    color: T.textMuted,
+    textAlign: 'center',
+  },
+  rumblePartyChipRoleCompact: {
+    fontSize: 8.5,
+    lineHeight: 10,
+  },
+  rumblePartyChipRoleActive: {
+    color: T.accentGlow,
   },
   chromeSide: {
     width: 88,

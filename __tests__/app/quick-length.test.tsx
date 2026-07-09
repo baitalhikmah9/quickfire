@@ -1,6 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import QuickLengthScreen from '@/app/(app)/play/quick-length';
 import { usePlayStore } from '@/store/play';
@@ -113,5 +114,22 @@ describe('QuickLengthScreen', () => {
 
     expect(mockReplace).toHaveBeenCalledWith('/play/board');
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('uses settings-style icon-only back control (not labeled play pill)', () => {
+    render(<QuickLengthScreen />);
+
+    const back = screen.getByLabelText('Back');
+    // Match team-setup / settings / store: icon squircle, no visible "Back" label.
+    expect(screen.queryByText('Back')).toBeNull();
+
+    const styleProp = back.props.style;
+    const resolved =
+      typeof styleProp === 'function' ? styleProp({ pressed: false }) : styleProp;
+    const flat = StyleSheet.flatten(resolved);
+
+    expect(flat.width).toBe(44);
+    expect(flat.height).toBe(44);
+    expect(flat.borderRadius).toBe(14);
   });
 });

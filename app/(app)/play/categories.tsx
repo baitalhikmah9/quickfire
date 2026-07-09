@@ -35,6 +35,7 @@ import {
 import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
+import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { adjustGameEntryReservation, consumeGameEntry } from '@/lib/wallet/gameEntry';
 import { getGameTokenCost } from '@/features/play/tokenCosts';
 import { usePlayStore } from '@/store/play';
@@ -565,7 +566,7 @@ export default function CategorySelectionScreen() {
             <View style={[styles.headerRow, compactHeader && styles.headerRowCompact]}>
               <View style={styles.headerLeft}>
                 <Pressable
-                  onPress={() => router.push('/play/team-setup')}
+                  onPress={() => goBackOrReplace(router, '/play/team-setup')}
                   accessibilityRole="button"
                   accessibilityLabel="Back to team setup"
                   style={({ pressed }) => [

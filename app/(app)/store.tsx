@@ -46,6 +46,7 @@ const PROMO_ERROR_MESSAGES: Record<string, string> = {
   already_redeemed: 'You have already redeemed that code.',
   account_restricted: 'That code is restricted to another account.',
   idempotency_required: 'Please try redeeming that code again.',
+  rate_limited: 'Too many redemption attempts. Please try again later.',
 };
 
 function getPromoErrorMessage(error?: string) {

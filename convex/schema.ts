@@ -263,4 +263,10 @@ export default defineSchema({
     identifierKey: v.string(),
     failureTimestamps: v.array(v.number()),
   }).index('by_identifier_key', ['identifierKey']),
+
+  /** Per-user failed promo redeem attempts (sliding window; code enumeration defense). */
+  promo_redeem_rates: defineTable({
+    userId: v.id('users'),
+    attemptTimestamps: v.array(v.number()),
+  }).index('by_user', ['userId']),
 });

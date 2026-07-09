@@ -35,9 +35,35 @@ const mockUseQuery = jest.fn<(...args: unknown[]) => unknown>(() => ({
   email: 'admin@example.com',
   items: [],
 }));
+const mockUseConvexAuth = jest.fn(() => ({
+  isAuthenticated: false,
+  isLoading: false,
+}));
+const mockPasswordSignInPreflight = jest.fn(() =>
+  Promise.resolve({ allowed: true as const, failuresInWindow: 0 })
+);
+const mockPasswordSignInRecordFailure = jest.fn(() => Promise.resolve());
+const mockPasswordSignInClearFailures = jest.fn(() =>
+  Promise.resolve({ ok: true as const })
+);
+let adminSignInMutationCall = 0;
 const mockUseMutation = jest.fn<(...args: unknown[]) => unknown>(
   () => jest.fn(() => Promise.resolve({ allowed: true, failuresInWindow: 0 }))
 );
+
+function useAdminSignInMutationMocks() {
+  adminSignInMutationCall = 0;
+  mockUseMutation.mockImplementation(() => {
+    const fns = [
+      mockPasswordSignInPreflight,
+      mockPasswordSignInRecordFailure,
+      mockPasswordSignInClearFailures,
+    ];
+    const fn = fns[adminSignInMutationCall % 3] ?? mockPasswordSignInPreflight;
+    adminSignInMutationCall += 1;
+    return fn;
+  });
+}
 const mockWarmUpAsync = jest.fn(() => Promise.resolve());
 const mockCoolDownAsync = jest.fn(() => Promise.resolve());
 type MockSignInResult = {
@@ -47,7 +73,7 @@ type MockSignInResult = {
 const mockSignInCreate = jest.fn<
   (args: { identifier: string; password: string }) => Promise<MockSignInResult>
 >();
-const mockSetActive = jest.fn();
+const mockSetActive = jest.fn(() => Promise.resolve());
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({
@@ -89,6 +115,7 @@ jest.mock('@clerk/clerk-expo', () => ({
 jest.mock('convex/react', () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
   useMutation: (...args: unknown[]) => mockUseMutation(...args),
+  useConvexAuth: () => mockUseConvexAuth(),
 }));
 
 jest.mock('@/lib/authMode', () => ({
@@ -364,16 +391,26 @@ describe('Admin web routes', () => {
     mockCoolDownAsync.mockClear();
     mockSignInCreate.mockReset();
     mockSetActive.mockReset();
+    mockSetActive.mockImplementation(() => Promise.resolve());
+    mockPasswordSignInPreflight.mockClear();
+    mockPasswordSignInRecordFailure.mockClear();
+    mockPasswordSignInClearFailures.mockClear();
+    mockPasswordSignInPreflight.mockResolvedValue({
+      allowed: true,
+      failuresInWindow: 0,
+    });
+    mockPasswordSignInClearFailures.mockResolvedValue({ ok: true });
+    useAdminSignInMutationMocks();
+    mockUseConvexAuth.mockReturnValue({
+      isAuthenticated: false,
+      isLoading: false,
+    });
     mockUseQuery.mockReturnValue({
       _id: 'user_123',
       role: 'admin',
       email: 'admin@example.com',
       items: [],
     });
-    // Reset useMutation so admin sign-in gets a valid preflight response
-    mockUseMutation.mockReturnValue(
-      jest.fn(() => Promise.resolve({ allowed: true, failuresInWindow: 0 }))
-    );
   });
 
   afterEach(() => {
@@ -502,6 +539,73 @@ describe('Admin web routes', () => {
         password: 'correct-password',
       });
       expect(mockSetActive).toHaveBeenCalledWith({ session: 'sess_123' });
+    });
+  });
+
+  it('shows a generic error for failed password sign-in (no Clerk enumeration)', async () => {
+    mockUseAuth.mockReturnValue({
+      isSignedIn: false,
+      userId: '',
+      isLoaded: true,
+      signOut: mockSignOut,
+    });
+    mockSignInCreate.mockRejectedValue(
+      new Error("Couldn't find your account.")
+    );
+
+    render(<AdminSignInScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('Username'), 'missing-user');
+    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'wrong');
+    fireEvent.press(screen.getByText('SIGN IN'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Invalid username or password.')).toBeTruthy();
+    });
+    expect(screen.queryByText("Couldn't find your account.")).toBeNull();
+    expect(mockPasswordSignInRecordFailure).toHaveBeenCalledWith({
+      identifier: 'missing-user',
+    });
+  });
+
+  it('defers rate-limit clear until Convex auth is ready after password sign-in', async () => {
+    mockUseAuth.mockReturnValue({
+      isSignedIn: false,
+      userId: '',
+      isLoaded: true,
+      signOut: mockSignOut,
+    });
+    mockUseConvexAuth.mockReturnValue({
+      isAuthenticated: false,
+      isLoading: false,
+    });
+    mockSignInCreate.mockResolvedValue({
+      status: 'complete',
+      createdSessionId: 'sess_123',
+    });
+
+    const { rerender } = render(<AdminSignInScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('Username'), 'operator');
+    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'correct-password');
+    fireEvent.press(screen.getByText('SIGN IN'));
+
+    await waitFor(() => {
+      expect(mockSetActive).toHaveBeenCalledWith({ session: 'sess_123' });
+    });
+    expect(mockPasswordSignInClearFailures).not.toHaveBeenCalled();
+
+    // Convex JWT propagates after Clerk setActive (same race that produced Not authenticated)
+    mockUseConvexAuth.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+    });
+    rerender(<AdminSignInScreen />);
+
+    await waitFor(() => {
+      expect(mockPasswordSignInClearFailures).toHaveBeenCalledWith({
+        identifier: 'operator',
+      });
     });
   });
 

@@ -47,11 +47,21 @@ export function evaluateDuplicateRedemption(alreadyRedeemed: boolean): PromoEval
 export function evaluatePromoAccountRestriction(input: {
   redemptionScope?: string;
   restrictedToUserId?: string;
+  restrictedToPurchaserAccountId?: string;
   currentUserId: string;
+  currentPurchaserAccountId?: string | null;
 }): PromoEvaluation {
   if (
     input.redemptionScope === 'account' &&
     input.restrictedToUserId !== input.currentUserId
+  ) {
+    return { ok: false, reason: 'account_restricted' };
+  }
+
+  // Enforce purchaser pin whenever stored, even if scope is public (admin may set both).
+  if (
+    input.restrictedToPurchaserAccountId !== undefined &&
+    input.restrictedToPurchaserAccountId !== input.currentPurchaserAccountId
   ) {
     return { ok: false, reason: 'account_restricted' };
   }

@@ -26,6 +26,7 @@ import {
   getTeamSetupClassicBodyLayout,
   getWebTeamCardMinHeight,
 } from '@/lib/layout/teamSetupLayout';
+import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
 import type { GameSessionState } from '@/features/shared';
@@ -153,6 +154,15 @@ export default function TeamSetupScreen() {
       router.replace(target);
     }
   }, [router, session?.step]);
+
+  const handleBack = useCallback(() => {
+    // Quick Play enters team setup from topic length; other modes enter from home.
+    if (session?.mode === 'quickPlay') {
+      goBackOrReplace(router, '/play/quick-length');
+      return;
+    }
+    goBackOrReplace(router, '/(app)/');
+  }, [router, session?.mode]);
 
   const canContinue = Boolean(
     session?.teams.every(
@@ -690,7 +700,7 @@ export default function TeamSetupScreen() {
   return (
     <PlayScaffold
       title={t('play.teamSetupTitle')}
-      onBack={() => router.replace('/(app)/')}
+      onBack={handleBack}
       backVariant="icon"
       bodyScrollEnabled={false}
       bodyFrame={false}

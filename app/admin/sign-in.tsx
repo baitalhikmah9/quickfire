@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -12,7 +12,7 @@ import {
 import { Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, useSignIn } from '@clerk/clerk-expo';
-import { useMutation, useQuery } from 'convex/react';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { FONTS, LAYOUT, SPACING } from '@/constants/theme';
 import { HOME_SOFT_UI } from '@/themes';
@@ -21,6 +21,7 @@ const T = HOME_SOFT_UI;
 
 export default function AdminSignInScreen() {
   const { isLoaded, isSignedIn, signOut } = useAuth();
+  const { isAuthenticated, isLoading: isConvexAuthLoading } = useConvexAuth();
   const {
     isLoaded: isSignInLoaded,
     signIn,
@@ -39,6 +40,24 @@ export default function AdminSignInScreen() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  /** Cleared after Convex JWT is ready — `setActive` alone is not enough. */
+  const [pendingClearIdentifier, setPendingClearIdentifier] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingClearIdentifier || isConvexAuthLoading || !isAuthenticated) {
+      return;
+    }
+    const identifier = pendingClearIdentifier;
+    setPendingClearIdentifier(null);
+    void passwordSignInClearFailures({ identifier }).catch(() => {
+      // Non-critical: rate-limit record auto-expires after the window
+    });
+  }, [
+    pendingClearIdentifier,
+    isAuthenticated,
+    isConvexAuthLoading,
+    passwordSignInClearFailures,
+  ]);
 
   const canvas = T.colors.canvas;
   const surface = T.colors.surface;
@@ -128,29 +147,24 @@ export default function AdminSignInScreen() {
       try {
         const result = await signIn.create({ identifier, password });
         if (result.status === 'complete' && result.createdSessionId) {
-          // Activate session first so Convex auth identity is available
+          // Activate Clerk session; clear failures only after Convex JWT is ready
+          // (see useEffect + useConvexAuth — immediate clear races auth propagation).
           await setActive({ session: result.createdSessionId });
-          // Then clear rate-limit failures (requires Convex auth)
-          try {
-            await passwordSignInClearFailures({ identifier });
-          } catch {
-            // Non-critical: rate-limit record auto-expires after the window
-          }
+          setPendingClearIdentifier(identifier);
           return;
         }
         setError('Additional verification is required for this account.');
-      } catch (e) {
+      } catch {
         try {
           await passwordSignInRecordFailure({ identifier });
         } catch {
-          // ignore duplicate-rate-limit errors; surface Clerk message
+          // ignore rate-limit write errors; still show generic credentials error
         }
-        const message = e instanceof Error ? e.message : 'Invalid username or password.';
-        setError(message);
+        // Generic message avoids Clerk identifier enumeration (user-not-found vs wrong-password).
+        setError('Invalid username or password.');
       }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Could not verify sign-in limits.';
-      setError(message);
+    } catch {
+      setError('Could not verify sign-in limits. Try again.');
     } finally {
       setIsSubmitting(false);
     }

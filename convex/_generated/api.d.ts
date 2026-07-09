@@ -21,6 +21,7 @@ import type * as lib_ensureWallet from "../lib/ensureWallet.js";
 import type * as lib_grantConsumablePurchase from "../lib/grantConsumablePurchase.js";
 import type * as lib_paymentCatalog from "../lib/paymentCatalog.js";
 import type * as lib_paymentWebhook from "../lib/paymentWebhook.js";
+import type * as lib_promoRedeemRateLimit from "../lib/promoRedeemRateLimit.js";
 import type * as lib_promoRules from "../lib/promoRules.js";
 import type * as lib_purchaserAccountMerge from "../lib/purchaserAccountMerge.js";
 import type * as lib_purchaserAccounts from "../lib/purchaserAccounts.js";
@@ -52,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   "lib/grantConsumablePurchase": typeof lib_grantConsumablePurchase;
   "lib/paymentCatalog": typeof lib_paymentCatalog;
   "lib/paymentWebhook": typeof lib_paymentWebhook;
+  "lib/promoRedeemRateLimit": typeof lib_promoRedeemRateLimit;
   "lib/promoRules": typeof lib_promoRules;
   "lib/purchaserAccountMerge": typeof lib_purchaserAccountMerge;
   "lib/purchaserAccounts": typeof lib_purchaserAccounts;

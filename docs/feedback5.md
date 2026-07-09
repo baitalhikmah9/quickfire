@@ -11,13 +11,6 @@ Go back to the same issue of the logos. I think they're not in, like the Arab hi
 
 
 
-## Leaving Game / Switching Topic Count
-
-Also, I just realized going back from the three-topic game, let's say you go back into quick play, and then you press four topics, it still counts as the same game. So I think a better way to go about this is to have, instead of going back home, and then only if you press a new game, it says, do you want to leave this current game? You have a message which from the question screen, if you try to leave, it says, do you want to leave this game? Because normally if you switch between game modes, it will work, it will be fine. However, here, if you switch in quick play between three topics and four topics and five topics, then it won't show that message, it won't have that issue.
-
-Go back to, let's say, classic. So yes, this is where the message comes up, do you want to continue the game or start a new game? Let's click new game, go into it.
-
-
 
 ## Rumble
 

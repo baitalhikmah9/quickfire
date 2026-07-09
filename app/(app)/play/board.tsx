@@ -485,10 +485,13 @@ export default function PlayBoardScreen() {
     () => computeTopicFit(boardLayoutWidth, metrics, gridColumnCount, width),
     [boardLayoutWidth, metrics, gridColumnCount, width]
   );
-  // Phone-like: minimal bottom chrome so packed topic rows sit denser on web too.
-  const gridBottomPadding = Platform.OS === 'web'
-    ? SPACING.sm
-    : Math.max(insets.bottom, SPACING.xs) + SPACING.sm;
+  // Equal top/bottom inset so the grid is not flush under the header while the
+  // bottom still clears the home indicator / viewport edge.
+  const gridEdgePadding =
+    Platform.OS === 'web'
+      ? SPACING.sm
+      : Math.max(insets.bottom, SPACING.xs) + SPACING.sm;
+  const gridVerticalPadding = gridEdgePadding * 2;
   const maxQuestionRows = Math.max(1, ...grouped.map((column) => column.rows.length));
   /** Matches topicCenterBlock gap so pill rail targets image + title stack. */
   const topicCenterBlockGap = 2;
@@ -511,7 +514,7 @@ export default function PlayBoardScreen() {
     () =>
       computeBoardVerticalLayout({
         viewportHeight: Math.max(1, gridViewport.height),
-        gridBottomPadding,
+        gridVerticalPadding,
         gridRowCount: Math.max(1, gridRows.length),
         maxQuestionRows,
         baseGridGap: metrics.gridGap,
@@ -524,7 +527,7 @@ export default function PlayBoardScreen() {
         maxRowContentHeight,
       }),
     [
-      gridBottomPadding,
+      gridVerticalPadding,
       maxRowContentHeight,
       gridRows.length,
       gridViewport.height,
@@ -711,8 +714,12 @@ export default function PlayBoardScreen() {
     const titleHeight = verticalLayout.topicTitleHeight;
     const imgH = Math.max(1, Math.round(verticalLayout.topicImageHeight));
     const imgW = Math.max(1, topicArtWidth);
-    // titleHeight ≈ 2 lines at font*1.12*2.15 ≈ font*2.4 — divisor must match or the font shrinks.
-    const titleFontSize = Math.min(metrics.topicTitleFont, Math.max(6, titleHeight / 2.4));
+    // Shared starting size from layout; long names shrink via adjustsFontSizeToFit
+    // so nothing is ellipsized/cut off within the two-line title band.
+    const titleFontSize = Math.min(
+      metrics.topicTitleFont,
+      Math.max(11, Math.floor(titleHeight / 2.35))
+    );
 
     const railHeight = imgH + topicCenterBlockGap + titleHeight;
 
@@ -824,16 +831,15 @@ export default function PlayBoardScreen() {
                   {
                     color: textPrimary,
                     fontSize: titleFontSize,
-                    lineHeight: Math.round(titleFontSize * 1.12),
+                    // Omit fixed lineHeight so adjustsFontSizeToFit can scale cleanly.
                   },
                   Platform.OS === 'web'
-                    ? ({ wordBreak: 'normal', overflowWrap: 'break-word' } as any)
+                    ? ({ wordBreak: 'break-word', overflowWrap: 'anywhere' } as any)
                     : null,
                 ]}
                 numberOfLines={2}
                 adjustsFontSizeToFit
-                minimumFontScale={0.6}
-                ellipsizeMode="tail"
+                minimumFontScale={0.55}
               >
                 {column.categoryName.toUpperCase()}
               </Text>
@@ -938,8 +944,8 @@ export default function PlayBoardScreen() {
               paddingLeft: bodyPadLeft,
               paddingRight: bodyPadRight,
               gap: topicRowGap,
-              paddingTop: 0,
-              paddingBottom: gridBottomPadding,
+              paddingTop: gridEdgePadding,
+              paddingBottom: gridEdgePadding,
             },
           ]}
         >
@@ -1282,8 +1288,8 @@ const styles = StyleSheet.create({
   gridScrollContent: {
     width: '100%',
     minWidth: 0,
-    paddingTop: 0,
-    justifyContent: 'center',
+    /** Top/bottom padding applied inline so header gap matches viewport-edge gap. */
+    justifyContent: 'flex-start',
   },
   gridRow: {
     flexDirection: 'row',
@@ -1410,20 +1416,20 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     minHeight: 0,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: SPACING.xs,
-    paddingTop: 3,
-    paddingBottom: 2,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
     alignSelf: 'center',
     maxWidth: '100%',
-    overflow: 'hidden',
+    // Allow adjustsFontSizeToFit to use the full band; avoid clipping mid-scale.
+    overflow: 'visible',
   },
   topicTitleText: {
     fontFamily: FONTS.displayBold,
     textAlign: 'center',
-    letterSpacing: 0.35,
+    letterSpacing: 0.2,
     textTransform: 'uppercase',
     width: '100%',
+    height: '100%',
     flexShrink: 1,
     flexWrap: 'wrap',
   },

@@ -179,6 +179,7 @@ export default function QuickLengthScreen() {
       title={t('play.quickLengthTitle')}
       subtitle={t('play.quickLengthSubtitle')}
       onBack={handleBack}
+      backVariant="icon"
       bodyFrame={false}
       bodyScrollEnabled={false}
       contentMaxWidth={isWeb ? setupMaxWidth : undefined}

@@ -90,7 +90,8 @@ jest.mock('@expo/vector-icons', () => ({
 describe('TeamSetupScreen', () => {
   beforeEach(async () => {
     mockBack.mockClear();
-    mockCanGoBack.mockClear();
+    mockCanGoBack.mockReset();
+    mockCanGoBack.mockReturnValue(false);
     mockPush.mockClear();
     mockReplace.mockClear();
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
@@ -187,5 +188,50 @@ describe('TeamSetupScreen', () => {
     expect(flat.width).toBe(44);
     expect(flat.height).toBe(44);
     expect(flat.borderRadius).toBe(14);
+  });
+
+  it('returns to quick-play topic length when going back during quick play', () => {
+    usePlayStore.getState().setMode('quickPlay');
+    usePlayStore.getState().setQuickPlayTopicCount(4);
+
+    render(<TeamSetupScreen />);
+    fireEvent.press(screen.getByLabelText('Back'));
+
+    expect(mockReplace).toHaveBeenCalledWith('/play/quick-length');
+    expect(mockReplace).not.toHaveBeenCalledWith('/(app)/');
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it('returns home when going back during classic setup', () => {
+    usePlayStore.getState().setMode('classic');
+
+    render(<TeamSetupScreen />);
+    fireEvent.press(screen.getByLabelText('Back'));
+
+    expect(mockReplace).toHaveBeenCalledWith('/(app)/');
+    expect(mockReplace).not.toHaveBeenCalledWith('/play/quick-length');
+  });
+
+  it('returns home when going back during rumble setup instead of topics', () => {
+    usePlayStore.getState().setMode('rumble');
+
+    render(<TeamSetupScreen />);
+    fireEvent.press(screen.getByLabelText('Back'));
+
+    expect(mockReplace).toHaveBeenCalledWith('/(app)/');
+    expect(mockReplace).not.toHaveBeenCalledWith('/play/categories');
+    expect(mockPush).not.toHaveBeenCalledWith('/play/categories');
+  });
+
+  it('uses stack back to topic length when quick play has history', () => {
+    mockCanGoBack.mockReturnValue(true);
+    usePlayStore.getState().setMode('quickPlay');
+    usePlayStore.getState().setQuickPlayTopicCount(3);
+
+    render(<TeamSetupScreen />);
+    fireEvent.press(screen.getByLabelText('Back'));
+
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 });

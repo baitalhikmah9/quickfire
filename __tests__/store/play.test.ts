@@ -571,6 +571,35 @@ describe('usePlayStore', () => {
     });
   });
 
+  it('starts rumble when a multi-group topic would otherwise unbalance value buckets', () => {
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
+    const store = usePlayStore.getState();
+    store.setMode('rumble');
+    usePlayStore.getState().setTeamCount(4);
+
+    const available = usePlayStore.getState().session?.availableCategories ?? [];
+    const multiGroup = available.find((category) => category.slug === 'harry-potter');
+    expect(multiGroup).toBeTruthy();
+
+    const fillers = available
+      .filter((category) => category.slug !== 'harry-potter')
+      .slice(0, 5)
+      .map((category) => category.slug);
+    usePlayStore.getState().setCategories(['harry-potter', ...fillers]);
+
+    const result = usePlayStore.getState().startBoard();
+    expect(result).toMatchObject({ ok: true });
+
+    const board = usePlayStore.getState().session?.board ?? [];
+    const byPointValue = board.reduce<Record<number, number>>((counts, question) => {
+      counts[question.pointValue] = (counts[question.pointValue] ?? 0) + 1;
+      return counts;
+    }, {});
+
+    expect(board).toHaveLength(36);
+    expect(byPointValue).toEqual({ 100: 12, 200: 12, 300: 12 });
+  });
+
   it('hydrates token balance from storage', async () => {
     seedPlayStorage(12, null);
 

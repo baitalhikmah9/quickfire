@@ -37,6 +37,47 @@ export function canRevealRumbleAnswer(
   return { ok: true };
 }
 
+/** Party-window phases for the dual team chips on the question header. */
+export type RumblePartyPhase =
+  | 'waiting'
+  | 'firstAnswering'
+  | 'transition'
+  | 'secondAnswering'
+  | 'ended';
+
+export type RumblePartyActiveSlot = 'first' | 'second' | null;
+
+export type RumblePartySlots = {
+  firstRevealed: boolean;
+  secondRevealed: boolean;
+  activeSlot: RumblePartyActiveSlot;
+};
+
+export function getRumblePartyPhase(elapsedSeconds: number): RumblePartyPhase {
+  const sec = Number.isFinite(elapsedSeconds) ? Math.max(0, Math.floor(elapsedSeconds)) : 0;
+  if (sec >= RUMBLE_ROUND_END_SECONDS) return 'ended';
+  if (sec >= RUMBLE_SECOND_TEAM_REVEAL_SECONDS) return 'secondAnswering';
+  if (sec >= RUMBLE_TRANSITION_SECONDS) return 'transition';
+  if (sec >= RUMBLE_FIRST_TEAM_REVEAL_SECONDS) return 'firstAnswering';
+  return 'waiting';
+}
+
+export function getRumblePartySlots(elapsedSeconds: number): RumblePartySlots {
+  const phase = getRumblePartyPhase(elapsedSeconds);
+  switch (phase) {
+    case 'waiting':
+      return { firstRevealed: false, secondRevealed: false, activeSlot: null };
+    case 'firstAnswering':
+      return { firstRevealed: true, secondRevealed: false, activeSlot: 'first' };
+    case 'transition':
+      return { firstRevealed: true, secondRevealed: false, activeSlot: null };
+    case 'secondAnswering':
+      return { firstRevealed: true, secondRevealed: true, activeSlot: 'second' };
+    case 'ended':
+      return { firstRevealed: true, secondRevealed: true, activeSlot: null };
+  }
+}
+
 export function groupRumbleQuestionsByValueBucket(
   board: QuestionCard[]
 ): Map<RumbleValueBucket, QuestionCard[]> | null {

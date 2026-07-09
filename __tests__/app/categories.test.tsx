@@ -7,9 +7,17 @@ import type { ReactTestInstance } from 'react-test-renderer';
 import CategorySelectionScreen from '@/app/(app)/play/categories';
 import { usePlayStore } from '@/store/play';
 
+const mockBack = jest.fn();
+const mockCanGoBack = jest.fn(() => false);
+const mockPush = jest.fn();
+const mockReplace = jest.fn();
+
 jest.mock('expo-router', () => ({
   useRouter: () => ({
-    replace: jest.fn(),
+    back: mockBack,
+    canGoBack: mockCanGoBack,
+    push: mockPush,
+    replace: mockReplace,
   }),
 }));
 
@@ -100,9 +108,45 @@ function hasMinHeightZeroInAncestorChain(node: ReactTestInstance, maxDepth = 4):
 
 describe('CategorySelectionScreen', () => {
   beforeEach(async () => {
+    mockBack.mockClear();
+    mockCanGoBack.mockReset();
+    mockCanGoBack.mockReturnValue(false);
+    mockPush.mockClear();
+    mockReplace.mockClear();
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
     await usePlayStore.getState().hydrate();
     usePlayStore.getState().ensureDraft();
+  });
+
+  it('goes back to team setup without stacking another team-setup screen', async () => {
+    usePlayStore.getState().setMode('rumble');
+    render(<CategorySelectionScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Back to team setup')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Back to team setup'));
+
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith('/play/team-setup');
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it('uses stack history when returning from topics to team setup', async () => {
+    mockCanGoBack.mockReturnValue(true);
+    usePlayStore.getState().setMode('rumble');
+    render(<CategorySelectionScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Back to team setup')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Back to team setup'));
+
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   it('hydrates from an empty draft state without logging a hook-order warning', async () => {

@@ -367,4 +367,58 @@ describe('PlayBoardScreen', () => {
     expect(screen.getAllByText('30').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('40').length).toBeGreaterThanOrEqual(1);
   });
+
+  it('lets every rumble team adjust score from a compact six-team header', () => {
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'rumble',
+        config: {
+          mode: 'rumble',
+          teams: [
+            { id: 'team_1', name: 'Alpha', playerNames: ['Ava'] },
+            { id: 'team_2', name: 'Beta', playerNames: ['Ben'] },
+            { id: 'team_3', name: 'Gamma', playerNames: ['Gia'] },
+            { id: 'team_4', name: 'Delta', playerNames: ['Dee'] },
+            { id: 'team_5', name: 'Echo', playerNames: ['Eve'] },
+            { id: 'team_6', name: 'Foxtrot', playerNames: ['Fay'] },
+          ],
+          categories: ['science'],
+          contentLocaleChain: ['en'],
+          quickPlayTopicCount: 3,
+          hotSeatEnabled: false,
+          wagerEnabled: false,
+          wagersPerTeam: 0,
+        },
+        teams: [
+          { id: 'team_1', name: 'Alpha', playerNames: ['Ava'], score: 0, wagersUsed: 0 },
+          { id: 'team_2', name: 'Beta', playerNames: ['Ben'], score: 0, wagersUsed: 0 },
+          { id: 'team_3', name: 'Gamma', playerNames: ['Gia'], score: 0, wagersUsed: 0 },
+          { id: 'team_4', name: 'Delta', playerNames: ['Dee'], score: 0, wagersUsed: 0 },
+          { id: 'team_5', name: 'Echo', playerNames: ['Eve'], score: 0, wagersUsed: 0 },
+          { id: 'team_6', name: 'Foxtrot', playerNames: ['Fay'], score: 0, wagersUsed: 0 },
+        ],
+        scores: {
+          team_1: 0,
+          team_2: 0,
+          team_3: 0,
+          team_4: 0,
+          team_5: 0,
+          team_6: 0,
+        },
+      }),
+    });
+
+    render(<PlayBoardScreen />);
+
+    for (const name of ['Alpha', 'Beta', 'Gamma', 'Delta', 'Echo', 'Foxtrot']) {
+      expect(screen.getAllByText(name).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByLabelText(`${name} plus 50`)).toBeTruthy();
+      expect(screen.getByLabelText(`${name} minus 50`)).toBeTruthy();
+    }
+
+    fireEvent.press(screen.getByLabelText('Foxtrot plus 50'));
+    expect(usePlayStore.getState().session?.teams.find((team) => team.id === 'team_6')?.score).toBe(
+      50
+    );
+  });
 });
