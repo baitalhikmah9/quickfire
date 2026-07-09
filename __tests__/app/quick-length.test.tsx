@@ -90,4 +90,28 @@ describe('QuickLengthScreen', () => {
     expect(usePlayStore.getState().session?.config.quickPlayTopicCount).toBe(4);
     expect(mockPush).toHaveBeenCalledWith('/play/team-setup');
   });
+
+  it('redirects back into the active match instead of allowing topic switches mid-game', () => {
+    const current = usePlayStore.getState().session;
+    usePlayStore.setState({
+      session: current
+        ? {
+            ...current,
+            mode: 'quickPlay',
+            step: 'board',
+            phase: 'wagerDecision',
+            config: {
+              ...current.config,
+              mode: 'quickPlay',
+              quickPlayTopicCount: 3,
+            },
+          }
+        : null,
+    });
+
+    render(<QuickLengthScreen />);
+
+    expect(mockReplace).toHaveBeenCalledWith('/play/board');
+    expect(mockPush).not.toHaveBeenCalled();
+  });
 });

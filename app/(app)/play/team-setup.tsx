@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { COLORS, FONT_SIZES, FONTS, SPACING } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
+import { isActiveMatchStep, routeForPlayStep } from '@/features/play/sessionRouting';
 import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
@@ -142,6 +143,16 @@ export default function TeamSetupScreen() {
   const setTeamCount = usePlayStore((state) => state.setTeamCount);
   const setWagersPerTeam = usePlayStore((state) => state.setWagersPerTeam);
   const setHotSeatRounds = usePlayStore((state) => state.setHotSeatRounds);
+
+  // Browser/history back can reopen setup while a match is live — return to the leave-capable match UI.
+  useEffect(() => {
+    const step = session?.step;
+    if (!isActiveMatchStep(step) || !step) return;
+    const target = routeForPlayStep(step);
+    if (target) {
+      router.replace(target);
+    }
+  }, [router, session?.step]);
 
   const canContinue = Boolean(
     session?.teams.every(

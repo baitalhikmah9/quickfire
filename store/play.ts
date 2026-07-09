@@ -237,6 +237,54 @@ function withScores(teams: TeamState[]): { teams: TeamState[]; scores: Record<st
   };
 }
 
+/** Zero scores and strip in-match fields so a new setup cannot continue a prior board. */
+function freshSetupMatchFields(teams: TeamState[]): Pick<
+  GameSessionState,
+  | 'teams'
+  | 'scores'
+  | 'board'
+  | 'usedQuestionIds'
+  | 'currentQuestion'
+  | 'currentTeamId'
+  | 'lastAwardedTeamId'
+  | 'timedOutQuestionId'
+  | 'timerStartedAt'
+  | 'scoreEvents'
+  | 'wager'
+  | 'hotSeat'
+  | 'bonus'
+  | 'lastResolvedTurn'
+  | 'seed'
+  | 'overtime'
+  | 'reviewingUsedQuestion'
+  | 'lifelineRuntime'
+> {
+  const zeroedTeams = teams.map((team) => ({
+    ...team,
+    score: 0,
+    wagersUsed: 0,
+  }));
+  return {
+    ...withScores(zeroedTeams),
+    board: [],
+    usedQuestionIds: new Set(),
+    currentQuestion: undefined,
+    currentTeamId: undefined,
+    lastAwardedTeamId: undefined,
+    timedOutQuestionId: undefined,
+    timerStartedAt: undefined,
+    scoreEvents: [],
+    wager: null,
+    hotSeat: undefined,
+    bonus: { ...DEFAULT_BONUS },
+    lastResolvedTurn: undefined,
+    seed: `seed_${Date.now()}`,
+    overtime: undefined,
+    reviewingUsedQuestion: undefined,
+    lifelineRuntime: undefined,
+  };
+}
+
 function shuffleItems<T>(items: T[]): T[] {
   const shuffled = [...items];
 
@@ -585,17 +633,13 @@ function createPlayStore() {
           const nextStep = mode === 'quickPlay' ? 'quick-play-length' : 'team-setup';
           const nextSession: GameSessionState = {
             ...session,
-            id: session.id || `play_${Date.now()}`,
+            id: `play_${Date.now()}`,
             mode,
             contentLocaleChain: session.contentLocaleChain,
             step: nextStep,
             phase: 'lobby',
             selectedCategoryIds: [],
-            ...withScores(teams),
-            wager: null,
-            hotSeat: undefined,
-            bonus: { ...DEFAULT_BONUS },
-            lastResolvedTurn: undefined,
+            ...freshSetupMatchFields(teams),
           };
           nextSession.config = syncConfig({
             ...nextSession,
@@ -618,17 +662,13 @@ function createPlayStore() {
           const nextStep = mode === 'quickPlay' ? 'quick-play-length' : 'team-setup';
           const nextSession: GameSessionState = {
             ...session,
-            id: session.id || `play_${Date.now()}`,
+            id: `play_${Date.now()}`,
             mode,
             contentLocaleChain: session.contentLocaleChain,
             step: nextStep,
             phase: 'lobby',
             selectedCategoryIds: [],
-            ...withScores(teams),
-            wager: null,
-            hotSeat: undefined,
-            bonus: { ...DEFAULT_BONUS },
-            lastResolvedTurn: undefined,
+            ...freshSetupMatchFields(teams),
           };
           nextSession.config = syncConfig({
             ...nextSession,
@@ -667,12 +707,18 @@ function createPlayStore() {
         set((state) => {
           const base = state.session ?? createDraftSession();
           const quickPlayTopicCount = normalizeQuickPlayTopicCount(count);
+          const teams = normalizeTeamsForMode('quickPlay', base.teams);
           const session: GameSessionState = {
             ...base,
+            id: `play_${Date.now()}`,
             mode: 'quickPlay',
             step: 'team-setup',
+            phase: 'lobby',
+            selectedCategoryIds: [],
+            ...freshSetupMatchFields(teams),
             config: {
               ...base.config,
+              mode: 'quickPlay',
               quickPlayTopicCount,
             },
           };

@@ -1,10 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform, type TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { BORDER_RADIUS, FONT_SIZES, SPACING, LAYOUT, FONTS } from '@/constants';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
+import { isActiveMatchStep, routeForPlayStep } from '@/features/play/sessionRouting';
 import { QUICK_PLAY_TOPIC_OPTIONS } from '@/features/play/tokenCosts';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
@@ -131,6 +132,7 @@ export default function QuickLengthScreen() {
   const router = useRouter();
   const viewport = useViewportLayout();
   const { t, getTextStyle } = useI18n();
+  const sessionStep = usePlayStore((state) => state.session?.step);
   const setQuickPlayTopicCount = usePlayStore((state) => state.setQuickPlayTopicCount);
   const isWeb = Platform.OS === 'web';
   const compact = viewport.height < 720;
@@ -144,6 +146,15 @@ export default function QuickLengthScreen() {
     copy: t(QUICK_LENGTH_COPY_KEYS[topicCount]),
   }));
 
+  // History/back can land here while a board is live; send players back to leave from the match UI.
+  useEffect(() => {
+    if (!isActiveMatchStep(sessionStep) || !sessionStep) return;
+    const target = routeForPlayStep(sessionStep);
+    if (target) {
+      router.replace(target);
+    }
+  }, [router, sessionStep]);
+
   const handleBack = useCallback(() => {
     if (router.canGoBack()) {
       router.back();
@@ -154,10 +165,13 @@ export default function QuickLengthScreen() {
 
   const handleSelect = useCallback(
     (count: number) => {
+      if (isActiveMatchStep(sessionStep)) {
+        return;
+      }
       setQuickPlayTopicCount(count);
       router.push('/play/team-setup');
     },
-    [router, setQuickPlayTopicCount]
+    [router, sessionStep, setQuickPlayTopicCount]
   );
 
   return (

@@ -1,4 +1,4 @@
-import { memo, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import {
 import { getModeCategoryCount } from '@/features/play/data';
 import type { CategoryOption, GameMode } from '@/features/shared';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
+import { isActiveMatchStep, routeForPlayStep } from '@/features/play/sessionRouting';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import {
   groupCategoriesBySection,
@@ -266,6 +267,16 @@ export default function CategorySelectionScreen() {
   useLayoutEffect(() => {
     ensureDraft();
   }, [ensureDraft]);
+
+  // Browser/history back can reopen setup while a match is live — return to the leave-capable match UI.
+  useEffect(() => {
+    const step = session?.step;
+    if (!isActiveMatchStep(step) || !step) return;
+    const target = routeForPlayStep(step);
+    if (target) {
+      router.replace(target);
+    }
+  }, [router, session?.step]);
 
   const required = useMemo(() => {
     if (!session) return 0;

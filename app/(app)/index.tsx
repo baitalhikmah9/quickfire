@@ -28,8 +28,9 @@ import { usePlayStore } from '@/store/play';
 import { reserveGameEntry, refundGameEntry } from '@/lib/wallet/gameEntry';
 import { useThemeStore } from '@/store/theme';
 import { HOME_SOFT_UI } from '@/themes';
+import { isResumableSessionStep, routeForPlayStep } from '@/features/play/sessionRouting';
 import { getGameTokenCost, getHomeModeTokenCostLabel } from '@/features/play/tokenCosts';
-import type { GameMode, PlayRouteStep } from '@/features/shared';
+import type { GameMode } from '@/features/shared';
 import type { TranslationKey } from '@/lib/i18n/messages/en';
 
 import { markOnce } from '@/lib/startupTiming';
@@ -214,35 +215,12 @@ export default function AppHubScreen() {
     tokens,
   ]);
 
-  const routeForSessionStep = useCallback((step: PlayRouteStep) => {
-    switch (step) {
-      case 'quick-play-length':
-        return '/play/quick-length';
-      case 'team-setup':
-        return '/play/team-setup';
-      case 'categories':
-        return '/play/categories';
-      case 'board':
-        return '/play/board';
-      case 'question':
-        return '/play/question';
-      case 'answer':
-        return '/play/question';
-      case 'end':
-        return '/play/end';
-      default:
-        return null;
-    }
-  }, []);
-
   const onSelectMode = useCallback((mode: GameMode) => {
     if (!isSignedIn && !authDisabled) {
       router.push('/(auth)/sign-in');
       return;
     }
-    const hasOngoingSession =
-      session && session.step !== 'hub' && session.step !== 'mode' && session.step !== 'end';
-    if (hasOngoingSession) {
+    if (session && isResumableSessionStep(session.step)) {
       setPendingMode(mode);
       return;
     }
@@ -258,12 +236,12 @@ export default function AppHubScreen() {
       closeResumeChoice();
       return;
     }
-    const targetRoute = routeForSessionStep(session.step);
+    const targetRoute = routeForPlayStep(session.step);
     closeResumeChoice();
     if (targetRoute) {
       router.push(targetRoute);
     }
-  }, [closeResumeChoice, routeForSessionStep, router, session]);
+  }, [closeResumeChoice, router, session]);
 
   const startPendingModeNewGame = useCallback(() => {
     if (!pendingMode) {

@@ -180,6 +180,92 @@ describe('usePlayStore', () => {
     expect(usePlayStore.getState().session?.config.quickPlayTopicCount).toBe(5);
   });
 
+  it('starts a fresh setup when changing quick play topic count after a match is in progress', () => {
+    usePlayStore.setState({
+      tokens: 20,
+      rapidFire: null,
+      session: createSession({
+        id: 'old-match',
+        mode: 'quickPlay',
+        step: 'board',
+        phase: 'wagerDecision',
+        selectedCategoryIds: ['science', 'history', 'sports'],
+        usedQuestionIds: new Set(['q-board-1']),
+        currentQuestion: createQuestion({ id: 'q-board-1', canonicalKey: 'science:200:0' }),
+        scores: { team_1: 300, team_2: 500 },
+        teams: [
+          { id: 'team_1', name: 'Alpha', playerNames: ['Ava'], score: 300, wagersUsed: 1 },
+          { id: 'team_2', name: 'Beta', playerNames: ['Ben'], score: 500, wagersUsed: 0 },
+        ],
+        config: {
+          mode: 'quickPlay',
+          teams: [
+            { id: 'team_1', name: 'Alpha', playerNames: ['Ava'] },
+            { id: 'team_2', name: 'Beta', playerNames: ['Ben'] },
+          ],
+          categories: ['science', 'history', 'sports'],
+          contentLocaleChain: ['en'],
+          quickPlayTopicCount: 3,
+          hotSeatEnabled: false,
+          wagerEnabled: true,
+          wagersPerTeam: 1,
+          entryTokenCharge: 0,
+        },
+      }),
+    });
+
+    usePlayStore.getState().setQuickPlayTopicCount(4);
+
+    const session = usePlayStore.getState().session;
+    expect(session?.mode).toBe('quickPlay');
+    expect(session?.step).toBe('team-setup');
+    expect(session?.phase).toBe('lobby');
+    expect(session?.config.quickPlayTopicCount).toBe(4);
+    expect(session?.id).not.toBe('old-match');
+    expect(session?.selectedCategoryIds).toEqual([]);
+    expect(session?.board).toEqual([]);
+    expect(session?.currentQuestion).toBeUndefined();
+    expect(Array.from(session?.usedQuestionIds ?? ['keep'])).toEqual([]);
+    expect(session?.scores).toEqual({ team_1: 0, team_2: 0 });
+    expect(session?.teams.map((team) => team.score)).toEqual([0, 0]);
+    expect(session?.teams.map((team) => team.name)).toEqual(['Alpha', 'Beta']);
+  });
+
+  it('starts a brand-new match identity when replacing an in-progress session via startModeSession', () => {
+    usePlayStore.setState({
+      tokens: 20,
+      rapidFire: null,
+      session: createSession({
+        id: 'old-match',
+        mode: 'quickPlay',
+        step: 'board',
+        phase: 'wagerDecision',
+        selectedCategoryIds: ['science', 'history', 'sports'],
+        usedQuestionIds: new Set(['q-board-1']),
+        currentQuestion: createQuestion({ id: 'q-board-1', canonicalKey: 'science:200:0' }),
+        scores: { team_1: 300, team_2: 500 },
+        teams: [
+          { id: 'team_1', name: 'Alpha', playerNames: ['Ava'], score: 300, wagersUsed: 1 },
+          { id: 'team_2', name: 'Beta', playerNames: ['Ben'], score: 500, wagersUsed: 0 },
+        ],
+      }),
+    });
+
+    const result = usePlayStore.getState().startModeSession('quickPlay');
+
+    expect(result).toEqual({ ok: true });
+    const session = usePlayStore.getState().session;
+    expect(session?.id).not.toBe('old-match');
+    expect(session?.step).toBe('quick-play-length');
+    expect(session?.phase).toBe('lobby');
+    expect(session?.selectedCategoryIds).toEqual([]);
+    expect(session?.board).toEqual([]);
+    expect(session?.currentQuestion).toBeUndefined();
+    expect(Array.from(session?.usedQuestionIds ?? ['keep'])).toEqual([]);
+    expect(session?.scores).toEqual({ team_1: 0, team_2: 0 });
+    expect(session?.teams.map((team) => team.score)).toEqual([0, 0]);
+  });
+
   it('clears previously selected topics when starting a new mode session', () => {
     usePlayStore.setState({
       tokens: 20,

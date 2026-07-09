@@ -33,6 +33,7 @@ import {
 } from '@/lib/i18n/config';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
 import { isAuthDisabled } from '@/lib/authMode';
 import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { ScreenContent } from '@/components/ScreenContent';
@@ -60,7 +61,7 @@ function getPaletteNameKey(id: ThemePaletteId) {
 
 export default function SettingsScreen() {
   const { width } = useWindowDimensions();
-  const formMaxWidth = LAYOUT.formMaxWidth;
+  const hubMaxWidth = useViewportLayout().contentMaxWidth('hub');
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -126,7 +127,7 @@ export default function SettingsScreen() {
     >
       <ScreenContent fullWidth style={styles.settingsViewport}>
         {/* One frame owns outer gutter so header controls and content cards share edges. */}
-        <View style={[styles.contentFrame, { maxWidth: formMaxWidth + LAYOUT.screenGutter * 2 }]}>
+        <View style={[styles.contentFrame, { maxWidth: hubMaxWidth }]}>
         <View style={styles.header}>
           <View style={styles.headerSide}>
             <Pressable
@@ -753,7 +754,7 @@ const styles = StyleSheet.create({
   contentFrame: {
     flex: 1,
     width: '100%',
-    maxWidth: LAYOUT.formMaxWidth + LAYOUT.screenGutter * 2,
+    maxWidth: LAYOUT.hubMaxWidth,
     alignSelf: 'center',
     minWidth: 0,
     minHeight: 0,

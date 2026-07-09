@@ -26,13 +26,13 @@ import {
 } from '@/features/play/storeBundles';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
 import { isAuthDisabled } from '@/lib/authMode';
 import { usePlayStore } from '@/store/play';
 import { useTokenPurchases } from '@/lib/hooks/useTokenPurchases';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
-const COMPACT_BUNDLES_ROW_MAX_WIDTH = 720;
 
 const SIGN_IN_TO_REDEEM_MESSAGE = 'Sign in to redeem promo codes.';
 
@@ -146,6 +146,7 @@ export default function StoreScreen() {
   const rowDir = getRowDirection(direction);
   const router = useRouter();
   const { width, height } = useWindowDimensions();
+  const hubMaxWidth = useViewportLayout().contentMaxWidth('hub');
   const isCompactViewport = height < 740 || width < 390;
   const isTightViewport = height < 660;
 
@@ -357,7 +358,7 @@ export default function StoreScreen() {
     >
       <ScreenContent fullWidth style={styles.viewport}>
         {/* One frame owns outer gutter + max width so header controls and cards share edges. */}
-        <View style={styles.contentFrame}>
+        <View style={[styles.contentFrame, { maxWidth: hubMaxWidth }]}>
         {/* ── Header ─────────────────────────────────────── */}
         <View style={styles.header}>
           <View style={styles.headerSide}>
@@ -529,15 +530,11 @@ const styles = StyleSheet.create({
   viewport: {
     flex: 1,
   },
-  /**
-   * Shared outer gutter + max width — header controls and store cards share the same
-   * left/right edges (home `contentFrame` pattern). Inner content width caps at
-   * COMPACT_BUNDLES_ROW_MAX_WIDTH.
-   */
+  /** Shared outer gutter + max width — header controls and store cards share the same edges as home. */
   contentFrame: {
     flex: 1,
     width: '100%',
-    maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH + LAYOUT.screenGutter * 2,
+    maxWidth: LAYOUT.hubMaxWidth,
     alignSelf: 'center',
     minWidth: 0,
     minHeight: 0,
