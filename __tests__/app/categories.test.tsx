@@ -1,7 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { FlatList, ScrollView, StyleSheet } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import type { ReactTestInstance } from 'react-test-renderer';
 
 import CategorySelectionScreen from '@/app/(app)/play/categories';
@@ -226,5 +226,77 @@ describe('CategorySelectionScreen', () => {
 
     expect(topicGridScrollable).toBeDefined();
     expect(hasMinHeightZeroInAncestorChain(topicGridScrollable!)).toBe(true);
+  });
+
+  it('returns VirtualizedList getItemLayout frames that include index', () => {
+    const { UNSAFE_getAllByType } = render(<CategorySelectionScreen />);
+
+    const flatLists = UNSAFE_getAllByType(FlatList);
+    const topicGrid = flatLists.find((node) => node.props.horizontal !== true);
+
+    expect(topicGrid).toBeDefined();
+    expect(typeof topicGrid!.props.getItemLayout).toBe('function');
+
+    const data = topicGrid!.props.data as unknown[];
+    expect(data.length).toBeGreaterThan(1);
+
+    const first = topicGrid!.props.getItemLayout(data, 0) as {
+      length: number;
+      offset: number;
+      index: number;
+    };
+    const second = topicGrid!.props.getItemLayout(data, 1) as {
+      length: number;
+      offset: number;
+      index: number;
+    };
+
+    expect(first).toEqual(
+      expect.objectContaining({
+        length: expect.any(Number),
+        offset: expect.any(Number),
+        index: 0,
+      })
+    );
+    expect(second.index).toBe(1);
+    expect(second.offset).toBe(first.offset + first.length);
+  });
+
+  it('centers leftover topics in incomplete final rows of a section', () => {
+    const { UNSAFE_getAllByType } = render(<CategorySelectionScreen />);
+
+    const flatLists = UNSAFE_getAllByType(FlatList);
+    const topicGrid = flatLists.find((node) => node.props.horizontal !== true);
+
+    expect(topicGrid).toBeDefined();
+
+    type CategoryListRow = {
+      kind: 'header' | 'row';
+      categories?: unknown[];
+    };
+
+    const data = (topicGrid!.props.data ?? []) as CategoryListRow[];
+    const incompleteRow = data.find(
+      (item) => item.kind === 'row' && (item.categories?.length ?? 0) > 0 && (item.categories?.length ?? 0) < 4
+    );
+
+    // Draft sessions should include at least one section whose count is not a multiple of 4.
+    expect(incompleteRow).toBeDefined();
+
+    const rowViews = UNSAFE_getAllByType(View).filter((node) => {
+      const style = StyleSheet.flatten(node.props.style);
+      return (
+        style?.flexDirection === 'row' &&
+        style?.flexWrap === 'wrap' &&
+        typeof style?.width === 'number'
+      );
+    });
+
+    expect(rowViews.length).toBeGreaterThan(0);
+
+    for (const rowView of rowViews) {
+      const style = StyleSheet.flatten(rowView.props.style);
+      expect(style?.justifyContent).toBe('center');
+    }
   });
 });

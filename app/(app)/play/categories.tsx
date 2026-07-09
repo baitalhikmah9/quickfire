@@ -19,7 +19,10 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SPACING, FONTS, FONT_SIZES, LAYOUT } from '@/constants';
-import { getCategoryPictureSource } from '@/constants/categoryPictures';
+import {
+  getCategoryPictureSource,
+  MISSING_CATEGORY_PICTURE_LABEL,
+} from '@/constants/categoryPictures';
 import { getModeCategoryCount } from '@/features/play/data';
 import type { CategoryOption, GameMode } from '@/features/shared';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
@@ -36,16 +39,6 @@ import { getGameTokenCost } from '@/features/play/tokenCosts';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
 import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
-
-function getCategoryIcon(id: string): keyof typeof Ionicons.glyphMap {
-  if (id.startsWith('h')) return 'library-outline';
-  if (id.startsWith('g')) return 'game-controller-outline';
-  if (id.startsWith('pc')) return 'videocam-outline';
-  if (id.startsWith('s')) return 'basketball-outline';
-  if (id === 'gen2') return 'location-outline';
-  if (id === 'gen3') return 'flask-outline';
-  return 'folder-outline';
-}
 
 // ── Grid constants ──────────────────────────────────────────────────────
 
@@ -170,7 +163,6 @@ const CategoryCard = memo(function CategoryCard({
   onToggle,
 }: CategoryCardProps) {
   const imageSource = getCategoryPictureSource(category.id);
-  const iconName = getCategoryIcon(category.id);
   const useLightListSurface = Platform.OS === 'android';
 
   return (
@@ -210,7 +202,12 @@ const CategoryCard = memo(function CategoryCard({
             }
           />
         ) : (
-          <Ionicons name={iconName} size={28} color={textPrimary} />
+          <Text
+            style={[styles.missingPictureLabel, { color: textPrimary }]}
+            accessibilityLabel={MISSING_CATEGORY_PICTURE_LABEL}
+          >
+            {MISSING_CATEGORY_PICTURE_LABEL}
+          </Text>
         )}
       </View>
 
@@ -435,7 +432,13 @@ export default function CategorySelectionScreen() {
   const getCategoryItemLayout = useCallback(
     (_data: ArrayLike<CategoryListItem> | null | undefined, index: number) => {
       const layout = categoryItemLayouts[index];
-      return layout ?? { length: cardH, offset: cardH * index };
+      // VirtualizedList requires `index` on the returned frame. Without it,
+      // react-native-web throws: "Should not have to estimate frames when a
+      // measurement metrics function is provided".
+      if (layout) {
+        return { length: layout.length, offset: layout.offset, index };
+      }
+      return { length: cardH, offset: cardH * index, index };
     },
     [cardH, categoryItemLayouts]
   );
@@ -1091,7 +1094,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
   },
   // ── Topic card ───────────────────────────────────────────────────────
   topicCard: {
@@ -1111,6 +1114,13 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: '100%',
+  },
+  missingPictureLabel: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textAlign: 'center',
+    paddingHorizontal: 6,
   },
   cardTitleBar: {
     width: '100%',

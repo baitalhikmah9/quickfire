@@ -11,7 +11,10 @@ import { HubTokenChip } from '@/components/HubTokenChip';
 import { BORDER_RADIUS, FONT_SIZES, LAYOUT, SPACING } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { FONTS } from '@/constants/theme';
-import { getCategoryPictureSource } from '@/constants/categoryPictures';
+import {
+  getCategoryPictureSource,
+  MISSING_CATEGORY_PICTURE_LABEL,
+} from '@/constants/categoryPictures';
 import { getRandomRemainingQuestion } from '@/features/play/data';
 import type { GameConfig, LifelineId, QuestionCard } from '@/features/shared';
 import { PlayMatchTopBar } from '@/features/play/components/PlayMatchTopBar';
@@ -739,7 +742,12 @@ export default function PlayBoardScreen() {
                   />
                 ) : (
                   <View style={styles.pictureFallbackFill}>
-                    <Ionicons name="image-outline" size={24} color="rgba(15, 23, 42, 0.15)" />
+                    <Text
+                      style={styles.missingPictureLabel}
+                      accessibilityLabel={MISSING_CATEGORY_PICTURE_LABEL}
+                    >
+                      {MISSING_CATEGORY_PICTURE_LABEL}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -1325,6 +1333,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+  },
+  missingPictureLabel: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 10,
+    letterSpacing: 0.5,
+    color: 'rgba(15, 23, 42, 0.45)',
+    textAlign: 'center',
+    paddingHorizontal: 4,
   },
   topicTitleRow: {
     flexGrow: 0,

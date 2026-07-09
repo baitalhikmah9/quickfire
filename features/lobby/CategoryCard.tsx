@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { View, Text, StyleSheet, type ViewStyle, Dimensions, Platform } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, FONTS, COLORS, SHADOWS } from '@/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
+import { MISSING_CATEGORY_PICTURE_LABEL } from '@/constants/categoryPictures';
 import { HOME_SOFT_UI } from '@/themes';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -88,11 +88,12 @@ export function CategoryCard({
                             style={styles.fullImage}
                         >
                             <View style={styles.placeholderCenter}>
-                                <Ionicons 
-                                    name={getIconForCategory(title)} 
-                                    size={48} 
-                                    color="rgba(0, 123, 255, 0.12)" 
-                                />
+                                <Text
+                                    style={styles.missingPictureLabel}
+                                    accessibilityLabel={MISSING_CATEGORY_PICTURE_LABEL}
+                                >
+                                    {MISSING_CATEGORY_PICTURE_LABEL}
+                                </Text>
                             </View>
                         </LinearGradient>
                     )}
@@ -150,17 +151,6 @@ export function CategoryCard({
     );
 }
 
-function getIconForCategory(title: string): any {
-    const t = title.toLowerCase();
-    if (t.includes('history') || t.includes('century')) return 'time-outline';
-    if (t.includes('game') || t.includes('halo') || t.includes('cod')) return 'game-controller-outline';
-    if (t.includes('sport') || t.includes('nba') || t.includes('league')) return 'trophy-outline';
-    if (t.includes('movie') || t.includes('show') || t.includes('marvel')) return 'film-outline';
-    if (t.includes('science')) return 'flask-outline';
-    if (t.includes('geography')) return 'earth-outline';
-    return 'rocket-outline';
-}
-
 const styles = StyleSheet.create({
     cardWrapper: {
         width: CARD_WIDTH,
@@ -185,6 +175,14 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    missingPictureLabel: {
+        fontFamily: FONTS.uiBold,
+        fontSize: 14,
+        letterSpacing: 0.8,
+        color: 'rgba(15, 23, 42, 0.4)',
+        textAlign: 'center',
+        paddingHorizontal: 8,
     },
     bottomGradient: {
         position: 'absolute',

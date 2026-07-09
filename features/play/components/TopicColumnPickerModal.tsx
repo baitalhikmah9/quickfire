@@ -13,7 +13,11 @@ import { Image } from 'expo-image';
 import { Pressable } from '@/components/ui/Pressable';
 import { BORDER_RADIUS, FONT_SIZES, SPACING } from '@/constants';
 import { FONTS } from '@/constants/theme';
-import { getCategoryBoardAccent, getCategoryPictureSource } from '@/constants/categoryPictures';
+import {
+  getCategoryBoardAccent,
+  getCategoryPictureSource,
+  MISSING_CATEGORY_PICTURE_LABEL,
+} from '@/constants/categoryPictures';
 import type { QuestionCard } from '@/features/shared';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -139,7 +143,12 @@ export function TopicColumnPickerModal({
                 <Image source={picture} style={styles.heroImage as never} contentFit="cover" transition={120} />
               ) : (
                 <View style={[styles.heroFallback, { backgroundColor: `${accent}28` }]}>
-                  <Text style={[styles.heroFallbackLetter, { color: accent }]}>{column.categoryName.charAt(0)}</Text>
+                  <Text
+                    style={[styles.heroFallbackLetter, { color: accent }]}
+                    accessibilityLabel={MISSING_CATEGORY_PICTURE_LABEL}
+                  >
+                    {MISSING_CATEGORY_PICTURE_LABEL}
+                  </Text>
                 </View>
               )}
               <View style={styles.heroTitleBar}>
@@ -270,9 +279,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroFallbackLetter: {
-    fontSize: 72,
+    fontSize: 22,
     fontFamily: FONTS.displayBold,
     fontWeight: '800',
+    letterSpacing: 1,
+    textAlign: 'center',
+    paddingHorizontal: SPACING.sm,
   },
   heroTitleBar: {
     position: 'absolute',

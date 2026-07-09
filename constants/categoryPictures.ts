@@ -1,9 +1,12 @@
 /**
- * Category artwork — local images from assets/topics/ with remote URL fallbacks
- * for categories without a matching downloaded image.
+ * Category artwork — local images from assets/topics/ only.
+ * Categories without a bundled image resolve to null; UI shows MISSING.
  */
 
 import type { ImageSource } from 'expo-image';
+
+/** Shown in place of category art when no local image is mapped. */
+export const MISSING_CATEGORY_PICTURE_LABEL = 'MISSING';
 
 // ── Local images (require() for Metro bundler) ──────────────────────────
 
@@ -66,34 +69,8 @@ const LOCAL: Record<string, ImageSource> = {
   s11: require('../assets/topics/which_player.png'),
 };
 
-// ── Remote URL fallbacks for categories without a local image ──────────
-
-const FALLBACK_URIS: Record<string, string> = {
-  h6: 'https://i.postimg.cc/7YGkmWrV/arab-history.png',
-  h9: 'https://i.postimg.cc/J7JNW18H/south-asian-history.png',
-  h10: 'https://i.postimg.cc/j5yLBSfy/middle-ages-europe.png',
-  g2: 'https://i.postimg.cc/1z73TN4F/call-of-duty.png',
-  g4: 'https://i.postimg.cc/nhcZJcyc/grand-theft-auto.png',
-  g10: 'https://i.postimg.cc/gjnRQWGs/super-mario-bros.png',
-  g12: 'https://i.postimg.cc/x1SgZt47/the-witcher.png',
-  g13: 'https://i.postimg.cc/9X6B4LCm/world-of-warcraft.png',
-  pc12: 'https://i.postimg.cc/mDsWmYGw/jurassic-park.png',
-  pc21: 'https://i.postimg.cc/CKcnpsFx/squid-game.png',
-  pc22: 'https://i.postimg.cc/T39c7s4w/star-trek.png',
-  pc27: 'https://i.postimg.cc/X7KhWQzw/the-hunger-games.png',
-  pc29: 'https://i.postimg.cc/BvPBSvvK/the-simpsons.png',
-  pc30: 'https://i.postimg.cc/0jkSw59C/shakespeare.png',
-  s6: 'https://i.postimg.cc/bY4T5kY6/nfl.png',
-  s8: 'https://i.postimg.cc/rwVtZw4Q/tennis.png',
-};
-
 export function getCategoryPictureSource(categoryId: string): ImageSource | null {
-  // Local image takes precedence
-  if (LOCAL[categoryId]) return LOCAL[categoryId];
-
-  // Remote fallback
-  const uri = FALLBACK_URIS[categoryId];
-  return uri ? { uri } : null;
+  return LOCAL[categoryId] ?? null;
 }
 
 /** Topic stripe colour (matches TriviaApp Games vs default blue). */
