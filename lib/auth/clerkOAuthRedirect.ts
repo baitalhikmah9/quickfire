@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { isRunningInExpoGo } from 'expo';
 import Constants from 'expo-constants';
 import * as AuthSession from 'expo-auth-session';
 import * as Linking from 'expo-linking';
@@ -19,19 +20,31 @@ function clerkRegisteredNativeCallbackUrl(): string | null {
   return null;
 }
 
-export function clerkNativeSsoCallbackRedirectUrl(): string {
-  const registered = clerkRegisteredNativeCallbackUrl();
-  if (registered) return registered;
+function authSessionSsoCallbackRedirectUrl(): string {
   return AuthSession.makeRedirectUri({
     path: CLERK_SSO_CALLBACK_PATH,
     isTripleSlashed: true,
   });
 }
 
+export function clerkNativeSsoCallbackRedirectUrl(): string {
+  // Expo Go does not register the app's `clerk://…callback` intent/URL scheme.
+  // Using that scheme leaves the browser on a dead deep link instead of returning
+  // to Expo Go. `makeRedirectUri` yields `exp://…/--/sso-callback` which Expo Go owns.
+  if (isRunningInExpoGo()) {
+    return authSessionSsoCallbackRedirectUrl();
+  }
+
+  const registered = clerkRegisteredNativeCallbackUrl();
+  if (registered) return registered;
+  return authSessionSsoCallbackRedirectUrl();
+}
+
 /**
  * Clerk `redirectUrl` after OAuth.
- * Native: `clerk://<package>.callback` (auto-allowlisted when the app is registered in Clerk).
- * `app/+native-intent.tsx` rewrites that callback to `/sso-callback` for Expo Router.
+ * Native (standalone / dev client): `clerk://<package>.callback` when registered.
+ * Native (Expo Go): `AuthSession.makeRedirectUri` → `exp://…/sso-callback`.
+ * `app/+native-intent.tsx` rewrites callback deep links to `/sso-callback` for Expo Router.
  * Web: same-origin path (route groups like `/(app)` break popup handshake).
  */
 export function clerkOAuthRedirectUrl(redirectPath: string): string {
