@@ -5,7 +5,14 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_d29ydGh5LXByaW1hdGUtNDUuY2xlcmsuYWNjb3VudHMuZGV2JA",
+        "EXPO_PUBLIC_CONVEX_URL": "https://successful-wildcat-165.eu-west-1.convex.cloud",
+        "CLERK_JWT_ISSUER_DOMAIN": "https://worthy-primate-45.clerk.accounts.dev",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_hbpxoGCDXRBRDjhBSdRMowxgIVL",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "test_hbpxoGCDXRBRDjhBSdRMowxgIVL"
+      }
     },
     "preview": {
       "android": {
@@ -18,9 +25,9 @@
         "gradleCommand": ":app:assembleDebug"
       },
       "env": {
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsucGxheWJhY2tmaXJlLmNvbSQ",
-        "EXPO_PUBLIC_CONVEX_URL": "https://energized-hummingbird-439.eu-west-1.convex.cloud",
-        "CLERK_JWT_ISSUER_DOMAIN": "https://clerk.playbackfire.com",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_d29ydGh5LXByaW1hdGUtNDUuY2xlcmsuYWNjb3VudHMuZGV2JA",
+        "EXPO_PUBLIC_CONVEX_URL": "https://successful-wildcat-165.eu-west-1.convex.cloud",
+        "CLERK_JWT_ISSUER_DOMAIN": "https://worthy-primate-45.clerk.accounts.dev",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_hbpxoGCDXRBRDjhBSdRMowxgIVL",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "test_hbpxoGCDXRBRDjhBSdRMowxgIVL"
       }
@@ -31,9 +38,9 @@
         "gradleCommand": ":app:assembleDebug"
       },
       "env": {
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsucGxheWJhY2tmaXJlLmNvbSQ",
-        "EXPO_PUBLIC_CONVEX_URL": "https://energized-hummingbird-439.eu-west-1.convex.cloud",
-        "CLERK_JWT_ISSUER_DOMAIN": "https://clerk.playbackfire.com",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_d29ydGh5LXByaW1hdGUtNDUuY2xlcmsuYWNjb3VudHMuZGV2JA",
+        "EXPO_PUBLIC_CONVEX_URL": "https://successful-wildcat-165.eu-west-1.convex.cloud",
+        "CLERK_JWT_ISSUER_DOMAIN": "https://worthy-primate-45.clerk.accounts.dev",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_hbpxoGCDXRBRDjhBSdRMowxgIVL",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "test_hbpxoGCDXRBRDjhBSdRMowxgIVL"
       }
