@@ -33,13 +33,9 @@ import {
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
-import { LEGAL_DOCUMENT_EFFECTIVE_DATE } from '@/lib/legal/effectiveDate';
-import { PRIVACY_SECTIONS } from '@/lib/legal/privacySections';
-import { TERMS_SECTIONS } from '@/lib/legal/termsSections';
 import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { ScreenContent } from '@/components/ScreenContent';
 import { HubTokenChip } from '@/components/HubTokenChip';
-import { LegalDocumentBody } from '@/components/LegalDocumentBody';
 import { WebAwareModal } from '@/components/WebAwareModal';
 import { useLocaleStore } from '@/store/locale';
 import { usePlayStore } from '@/store/play';
@@ -62,7 +58,7 @@ function getPaletteNameKey(id: ThemePaletteId) {
 }
 
 export default function SettingsScreen() {
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -73,8 +69,6 @@ export default function SettingsScreen() {
   const [isThemeModalVisible, setThemeModalVisible] = useState(false);
   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
   const [isContentLanguagesModalVisible, setContentLanguagesModalVisible] = useState(false);
-  const [isTermsLegalModalVisible, setTermsLegalModalVisible] = useState(false);
-  const [isPrivacyLegalModalVisible, setPrivacyLegalModalVisible] = useState(false);
   const { direction, getLocaleName, t, uiLocale } = useI18n();
   const setUiLocale = useLocaleStore((state) => state.setUiLocale);
   const contentLocales = useLocaleStore((state) => state.contentLocales);
@@ -97,7 +91,6 @@ export default function SettingsScreen() {
 
   const rowDir = getRowDirection(direction);
   const isCompactLayout = width < 980;
-  const legalModalBodyMaxHeight = Math.min(540, Math.max(280, Math.round(height * 0.52)));
   const canvas = T.colors.canvas;
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
@@ -331,7 +324,7 @@ export default function SettingsScreen() {
                   testID="settings-legal-terms"
                   accessibilityRole="button"
                   accessibilityLabel={t('legal.termsTitle')}
-                  onPress={() => setTermsLegalModalVisible(true)}
+                  onPress={() => router.push('/terms')}
                   style={({ pressed }) => [
                     styles.prefRow,
                     { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
@@ -355,7 +348,7 @@ export default function SettingsScreen() {
                   testID="settings-legal-privacy"
                   accessibilityRole="button"
                   accessibilityLabel={t('legal.privacyTitle')}
-                  onPress={() => setPrivacyLegalModalVisible(true)}
+                  onPress={() => router.push('/privacy')}
                   style={({ pressed }) => [
                     styles.prefRowLast,
                     { flexDirection: rowDir },
@@ -735,128 +728,6 @@ export default function SettingsScreen() {
           </View>
         </View>
       </WebAwareModal>
-
-      <WebAwareModal
-        visible={isTermsLegalModalVisible}
-        onRequestClose={() => setTermsLegalModalVisible(false)}
-      >
-        <View style={styles.modalRoot}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.close')}
-            style={styles.modalBackdrop}
-            onPress={() => setTermsLegalModalVisible(false)}
-          />
-          <View
-            style={[
-              styles.themeModalCard,
-              SOFT_SURFACE_FACE,
-              softSurfaceLift(),
-              { backgroundColor: surface },
-            ]}
-          >
-            <View style={styles.themeModalHeader}>
-              <View style={styles.legalModalHeaderText}>
-                <Text style={[styles.themeModalTitle, { color: textPrimary }]}>{t('legal.termsTitle')}</Text>
-                <Text style={[styles.themeModalSubtitle, { color: textMuted }]}>
-                  {t('legal.lastUpdated', { date: LEGAL_DOCUMENT_EFFECTIVE_DATE })}
-                </Text>
-              </View>
-              <Pressable
-                testID="settings-legal-terms-close"
-                accessibilityRole="button"
-                accessibilityLabel={t('common.close')}
-                onPress={() => setTermsLegalModalVisible(false)}
-                style={({ pressed }) => [
-                  styles.themeModalCloseButton,
-                  SOFT_SURFACE_FACE,
-                  softSurfaceLift(),
-                  {
-                    backgroundColor: surface,
-                    opacity: pressed ? 0.94 : 1,
-                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-                  },
-                ]}
-              >
-                <Ionicons name="close" size={20} color={textPrimary} />
-              </Pressable>
-            </View>
-            <ScrollView
-              testID="settings-legal-terms-scroll"
-              style={{ maxHeight: legalModalBodyMaxHeight }}
-              contentContainerStyle={styles.legalModalScrollContent}
-              showsVerticalScrollIndicator
-            >
-              <LegalDocumentBody
-                sections={TERMS_SECTIONS}
-                textPrimary={textPrimary}
-                textSecondary={textMuted}
-              />
-            </ScrollView>
-          </View>
-        </View>
-      </WebAwareModal>
-
-      <WebAwareModal
-        visible={isPrivacyLegalModalVisible}
-        onRequestClose={() => setPrivacyLegalModalVisible(false)}
-      >
-        <View style={styles.modalRoot}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.close')}
-            style={styles.modalBackdrop}
-            onPress={() => setPrivacyLegalModalVisible(false)}
-          />
-          <View
-            style={[
-              styles.themeModalCard,
-              SOFT_SURFACE_FACE,
-              softSurfaceLift(),
-              { backgroundColor: surface },
-            ]}
-          >
-            <View style={styles.themeModalHeader}>
-              <View style={styles.legalModalHeaderText}>
-                <Text style={[styles.themeModalTitle, { color: textPrimary }]}>{t('legal.privacyTitle')}</Text>
-                <Text style={[styles.themeModalSubtitle, { color: textMuted }]}>
-                  {t('legal.lastUpdated', { date: LEGAL_DOCUMENT_EFFECTIVE_DATE })}
-                </Text>
-              </View>
-              <Pressable
-                testID="settings-legal-privacy-close"
-                accessibilityRole="button"
-                accessibilityLabel={t('common.close')}
-                onPress={() => setPrivacyLegalModalVisible(false)}
-                style={({ pressed }) => [
-                  styles.themeModalCloseButton,
-                  SOFT_SURFACE_FACE,
-                  softSurfaceLift(),
-                  {
-                    backgroundColor: surface,
-                    opacity: pressed ? 0.94 : 1,
-                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-                  },
-                ]}
-              >
-                <Ionicons name="close" size={20} color={textPrimary} />
-              </Pressable>
-            </View>
-            <ScrollView
-              testID="settings-legal-privacy-scroll"
-              style={{ maxHeight: legalModalBodyMaxHeight }}
-              contentContainerStyle={styles.legalModalScrollContent}
-              showsVerticalScrollIndicator
-            >
-              <LegalDocumentBody
-                sections={PRIVACY_SECTIONS}
-                textPrimary={textPrimary}
-                textSecondary={textMuted}
-              />
-            </ScrollView>
-          </View>
-        </View>
-      </WebAwareModal>
     </SafeAreaView>
   );
 }
@@ -1058,13 +929,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: SPACING.md,
-  },
-  legalModalHeaderText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  legalModalScrollContent: {
-    paddingBottom: SPACING.xl,
   },
   themeModalTitle: {
     fontFamily: FONTS.displayBold,

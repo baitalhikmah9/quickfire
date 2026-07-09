@@ -1,14 +1,15 @@
 import { useCallback } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPACING, BORDER_RADIUS, FONTS, LAYOUT } from '@/constants';
+import { SPACING, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { LegalDocumentBody } from '@/components/LegalDocumentBody';
 import { useTheme } from '@/lib/hooks/useTheme';
+import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { getRowDirection } from '@/lib/i18n/direction';
@@ -24,15 +25,13 @@ export function LegalScrollScreen({ title, sections }: LegalScrollScreenProps) {
   const colors = useTheme();
   const { direction, t } = useI18n();
   const rowDir = getRowDirection(direction);
+  const surface = HOME_SOFT_UI.colors.surface;
+  const textPrimary = HOME_SOFT_UI.colors.textPrimary;
   const backIcon: keyof typeof Ionicons.glyphMap =
     direction === 'rtl' ? 'chevron-forward' : 'chevron-back';
 
   const handleBack = useCallback(() => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace('/(app)/');
+    goBackOrReplace(router, '/(app)/');
   }, [router]);
 
   return (
@@ -49,20 +48,20 @@ export function LegalScrollScreen({ title, sections }: LegalScrollScreenProps) {
           <View style={[styles.topBar, { flexDirection: rowDir }]}>
             <Pressable
               onPress={handleBack}
-              style={({ pressed }) => [
-                styles.backPill,
-                { flexDirection: rowDir },
-                {
-                  backgroundColor: colors.cardBackground,
-                  borderColor: colors.border,
-                  opacity: pressed ? 0.92 : 1,
-                },
-              ]}
               accessibilityRole="button"
               accessibilityLabel={t('common.back')}
+              style={({ pressed }) => [
+                styles.backButton,
+                SOFT_SURFACE_FACE,
+                softSurfaceLift(),
+                { backgroundColor: surface },
+                {
+                  opacity: pressed ? 0.9 : 1,
+                  transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                },
+              ]}
             >
-              <Ionicons name={backIcon} size={20} color={colors.primary} />
-              <Text style={[styles.backLabel, { color: colors.textOnBackground }]}>{t('common.back')}</Text>
+              <Ionicons name={backIcon} size={22} color={textPrimary} />
             </Pressable>
             <PublicAuthEntry style={styles.topBarAuth} />
           </View>
@@ -98,17 +97,12 @@ const styles = StyleSheet.create({
   topBarAuth: {
     flexShrink: 1,
   },
-  backPill: {
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
-    gap: SPACING.xs,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.xl,
-    borderWidth: 2,
-  },
-  backLabel: {
-    fontFamily: FONTS.uiSemibold,
-    fontSize: 15,
+    justifyContent: 'center',
   },
   scroll: {
     flex: 1,

@@ -175,17 +175,14 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('Privacy Policy')).toBeTruthy();
   });
 
-  it('opens terms and privacy content in modals from legal rows', () => {
+  it('navigates to terms and privacy pages from legal rows', () => {
     render(<SettingsScreen />);
 
     fireEvent.press(screen.getByTestId('settings-legal-terms'));
-    expect(mockPush).not.toHaveBeenCalled();
-    expect(screen.getByText('Agreement')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('settings-legal-terms-close'));
+    expect(mockPush).toHaveBeenCalledWith('/terms');
 
     fireEvent.press(screen.getByTestId('settings-legal-privacy'));
-    expect(mockPush).not.toHaveBeenCalled();
-    expect(screen.getByText('Overview')).toBeTruthy();
+    expect(mockPush).toHaveBeenCalledWith('/privacy');
   });
 
   it('opens theme choices inline as a modal instead of navigating away', () => {
