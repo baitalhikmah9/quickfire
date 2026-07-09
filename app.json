@@ -3,7 +3,7 @@
     "name": "BackFire",
     "slug": "backfire",
     "scheme": "backfire",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -15,11 +15,11 @@
     "ios": {
       "supportsTablet": true,
       "requireFullScreen": true,
-      "buildNumber": "4",
+      "buildNumber": "5",
       "bundleIdentifier": "com.playbackfire.app"
     },
     "android": {
-      "versionCode": 4,
+      "versionCode": 5,
       "package": "com.playbackfire.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
