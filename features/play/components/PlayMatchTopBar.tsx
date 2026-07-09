@@ -75,6 +75,11 @@ export function PlayMatchTopBar({
   const isTightHeader = compactQuestionHeader && (width < 760 || shortSide < 430);
   const isVeryTightHeader = compactQuestionHeader && shortSide < 390;
   const logoWidth = getGameHeaderLogoDisplayWidth(width, height);
+  /** Board chrome (pills next to logo) uses a shorter wordmark so the whole header row stays low. */
+  const boardChromeLogoWidth = Math.min(
+    logoWidth,
+    Math.round(shortSide < 400 ? 96 : shortSide < 480 ? 112 : 128)
+  );
   const sideMaxWidth = compactQuestionHeader ? (isVeryTightHeader ? 142 : isTightHeader ? 158 : 214) : undefined;
   const showWager = session.config.wagerEnabled && onWagerInfoPress;
   const showHotSeat = isHotSeatConfigured(session) && onHotSeatInfoPress;
@@ -252,7 +257,7 @@ export function PlayMatchTopBar({
       const extraTeams = session.teams.slice(2);
 
       return (
-        <View style={styles.logoOnlyTopBar}>
+        <View style={[styles.logoOnlyTopBar, styles.logoOnlyTopBarDense]}>
           {team0 ? <View style={styles.logoScoreSide}>{renderLogoScorePill(team0)}</View> : null}
           <Pressable
             onPress={onLogoPress}
@@ -262,7 +267,7 @@ export function PlayMatchTopBar({
           >
             <Image
               source={BACKFIRE_IN_GAME_LOGO}
-              style={[styles.rumbleLogo, compact && styles.rumbleLogoCompact]}
+              style={[styles.rumbleLogo, styles.rumbleLogoCompact]}
               contentFit="contain"
             />
           </Pressable>
@@ -301,7 +306,7 @@ export function PlayMatchTopBar({
     const extraTeams = session.teams.slice(2);
 
     return (
-      <View style={styles.logoOnlyTopBar}>
+      <View style={[styles.logoOnlyTopBar, scorePillsNextToLogo && styles.logoOnlyTopBarDense]}>
         {scorePillsNextToLogo && team0 ? (
           <View style={styles.logoScoreSide}>{renderLogoScorePill(team0)}</View>
         ) : null}
@@ -311,7 +316,10 @@ export function PlayMatchTopBar({
           accessibilityRole="button"
           accessibilityLabel="BackFire"
         >
-          <BackfireTitleLogo width={logoWidth} accessibilityLabel="BackFire" />
+          <BackfireTitleLogo
+            width={scorePillsNextToLogo ? boardChromeLogoWidth : logoWidth}
+            accessibilityLabel="BackFire"
+          />
         </Pressable>
         {scorePillsNextToLogo && team1 ? (
           <View style={[styles.logoScoreSide, styles.logoScoreSideRight]}>{renderLogoScorePill(team1)}</View>
@@ -372,6 +380,12 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 2,
   },
+  /** Board: kill vertical dead space so team pills + logo sit in one short strip. */
+  logoOnlyTopBarDense: {
+    gap: 6,
+    paddingVertical: 0,
+    minHeight: 0,
+  },
   topBarSide: {
     flex: 1,
     flexGrow: 1,
@@ -426,29 +440,29 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   logoScorePill: {
-    minWidth: 138,
-    maxWidth: 220,
-    minHeight: 46,
+    minWidth: 112,
+    maxWidth: 180,
+    minHeight: 32,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: T.colors.surface,
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderColor: 'rgba(15, 23, 42, 0.1)',
     shadowColor: T.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
     elevation: 1,
   },
   logoScoreAdjust: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(15, 23, 42, 0.06)',
@@ -460,8 +474,8 @@ const styles = StyleSheet.create({
   },
   logoScoreAdjustText: {
     fontFamily: FONTS.displayBold,
-    fontSize: 20,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 18,
     color: T.colors.textPrimary,
   },
   logoScoreTextBlock: {
@@ -471,16 +485,16 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   logoScoreName: {
-    maxWidth: 104,
+    maxWidth: 88,
     fontFamily: FONTS.uiBold,
-    fontSize: 12,
-    lineHeight: 14,
+    fontSize: 10,
+    lineHeight: 12,
     color: T.colors.textMuted,
   },
   logoScoreValue: {
     fontFamily: FONTS.displayBold,
-    fontSize: 18,
-    lineHeight: 21,
+    fontSize: 14,
+    lineHeight: 16,
     fontVariant: ['tabular-nums'],
     color: T.colors.textPrimary,
   },

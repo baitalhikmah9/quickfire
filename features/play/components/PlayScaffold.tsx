@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets, type Edge } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -66,6 +66,11 @@ interface PlayScaffoldProps {
    * When `contentSafeAreaHorizontal` + `bodyEdgeToEdge`, only horizontal safe-area gutters wrap the footer.
    */
   footerBare?: boolean;
+  /**
+   * Override SafeAreaView edges. Defaults: bodyEdgeToEdge → top+bottom; otherwise all sides.
+   * Pass e.g. `['bottom']` with a hidden status bar to reclaim top chrome on the board.
+   */
+  safeAreaEdges?: readonly Edge[];
   /** Merged onto the column that wraps header chrome + body (e.g. zero bottom inset for a flush CTA on phones). */
   chromeColumnStyle?: StyleProp<ViewStyle>;
 }
@@ -89,6 +94,7 @@ export function PlayScaffold({
   contentSafeAreaHorizontal = false,
   footerAboveBody = false,
   footerBare = false,
+  safeAreaEdges,
   chromeColumnStyle,
 }: PlayScaffoldProps) {
   const colors = useTheme();
@@ -99,6 +105,8 @@ export function PlayScaffold({
   const subtitleTight = windowHeight < 700;
   const padLeft = Math.max(insets.left, LAYOUT.screenGutter);
   const padRight = Math.max(insets.right, LAYOUT.screenGutter);
+  const resolvedSafeAreaEdges: readonly Edge[] =
+    safeAreaEdges ?? (bodyEdgeToEdge ? (['top', 'bottom'] as const) : (['top', 'bottom', 'left', 'right'] as const));
 
   const contentStyles = [styles.content, styles.contentFit];
   const subtitleStyles = [
@@ -229,7 +237,7 @@ export function PlayScaffold({
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: shellBackground }]}
-      edges={bodyEdgeToEdge ? ['top', 'bottom'] : ['top', 'bottom', 'left', 'right']}
+      edges={resolvedSafeAreaEdges}
     >
       <ScreenContent fullWidth style={styles.screenInner}>
         <View style={styles.fitRoot}>
@@ -286,7 +294,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     minHeight: 0,
     width: '100%',
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.xs,
   },
   /** Keeps team strip / footer from collapsing when the board body fights for height. */
   footerSlotFixed: {

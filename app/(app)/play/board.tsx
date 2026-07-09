@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo, Alert, View, Text, StyleSheet, useWindowDimensions, Platform, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Pressable } from '@/components/ui/Pressable';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -486,8 +487,9 @@ export default function PlayBoardScreen() {
     const tight = innerWidth < 600;
     const short = height < 420;
     const rowCount = Math.max(1, gridRows.length);
-    const reserved = short ? 160 : 200;
-    const avail = Math.max(0, height - insets.top - insets.bottom - reserved);
+    /** Dense match header (~32–36px pills + tight chrome); status bar hidden on this screen. */
+    const reserved = short ? 96 : 120;
+    const avail = Math.max(0, height - insets.bottom - reserved);
     const rowMin = Math.max(60, Math.min(130, Math.floor(avail / rowCount)));
     return {
       narrow,
@@ -496,7 +498,7 @@ export default function PlayBoardScreen() {
       hubSideMin: tight ? 72 : narrow ? 88 : 120,
       rowMinHeight: rowMin,
     };
-  }, [innerWidth, height, insets.top, insets.bottom, gridRows.length]);
+  }, [innerWidth, height, insets.bottom, gridRows.length]);
 
   const refundEntryMutation = useMutation(api.wallet.refundEntry);
 
@@ -774,6 +776,8 @@ export default function PlayBoardScreen() {
 
   return (
     <View style={[styles.rootContainer, { backgroundColor: T.colors.canvas }]}>
+      {/* Immersive match board: hide system status bar (time / battery / icons) to free vertical space. */}
+      <StatusBar hidden />
       <PlayScaffold
         title={t('play.questionBoardTitle')}
         backgroundColor={T.colors.canvas}
@@ -789,11 +793,12 @@ export default function PlayBoardScreen() {
         bodyFrame={false}
         bodyEdgeToEdge
         contentSafeAreaHorizontal={false}
-        chromeColumnStyle={
-          Platform.OS !== 'web' && height < 500
-            ? { paddingVertical: 4 }
-            : { paddingVertical: Platform.OS === 'web' ? 8 : SPACING.sm }
-        }
+        /** Top edge skipped while status bar is hidden; keep bottom for home-indicator clearance. */
+        safeAreaEdges={['bottom']}
+        chromeColumnStyle={{
+          paddingTop: Platform.OS === 'web' ? 4 : 2,
+          paddingBottom: Platform.OS === 'web' ? 4 : 2,
+        }}
       >
         {wager && !showWagerSelector ? (
           <View
