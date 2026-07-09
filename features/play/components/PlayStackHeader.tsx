@@ -2,7 +2,10 @@ import { useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { GameHeader } from '@/components/GameHeader';
-import { HeaderBackButton } from '@/components/HeaderBackButton';
+import {
+  HeaderBackButton,
+  type HeaderBackButtonVariant,
+} from '@/components/HeaderBackButton';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { SPACING } from '@/constants';
 import { getRowDirection } from '@/lib/i18n/direction';
@@ -17,6 +20,8 @@ export type PlayStackHeaderProps = {
   title: string;
   /** When set, used instead of default stack back / home fallback. */
   onBackPress?: () => void;
+  /** Defaults to labeled play pill; use `icon` for settings/store squircle. */
+  backVariant?: HeaderBackButtonVariant;
 };
 
 /**
@@ -25,7 +30,7 @@ export type PlayStackHeaderProps = {
  * Wraps the shared <GameHeader /> in title-only mode so all play screens use
  * consistent header positioning, safe-area handling, and spacing tokens.
  */
-export function PlayStackHeader({ title, onBackPress }: PlayStackHeaderProps) {
+export function PlayStackHeader({ title, onBackPress, backVariant = 'labeled' }: PlayStackHeaderProps) {
   const router = useRouter();
   const { direction, t, uiLocale } = useI18n();
   const tokens = usePlayStore((s) => s.tokens);
@@ -56,6 +61,7 @@ export function PlayStackHeader({ title, onBackPress }: PlayStackHeaderProps) {
             direction={direction}
             rowDirection={rowDir}
             label={t('common.back')}
+            variant={backVariant}
           />
         }
         rightSlot={

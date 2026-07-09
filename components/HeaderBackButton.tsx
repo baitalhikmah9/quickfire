@@ -1,11 +1,13 @@
 import { type FlexStyle, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
-import { SPACING, BORDER_RADIUS, FONTS } from '@/constants';
+import { SPACING, BORDER_RADIUS, FONTS, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
 import { useThemeStore } from '@/store/theme';
 
 const T = HOME_SOFT_UI.colors;
+
+export type HeaderBackButtonVariant = 'labeled' | 'icon';
 
 export type HeaderBackButtonProps = {
   onPress: () => void;
@@ -13,6 +15,11 @@ export type HeaderBackButtonProps = {
   rowDirection: FlexStyle['flexDirection'];
   label: string;
   accessibilityLabel?: string;
+  /**
+   * - `labeled` — play-stack pill (chevron + "Back" text)
+   * - `icon` — settings/store raised 44×44 squircle (chevron only)
+   */
+  variant?: HeaderBackButtonVariant;
 };
 
 const BACK_PILL_SHADOW = {
@@ -24,12 +31,10 @@ const BACK_PILL_SHADOW = {
 } as const;
 
 /**
- * Shared back-button pill for use as a GameHeader `leftSlot`.
+ * Shared back control for GameHeader `leftSlot`.
  *
- * Consistent styling across all screens:
- * - White surface with top lip
- * - Soft shadow
- * - Chevron icon + "Back" label
+ * Default is the labeled play-stack pill. Use `variant="icon"` for the
+ * settings/store raised squircle (docs/BRAND_GUIDELINES.md header back).
  */
 export function HeaderBackButton({
   onPress,
@@ -37,10 +42,34 @@ export function HeaderBackButton({
   rowDirection,
   label,
   accessibilityLabel,
+  variant = 'labeled',
 }: HeaderBackButtonProps) {
   useThemeStore((state) => state.paletteId);
   const backIcon: keyof typeof Ionicons.glyphMap =
     direction === 'rtl' ? 'chevron-forward' : 'chevron-back';
+  const a11y = accessibilityLabel ?? label;
+
+  if (variant === 'icon') {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.backIconSquircle,
+          SOFT_SURFACE_FACE,
+          softSurfaceLift(),
+          { backgroundColor: T.surface },
+          {
+            opacity: pressed ? 0.9 : 1,
+            transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+          },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={a11y}
+      >
+        <Ionicons name={backIcon} size={22} color={T.textPrimary} />
+      </Pressable>
+    );
+  }
 
   return (
     <Pressable
@@ -52,7 +81,7 @@ export function HeaderBackButton({
         { opacity: pressed ? 0.92 : 1 },
       ]}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityLabel={a11y}
     >
       <Ionicons name={backIcon} size={20} color={T.textPrimary} />
       <Text style={[styles.backLabel, { color: T.textPrimary }]}>{label}</Text>
@@ -61,6 +90,13 @@ export function HeaderBackButton({
 }
 
 const styles = StyleSheet.create({
+  backIconSquircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   backPill: {
     alignItems: 'center',
     gap: SPACING.xs,

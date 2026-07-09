@@ -17,6 +17,7 @@ import { useTheme } from '@/lib/hooks/useTheme';
 import type { GameSessionState } from '@/features/shared';
 import { ScoreHud } from './ScoreHud';
 import { PlayStackHeader } from './PlayStackHeader';
+import type { HeaderBackButtonVariant } from '@/components/HeaderBackButton';
 
 interface PlayScaffoldProps {
   title: string;
@@ -28,6 +29,8 @@ interface PlayScaffoldProps {
   customHeader?: ReactNode;
   /** Custom back behavior (e.g. match end → home). Default: stack back or play hub. */
   onBack?: () => void;
+  /** Defaults to labeled play pill; use `icon` for settings/store squircle. */
+  backVariant?: HeaderBackButtonVariant;
   showHud?: boolean;
   /** Tighter score strip (e.g. question board). */
   scoreHudDense?: boolean;
@@ -74,6 +77,7 @@ export function PlayScaffold({
   children,
   customHeader,
   onBack,
+  backVariant,
   showHud = false,
   scoreHudDense = false,
   session,
@@ -120,7 +124,9 @@ export function PlayScaffold({
 
   const chrome = (
     <>
-      {customHeader ?? <PlayStackHeader title={title} onBackPress={onBack} />}
+      {customHeader ?? (
+        <PlayStackHeader title={title} onBackPress={onBack} backVariant={backVariant} />
+      )}
 
       {customHeader ? null : subtitle ? (
         <Text

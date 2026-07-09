@@ -44,8 +44,8 @@ export type GameHeaderProps = {
  * Shared header for Backfire screens.
  *
  * The header always sits at the top of its container with a compact height.
- * It does **not** add bottom margin/padding — screens control spacing between
- * the header and main content via a spacer or layout gap.
+ * It does **not** add outer horizontal inset or bottom margin/padding — screens
+ * own `LAYOUT.screenGutter` and spacing between the header and main content.
  *
  * The center (logo or title) is absolutely positioned so it stays perfectly
  * centered regardless of left/right slot widths.
@@ -93,7 +93,8 @@ export function GameHeader({
             minHeight: compact ? 44 : headerHeight,
             paddingTop: compact ? 2 : topPad,
             paddingBottom: compact ? 2 : SPACING.xs,
-            paddingHorizontal: isWeb ? 0 : SPACING.sm,
+            // Outer horizontal inset is owned by screen shells (`LAYOUT.screenGutter`).
+            paddingHorizontal: 0,
           },
           isWeb && [
             styles.barWeb,

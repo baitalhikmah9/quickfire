@@ -514,8 +514,6 @@ export default function TeamSetupScreen() {
     );
   }
 
-  const rumbleGutter = Math.max(SPACING.xs, rumbleDensity.horizontalGutter - 4);
-
   const teamSetupBody = rumbleMode ? (
     <ScrollView
       style={styles.rumbleScrollOuter}
@@ -523,7 +521,8 @@ export default function TeamSetupScreen() {
         styles.rumbleScrollContentContainer,
         tightContinueStrip && styles.rumbleScrollContentContainerTight,
         {
-          paddingHorizontal: rumbleGutter,
+          // Outer horizontal inset comes from PlayScaffold (`LAYOUT.screenGutter`).
+          paddingHorizontal: 0,
           alignItems: 'center',
         },
       ]}
@@ -626,13 +625,11 @@ export default function TeamSetupScreen() {
     <PlayScaffold
       title={t('play.teamSetupTitle')}
       onBack={() => router.replace('/(app)/')}
+      backVariant="icon"
       bodyScrollEnabled={false}
       bodyFrame={false}
       backgroundColor={T.canvas}
-      chromeColumnStyle={[
-        tightContinueStrip && { paddingBottom: 0 },
-        shortScreen && { paddingHorizontal: SPACING.xs }
-      ]}
+      chromeColumnStyle={tightContinueStrip ? { paddingBottom: 0 } : undefined}
     >
       <WagerInfoModal visible={wagerInfoOpen} onClose={() => setWagerInfoOpen(false)} />
 
@@ -739,7 +736,8 @@ const styles = StyleSheet.create({
     minHeight: 0,
     minWidth: 0,
     width: '100%',
-    paddingHorizontal: SPACING.sm,
+    // Outer horizontal inset comes from PlayScaffold (`LAYOUT.screenGutter`).
+    paddingHorizontal: 0,
     paddingBottom: 0,
   },
   fixedViewportLayout: {

@@ -1,14 +1,23 @@
 import { Image, View, Text, StyleSheet, type FlexStyle, type ImageSourcePropType, type ViewStyle } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
-import { SPACING, BORDER_RADIUS, FONTS, COLORS } from '@/constants';
+import {
+  SPACING,
+  BORDER_RADIUS,
+  FONTS,
+  COLORS,
+  SOFT_SURFACE_FACE,
+  softSurfaceLift,
+} from '@/constants';
 import { relativeLuminance } from '@/constants/theme';
 import { HOME_SOFT_UI } from '@/themes';
 import { useThemeStore } from '@/store/theme';
 
 /** Match `HubActionCard` pill3d chrome (squared + lip). */
 const CHIP_RADIUS = BORDER_RADIUS.sm;
-const SOFT_CHIP_RADIUS = BORDER_RADIUS.md;
+/** Settings/store header back control — docs/BRAND_GUIDELINES.md (44×44, r≈14). */
+const SOFT_SQUIRCLE_SIZE = 44;
+const SOFT_SQUIRCLE_RADIUS = 14;
 const DEPTH_LIP = 8;
 const DEPTH_TOP_INSET = 4;
 
@@ -63,6 +72,7 @@ function TokenMark({
 
 /**
  * Token readout styled like hub 3D CTAs — primary face, accent depth lip, uppercase label.
+ * `softUi` matches the settings/store header back squircle (height 44, radius 14).
  */
 export function HubTokenChip({
   label,
@@ -96,7 +106,10 @@ export function HubTokenChip({
 
   if (variant === 'softUi') {
     const innerSoft = (
-      <View style={[styles.softFace, softFaceStyle, styles.softShadow]}>
+      <View
+        testID="hub-token-chip-face"
+        style={[styles.softFace, SOFT_SURFACE_FACE, softSurfaceLift(), softFaceStyle]}
+      >
         <View style={[styles.row, styles.softRow, { flexDirection: rowDirection }]}>
           <TokenMark artworkSource={artworkSource} isDark={isDark} iconColor={tokenIconColor} />
           <Text style={[styles.softValue, { color: soft.textPrimary }]} numberOfLines={1}>
@@ -195,25 +208,19 @@ const styles = StyleSheet.create({
     maxWidth: 240,
   },
   softFace: {
-    minWidth: 96,
-    borderRadius: SOFT_CHIP_RADIUS,
-    borderTopWidth: 2,
-    borderBottomWidth: 3,
-    paddingVertical: SPACING.sm,
+    height: SOFT_SQUIRCLE_SIZE,
+    minHeight: SOFT_SQUIRCLE_SIZE,
+    borderRadius: SOFT_SQUIRCLE_RADIUS,
     paddingHorizontal: SPACING.md,
-  },
-  softShadow: {
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   softRow: {
     gap: 8,
   },
   softValue: {
     fontFamily: FONTS.uiBold,
-    fontSize: 18,
+    fontSize: 16,
     fontVariant: ['tabular-nums'],
   },
   darkDiamondMark: {

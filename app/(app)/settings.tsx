@@ -123,6 +123,8 @@ export default function SettingsScreen() {
       style={[styles.safeArea, { backgroundColor: canvas }]}
     >
       <ScreenContent fullWidth style={styles.settingsViewport}>
+        {/* One frame owns outer gutter so header controls and content cards share edges. */}
+        <View style={styles.contentFrame}>
         <View style={styles.header}>
           <View style={styles.headerSide}>
             <Pressable
@@ -417,6 +419,7 @@ export default function SettingsScreen() {
             </View>
           </View>
         </ScrollView>
+        </View>
       </ScreenContent>
 
       <WebAwareModal
@@ -737,13 +740,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: LAYOUT.screenGutter,
     paddingTop: SPACING.lg,
     paddingBottom: SPACING.xxl,
     gap: SPACING.lg,
   },
   settingsViewport: {
     flex: 1,
+  },
+  /** Shared outer gutter — header controls and content cards share the same edges. */
+  contentFrame: {
+    flex: 1,
+    width: '100%',
+    minWidth: 0,
+    minHeight: 0,
+    paddingHorizontal: LAYOUT.screenGutter,
   },
   settingsScroll: {
     flex: 1,

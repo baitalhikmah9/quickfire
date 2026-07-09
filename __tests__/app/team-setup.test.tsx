@@ -161,4 +161,21 @@ describe('TeamSetupScreen', () => {
 
     expect(addControl.props.style).not.toEqual(removeControl.props.style);
   });
+
+  it('uses settings-style icon-only back control (not labeled play pill)', () => {
+    render(<TeamSetupScreen />);
+
+    const back = screen.getByLabelText('Back');
+    // Labeled play pill shows visible "Back" text; settings/store are icon-only.
+    expect(screen.queryByText('Back')).toBeNull();
+
+    const styleProp = back.props.style;
+    const resolved =
+      typeof styleProp === 'function' ? styleProp({ pressed: false }) : styleProp;
+    const flat = StyleSheet.flatten(resolved);
+
+    expect(flat.width).toBe(44);
+    expect(flat.height).toBe(44);
+    expect(flat.borderRadius).toBe(14);
+  });
 });

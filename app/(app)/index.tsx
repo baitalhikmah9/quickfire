@@ -296,7 +296,6 @@ export default function AppHubScreen() {
             <View style={[styles.contentFrame, isWeb && { maxWidth: 1250 }]}>
             <GameHeader variant="logoOnly"
               barMaxWidthOverride={isWeb ? 1250 : undefined}
-              style={isWeb ? { paddingHorizontal: 8 } : undefined}
               leftSlot={
                 <HubTokenChip
                   label={t('common.tokens')}
@@ -622,6 +621,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 880,
     alignSelf: 'center',
+    paddingHorizontal: LAYOUT.screenGutter,
   },
   mainFill: {
     flex: 1,
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 0,
     marginTop: 36,
     width: '100%',
   },

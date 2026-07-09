@@ -356,6 +356,8 @@ export default function StoreScreen() {
       style={[styles.safeArea, { backgroundColor: canvas }]}
     >
       <ScreenContent fullWidth style={styles.viewport}>
+        {/* One frame owns outer gutter + max width so header controls and cards share edges. */}
+        <View style={styles.contentFrame}>
         {/* ── Header ─────────────────────────────────────── */}
         <View style={styles.header}>
           <View style={styles.headerSide}>
@@ -512,6 +514,7 @@ export default function StoreScreen() {
             {promoSuccess ? <Text style={styles.promoSuccessText}>{promoSuccess}</Text> : null}
           </View>
         </View>
+        </View>
       </ScreenContent>
     </SafeAreaView>
   );
@@ -526,14 +529,27 @@ const styles = StyleSheet.create({
   viewport: {
     flex: 1,
   },
+  /**
+   * Shared outer gutter + max width — header controls and store cards share the same
+   * left/right edges (home `contentFrame` pattern). Inner content width caps at
+   * COMPACT_BUNDLES_ROW_MAX_WIDTH.
+   */
+  contentFrame: {
+    flex: 1,
+    width: '100%',
+    maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH + LAYOUT.screenGutter * 2,
+    alignSelf: 'center',
+    minWidth: 0,
+    minHeight: 0,
+    paddingHorizontal: LAYOUT.screenGutter,
+  },
   pageContent: {
     flex: 1,
     minHeight: 0,
     paddingTop: SPACING.xl,
-    paddingHorizontal: LAYOUT.screenGutter,
     paddingBottom: SPACING.md,
     gap: SPACING.md,
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'flex-start',
   },
   pageContentCompact: {
@@ -582,7 +598,6 @@ const styles = StyleSheet.create({
   },
   tokenBalanceHint: {
     width: '100%',
-    maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,
     paddingHorizontal: SPACING.xs,
     fontFamily: FONTS.ui,
     fontSize: 11,
@@ -596,7 +611,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.sm,
     width: '100%',
-    maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,
     borderRadius: 16,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
@@ -630,8 +644,6 @@ const styles = StyleSheet.create({
     gap: 6,
     justifyContent: 'space-between',
     width: '100%',
-    maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,
-    alignSelf: 'center',
     paddingVertical: SPACING.sm,
   },
   bundlesContainerCompact: {
@@ -715,7 +727,6 @@ const styles = StyleSheet.create({
   // ── Promo redemption ──────────────────────────────────────────────────
   redeemSection: {
     width: '100%',
-    maxWidth: COMPACT_BUNDLES_ROW_MAX_WIDTH,
     marginTop: SPACING.xl,
     alignItems: 'center',
   },
