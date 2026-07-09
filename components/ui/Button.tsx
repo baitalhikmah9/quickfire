@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   button: {
     paddingHorizontal: SPACING.xl + 4,
     minHeight: 56,
-    borderRadius: BORDER_RADIUS.pill,
+    borderRadius: BORDER_RADIUS.button,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 120,

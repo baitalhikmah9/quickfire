@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
   buyButton: {
     alignSelf: 'stretch',
     height: 30,
-    borderRadius: 15,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
   applyButton: {
     height: 48,
     paddingHorizontal: SPACING.lg,
-    borderRadius: 24,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },

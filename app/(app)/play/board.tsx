@@ -9,13 +9,14 @@ import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { HubTokenChip } from '@/components/HubTokenChip';
-import { BORDER_RADIUS, FONT_SIZES, LAYOUT, SPACING } from '@/constants';
+import { BORDER_RADIUS, BREAKPOINTS, FONT_SIZES, LAYOUT, SPACING } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { FONTS } from '@/constants/theme';
 import {
   getCategoryPictureSource,
   MISSING_CATEGORY_PICTURE_LABEL,
 } from '@/constants/categoryPictures';
+import { computeBoardVerticalLayout } from '@/features/play/boardLayout';
 import { getRandomRemainingQuestion } from '@/features/play/data';
 import {
   RANDOM_FLASH_GREEN,
@@ -426,7 +427,7 @@ export default function PlayBoardScreen() {
   const responsiveFontSizes = useMemo(() => getResponsivePlayFontSizes(width, height), [height, width]);
   const metrics = useMemo(() => {
     const baseMetrics = getBoardMetrics(height, width);
-    const isWebBoard = Platform.OS === 'web' && width >= 900;
+    const isWebBoard = Platform.OS === 'web' && width >= BREAKPOINTS.wide;
     const topicTitleFont = isWebBoard
       ? scaleFont(16, 16, 20, width, height)
       : scaleFont(20, 18, 26, width, height);
@@ -442,7 +443,8 @@ export default function PlayBoardScreen() {
   const bodyPadRight = Math.max(insets.right, LAYOUT.screenGutter);
   const padX = bodyPadLeft + bodyPadRight;
   const innerWidth = Math.max(0, width - padX);
-  const centeredContentMaxWidth = width >= 900 ? 1120 : Math.floor(innerWidth * 0.94);
+  const centeredContentMaxWidth =
+    width >= BREAKPOINTS.wide ? LAYOUT.playMaxWidth : Math.floor(innerWidth * 0.94);
   const boardLayoutWidth = Math.max(0, Math.min(innerWidth, centeredContentMaxWidth));
   const preferredGridCols = useMemo(
     () => getGridColumnCount(session?.mode ?? 'classic', grouped.length),
@@ -450,7 +452,9 @@ export default function PlayBoardScreen() {
   );
   const gridColumnCount = useMemo(() => {
     if (grouped.length === 0) return preferredGridCols;
-    if (Platform.OS === 'web' && width >= 900 && grouped.length >= 6) return Math.min(3, grouped.length);
+    if (Platform.OS === 'web' && width >= BREAKPOINTS.wide && grouped.length >= 6) {
+      return Math.min(3, grouped.length);
+    }
     return clampGridColumns(preferredGridCols, boardLayoutWidth, metrics.gridGap, grouped.length);
   }, [preferredGridCols, boardLayoutWidth, metrics.gridGap, grouped.length, width]);
   const gridRows = useMemo(() => chunkColumns(grouped, gridColumnCount), [grouped, gridColumnCount]);
@@ -462,16 +466,47 @@ export default function PlayBoardScreen() {
     ? Math.max(SPACING.lg, SPACING.md)
     : Math.max(insets.bottom, SPACING.xs) + SPACING.sm;
   const maxQuestionRows = Math.max(1, ...grouped.map((column) => column.rows.length));
-  const fittedBoardRowHeight = Math.max(
-    1,
-    (Math.max(1, gridViewport.height) - gridBottomPadding - metrics.gridGap * Math.max(0, gridRows.length - 1)) /
-      Math.max(1, gridRows.length)
+  /** Matches topicCenterBlock gap so pill rail targets image + title stack. */
+  const topicCenterBlockGap = Platform.OS === 'web' ? SPACING.xs : 2;
+  const verticalLayout = useMemo(
+    () =>
+      computeBoardVerticalLayout({
+        viewportHeight: Math.max(1, gridViewport.height),
+        gridBottomPadding,
+        gridRowCount: Math.max(1, gridRows.length),
+        maxQuestionRows,
+        baseGridGap: metrics.gridGap,
+        pointRailGap: metrics.pointRailGap,
+        pointRailClipBleed: metrics.pointRailClipBleed,
+        topicImageSize: topicFit.topicImageSize,
+        topicArtHeightRatio,
+        titleHeightBudget: topicFit.titleHeight,
+        centerBlockGap: topicCenterBlockGap,
+      }),
+    [
+      gridBottomPadding,
+      gridRows.length,
+      gridViewport.height,
+      maxQuestionRows,
+      metrics.gridGap,
+      metrics.pointRailClipBleed,
+      metrics.pointRailGap,
+      topicArtHeightRatio,
+      topicCenterBlockGap,
+      topicFit.titleHeight,
+      topicFit.topicImageSize,
+    ]
   );
-  const fittedPointPillHeight = Math.max(
-    1,
-    (fittedBoardRowHeight - metrics.pointRailGap * Math.max(0, maxQuestionRows - 1) - metrics.pointRailClipBleed) /
-      maxQuestionRows
-  );
+  const fittedBoardRowHeight = verticalLayout.boardRowHeight;
+  /** Side length of each 100/200/300 control — rounded square, not a capsule. */
+  const pointTileSize = verticalLayout.pointPillHeight;
+  const topicRowGap = verticalLayout.topicRowGap;
+  /** Rails must be at least as wide as the square tiles. */
+  const pointRailWidth = Math.max(topicFit.railWidth, Math.ceil(pointTileSize));
+  const topicGroupWidth =
+    topicFit.groupWidth + 2 * Math.max(0, pointRailWidth - topicFit.railWidth);
+  /** Squircle corners (~14pt), never height/2 (that makes a pill). */
+  const pointTileRadius = Math.min(14, Math.max(8, Math.round(pointTileSize * 0.18)));
   const handleGridLayout = (event: LayoutChangeEvent) => {
     const { width: nextWidth, height: nextHeight } = event.nativeEvent.layout;
     setGridViewport((current) =>
@@ -556,20 +591,22 @@ export default function PlayBoardScreen() {
       <Pressable
         testID={isLocked ? 'board-random-pick-locked' : isFlashing ? 'board-random-pick-flashing' : undefined}
         style={({ pressed }) => [
-          styles.topicPointPill,
-          topicFit.railWidth <= 56 && styles.topicPointPillTight,
+          styles.topicPointTile,
           SOFT_SURFACE_FACE,
           softSurfaceLift(),
           {
             backgroundColor: isGreenHighlight ? RANDOM_FLASH_GREEN : surfaceColors.tileBackground,
-            height: fittedPointPillHeight,
+            width: pointTileSize,
+            height: pointTileSize,
             minHeight: 0,
-            borderRadius: Math.min(14, fittedPointPillHeight / 2),
+            minWidth: 0,
+            borderRadius: pointTileRadius,
             paddingVertical: 0,
+            paddingHorizontal: 0,
             opacity: used ? 0.72 : pressed && !randomPickActive ? 0.9 : 1,
             transform: pressed && !randomPickActive ? [{ scale: 0.97 }] : [{ scale: 1 }],
           },
-          isLocked && styles.topicPointPillLocked,
+          isLocked && styles.topicPointTileLocked,
         ]}
         onPress={() => {
           if (used) {
@@ -599,10 +636,10 @@ export default function PlayBoardScreen() {
       >
         <Text
           style={[
-            styles.topicPointPillText,
+            styles.topicPointTileText,
             {
-              fontSize: Math.min(metrics.tileFont, Math.max(6, fittedPointPillHeight * 0.48)),
-              lineHeight: Math.round(Math.min(metrics.tileFont, Math.max(6, fittedPointPillHeight * 0.48)) * 1.1),
+              fontSize: Math.min(metrics.tileFont, Math.max(6, pointTileSize * 0.42)),
+              lineHeight: Math.round(Math.min(metrics.tileFont, Math.max(6, pointTileSize * 0.42)) * 1.1),
               color: isGreenHighlight ? RANDOM_FLASH_GREEN_TEXT : used ? textMuted : T.colors.textPrimary,
               textDecorationLine: used ? 'line-through' : 'none',
               opacity: used && !isGreenHighlight ? 0.55 : 1,
@@ -624,20 +661,26 @@ export default function PlayBoardScreen() {
     const picture = getCategoryPictureSource(column.categoryId);
     const surfaceColors = getPlaySurfaceColors();
     const textPrimary = surfaceColors.textPrimary;
-    const titleHeight = Math.min(topicFit.titleHeight, Math.max(1, fittedBoardRowHeight * 0.34));
-    const maxImageHeight = Math.max(1, fittedBoardRowHeight - titleHeight - SPACING.xs);
-    const imgW = Math.max(1, Math.min(topicFit.centerWidth, Math.floor(maxImageHeight / topicArtHeightRatio)));
-    const imgH = Math.min(Math.round(imgW * topicArtHeightRatio), maxImageHeight);
+    // Same image/title heights the pill rail is sized against.
+    const titleHeight = verticalLayout.topicTitleHeight;
+    const imgH = Math.max(1, Math.round(verticalLayout.topicImageHeight));
+    const imgW = Math.max(1, Math.min(topicFit.centerWidth, Math.floor(imgH / topicArtHeightRatio)));
     const titleFontSize = Math.min(metrics.topicTitleFont, Math.max(6, titleHeight / 3.4));
 
     return (
       <View key={column.categoryId} style={[styles.categoryGridCell, { height: fittedBoardRowHeight }]}>
-        <View style={[styles.categoryBlock, { width: topicFit.groupWidth }]}> 
+        <View style={[styles.categoryBlock, { width: topicGroupWidth }]}> 
           <View style={[styles.topicArtRow, { columnGap: topicFit.artGap }]}>
           <View
             style={[
               styles.topicPointRail,
-              { width: topicFit.railWidth, gap: metrics.pointRailGap, paddingBottom: metrics.pointRailClipBleed },
+              {
+                width: pointRailWidth,
+                gap: metrics.pointRailGap,
+                paddingBottom: metrics.pointRailClipBleed,
+                // Rail height = image + gap + title so 3 tiles fill that stack.
+                height: imgH + topicCenterBlockGap + titleHeight,
+              },
             ]}
           >
             {column.rows.map((row) => (
@@ -645,7 +688,7 @@ export default function PlayBoardScreen() {
             ))}
           </View>
 
-          <View style={styles.topicCenterBlock}>
+          <View style={[styles.topicCenterBlock, { gap: topicCenterBlockGap }]}>
             <Pressable
               style={({ pressed }) => [
                 styles.topicImageFrame,
@@ -748,7 +791,12 @@ export default function PlayBoardScreen() {
           <View
             style={[
               styles.topicPointRail,
-              { width: topicFit.railWidth, gap: metrics.pointRailGap, paddingBottom: metrics.pointRailClipBleed },
+              {
+                width: pointRailWidth,
+                gap: metrics.pointRailGap,
+                paddingBottom: metrics.pointRailClipBleed,
+                height: imgH + topicCenterBlockGap + titleHeight,
+              },
             ]}
           >
             {column.rows.map((row) => (
@@ -837,7 +885,7 @@ export default function PlayBoardScreen() {
               backgroundColor: T.colors.canvas,
               paddingLeft: bodyPadLeft,
               paddingRight: bodyPadRight,
-              gap: metrics.gridGap,
+              gap: topicRowGap,
               paddingTop: Platform.OS === 'web' ? 4 : 0,
               paddingBottom: gridBottomPadding,
             },
@@ -849,7 +897,7 @@ export default function PlayBoardScreen() {
               {
                 width: boardLayoutWidth,
                 maxWidth: centeredContentMaxWidth,
-                gap: metrics.gridGap,
+                gap: topicRowGap,
               },
             ]}
           >
@@ -1198,6 +1246,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     alignItems: 'center',
+    /** Topic block (image + title + rails) centered; leftover row height is breathing room. */
+    justifyContent: 'center',
   },
   boardCenterContainer: {
     width: '100%',
@@ -1226,12 +1276,11 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     minWidth: 0,
     minHeight: 0,
-    gap: Platform.OS === 'web' ? SPACING.xs : 2,
   },
-  /** Rails + illustration — side rails fixed width; center flexes horizontally and stretches to row height. */
+  /** Rails + illustration — side rails fixed width; center flexes horizontally. */
   topicArtRow: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'flex-start',
     justifyContent: 'flex-start',
     width: '100%',
     minWidth: 0,
@@ -1239,34 +1288,31 @@ const styles = StyleSheet.create({
   },
   topicPointRail: {
     flexShrink: 0,
-    justifyContent: 'center',
-    alignItems: 'stretch',
+    /** 100/200/300 rounded squares fill image+title height (gaps via style.gap). */
+    justifyContent: 'flex-start',
+    alignItems: 'center',
     minHeight: 1,
   },
-  topicPointPill: {
-    alignSelf: 'stretch',
+  /** Point value control — rounded square (squircle corners), not a capsule pill. */
+  topicPointTile: {
+    alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Platform.OS === 'android' ? 8 : 10,
-    paddingHorizontal: Platform.OS === 'web' ? 4 : 8,
-    minHeight: 38,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    minHeight: 0,
+    minWidth: 0,
     borderRadius: 14,
     overflow: 'hidden',
   },
-  topicPointPillTight: {
-    paddingHorizontal: 4,
-    minHeight: 32,
-    paddingVertical: Platform.OS === 'android' ? 5 : 7,
-    overflow: 'hidden',
-  },
-  topicPointPillLocked: {
+  topicPointTileLocked: {
     shadowColor: RANDOM_FLASH_GREEN,
     shadowOpacity: 0.55,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
     elevation: 6,
   },
-  topicPointPillText: {
+  topicPointTileText: {
     fontFamily: FONTS.displayBold,
     textAlign: 'center',
     letterSpacing: -0.25,

@@ -9,9 +9,6 @@ As mentioned, there are a few of the topic logos, or the topic images, sorry, th
 
 Go back to the same issue of the logos. I think they're not in, like the Arab history and the Naruto one, for example, is the random topic it chose. They're not fully enlarged, which means that there are white spots at the top and bottom. I'm not sure if there's even a dark mode yet, but that's fine.
 
-## Questions Spreadsheet
-
-I will upload a new spreadsheet of questions as well tonight to you. And then we can change the spreadsheet in the future when they're fully, fully done. It's not fully done now, but I will in the future.
 
 ## Quick Play Board — Question Pills Too Tall
 
@@ -28,12 +25,6 @@ Let's click start the board. And yes, the same topic, same issues there, where t
 Also, I just realized going back from the three-topic game, let's say you go back into quick play, and then you press four topics, it still counts as the same game. So I think a better way to go about this is to have, instead of going back home, and then only if you press a new game, it says, do you want to leave this current game? You have a message which from the question screen, if you try to leave, it says, do you want to leave this game? Because normally if you switch between game modes, it will work, it will be fine. However, here, if you switch in quick play between three topics and four topics and five topics, then it won't show that message, it won't have that issue.
 
 Go back to, let's say, classic. So yes, this is where the message comes up, do you want to continue the game or start a new game? Let's click new game, go into it.
-
-## Header / Screen Real Estate
-
-I think make the header smaller. So I think if you can shrink it while still, like the team pills, the team point pills, they look fine, they look nice, they look great. This is probably perfect actually. But there's a lot of dead space between each section. So I think try and make it shorter, try and make the entire header shorter if you can. That gives us more real estate to work with. Because especially we have the notification and time and battery bar at the top of the phone that also is apparent. I don't know if you can find a way to remove that, to hide that and then make it full screen, you know, more full screen. Right now if you can lower the header because that takes up around, I'd say, 20% of the screen real estate is used up, which is quite significant. If you can reduce it to 15% or 10% or whatever, as small as possible, while still making it functional, you can still add points, remove points, still see the team, maybe have the team name get smaller, then also on top of that reduce the overall pill size so everything comes smaller even further. The backfire logo in the middle can be moved up as well. I think if you can find a way to hide the notification bar that says the time and notifications and battery and Wi-Fi and Bluetooth and all that stuff. If you can find a way to hide that, that'd be great. That's, you know, a good section of that.
-
-So again, as mentioned before, try and make the header smaller, try and hide the notification, you know, clock, whatever it is, because that's showing 24-7 right now, all the time. If you can do both those things, that's a lot of space that you've freed up.
 
 
 

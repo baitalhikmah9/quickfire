@@ -73,6 +73,12 @@ interface PlayScaffoldProps {
   safeAreaEdges?: readonly Edge[];
   /** Merged onto the column that wraps header chrome + body (e.g. zero bottom inset for a flush CTA on phones). */
   chromeColumnStyle?: StyleProp<ViewStyle>;
+  /**
+   * Max width for the play stack header bar (web). Pass the same value used by the
+   * centered content row so back / token chip left-right edges align with content cards.
+   * Home/store `contentFrame` pattern.
+   */
+  contentMaxWidth?: number;
 }
 
 export function PlayScaffold({
@@ -96,6 +102,7 @@ export function PlayScaffold({
   footerBare = false,
   safeAreaEdges,
   chromeColumnStyle,
+  contentMaxWidth,
 }: PlayScaffoldProps) {
   const colors = useTheme();
   const shellBackground = backgroundColor ?? HOME_SOFT_UI.colors.canvas;
@@ -133,7 +140,12 @@ export function PlayScaffold({
   const chrome = (
     <>
       {customHeader ?? (
-        <PlayStackHeader title={title} onBackPress={onBack} backVariant={backVariant} />
+        <PlayStackHeader
+          title={title}
+          onBackPress={onBack}
+          backVariant={backVariant}
+          barMaxWidth={contentMaxWidth}
+        />
       )}
 
       {customHeader ? null : subtitle ? (
@@ -185,6 +197,15 @@ export function PlayScaffold({
         },
       ]
     : contentStyles;
+
+  /**
+   * Shared content frame (home/store pattern): when `contentMaxWidth` is set, header
+   * chrome and body share one centered column so control faces align with card faces.
+   */
+  const contentFrameStyle =
+    contentMaxWidth != null && !bodyEdgeToEdge
+      ? ([styles.contentFrame, { maxWidth: contentMaxWidth }] as const)
+      : null;
 
   const main = (
     <>
@@ -241,7 +262,13 @@ export function PlayScaffold({
     >
       <ScreenContent fullWidth style={styles.screenInner}>
         <View style={styles.fitRoot}>
-          <View style={[paddedColumnStyles, chromeColumnStyle]}>{main}</View>
+          <View style={[paddedColumnStyles, chromeColumnStyle]}>
+            {contentFrameStyle ? (
+              <View style={contentFrameStyle}>{main}</View>
+            ) : (
+              main
+            )}
+          </View>
           {footerPlacementAbove ? footerShell : null}
           {bodyEdgeToEdge ? (
             <View
@@ -286,6 +313,14 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingHorizontal: LAYOUT.screenGutter,
     paddingBottom: SPACING.xs,
+    minHeight: 0,
+  },
+  /** Centered column for header + body when `contentMaxWidth` is set. */
+  contentFrame: {
+    flex: 1,
+    width: '100%',
+    alignSelf: 'center',
+    minWidth: 0,
     minHeight: 0,
   },
   /** Top chrome only — body is a sibling (`edgeBodySlot`). Single vertical inset (no stacked wrappers). */

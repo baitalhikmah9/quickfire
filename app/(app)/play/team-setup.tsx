@@ -20,6 +20,11 @@ import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
+import {
+  getTeamSetupClassicBodyLayout,
+  getWebTeamCardMinHeight,
+} from '@/lib/layout/teamSetupLayout';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
 import type { GameSessionState } from '@/features/shared';
@@ -96,16 +101,32 @@ function hotSeatRoundsFromConfig(team: GameSessionState['config']): number {
 export default function TeamSetupScreen() {
   const router = useRouter();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
-  const compact = windowHeight < 520 || windowWidth < 340;
-  const shortScreen = windowHeight < 700;
+  const viewport = useViewportLayout();
+  const compact = viewport.isCompact || windowWidth < 340;
+  const shortScreen = !viewport.isTall;
   const landscape = windowWidth > windowHeight;
-  const shortSide = Math.min(windowWidth, windowHeight);
+  const shortSide = viewport.shortSide;
   /** Phones / mobile web narrow view — hug Continue CTA with no extra strip padding. */
   const tightContinueStrip =
     Platform.OS === 'ios' || Platform.OS === 'android' || shortSide < 560;
   /** Desktop web: three-column balanced layout with constrained panel widths. */
-  const isWebLayout = Platform.OS === 'web' && windowWidth >= 900;
-  const viewportScale = Math.max(0.72, Math.min(1.08, Math.min(windowWidth / 860, windowHeight / 620)));
+  const isWebLayout = Platform.OS === 'web' && viewport.isWide;
+  const viewportScale = viewport.scale;
+  const setupRowMaxWidth = viewport.contentMaxWidth('playWide');
+  const classicBodyLayout = useMemo(
+    () =>
+      getTeamSetupClassicBodyLayout({
+        isWebLayout,
+        mainJustify: viewport.mainJustify,
+        setupRowMaxWidth,
+      }),
+    [isWebLayout, setupRowMaxWidth, viewport.mainJustify]
+  );
+  /** Wide web: cards fill most of the viewport height (not a short centered strip). */
+  const webTeamCardMinHeight = useMemo(
+    () => getWebTeamCardMinHeight(windowHeight),
+    [windowHeight]
+  );
   const { getTextStyle, t } = useI18n();
   const paletteId = useThemeStore((state) => state.paletteId);
   const themedStyles = useMemo(() => makeThemedStyles(), [paletteId]);
@@ -197,7 +218,16 @@ export default function TeamSetupScreen() {
   const teamCard = (team: GameSessionState['teams'][number]) => {
     const memberCount = team.playerNames?.length ?? 0;
     return (
-      <View testID="team-setup-team-card" style={[styles.teamCard, themedStyles.teamCard, { padding: cardPad }]}>
+      <View
+        testID="team-setup-team-card"
+        style={[
+          styles.teamCard,
+          themedStyles.teamCard,
+          { padding: cardPad },
+          // Wide web: tall cards (player list flexes to fill), not content-hug strips.
+          isWebLayout && [styles.webTeamCardTall, { minHeight: webTeamCardMinHeight }],
+        ]}
+      >
         <View style={styles.editableInputWrap}>
           <TextInput
             value={team.name}
@@ -346,7 +376,7 @@ export default function TeamSetupScreen() {
                       minHeight: d.nameMinH,
                       fontSize: d.nameFontSize,
                       paddingHorizontal: d.namePadH,
-                      borderRadius: d.nameMinH / 2,
+                      borderRadius: 14,
                     },
                     getTextStyle(),
                   ]}
@@ -383,7 +413,7 @@ export default function TeamSetupScreen() {
                   {
                     width: d.countSize,
                     height: d.countSize,
-                    borderRadius: d.countSize / 2,
+                    borderRadius: 14,
                   },
                   themedStyles.rumbleCountButton,
                   selected && styles.rumbleCountButtonSelected,
@@ -534,15 +564,23 @@ export default function TeamSetupScreen() {
   ) : (
     <ScrollView
       style={styles.cardsViewport}
-      contentContainerStyle={styles.teamSetupClassicScrollContent}
+      contentContainerStyle={[
+        styles.teamSetupClassicScrollContent,
+        classicBodyLayout.contentContainer,
+      ]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={Platform.OS !== 'web'}
     >
       {landscape ? (
         isWebLayout ? (
-          <View style={styles.webLandscapeRow}>
-            <View style={styles.webTeamPanel}>{teamCard(session.teams[0])}</View>
-            <View style={styles.webCenterColumn}>
+          <View
+            style={[styles.webLandscapeRow, classicBodyLayout.webLandscapeRow]}
+            testID="team-setup-web-row"
+          >
+            <View style={[styles.webTeamPanel, { minHeight: webTeamCardMinHeight }]}>
+              {teamCard(session.teams[0])}
+            </View>
+            <View style={[styles.webCenterColumn, { minHeight: webTeamCardMinHeight }]}>
               {centerColumn}
               <View style={styles.webContinueSection}>
                 <Button
@@ -569,17 +607,34 @@ export default function TeamSetupScreen() {
                 )}
               </View>
             </View>
-            <View style={styles.webTeamPanel}>{teamCard(session.teams[1])}</View>
+            <View style={[styles.webTeamPanel, { minHeight: webTeamCardMinHeight }]}>
+              {teamCard(session.teams[1])}
+            </View>
           </View>
         ) : (
-          <View style={[styles.landscapeRow, shortScreen && styles.landscapeRowTight]}>
+          <View
+            style={[
+              styles.landscapeRow,
+              shortScreen && styles.landscapeRowTight,
+              // When vertically centered, drop flex:1 fill so the row can sit mid-viewport.
+              classicBodyLayout.contentContainer.justifyContent === 'center' &&
+                styles.landscapeRowContentSized,
+            ]}
+          >
             <View style={styles.teamCol}>{teamCard(session.teams[0])}</View>
             <View style={styles.centerCol}>{centerColumn}</View>
             <View style={styles.teamCol}>{teamCard(session.teams[1])}</View>
           </View>
         )
       ) : (
-        <View style={[styles.portraitColumn, shortScreen && styles.portraitColumnTight]}>
+        <View
+          style={[
+            styles.portraitColumn,
+            shortScreen && styles.portraitColumnTight,
+            classicBodyLayout.contentContainer.justifyContent === 'center' &&
+              styles.portraitColumnContentSized,
+          ]}
+        >
           <View style={styles.teamSlot}>{teamCard(session.teams[0])}</View>
           <View style={styles.teamSlot}>{teamCard(session.teams[1])}</View>
           <View style={styles.portraitCenterSlot}>{centerColumn}</View>
@@ -630,6 +685,8 @@ export default function TeamSetupScreen() {
       bodyFrame={false}
       backgroundColor={T.canvas}
       chromeColumnStyle={tightContinueStrip ? { paddingBottom: 0 } : undefined}
+      // Wide web: same max-width as the card row so back/token edges align with cards.
+      contentMaxWidth={isWebLayout ? setupRowMaxWidth : undefined}
     >
       <WagerInfoModal visible={wagerInfoOpen} onClose={() => setWagerInfoOpen(false)} />
 
@@ -757,10 +814,10 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   teamSetupClassicScrollContent: {
-    flexGrow: 1,
+    // justifyContent / alignItems / flexGrow come from getTeamSetupClassicBodyLayout.
     minWidth: 0,
-    justifyContent: 'flex-start',
     paddingBottom: SPACING.xs,
+    width: '100%',
   },
   landscapeRow: {
     flex: 1,
@@ -768,6 +825,12 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     minHeight: 0,
     minWidth: 0,
+  },
+  /** Content-sized landscape row for vertical centering in ScrollView. */
+  landscapeRowContentSized: {
+    flex: 0,
+    flexGrow: 0,
+    width: '100%',
   },
   landscapeRowTight: {
     gap: SPACING.sm,
@@ -789,6 +852,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
     flexDirection: 'column',
     gap: SPACING.sm,
+  },
+  portraitColumnContentSized: {
+    flex: 0,
+    flexGrow: 0,
+    width: '100%',
   },
   portraitColumnTight: {
     gap: SPACING.xs,
@@ -1067,7 +1135,7 @@ const styles = StyleSheet.create({
   },
   stepperButton: {
     backgroundColor: T.surface,
-    borderRadius: 18,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     ...PLASTIC_FACE,
@@ -1111,7 +1179,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     backgroundColor: T.surface,
-    borderRadius: 24,
+    borderRadius: 14,
     ...PLASTIC_FACE,
     ...neumorphicLift(T.shadowStrong, 'pill'),
   },
@@ -1159,40 +1227,50 @@ const styles = StyleSheet.create({
   },
 
   /* ── Web-only desktop layout ── */
-  /** Outer row: centered container with max-width for a composed desktop feel. */
+  /**
+   * Outer row base styles. Placement (maxWidth, flexGrow:0, centering) comes from
+   * `getTeamSetupClassicBodyLayout` so the block stays content-sized and can be
+   * centered inside the ScrollView.
+   */
   webLandscapeRow: {
-    flex: 1,
     flexDirection: 'row',
     gap: 36,
-    maxWidth: 1320,
-    alignSelf: 'center',
-    width: '100%',
     minHeight: 0,
     minWidth: 0,
   },
-  /** Team panel: constrained width with a sensible height range so it doesn't stretch. */
+  /**
+   * Team panel on wide web. Fills side of the shared frame (no maxWidth cap) so
+   * the card's outer edge matches the header back / token chip edge.
+   * Runtime `minHeight` from `getWebTeamCardMinHeight`.
+   */
   webTeamPanel: {
     flex: 1,
-    maxWidth: 480,
-    minHeight: 580,
-    maxHeight: '70vh',
     minWidth: 0,
   },
-  /** Center column: fixed action width, vertically centers wager + Continue button. */
+  /** Applied to the card face inside `webTeamPanel`; minHeight set inline from viewport. */
+  webTeamCardTall: {
+    width: '100%',
+    flex: 1,
+  },
+  /**
+   * Center column matches team card height. Wager stays upper; Continue is
+   * pinned to the bottom via `marginTop: 'auto'` on the continue section.
+   */
   webCenterColumn: {
     width: 260,
     flexShrink: 0,
     flexGrow: 0,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     gap: 32,
-    minHeight: 0,
+    paddingTop: SPACING.md,
   },
-  /** Wraps the Continue button below the wager card in the center column. */
+  /** Pinned to the bottom of the center column (aligned with Add Player on team cards). */
   webContinueSection: {
     width: '100%',
     alignItems: 'center',
     gap: 4,
+    marginTop: 'auto',
   },
   /** Slightly wider Continue button on web, matching the center column scale. */
   webContinueBtn: {

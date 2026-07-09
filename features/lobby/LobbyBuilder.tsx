@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 72,
-    borderRadius: 36,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: SPACING.lg,

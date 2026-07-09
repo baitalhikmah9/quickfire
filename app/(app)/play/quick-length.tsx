@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, Platform, useWindowDimensions, type TextStyle } from 'react-native';
+import { View, Text, StyleSheet, Platform, type TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
@@ -7,6 +7,7 @@ import { BORDER_RADIUS, FONT_SIZES, SPACING, LAYOUT, FONTS } from '@/constants';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import { QUICK_PLAY_TOPIC_OPTIONS } from '@/features/play/tokenCosts';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
 import { usePlayStore } from '@/store/play';
 import type { SupportedLocale } from '@/lib/i18n/config';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
@@ -128,11 +129,12 @@ function OptionRow({
 
 export default function QuickLengthScreen() {
   const router = useRouter();
-  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  const viewport = useViewportLayout();
   const { t, getTextStyle } = useI18n();
   const setQuickPlayTopicCount = usePlayStore((state) => state.setQuickPlayTopicCount);
   const isWeb = Platform.OS === 'web';
-  const compact = windowHeight < 720;
+  const compact = viewport.height < 720;
+  const setupMaxWidth = viewport.contentMaxWidth('setup');
   const tokensText = t('common.tokens');
   const tokenLabel = tokensText.toUpperCase();
   const options = QUICK_PLAY_TOPIC_OPTIONS.map(({ topicCount, tokenCost }) => ({
@@ -165,12 +167,20 @@ export default function QuickLengthScreen() {
       onBack={handleBack}
       bodyFrame={false}
       bodyScrollEnabled={false}
+      contentMaxWidth={isWeb ? setupMaxWidth : undefined}
     >
-      <View style={[styles.listWrap, isWeb && styles.listWrapWeb]}>
+      <View
+        style={[
+          styles.listWrap,
+          isWeb && styles.listWrapWeb,
+          { justifyContent: viewport.mainJustify },
+        ]}
+      >
           <View
             style={[
               styles.list,
               isWeb ? styles.listWeb : styles.listNative,
+              isWeb && { maxWidth: setupMaxWidth },
             ]}
           >
             {options.map((option) => (
@@ -226,7 +236,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   listWeb: {
-    maxWidth: 960,
+    maxWidth: LAYOUT.setupMaxWidth,
     gap: 22,
     justifyContent: 'center',
     paddingVertical: SPACING.xs,

@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   stepperBtn: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 14,
     backgroundColor: 'rgba(0,0,0,0.03)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 64,
-    borderRadius: 32,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -165,9 +165,13 @@ const styles = StyleSheet.create({
     width: '100%',
     flexShrink: 0,
   },
-  /** Centered on web; width fills parent (screens control width via containers or barMaxWidthOverride). */
+  /**
+   * Centered on web; width fills parent up to barMaxWidthOverride so left/right
+   * controls share edges with centered content cards below.
+   */
   barWeb: {
     alignSelf: 'center',
+    width: '100%',
   },
   side: {
     flex: 1,

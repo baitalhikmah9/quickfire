@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.xl,
+    borderRadius: BORDER_RADIUS.button,
     borderWidth: 2,
   },
   backLabel: {

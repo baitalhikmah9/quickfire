@@ -22,6 +22,11 @@ export type PlayStackHeaderProps = {
   onBackPress?: () => void;
   /** Defaults to labeled play pill; use `icon` for settings/store squircle. */
   backVariant?: HeaderBackButtonVariant;
+  /**
+   * Web: constrain header bar max-width so back / token chip edges align with
+   * centered content cards (same value as the content row max-width).
+   */
+  barMaxWidth?: number;
 };
 
 /**
@@ -30,7 +35,12 @@ export type PlayStackHeaderProps = {
  * Wraps the shared <GameHeader /> in title-only mode so all play screens use
  * consistent header positioning, safe-area handling, and spacing tokens.
  */
-export function PlayStackHeader({ title, onBackPress, backVariant = 'labeled' }: PlayStackHeaderProps) {
+export function PlayStackHeader({
+  title,
+  onBackPress,
+  backVariant = 'labeled',
+  barMaxWidth,
+}: PlayStackHeaderProps) {
   const router = useRouter();
   const { direction, t, uiLocale } = useI18n();
   const tokens = usePlayStore((s) => s.tokens);
@@ -55,6 +65,7 @@ export function PlayStackHeader({ title, onBackPress, backVariant = 'labeled' }:
       <GameHeader
         variant="title"
         title={title}
+        barMaxWidthOverride={barMaxWidth}
         leftSlot={
           <HeaderBackButton
             onPress={handleBack}

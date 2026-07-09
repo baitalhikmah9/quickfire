@@ -6,7 +6,6 @@ import {
   View,
   Text,
   StyleSheet,
-  useWindowDimensions,
   type ViewStyle,
 } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
@@ -23,6 +22,7 @@ import { HubTokenChip } from '@/components/HubTokenChip';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
+import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
 import { usePlayStore } from '@/store/play';
 import { reserveGameEntry, refundGameEntry } from '@/lib/wallet/gameEntry';
 import { useThemeStore } from '@/store/theme';
@@ -128,9 +128,11 @@ export default function AppHubScreen() {
   const [activeModeInfo, setActiveModeInfo] = useState<GameMode | null>(null);
   const [pendingMode, setPendingMode] = useState<GameMode | null>(null);
 
-  const { height: windowHeight } = useWindowDimensions();
+  const viewport = useViewportLayout();
   /** Tighter chrome when vertical space is limited (e.g. phone landscape). */
-  const compact = windowHeight < 560;
+  const compact = viewport.isCompact;
+  const hubMaxWidth = viewport.contentMaxWidth('hub');
+  const hybridScale = viewport.isWide ? viewport.scale : 1;
 
   const rowDir = getRowDirection(direction);
   const formattedTokens = tokens.toLocaleString(uiLocale, { maximumFractionDigits: 0 });
@@ -138,9 +140,15 @@ export default function AppHubScreen() {
 
   const isWeb = Platform.OS === 'web';
 
-  const modeGap = compact ? SPACING.md : (isWeb ? 36 : SPACING.lg);
-  const modeIconSize = compact ? 70 : (isWeb ? 96 : 92);
+  const modeGap = compact
+    ? SPACING.md
+    : Math.round((isWeb ? 36 : SPACING.lg) * hybridScale);
+  const modeIconSize = compact
+    ? 70
+    : Math.round((isWeb ? 96 : 92) * hybridScale);
   const modeInfoIconSize = compact ? 20 : 24;
+  const modeTitleSize = compact ? 12 : Math.round((isWeb ? 17 : 16) * hybridScale);
+  const modeCopySize = compact ? 10 : Math.round((isWeb ? 12 : 11) * hybridScale);
   const minimumTokenCostForMode = useCallback(
     (mode: GameMode) => (mode === 'quickPlay' ? getGameTokenCost(mode, 3) : getGameTokenCost(mode)),
     []
@@ -292,10 +300,10 @@ export default function AppHubScreen() {
       >
         <ScreenContent fullWidth style={styles.viewport}>
           <View style={styles.pageColumn}>
-            {/* Web: shared max-width aligns header bar + card row edges. */}
-            <View style={[styles.contentFrame, isWeb && { maxWidth: 1250 }]}>
+            {/* Shared max-width aligns header bar + card row edges (hybrid hub column). */}
+            <View style={[styles.contentFrame, { maxWidth: hubMaxWidth }]}>
             <GameHeader variant="logoOnly"
-              barMaxWidthOverride={isWeb ? 1250 : undefined}
+              barMaxWidthOverride={isWeb ? hubMaxWidth : undefined}
               leftSlot={
                 <HubTokenChip
                   label={t('common.tokens')}
@@ -327,17 +335,28 @@ export default function AppHubScreen() {
               }
             />
 
-            <View style={styles.mainFill}>
+            <View style={[styles.mainFill, { justifyContent: viewport.mainJustify }]}>
               <View
                 testID="home-mode-row"
                 style={[
                   styles.modeGrid,
-                  { flexDirection: rowDir, flexWrap: 'nowrap', gap: modeGap },
-                  isWeb && { marginTop: 140 },
+                  {
+                    flexDirection: rowDir,
+                    flexWrap: 'nowrap',
+                    gap: modeGap,
+                    // Tall viewports center via mainFill; keep a small top offset only when top-aligned.
+                    marginTop: viewport.mainJustify === 'center' ? 0 : 36,
+                  },
                 ]}
               >
                 {HOME_MODES.map((mode) => (
-                  <View key={mode.id} style={[styles.modeTileContainer, isWeb && { aspectRatio: 0.95 }]}>
+                  <View
+                    key={mode.id}
+                    style={[
+                      styles.modeTileContainer,
+                      viewport.isWide && { aspectRatio: 0.95 },
+                    ]}
+                  >
                     {(() => {
                       const minimumCost = minimumTokenCostForMode(mode.id);
                       const canPlayMode = needsSignIn || tokens >= minimumCost;
@@ -365,7 +384,7 @@ export default function AppHubScreen() {
                               borderRadius: 44,
                               opacity: !canPlayMode ? 0.45 : pressed ? 0.94 : 1,
                               transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-                              ...(isWeb ? { paddingVertical: SPACING.md } : {}),
+                              ...(viewport.isWide ? { paddingVertical: SPACING.md } : {}),
                             },
                             brandRaisedSurfaceShadow('hero'),
                           ]}
@@ -390,8 +409,7 @@ export default function AppHubScreen() {
                             style={[
                               styles.modeTileLabel,
                               compact && styles.modeTileLabelCompact,
-                              { color: textPrimary },
-                              isWeb && { fontSize: 17 },
+                              { color: textPrimary, fontSize: modeTitleSize },
                             ]}
                             numberOfLines={1}
                             adjustsFontSizeToFit
@@ -403,8 +421,11 @@ export default function AppHubScreen() {
                             style={[
                               styles.modeTileCopy,
                               compact && styles.modeTileCopyCompact,
-                              { color: textMuted },
-                              isWeb && { fontSize: 12, lineHeight: 16 },
+                              {
+                                color: textMuted,
+                                fontSize: modeCopySize,
+                                lineHeight: Math.round(modeCopySize * 1.35),
+                              },
                             ]}
                             numberOfLines={2}
                             adjustsFontSizeToFit
@@ -619,7 +640,7 @@ const styles = StyleSheet.create({
   contentFrame: {
     flex: 1,
     width: '100%',
-    maxWidth: 880,
+    maxWidth: LAYOUT.hubMaxWidth,
     alignSelf: 'center',
     paddingHorizontal: LAYOUT.screenGutter,
   },

@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
-import { BORDER_RADIUS, SPACING, FONTS } from '@/constants';
+import { BORDER_RADIUS, LAYOUT, SPACING, FONTS } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import {
@@ -202,12 +202,15 @@ export default function PlayQuestionScreen() {
   const chromeSideWidth = isVeryCompactHeader ? 70 : isCompactHeader ? 78 : 104;
   const questionContentWidth = Math.min(
     windowWidth - headerHorizontalPadding * 2,
-    Platform.OS === 'web' ? 1100 : 980
+    Platform.OS === 'web' ? LAYOUT.playMaxWidth : Math.min(LAYOUT.playMaxWidth, 980)
   );
   /** Pixel width for prompt text — bounds `adjustsFontSizeToFit` (especially on web). */
   const promptLayoutWidth = Math.max(
     260,
-    Math.min(questionContentWidth, Platform.OS === 'web' ? 1040 : 920)
+    Math.min(
+      questionContentWidth,
+      Platform.OS === 'web' ? LAYOUT.playMaxWidth - 80 : Math.min(LAYOUT.playMaxWidth, 920)
+    )
   );
   const questionPromptSizing = useMemo(
     () => getQuestionPromptSizing(promptLayoutWidth),
@@ -839,7 +842,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     flexBasis: 0,
     maxWidth: 220,
-    borderRadius: 18,
+    borderRadius: BORDER_RADIUS.button,
     backgroundColor: '#FF8A00',
     alignItems: 'center',
     justifyContent: 'center',
@@ -884,7 +887,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     flexBasis: 0,
     maxWidth: 320,
-    borderRadius: 18,
+    borderRadius: BORDER_RADIUS.button,
     backgroundColor: T.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1090,7 +1093,7 @@ const styles = StyleSheet.create({
     minHeight: 58,
     paddingHorizontal: 32,
     paddingVertical: 16,
-    borderRadius: 22,
+    borderRadius: BORDER_RADIUS.button,
     alignItems: 'center',
     justifyContent: 'center',
   },

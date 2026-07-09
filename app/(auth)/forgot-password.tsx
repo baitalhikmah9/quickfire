@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   },
   primaryCta: {
     height: 64,
-    borderRadius: 32,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },

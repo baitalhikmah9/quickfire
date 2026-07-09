@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, LAYOUT, FONTS, BORDER_RADIUS } from '@/constants';
 import type { GameMode } from '@/features/shared';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { getRowDirection } from '@/lib/i18n/direction';
+import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
 import { usePlayStore } from '@/store/play';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { useThemeStore } from '@/store/theme';
@@ -19,12 +20,12 @@ type ModeDef = {
 
 export default function PlayModeScreen() {
   const router = useRouter();
-  const { width, height } = useWindowDimensions();
+  const viewport = useViewportLayout();
+  const { width, height } = viewport;
   const { t, direction } = useI18n();
   useThemeStore((state) => state.paletteId);
   const setMode = usePlayStore((state) => state.setMode);
   const storedMode = usePlayStore((state) => state.session?.mode);
-  const isWeb = Platform.OS === 'web';
 
   const [selected, setSelected] = useState<GameMode>('classic');
 
@@ -79,22 +80,18 @@ export default function PlayModeScreen() {
   );
 
   const horizontalPadding = LAYOUT.screenGutter * 2;
-  const gap = SPACING.md;
+  const gap = Math.round(SPACING.md * (viewport.isWide ? viewport.scale : 1));
   const gapsTotal = gap * 3;
   /** Web / first paint can report 0×0 before layout; avoid 0-sized tiles and icon size 0 (can crash). */
   const safeW = Math.max(1, width);
   const safeH = Math.max(1, height);
-  const rowInnerWidth = safeW - horizontalPadding;
+  const setupMaxWidth = viewport.contentMaxWidth('setup');
+  const rowInnerWidth = Math.min(safeW - horizontalPadding, setupMaxWidth);
   const rowTileBudget = Math.max(0, (rowInnerWidth - gapsTotal) / 4);
-  const tileSide = Math.max(56, Math.min(rowTileBudget, safeH * 0.38));
-
-  /** On native landscape: tighter header + content closer to top so cards don't clip off bottom. */
-  const isNativeLandscape = !isWeb && width > height;
-  const contentTopMargin = isNativeLandscape
-    ? 8
-    : isWeb
-      ? 48
-      : 24;
+  const tileSide = Math.max(
+    56,
+    Math.min(rowTileBudget, safeH * 0.38 * (viewport.isWide ? viewport.scale : 1))
+  );
 
   return (
     <PlayScaffold
@@ -102,9 +99,10 @@ export default function PlayModeScreen() {
       onBack={handleBack}
       bodyFrame={false}
       bodyScrollEnabled={false}
+      contentMaxWidth={viewport.isWide ? setupMaxWidth : undefined}
     >
-      <View style={styles.body}>
-        <View style={[styles.cardsArea, { marginTop: contentTopMargin }]}>
+      <View style={[styles.body, { justifyContent: viewport.mainJustify }]}>
+        <View style={styles.cardsArea}>
           <View
             style={[
               styles.modeRow,
@@ -162,10 +160,11 @@ const styles = StyleSheet.create({
     minHeight: 0,
     minWidth: 0,
   },
-  /** Cards sit in the upper portion — no full-screen vertical centering. */
+  /** Card row; vertical placement comes from body `justifyContent` via viewport layout. */
   cardsArea: {
     alignItems: 'center',
     justifyContent: 'flex-start',
+    width: '100%',
   },
 
   modeRow: {

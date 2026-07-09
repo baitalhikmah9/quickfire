@@ -1424,7 +1424,7 @@ const styles = StyleSheet.create({
   softUiBtn: {
     width: '100%',
     backgroundColor: T.surface,
-    borderRadius: 32,
+    borderRadius: BORDER_RADIUS.button,
     ...PLASTIC_FACE,
     ...neumorphicLift('rgba(15, 23, 42, 0.14)', 'pill'),
   },

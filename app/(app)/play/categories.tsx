@@ -18,7 +18,7 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SPACING, FONTS, FONT_SIZES, LAYOUT } from '@/constants';
+import { BREAKPOINTS, SPACING, FONTS, FONT_SIZES, LAYOUT } from '@/constants';
 import {
   getCategoryPictureSource,
   MISSING_CATEGORY_PICTURE_LABEL,
@@ -42,7 +42,7 @@ import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
 
 // ── Grid constants ──────────────────────────────────────────────────────
 
-const WEB_GRID_MAX_WIDTH = 1400;
+const WEB_GRID_MAX_WIDTH = LAYOUT.playWideMaxWidth;
 const WEB_GRID_GAP = 30;
 const NATIVE_GRID_GAP = 24;
 const NATIVE_COMPACT_GRID_GAP = 12;
@@ -281,7 +281,7 @@ export default function CategorySelectionScreen() {
   }, [session]);
 
   const isWeb = Platform.OS === 'web';
-  const useWebLayout = isWeb && windowWidth >= 900;
+  const useWebLayout = isWeb && windowWidth >= BREAKPOINTS.wide;
   const isLandscape = windowWidth > windowHeight;
   const compactHeader = !useWebLayout && isLandscape;
 
@@ -1037,7 +1037,7 @@ const styles = StyleSheet.create({
   selectedPillClose: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(51,51,51,0.08)',
@@ -1046,7 +1046,7 @@ const styles = StyleSheet.create({
   selectedPillCloseDense: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(51,51,51,0.08)',

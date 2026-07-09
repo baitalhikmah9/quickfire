@@ -16,7 +16,7 @@ export type HeaderBackButtonProps = {
   label: string;
   accessibilityLabel?: string;
   /**
-   * - `labeled` — play-stack pill (chevron + "Back" text)
+   * - `labeled` — play-stack control (chevron + "Back" text)
    * - `icon` — settings/store raised 44×44 squircle (chevron only)
    */
   variant?: HeaderBackButtonVariant;
@@ -33,7 +33,7 @@ const BACK_PILL_SHADOW = {
 /**
  * Shared back control for GameHeader `leftSlot`.
  *
- * Default is the labeled play-stack pill. Use `variant="icon"` for the
+ * Default is the labeled play-stack control. Use `variant="icon"` for the
  * settings/store raised squircle (docs/BRAND_GUIDELINES.md header back).
  */
 export function HeaderBackButton({
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     minWidth: 96,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.xl,
+    borderRadius: BORDER_RADIUS.button,
     borderWidth: 0,
     backgroundColor: T.surface,
     borderTopWidth: 2,

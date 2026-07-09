@@ -59,6 +59,7 @@ function getPaletteNameKey(id: ThemePaletteId) {
 
 export default function SettingsScreen() {
   const { width } = useWindowDimensions();
+  const formMaxWidth = LAYOUT.formMaxWidth;
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -124,7 +125,7 @@ export default function SettingsScreen() {
     >
       <ScreenContent fullWidth style={styles.settingsViewport}>
         {/* One frame owns outer gutter so header controls and content cards share edges. */}
-        <View style={styles.contentFrame}>
+        <View style={[styles.contentFrame, { maxWidth: formMaxWidth + LAYOUT.screenGutter * 2 }]}>
         <View style={styles.header}>
           <View style={styles.headerSide}>
             <Pressable
@@ -751,6 +752,8 @@ const styles = StyleSheet.create({
   contentFrame: {
     flex: 1,
     width: '100%',
+    maxWidth: LAYOUT.formMaxWidth + LAYOUT.screenGutter * 2,
+    alignSelf: 'center',
     minWidth: 0,
     minHeight: 0,
     paddingHorizontal: LAYOUT.screenGutter,

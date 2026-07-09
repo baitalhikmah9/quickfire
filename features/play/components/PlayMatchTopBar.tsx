@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 999,
+    borderRadius: 14,
     backgroundColor: T.colors.surface,
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderColor: 'rgba(15, 23, 42, 0.1)',
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   logoScoreAdjust: {
     width: 26,
     height: 26,
-    borderRadius: 13,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(15, 23, 42, 0.06)',

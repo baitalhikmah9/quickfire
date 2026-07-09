@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   actionBtn: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
-    borderRadius: 22,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     paddingHorizontal: SPACING.xxl,
     height: 64,
-    borderRadius: 32,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },

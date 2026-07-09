@@ -4,11 +4,12 @@ import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
-import { BORDER_RADIUS, FONT_SIZES, SPACING, FONTS } from '@/constants';
+import { BORDER_RADIUS, FONT_SIZES, SPACING, FONTS, LAYOUT } from '@/constants';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
+import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
 import { usePlayStore } from '@/store/play';
 import { consumeGameEntry } from '@/lib/wallet/gameEntry';
 
@@ -16,6 +17,8 @@ export default function PlayEndScreen() {
   const router = useRouter();
   const colors = useTheme();
   const { getTextStyle, t } = useI18n();
+  const viewport = useViewportLayout();
+  const setupMaxWidth = viewport.contentMaxWidth('setup');
   const {
     session,
     resetSession,
@@ -61,84 +64,113 @@ export default function PlayEndScreen() {
       onBack={() => router.replace('/(app)/')}
       showHud
       session={session}
+      contentMaxWidth={viewport.isWide ? setupMaxWidth : undefined}
     >
       <View
         style={[
-          styles.winnerCard,
+          styles.endColumn,
           {
-            backgroundColor: `${colors.primary}10`,
-            borderColor: `${colors.primary}25`,
+            maxWidth: setupMaxWidth,
+            justifyContent: viewport.mainJustify,
           },
         ]}
       >
-        <Text style={[styles.winnerLabel, { color: colors.textSecondary }, getTextStyle()]}>
-          {t('play.winner')}
-        </Text>
-        <Text style={[styles.winnerName, { color: colors.text }, getTextStyle(undefined, 'displayBold', 'center')]}>
-          {winner?.name ?? t('play.tieGame')}
-        </Text>
-      </View>
-
-      <View style={styles.teamList}>
-        {session.teams.map((team) => (
-          <View
-            key={team.id}
+        <View
+          style={[
+            styles.winnerCard,
+            {
+              backgroundColor: `${colors.primary}10`,
+              borderColor: `${colors.primary}25`,
+            },
+          ]}
+        >
+          <Text style={[styles.winnerLabel, { color: colors.textSecondary }, getTextStyle()]}>
+            {t('play.winner')}
+          </Text>
+          <Text
             style={[
-              styles.teamRow,
+              styles.winnerName,
               {
-                backgroundColor: colors.cardBackground,
-                borderColor: colors.border,
+                color: colors.text,
+                fontSize: Math.round(32 * (viewport.isWide ? viewport.scale : 1)),
+                lineHeight: Math.round(38 * (viewport.isWide ? viewport.scale : 1)),
               },
+              getTextStyle(undefined, 'displayBold', 'center'),
             ]}
           >
-            <View>
-              <Text style={[styles.teamName, { color: colors.text }]}>{team.name}</Text>
-              <Text style={[styles.teamMeta, { color: colors.textSecondary }]}>
-                {(team.playerNames ?? []).join(' • ')}
-              </Text>
-            </View>
-            <Text style={[styles.teamScore, { color: colors.text }]}>{team.score}</Text>
-          </View>
-        ))}
-      </View>
+            {winner?.name ?? t('play.tieGame')}
+          </Text>
+        </View>
 
-      <View style={styles.actions}>
-        {session.lastResolvedTurn ? (
+        <View style={styles.teamList}>
+          {session.teams.map((team) => (
+            <View
+              key={team.id}
+              style={[
+                styles.teamRow,
+                {
+                  backgroundColor: colors.cardBackground,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View>
+                <Text style={[styles.teamName, { color: colors.text }]}>{team.name}</Text>
+                <Text style={[styles.teamMeta, { color: colors.textSecondary }]}>
+                  {(team.playerNames ?? []).join(' • ')}
+                </Text>
+              </View>
+              <Text style={[styles.teamScore, { color: colors.text }]}>{team.score}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.actions}>
+          {session.lastResolvedTurn ? (
+            <Button
+              title={t('play.reviewLastAnswer')}
+              variant="secondary"
+              onPress={() => {
+                reopenLastResolvedTurn();
+                router.replace('/play/question');
+              }}
+            />
+          ) : null}
           <Button
-            title={t('play.reviewLastAnswer')}
+            title={t('play.backToHome')}
             variant="secondary"
             onPress={() => {
-              reopenLastResolvedTurn();
-              router.replace('/play/question');
+              void consumeCurrentEntry().then(() => {
+                resetSession();
+                router.replace('/(app)/');
+              });
             }}
           />
-        ) : null}
-        <Button
-          title={t('play.backToHome')}
-          variant="secondary"
-          onPress={() => {
-            void consumeCurrentEntry().then(() => {
-              resetSession();
-              router.replace('/(app)/');
-            });
-          }}
-        />
-        <Button
-          title={t('play.startAnotherMatch')}
-          onPress={() => {
-            void consumeCurrentEntry().then(() => {
-              resetSession();
-              ensureDraft();
-              router.replace('/play/mode');
-            });
-          }}
-        />
+          <Button
+            title={t('play.startAnotherMatch')}
+            onPress={() => {
+              void consumeCurrentEntry().then(() => {
+                resetSession();
+                ensureDraft();
+                router.replace('/play/mode');
+              });
+            }}
+          />
+        </View>
       </View>
     </PlayScaffold>
   );
 }
 
 const styles = StyleSheet.create({
+  endColumn: {
+    flex: 1,
+    width: '100%',
+    maxWidth: LAYOUT.setupMaxWidth,
+    alignSelf: 'center',
+    gap: SPACING.md,
+    minHeight: 0,
+  },
   winnerCard: {
     borderWidth: 0,
     borderRadius: BORDER_RADIUS.lg,

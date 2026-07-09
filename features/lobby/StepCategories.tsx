@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     height: 60,
-    borderRadius: 30,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

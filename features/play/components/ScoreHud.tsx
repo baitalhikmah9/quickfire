@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     minWidth: 38,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 999,
+    borderRadius: BORDER_RADIUS.button,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

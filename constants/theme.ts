@@ -156,7 +156,16 @@ export const BORDER_RADIUS = {
   xl: 42,
   tile: 28,
   modal: 44,
-  pill: 999,
+  /**
+   * Standard control / action button corner — rounded square (squircle), not capsule.
+   * Matches docs/BRAND_GUIDELINES.md “Standard button surface” (14).
+   */
+  button: 14,
+  /**
+   * Alias of `button` for legacy call sites. Was capsule (999); do not use for full pills.
+   * For true circles (avatars), use half the element size explicitly.
+   */
+  pill: 14,
 };
 
 /** Chunkier drop shadows for a playful, lifted-card feel */
@@ -187,13 +196,25 @@ export const SHADOWS = {
 export const BREAKPOINTS = {
   phone: 0,
   tablet: 768,
+  /** Wide web / desktop layouts (categories, board web branch) */
+  wide: 900,
   landscape: 1024,
 };
 
-/** Tab and auth screens: shared horizontal bounds on wide viewports */
+/** Shared horizontal bounds and content columns on wide viewports */
 export const LAYOUT = {
-  /** Single-column flows (auth, forms, play hub stack) */
+  /** Single-column flows (auth, forms) — alias of formMaxWidth */
   contentMaxWidth: 560,
+  /** Auth / settings / form columns */
+  formMaxWidth: 560,
+  /** Home hub mode row + matching header bar */
+  hubMaxWidth: 1250,
+  /** Board-class play chrome (question/board center column) */
+  playMaxWidth: 1120,
+  /** Categories-class grids on wide web */
+  playWideMaxWidth: 1400,
+  /** Quick-length / single-column setup panels */
+  setupMaxWidth: 960,
   /** Horizontal inset for primary column content */
   screenGutter: SPACING.lg,
 } as const;
