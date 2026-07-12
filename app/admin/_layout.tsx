@@ -12,7 +12,7 @@ export default function AdminStandaloneLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, statusBarHidden: true }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="promo-codes" />
       <Stack.Screen name="wallets" />

@@ -42,8 +42,8 @@ jest.mock('@/lib/i18n/useI18n', () => ({
       const messages: Record<string, string> = {
         'common.back': 'Back',
         'common.loading': 'Loading',
-        'play.rumbleWaiting': 'Teams appear after 30 seconds.',
-        'play.rumbleFirstWindow': `${values?.team ?? 'Team'} answers now.`,
+        'play.rumbleWaiting': 'Team 1 appears after 30s, answers by 60. Team 2 appears after 1:15.',
+        'play.rumbleFirstWindow': `${values?.team ?? 'Team'} answers by 60s.`,
         'play.rumbleTransitionWindow': 'Next team appears at 01:16.',
         'play.rumbleSecondWindow': `${values?.team ?? 'Team'} answers now. Round ends at 01:30.`,
         'play.rumbleRoundEnded': 'Round ended.',
@@ -193,7 +193,9 @@ describe('PlayQuestionScreen', () => {
     expect(screen.queryByText('Beta')).toBeNull();
     expect(screen.queryByText('Gamma')).toBeNull();
     expect(screen.getByTestId('rumble-timing-guide')).toBeTruthy();
-    expect(screen.getByText('TEAMS APPEAR AFTER 30 SECONDS.')).toBeTruthy();
+    expect(
+      screen.getByText('TEAM 1 APPEARS AFTER 30S, ANSWERS BY 60. TEAM 2 APPEARS AFTER 1:15.')
+    ).toBeTruthy();
 
     jest.spyOn(Date, 'now').mockReturnValue(1_031_000);
     act(() => {
@@ -205,7 +207,7 @@ describe('PlayQuestionScreen', () => {
     expect(screen.getByText('ANSWERING')).toBeTruthy();
     expect(screen.getByLabelText('Second team locked')).toBeTruthy();
     expect(screen.queryByText('Gamma')).toBeNull();
-    expect(screen.getByText('BETA ANSWERS NOW.')).toBeTruthy();
+    expect(screen.getByText('BETA ANSWERS BY 60S.')).toBeTruthy();
     expect(screen.getByText('TOPIC: SCIENCE | 200 POINTS')).toBeTruthy();
 
     jest.spyOn(Date, 'now').mockReturnValue(1_061_000);
@@ -460,5 +462,45 @@ describe('PlayQuestionScreen', () => {
 
     expect(screen.getByTestId('question-answer-next-turn-dock')).toBeTruthy();
     expect(screen.getByText('NEXT TURN')).toBeTruthy();
+  });
+
+  it('keeps the active wager multiplier visible through the question and answer states', () => {
+    const question = createQuestion({
+      id: 'q-wager-multiplier',
+      canonicalKey: 'science:200:wager-multiplier',
+    });
+    const wager = {
+      wageringTeamId: 'team_1',
+      targetTeamId: 'team_2',
+      multiplier: 1.5 as const,
+      question,
+    };
+
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'classic',
+        currentQuestion: question,
+        board: [question],
+        wager,
+      }),
+    });
+
+    render(<PlayQuestionScreen />);
+    expect(screen.getByText('Wager x1.5')).toBeTruthy();
+
+    act(() => {
+      usePlayStore.setState({
+        session: createSession({
+          mode: 'classic',
+          step: 'answer',
+          phase: 'answerLock',
+          currentQuestion: question,
+          board: [question],
+          wager,
+        }),
+      });
+    });
+
+    expect(screen.getByText('Wager x1.5')).toBeTruthy();
   });
 });

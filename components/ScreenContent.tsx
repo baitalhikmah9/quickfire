@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import {
+  Platform,
   ScrollView,
   View,
   type ScrollViewProps,
@@ -9,7 +10,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LAYOUT, SPACING } from '@/constants';
+import { LAYOUT, SPACING, getStandardChromeTopPadding } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
 
 export type ScreenContentProps = ViewProps & {
@@ -71,9 +72,18 @@ export function Screen({
     <View style={[styles.body, contentStyle]}>{children}</View>
   );
 
+  const includeTopChromePad = edges.includes('top');
+  const chromeTopPad = includeTopChromePad
+    ? getStandardChromeTopPadding(Platform.OS === 'web')
+    : 0;
+
   return (
     <SafeAreaView edges={edges} style={[styles.safeArea, { backgroundColor }]}>
-      <ScreenContent fullWidth={fullWidth} maxWidth={maxWidth} style={[styles.shell, style]}>
+      <ScreenContent
+        fullWidth={fullWidth}
+        maxWidth={maxWidth}
+        style={[styles.shell, chromeTopPad > 0 ? { paddingTop: chromeTopPad } : null, style]}
+      >
         {header}
         {body}
       </ScreenContent>
@@ -130,6 +140,8 @@ const styles = StyleSheet.create({
   },
   root: {
     width: '100%',
+    // Allow play boards / edge-to-edge shells to claim remaining column height.
+    minHeight: 0,
   },
   gutter: {
     paddingHorizontal: LAYOUT.screenGutter,

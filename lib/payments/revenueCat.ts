@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 
 export interface StoreProductInfo {
   identifier: string;
@@ -219,6 +219,12 @@ export function subscribeCustomerInfo(
 export async function configureRevenueCatOnce(): Promise<void> {
   if (!isRevenueCatSupported()) {
     throw new Error('Purchases are only available on iOS and Android.');
+  }
+
+  if (!NativeModules.RNPurchases) {
+    throw new Error(
+      'In-app purchases require a development build; Expo Go does not include the RevenueCat native module.'
+    );
   }
 
   const apiKey = getRevenueCatApiKey();

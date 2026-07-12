@@ -116,6 +116,7 @@ const questionCardSchema = z.object({
   boardSide: z.enum(['left', 'right']).optional(),
   rumbleFirstTeamId: z.string().optional(),
   rumbleSecondTeamId: z.string().optional(),
+  assignedTeamId: z.string().optional(),
 });
 
 const categoryOptionSchema = z.object({

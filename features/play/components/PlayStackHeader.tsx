@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { GameHeader } from '@/components/GameHeader';
+import { GameHeader, type GameHeaderTopPad } from '@/components/GameHeader';
 import {
   HeaderBackButton,
   type HeaderBackButtonVariant,
@@ -27,6 +27,11 @@ export type PlayStackHeaderProps = {
    * centered content cards (same value as the content row max-width).
    */
   barMaxWidth?: number;
+  /**
+   * Forwarded to GameHeader. Use `none` when the parent scaffold already applied
+   * standard chrome top padding (edge-to-edge PlayScaffold).
+   */
+  topPad?: GameHeaderTopPad;
 };
 
 /**
@@ -40,6 +45,7 @@ export function PlayStackHeader({
   onBackPress,
   backVariant = 'labeled',
   barMaxWidth,
+  topPad = 'standard',
 }: PlayStackHeaderProps) {
   const router = useRouter();
   const { direction, t, uiLocale } = useI18n();
@@ -65,6 +71,7 @@ export function PlayStackHeader({
       <GameHeader
         variant="title"
         title={title}
+        topPad={topPad}
         barMaxWidthOverride={barMaxWidth}
         leftSlot={
           <HeaderBackButton

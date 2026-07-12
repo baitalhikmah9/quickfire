@@ -231,18 +231,41 @@ export const AUTH_CARD_RADIUS = 48;
  * one based on `Platform.OS` so every page gets consistent header measurements.
  *
  * - `height`       — bar height (left/center/right row). Native: 56, Web: 64
- * - `topPadding`   — padding above the header bar. Native: sm(8), Web: md(12)
+ * - `topPadding`   — base pad above the header bar. Native: sm(8), Web: md(12)
+ * - `topExtra`     — extra breathing room under the top edge for non-home screens
  * - `bottomGap`    — gap below the full header (bar + subtitle) before main content
  * - `titleBelowGap` — gap between logo bottom and title text (when both shown)
+ *
+ * Home hub uses `topPadding` alone (plus its own frame pad). Every other screen
+ * uses `getStandardChromeTopPadding()` / `getChromeTopPaddingWithInsets()` so
+ * chrome matches the play question screen.
  */
 export const HEADER = {
   heightNative: 56,
   heightWeb: 64,
   topPaddingNative: SPACING.sm,
   topPaddingWeb: SPACING.md,
+  /** Extra gap under the top edge for non-home chrome (question-screen match). */
+  topExtra: SPACING.md,
   bottomGap: SPACING.md,
   titleBelowGap: SPACING.xs,
 } as const;
+
+/**
+ * Padding below the safe-area top (or viewport top when top safe-area is already
+ * applied) for all non-home screens. Matches play question chrome.
+ */
+export function getStandardChromeTopPadding(isWeb = false): number {
+  return (isWeb ? HEADER.topPaddingWeb : HEADER.topPaddingNative) + HEADER.topExtra;
+}
+
+/**
+ * Full top chrome pad when the screen does **not** use SafeAreaView `top` edge
+ * and must account for device inset manually (e.g. question, board).
+ */
+export function getChromeTopPaddingWithInsets(safeAreaTop: number, isWeb = false): number {
+  return Math.max(0, safeAreaTop) + getStandardChromeTopPadding(isWeb);
+}
 
 export type ThemePaletteId = 'default' | 'warm' | 'cool' | 'green' | 'red' | 'dark';
 

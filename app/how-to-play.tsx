@@ -1,10 +1,17 @@
 import { useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Platform, View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPACING, BORDER_RADIUS, FONTS, TYPE_SCALE, LAYOUT } from '@/constants';
+import {
+  SPACING,
+  BORDER_RADIUS,
+  FONTS,
+  TYPE_SCALE,
+  LAYOUT,
+  getStandardChromeTopPadding,
+} from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { ScreenContent } from '@/components/ScreenContent';
 import { PillCollapsibleSection } from '@/components/PillCollapsibleSection';
@@ -173,7 +180,7 @@ const styles = StyleSheet.create({
   topBar: {
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: SPACING.sm,
+    paddingBottom: SPACING.sm,
     width: '100%',
     gap: SPACING.sm,
     minWidth: 0,
@@ -199,6 +206,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: LAYOUT.screenGutter,
+    paddingTop: getStandardChromeTopPadding(Platform.OS === 'web'),
     paddingBottom: SPACING.xxl,
     gap: SPACING.lg,
   },

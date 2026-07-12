@@ -1,5 +1,114 @@
 import { describe, expect, it } from '@jest/globals';
-import { computeBoardVerticalLayout } from '@/features/play/boardLayout';
+import {
+  computeBoardVerticalLayout,
+  getBoardBodyHeight,
+  getBoardGridRowSpacerCount,
+  getBoardGridVerticalInsets,
+  getBoardTopicCellBox,
+  getBoardTopicGridAlignment,
+} from '@/features/play/boardLayout';
+
+describe('board topic grid alignment', () => {
+  it('vertically centers the topic grid and centers incomplete last rows (no left spacers)', () => {
+    const alignment = getBoardTopicGridAlignment();
+
+    // Single-row boards (quick play 3 topics) sit mid-viewport, not flush under the header.
+    expect(alignment.contentJustifyContent).toBe('center');
+    // Rows cluster remaining topics in the middle (like topic select), not left + empty.
+    expect(alignment.rowJustifyContent).toBe('center');
+    expect(alignment.padIncompleteRowsWithSpacers).toBe(false);
+  });
+
+  it('uses fixed cell boxes so a 2-of-3 last row can center at full-row cell width', () => {
+    const box = getBoardTopicCellBox(180, 220);
+    expect(box).toEqual({
+      width: 180,
+      height: 220,
+      flexGrow: 0,
+      flexShrink: 0,
+    });
+  });
+
+  it('does not insert empty flex spacers on incomplete rows when centering is enabled', () => {
+    const alignment = getBoardTopicGridAlignment();
+    // 5 topics → row of 3 + row of 2 under a 3-column grid.
+    expect(getBoardGridRowSpacerCount(2, 3, alignment.padIncompleteRowsWithSpacers)).toBe(0);
+    expect(getBoardGridRowSpacerCount(3, 3, alignment.padIncompleteRowsWithSpacers)).toBe(0);
+  });
+
+  it('splits leftover viewport height equally so a short 1-row board (3 topics) is Y-centered', () => {
+    // Landscape body under header: tall cream canvas, short single topic row.
+    const insets = getBoardGridVerticalInsets({
+      viewportHeight: 400,
+      edgePadding: 12,
+      rowCount: 1,
+      rowHeight: 180,
+      rowGap: 16,
+    });
+
+    // available = 400 - 24 = 376; free = 376 - 180 = 196; half = 98
+    expect(insets.freeSpace).toBe(196);
+    expect(insets.paddingTop).toBe(12 + 98);
+    expect(insets.paddingBottom).toBe(12 + 98);
+    expect(insets.paddingTop).toBe(insets.paddingBottom);
+    // Padding alone expands a content-sized parent so topics leave the header band.
+    expect(insets.paddingTop + 180 + insets.paddingBottom).toBe(400);
+  });
+
+  it('Y-centers a phone-landscape 3-topic board under a ~108px match header', () => {
+    // 720p landscape body: window 720, header reserve 108, bottom inset 0 → body 612.
+    const bodyHeight = getBoardBodyHeight({
+      windowHeight: 720,
+      bottomInset: 0,
+      headerReserve: 108,
+    });
+    expect(bodyHeight).toBe(612);
+    const insets = getBoardGridVerticalInsets({
+      viewportHeight: bodyHeight,
+      edgePadding: 16,
+      rowCount: 1,
+      rowHeight: 280,
+      rowGap: 14,
+    });
+    expect(insets.freeSpace).toBeGreaterThan(100);
+    expect(insets.paddingTop).toBe(insets.paddingBottom);
+    // Content block midpoint sits near body midpoint.
+    const contentMid = insets.paddingTop + 280 / 2;
+    expect(contentMid).toBeCloseTo(bodyHeight / 2, 0);
+  });
+
+  it('sizes the board body to the window below the match header (not content height)', () => {
+    expect(
+      getBoardBodyHeight({
+        windowHeight: 720,
+        bottomInset: 12,
+        headerReserve: 108,
+      })
+    ).toBe(720 - 12 - 108);
+    // Must stay larger than a short 3-topic content block so flex spacers can center it.
+    expect(
+      getBoardBodyHeight({
+        windowHeight: 720,
+        bottomInset: 0,
+        headerReserve: 108,
+      })
+    ).toBeGreaterThan(400);
+  });
+
+  it('keeps only edge padding when stacked rows already fill the viewport', () => {
+    const insets = getBoardGridVerticalInsets({
+      viewportHeight: 400,
+      edgePadding: 10,
+      rowCount: 2,
+      rowHeight: 185,
+      rowGap: 20,
+    });
+    // 185*2 + 20 = 390; available = 380 → free clamped to 0
+    expect(insets.freeSpace).toBe(0);
+    expect(insets.paddingTop).toBe(10);
+    expect(insets.paddingBottom).toBe(10);
+  });
+});
 
 describe('computeBoardVerticalLayout', () => {
   const base = {

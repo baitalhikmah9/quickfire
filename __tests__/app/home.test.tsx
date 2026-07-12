@@ -321,6 +321,9 @@ describe('AppHubScreen', () => {
     expect(overlayStyle.right).toBe(0);
     expect(overlayStyle.bottom).toBe(0);
     expect(overlayStyle.left).toBe(0);
+    expect(overlayStyle.flex).toBe(1);
+    expect(overlayStyle.width).toBe('100%');
+    expect(overlayStyle.height).toBe('100%');
     expect(overlayStyle.backgroundColor).toBe(COLORS.overlay);
 
     if (Platform.OS === 'web') {

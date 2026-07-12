@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
-import { HEADER, SPACING, FONTS, FONT_SIZES } from '@/constants';
+import { HEADER, SPACING, FONTS, FONT_SIZES, getStandardChromeTopPadding } from '@/constants';
 import { getGameHeaderLogoDisplayWidth } from '@/lib/layout/backfireTitleLogoWidth';
 import { useTheme } from '@/lib/hooks/useTheme';
 import type { ReactNode } from 'react';
@@ -8,6 +8,14 @@ import type { StyleProp, ViewStyle } from 'react-native';
 
 /** Header visual variant. */
 export type GameHeaderVariant = 'logoOnly' | 'logoTitle' | 'title';
+
+/**
+ * Top pad density under the safe area:
+ * - `home` — base HEADER.topPadding only (home hub keeps its own frame pad)
+ * - `standard` — question-screen match (HEADER.topPadding + HEADER.topExtra)
+ * - `none` — parent already applied chrome top pad (e.g. PlayScaffold edge chrome)
+ */
+export type GameHeaderTopPad = 'home' | 'standard' | 'none';
 
 export type GameHeaderProps = {
   /**
@@ -36,6 +44,11 @@ export type GameHeaderProps = {
    * No effect on native.
    */
   barMaxWidthOverride?: number;
+  /**
+   * Top padding recipe. Defaults to `standard` (question chrome).
+   * Pass `home` only on the home hub so its larger frame pad is preserved.
+   */
+  topPad?: GameHeaderTopPad;
   /** Style override for the outer container. */
   style?: StyleProp<ViewStyle>;
 };
@@ -68,6 +81,7 @@ export function GameHeader({
   rightSlot,
   logoWidth,
   barMaxWidthOverride,
+  topPad: topPadVariant = 'standard',
   style,
 }: GameHeaderProps) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -76,7 +90,14 @@ export function GameHeader({
   const compact = windowHeight < 560;
 
   const headerHeight = isWeb ? HEADER.heightWeb : HEADER.heightNative;
-  const topPad = isWeb ? HEADER.topPaddingWeb : HEADER.topPaddingNative;
+  const topPad =
+    topPadVariant === 'none'
+      ? 0
+      : topPadVariant === 'home'
+        ? isWeb
+          ? HEADER.topPaddingWeb
+          : HEADER.topPaddingNative
+        : getStandardChromeTopPadding(isWeb);
 
   const hasLogo = variant === 'logoOnly' || variant === 'logoTitle';
   const hasTitleText = Boolean(title);
@@ -91,7 +112,8 @@ export function GameHeader({
           styles.bar,
           {
             minHeight: compact ? 44 : headerHeight,
-            paddingTop: compact ? 2 : topPad,
+            // Home: base HEADER pad. Everything else: standard (question) chrome pad.
+            paddingTop: topPad,
             paddingBottom: compact ? 2 : SPACING.xs,
             // Outer horizontal inset is owned by screen shells (`LAYOUT.screenGutter`).
             paddingHorizontal: 0,

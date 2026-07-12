@@ -5,11 +5,19 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Platform,
   useWindowDimensions,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { SPACING, BORDER_RADIUS, FONT_SIZES, LAYOUT } from '@/constants';
+import {
+  SPACING,
+  BORDER_RADIUS,
+  FONT_SIZES,
+  LAYOUT,
+  getStandardChromeTopPadding,
+  getChromeTopPaddingWithInsets,
+} from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
 import { ScreenContent } from '@/components/ScreenContent';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -112,8 +120,13 @@ export function PlayScaffold({
   const subtitleTight = windowHeight < 700;
   const padLeft = Math.max(insets.left, LAYOUT.screenGutter);
   const padRight = Math.max(insets.right, LAYOUT.screenGutter);
+  const isWeb = Platform.OS === 'web';
   const resolvedSafeAreaEdges: readonly Edge[] =
     safeAreaEdges ?? (bodyEdgeToEdge ? (['top', 'bottom'] as const) : (['top', 'bottom', 'left', 'right'] as const));
+  /** Question-screen match: if top safe-area is applied by SafeAreaView, only add standard pad. */
+  const chromeTopPad = resolvedSafeAreaEdges.includes('top')
+    ? getStandardChromeTopPadding(isWeb)
+    : getChromeTopPaddingWithInsets(insets.top, isWeb);
 
   const contentStyles = [styles.content, styles.contentFit];
   const subtitleStyles = [
@@ -145,6 +158,8 @@ export function PlayScaffold({
           onBackPress={onBack}
           backVariant={backVariant}
           barMaxWidth={contentMaxWidth}
+          // Edge chrome already applies standard top pad on the wrap.
+          topPad={bodyEdgeToEdge ? 'none' : 'standard'}
         />
       )}
 
@@ -192,6 +207,8 @@ export function PlayScaffold({
     ? [
         styles.edgeChromeWrap,
         {
+          paddingTop: chromeTopPad,
+          paddingBottom: SPACING.xs,
           paddingLeft: padLeft,
           paddingRight: padRight,
         },
@@ -323,13 +340,12 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 0,
   },
-  /** Top chrome only — body is a sibling (`edgeBodySlot`). Single vertical inset (no stacked wrappers). */
+  /** Top chrome only — body is a sibling (`edgeBodySlot`). Top pad applied via getStandardChromeTopPadding. */
   edgeChromeWrap: {
     flexGrow: 0,
     flexShrink: 0,
     minHeight: 0,
     width: '100%',
-    paddingVertical: SPACING.xs,
   },
   /** Keeps team strip / footer from collapsing when the board body fights for height. */
   footerSlotFixed: {
@@ -340,6 +356,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     minWidth: 0,
+    width: '100%',
+    alignSelf: 'stretch',
   },
   subtitle: {
     fontSize: FONT_SIZES.md,
@@ -388,6 +406,8 @@ const styles = StyleSheet.create({
   /** No-scroll body without inner card — children sit on shell background. */
   bodyShellFlush: {
     overflow: 'hidden',
+    width: '100%',
+    alignSelf: 'stretch',
   },
   /** Fills middle region; children use flex to distribute space (no body scroll). */
   bodyNaturalCardNoScroll: {

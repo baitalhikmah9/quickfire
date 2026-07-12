@@ -1,10 +1,16 @@
 import { useCallback } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPACING, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import {
+  SPACING,
+  LAYOUT,
+  SOFT_SURFACE_FACE,
+  softSurfaceLift,
+  getStandardChromeTopPadding,
+} from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { LegalDocumentBody } from '@/components/LegalDocumentBody';
@@ -29,6 +35,7 @@ export function LegalScrollScreen({ title, sections }: LegalScrollScreenProps) {
   const textPrimary = HOME_SOFT_UI.colors.textPrimary;
   const backIcon: keyof typeof Ionicons.glyphMap =
     direction === 'rtl' ? 'chevron-forward' : 'chevron-back';
+  const chromeTopPad = getStandardChromeTopPadding(Platform.OS === 'web');
 
   const handleBack = useCallback(() => {
     goBackOrReplace(router, '/(app)/');
@@ -42,7 +49,7 @@ export function LegalScrollScreen({ title, sections }: LegalScrollScreenProps) {
       <ScreenContent fullWidth style={styles.viewport}>
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: chromeTopPad }]}
           showsVerticalScrollIndicator
         >
           <View style={[styles.topBar, { flexDirection: rowDir }]}>
@@ -89,7 +96,7 @@ const styles = StyleSheet.create({
   topBar: {
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: SPACING.sm,
+    paddingBottom: SPACING.sm,
     width: '100%',
     gap: SPACING.sm,
     minWidth: 0,

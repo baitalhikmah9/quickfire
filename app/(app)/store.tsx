@@ -16,7 +16,14 @@ import { Redirect, useRouter } from 'expo-router';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPACING, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import {
+  SPACING,
+  FONTS,
+  LAYOUT,
+  SOFT_SURFACE_FACE,
+  softSurfaceLift,
+  getStandardChromeTopPadding,
+} from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import {
@@ -400,121 +407,130 @@ export default function StoreScreen() {
         </View>
 
         <View
-          style={[
-            styles.pageContent,
-            isCompactViewport && styles.pageContentCompact,
-            isTightViewport && styles.pageContentTight,
-          ]}
+          style={styles.pageContent}
         >
-          {/* ── Status banner (non-native / error) ──────── */}
-          {!IS_NATIVE_PLATFORM && (
-            <View style={[styles.statusBanner, { backgroundColor: surface }]}>
-              <Ionicons name="information-circle-outline" size={16} color={textMuted} />
-              <Text style={[styles.statusBannerText, { color: textMuted }]}>
-                In-app purchases are only available on iOS and Android. Promo codes can be
-                redeemed on any platform.
-              </Text>
-            </View>
-          )}
-          {rcError && (
-            <View style={[styles.statusBanner, styles.statusBannerWarning, { backgroundColor: surface }]}>
-              <Ionicons name="warning-outline" size={16} color="#D32F2F" />
-              <Text style={[styles.statusBannerText, { color: '#D32F2F' }]}>
-                {rcError}
-              </Text>
-            </View>
-          )}
-          {IS_NATIVE_PLATFORM && !rcReady && !rcError && (
-            <View style={[styles.statusBanner, { backgroundColor: surface }]}>
-              <ActivityIndicator size="small" color={textMuted} />
-              <Text style={[styles.statusBannerText, { color: textMuted }]}>
-                {purchaseUnavailableReason}
-              </Text>
-            </View>
-          )}
+          {/* Equal flex spacers center the store body under the header. */}
+          <View style={styles.pageSpacer} />
 
-          {/* ── Loading skeleton ───────────────────────── */}
-          {!catalog && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={textMuted} />
-              <Text style={[styles.loadingText, { color: textMuted }]}>Loading store…</Text>
-            </View>
-          )}
+          <View
+            style={[
+              styles.storeBody,
+              isCompactViewport && styles.storeBodyCompact,
+              isTightViewport && styles.storeBodyTight,
+            ]}
+          >
+            {/* ── Status banner (non-native / error) ──────── */}
+            {!IS_NATIVE_PLATFORM && (
+              <View style={[styles.statusBanner, { backgroundColor: surface }]}>
+                <Ionicons name="information-circle-outline" size={16} color={textMuted} />
+                <Text style={[styles.statusBannerText, { color: textMuted }]}>
+                  In-app purchases are only available on iOS and Android. Promo codes can be
+                  redeemed on any platform.
+                </Text>
+              </View>
+            )}
+            {rcError && (
+              <View style={[styles.statusBanner, styles.statusBannerWarning, { backgroundColor: surface }]}>
+                <Ionicons name="warning-outline" size={16} color="#D32F2F" />
+                <Text style={[styles.statusBannerText, { color: '#D32F2F' }]}>
+                  {rcError}
+                </Text>
+              </View>
+            )}
+            {IS_NATIVE_PLATFORM && !rcReady && !rcError && (
+              <View style={[styles.statusBanner, { backgroundColor: surface }]}>
+                <ActivityIndicator size="small" color={textMuted} />
+                <Text style={[styles.statusBannerText, { color: textMuted }]}>
+                  {purchaseUnavailableReason}
+                </Text>
+              </View>
+            )}
 
-          {/* ── Bundle cards ───────────────────────────── */}
-          {catalog && (
-            <View style={[styles.bundlesContainer, isCompactViewport && styles.bundlesContainerCompact]}>
-              {displayBundles.map((bundle) => (
-                <BundleCard
-                  key={bundle.productKey}
-                  bundle={bundle}
-                  onPress={() => onBuyBundle(bundle)}
-                  isPurchasing={isPurchasing || buyingKey === bundle.productKey}
-                  isPurchaseUnavailable={isPurchaseUnavailable}
-                  compact={isCompactViewport}
-                  tight={isTightViewport}
-                />
-              ))}
-            </View>
-          )}
+            {/* ── Loading skeleton ───────────────────────── */}
+            {!catalog && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={textMuted} />
+                <Text style={[styles.loadingText, { color: textMuted }]}>Loading store…</Text>
+              </View>
+            )}
 
-          <Text style={[styles.tokenBalanceHint, { color: textMuted }]}>
-            {t('store.typicalGameTokensHint')}
-          </Text>
+            {/* ── Bundle cards ───────────────────────────── */}
+            {catalog && (
+              <View style={[styles.bundlesContainer, isCompactViewport && styles.bundlesContainerCompact]}>
+                {displayBundles.map((bundle) => (
+                  <BundleCard
+                    key={bundle.productKey}
+                    bundle={bundle}
+                    onPress={() => onBuyBundle(bundle)}
+                    isPurchasing={isPurchasing || buyingKey === bundle.productKey}
+                    isPurchaseUnavailable={isPurchaseUnavailable}
+                    compact={isCompactViewport}
+                    tight={isTightViewport}
+                  />
+                ))}
+              </View>
+            )}
 
-          {/* ── Promo redemption ───────────────────────── */}
-          <View style={[styles.redeemSection, isCompactViewport && styles.redeemSectionCompact]}>
-            <Text style={[styles.redeemTitle, isCompactViewport && styles.redeemTitleCompact, { color: textPrimary }]}>REDEEM CODE</Text>
-            <View
-              style={[
-                styles.redeemCard,
-                SOFT_SURFACE_FACE,
-                { backgroundColor: surface },
-                softSurfaceLift(),
-              ]}
-            >
-              <TextInput
-                value={voucherCode}
-                onChangeText={handleVoucherChange}
-                placeholder="Enter code here..."
-                placeholderTextColor={textMuted}
-                autoCapitalize="characters"
-                autoCorrect={false}
+            <Text style={[styles.tokenBalanceHint, { color: textMuted }]}>
+              {t('store.typicalGameTokensHint')}
+            </Text>
+
+            {/* ── Promo redemption ───────────────────────── */}
+            <View style={styles.redeemSection}>
+              <Text style={[styles.redeemTitle, isCompactViewport && styles.redeemTitleCompact, { color: textPrimary }]}>REDEEM CODE</Text>
+              <View
                 style={[
-                  styles.redeemInput,
-                  isCompactViewport && styles.redeemInputCompact,
-                  {
-                    color: textPrimary,
-                    borderColor: promoError ? '#D32F2F' : 'rgba(0,0,0,0.08)',
-                    borderWidth: promoError ? 1.5 : 1,
-                  },
-                ]}
-              />
-              <Pressable
-                onPress={applyVoucher}
-                disabled={isRedeeming}
-                style={({ pressed }) => [
-                  styles.applyButton,
-                  isCompactViewport && styles.applyButtonCompact,
+                  styles.redeemCard,
                   SOFT_SURFACE_FACE,
+                  { backgroundColor: surface },
                   softSurfaceLift(),
-                  {
-                    backgroundColor: '#6D8EB1',
-                    opacity: isRedeeming ? 0.65 : pressed ? 0.92 : 1,
-                    transform: pressed && !isRedeeming ? [{ scale: 0.98 }] : [{ scale: 1 }],
-                  },
                 ]}
               >
-                {isRedeeming ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.applyButtonText}>APPLY CODE</Text>
-                )}
-              </Pressable>
+                <TextInput
+                  value={voucherCode}
+                  onChangeText={handleVoucherChange}
+                  placeholder="Enter code here..."
+                  placeholderTextColor={textMuted}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  style={[
+                    styles.redeemInput,
+                    isCompactViewport && styles.redeemInputCompact,
+                    {
+                      color: textPrimary,
+                      borderColor: promoError ? '#D32F2F' : 'rgba(0,0,0,0.08)',
+                      borderWidth: promoError ? 1.5 : 1,
+                    },
+                  ]}
+                />
+                <Pressable
+                  onPress={applyVoucher}
+                  disabled={isRedeeming}
+                  style={({ pressed }) => [
+                    styles.applyButton,
+                    isCompactViewport && styles.applyButtonCompact,
+                    SOFT_SURFACE_FACE,
+                    softSurfaceLift(),
+                    {
+                      backgroundColor: '#6D8EB1',
+                      opacity: isRedeeming ? 0.65 : pressed ? 0.92 : 1,
+                      transform: pressed && !isRedeeming ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                    },
+                  ]}
+                >
+                  {isRedeeming ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.applyButtonText}>APPLY CODE</Text>
+                  )}
+                </Pressable>
+              </View>
+              {promoError ? <Text style={styles.promoErrorText}>{promoError}</Text> : null}
+              {promoSuccess ? <Text style={styles.promoSuccessText}>{promoSuccess}</Text> : null}
             </View>
-            {promoError ? <Text style={styles.promoErrorText}>{promoError}</Text> : null}
-            {promoSuccess ? <Text style={styles.promoSuccessText}>{promoSuccess}</Text> : null}
           </View>
+
+          <View style={styles.pageSpacer} />
         </View>
         </View>
       </ScreenContent>
@@ -541,22 +557,26 @@ const styles = StyleSheet.create({
     minHeight: 0,
     paddingHorizontal: LAYOUT.screenGutter,
   },
+  // Fill remaining height under header; equal pageSpacers center storeBody.
   pageContent: {
     flex: 1,
+    minWidth: 0,
     minHeight: 0,
-    paddingTop: SPACING.xl,
-    paddingBottom: SPACING.md,
+    alignItems: 'stretch',
+  },
+  pageSpacer: {
+    flex: 1,
+    minHeight: 0,
+  },
+  storeBody: {
+    width: '100%',
     gap: SPACING.md,
     alignItems: 'stretch',
-    justifyContent: 'flex-start',
   },
-  pageContentCompact: {
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.sm,
+  storeBodyCompact: {
     gap: SPACING.sm,
   },
-  pageContentTight: {
-    paddingTop: SPACING.sm,
+  storeBodyTight: {
     gap: SPACING.xs,
   },
   header: {
@@ -564,8 +584,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    minHeight: 56,
-    paddingVertical: SPACING.sm,
+    minHeight: Platform.OS === 'web' ? 64 : 56,
+    paddingTop: getStandardChromeTopPadding(Platform.OS === 'web'),
+    paddingBottom: SPACING.xs,
   },
   headerSide: {
     width: 116,
@@ -725,11 +746,7 @@ const styles = StyleSheet.create({
   // ── Promo redemption ──────────────────────────────────────────────────
   redeemSection: {
     width: '100%',
-    marginTop: SPACING.xl,
     alignItems: 'center',
-  },
-  redeemSectionCompact: {
-    marginTop: SPACING.lg,
   },
   redeemTitle: {
     fontFamily: FONTS.uiBold,

@@ -1,0 +1,506 @@
+[
+  {
+    "slug": "19th-century",
+    "title": "19th Century",
+    "themeGroup": "h1",
+    "enabled": true
+  },
+  {
+    "slug": "19th-century-europe",
+    "title": "19th Century Europe",
+    "themeGroup": "h2",
+    "enabled": true
+  },
+  {
+    "slug": "20th-century",
+    "title": "20th Century",
+    "themeGroup": "h3",
+    "enabled": true
+  },
+  {
+    "slug": "21st-century",
+    "title": "21st Century",
+    "themeGroup": "h4",
+    "enabled": true
+  },
+  {
+    "slug": "ancient-civilisations",
+    "title": "Ancient Civilisations",
+    "themeGroup": "h5",
+    "enabled": true
+  },
+  {
+    "slug": "ark-survival-evolved",
+    "title": "ARK: Survival Evolved",
+    "themeGroup": "g1",
+    "enabled": true
+  },
+  {
+    "slug": "attack-on-titan",
+    "title": "Attack on Titan",
+    "themeGroup": "pc31",
+    "enabled": true
+  },
+  {
+    "slug": "avatar-the-last-airbender",
+    "title": "Avatar: The Last Airbender",
+    "themeGroup": "pc1",
+    "enabled": true
+  },
+  {
+    "slug": "before-they-were-famous",
+    "title": "Before They Were Famous",
+    "themeGroup": "gen26",
+    "enabled": true
+  },
+  {
+    "slug": "breaking-bad",
+    "title": "Breaking Bad",
+    "themeGroup": "pc2",
+    "enabled": true
+  },
+  {
+    "slug": "cold-war",
+    "title": "Cold War",
+    "themeGroup": "h7",
+    "enabled": true
+  },
+  {
+    "slug": "corporations",
+    "title": "Corporations",
+    "themeGroup": "gen1",
+    "enabled": true
+  },
+  {
+    "slug": "countries-and-capitals",
+    "title": "Countries and Capitals",
+    "themeGroup": "gen6",
+    "enabled": true
+  },
+  {
+    "slug": "cricket",
+    "title": "Cricket",
+    "themeGroup": "s2",
+    "enabled": true
+  },
+  {
+    "slug": "dc-extended-universe",
+    "title": "DC Extended Universe",
+    "themeGroup": "pc4",
+    "enabled": true
+  },
+  {
+    "slug": "dexter",
+    "title": "Dexter",
+    "themeGroup": "pc3",
+    "enabled": true
+  },
+  {
+    "slug": "disney",
+    "title": "Disney",
+    "themeGroup": "pc5",
+    "enabled": true
+  },
+  {
+    "slug": "dota",
+    "title": "Dota",
+    "themeGroup": "g3",
+    "enabled": true
+  },
+  {
+    "slug": "dragon-ball",
+    "title": "Dragon Ball",
+    "themeGroup": "pc6",
+    "enabled": true
+  },
+  {
+    "slug": "ertugrul",
+    "title": "Ertugrul",
+    "themeGroup": "h17",
+    "enabled": true
+  },
+  {
+    "slug": "european-christendom",
+    "title": "European Christendom",
+    "themeGroup": "h16",
+    "enabled": true
+  },
+  {
+    "slug": "european-history",
+    "title": "European History",
+    "themeGroup": "h8",
+    "enabled": true
+  },
+  {
+    "slug": "famous-firsts",
+    "title": "Famous Firsts",
+    "themeGroup": "gen7",
+    "enabled": true
+  },
+  {
+    "slug": "famous-quotes",
+    "title": "Famous Quotes",
+    "themeGroup": "gen8",
+    "enabled": true
+  },
+  {
+    "slug": "fast-and-furious",
+    "title": "Fast and Furious",
+    "themeGroup": "pc26",
+    "enabled": true
+  },
+  {
+    "slug": "fifa-world-cup",
+    "title": "FIFA World Cup",
+    "themeGroup": "s12",
+    "enabled": true
+  },
+  {
+    "slug": "formula-1",
+    "title": "Formula 1",
+    "themeGroup": "s3",
+    "enabled": true
+  },
+  {
+    "slug": "friends",
+    "title": "Friends",
+    "themeGroup": "pc7",
+    "enabled": true
+  },
+  {
+    "slug": "game-of-thrones",
+    "title": "Game of Thrones",
+    "themeGroup": "pc8",
+    "enabled": true
+  },
+  {
+    "slug": "general-knowledge",
+    "title": "General Knowledge",
+    "themeGroup": "gen9",
+    "enabled": true
+  },
+  {
+    "slug": "geography",
+    "title": "Geography",
+    "themeGroup": "gen2",
+    "enabled": true
+  },
+  {
+    "slug": "guess-the-decade",
+    "title": "Guess The Decade",
+    "themeGroup": "gen10",
+    "enabled": true
+  },
+  {
+    "slug": "guess-the-flag",
+    "title": "Guess the Flag",
+    "themeGroup": "gen11",
+    "enabled": true
+  },
+  {
+    "slug": "guess-the-year",
+    "title": "Guess the Year",
+    "themeGroup": "gen12",
+    "enabled": true
+  },
+  {
+    "slug": "halo",
+    "title": "Halo",
+    "themeGroup": "g5",
+    "enabled": true
+  },
+  {
+    "slug": "harry-potter",
+    "title": "Harry Potter",
+    "themeGroup": "pc9",
+    "enabled": true
+  },
+  {
+    "slug": "how-i-met-your-mother",
+    "title": "How I Met Your Mother",
+    "themeGroup": "pc10",
+    "enabled": true
+  },
+  {
+    "slug": "in-between",
+    "title": "In between:",
+    "themeGroup": "gen13",
+    "enabled": true
+  },
+  {
+    "slug": "initials",
+    "title": "Initials",
+    "themeGroup": "gen14",
+    "enabled": true
+  },
+  {
+    "slug": "invented-where",
+    "title": "Invented Where?",
+    "themeGroup": "gen15",
+    "enabled": true
+  },
+  {
+    "slug": "james-bond",
+    "title": "James Bond",
+    "themeGroup": "pc11",
+    "enabled": true
+  },
+  {
+    "slug": "kurulu-osman",
+    "title": "Kuruluş: Osman",
+    "themeGroup": "h18",
+    "enabled": true
+  },
+  {
+    "slug": "league-of-legends",
+    "title": "League of Legends",
+    "themeGroup": "g6",
+    "enabled": true
+  },
+  {
+    "slug": "marvel",
+    "title": "Marvel",
+    "themeGroup": "pc13",
+    "enabled": true
+  },
+  {
+    "slug": "match-the-nickname",
+    "title": "Match the Nickname",
+    "themeGroup": "gen16",
+    "enabled": true
+  },
+  {
+    "slug": "minecraft",
+    "title": "Minecraft",
+    "themeGroup": "g7",
+    "enabled": true
+  },
+  {
+    "slug": "naruto",
+    "title": "Naruto",
+    "themeGroup": "pc14",
+    "enabled": true
+  },
+  {
+    "slug": "national-icons",
+    "title": "National Icons",
+    "themeGroup": "gen17",
+    "enabled": true
+  },
+  {
+    "slug": "nba",
+    "title": "NBA",
+    "themeGroup": "s5",
+    "enabled": true
+  },
+  {
+    "slug": "odd-one-out",
+    "title": "Odd One Out",
+    "themeGroup": "gen18",
+    "enabled": true
+  },
+  {
+    "slug": "one-piece",
+    "title": "One Piece",
+    "themeGroup": "pc15",
+    "enabled": true
+  },
+  {
+    "slug": "overwatch",
+    "title": "Overwatch",
+    "themeGroup": "g8",
+    "enabled": true
+  },
+  {
+    "slug": "peaky-blinders",
+    "title": "Peaky Blinders",
+    "themeGroup": "pc32",
+    "enabled": true
+  },
+  {
+    "slug": "pirates-of-the-caribbean",
+    "title": "Pirates of the Caribbean",
+    "themeGroup": "pc16",
+    "enabled": true
+  },
+  {
+    "slug": "pokemon",
+    "title": "Pokemon",
+    "themeGroup": "pc17",
+    "enabled": true
+  },
+  {
+    "slug": "premier-league",
+    "title": "Premier League",
+    "themeGroup": "s7",
+    "enabled": true
+  },
+  {
+    "slug": "prison-break",
+    "title": "Prison Break",
+    "themeGroup": "pc18",
+    "enabled": true
+  },
+  {
+    "slug": "red-dead-redemption",
+    "title": "Red Dead Redemption",
+    "themeGroup": "g9",
+    "enabled": true
+  },
+  {
+    "slug": "science",
+    "title": "Science",
+    "themeGroup": "gen3",
+    "enabled": true
+  },
+  {
+    "slug": "spongebob-squarepants",
+    "title": "SpongeBob SquarePants",
+    "themeGroup": "pc20",
+    "enabled": true
+  },
+  {
+    "slug": "star-wars",
+    "title": "Star Wars",
+    "themeGroup": "pc23",
+    "enabled": true
+  },
+  {
+    "slug": "stranger-things",
+    "title": "Stranger Things",
+    "themeGroup": "pc24",
+    "enabled": true
+  },
+  {
+    "slug": "suits",
+    "title": "Suits",
+    "themeGroup": "pc33",
+    "enabled": true
+  },
+  {
+    "slug": "super-mario-bros",
+    "title": "Super Mario Bros.",
+    "themeGroup": "g10",
+    "enabled": true
+  },
+  {
+    "slug": "talab-ul-ilm",
+    "title": "Talab-ul Ilm",
+    "themeGroup": "gen19",
+    "enabled": true
+  },
+  {
+    "slug": "the-big-bang-theory",
+    "title": "The Big Bang Theory",
+    "themeGroup": "pc25",
+    "enabled": true
+  },
+  {
+    "slug": "the-legend-of-zelda",
+    "title": "The Legend of Zelda",
+    "themeGroup": "g11",
+    "enabled": true
+  },
+  {
+    "slug": "the-modern-middle-east",
+    "title": "The Modern Middle East",
+    "themeGroup": "h11",
+    "enabled": true
+  },
+  {
+    "slug": "the-office-us",
+    "title": "The Office US",
+    "themeGroup": "pc28",
+    "enabled": true
+  },
+  {
+    "slug": "trump-quotes",
+    "title": "Trump Quotes",
+    "themeGroup": "gen20",
+    "enabled": true
+  },
+  {
+    "slug": "uefa-champions-league",
+    "title": "UEFA Champions League",
+    "themeGroup": "s9",
+    "enabled": true
+  },
+  {
+    "slug": "ufc",
+    "title": "UFC",
+    "themeGroup": "s10",
+    "enabled": true
+  },
+  {
+    "slug": "uk",
+    "title": "UK",
+    "themeGroup": "gen4",
+    "enabled": true
+  },
+  {
+    "slug": "uk-history",
+    "title": "UK History",
+    "themeGroup": "h12",
+    "enabled": true
+  },
+  {
+    "slug": "us-history",
+    "title": "US History",
+    "themeGroup": "h13",
+    "enabled": true
+  },
+  {
+    "slug": "usa",
+    "title": "USA",
+    "themeGroup": "gen5",
+    "enabled": true
+  },
+  {
+    "slug": "what-happened-next",
+    "title": "What happened next?",
+    "themeGroup": "gen21",
+    "enabled": true
+  },
+  {
+    "slug": "what-s-the-connection",
+    "title": "What's the connection?",
+    "themeGroup": "gen22",
+    "enabled": true
+  },
+  {
+    "slug": "which-country",
+    "title": "Which Country",
+    "themeGroup": "gen23",
+    "enabled": true
+  },
+  {
+    "slug": "which-player",
+    "title": "Which Player?",
+    "themeGroup": "s11",
+    "enabled": true
+  },
+  {
+    "slug": "who-said-this-quote",
+    "title": "Who Said This Quote?",
+    "themeGroup": "gen24",
+    "enabled": true
+  },
+  {
+    "slug": "world-laws",
+    "title": "World Laws",
+    "themeGroup": "gen25",
+    "enabled": true
+  },
+  {
+    "slug": "ww1",
+    "title": "WW1",
+    "themeGroup": "h14",
+    "enabled": true
+  },
+  {
+    "slug": "ww2",
+    "title": "WW2",
+    "themeGroup": "h15",
+    "enabled": true
+  }
+]

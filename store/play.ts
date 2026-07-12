@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import {
+  assignRandomQuestionOwners,
   buildBoard,
   getBonusQuestion,
   getModeCategoryCount,
@@ -518,6 +519,8 @@ interface PlayStore {
   continueAfterStandardQuestion: () => void;
   adjustScoreByPoints: (teamId: string, delta: number, note?: string) => void;
   reopenLastResolvedTurn: () => void;
+  reviewCompletedBoard: () => void;
+  returnToEndScreen: () => void;
   initiateWager: () => { ok: boolean; error?: string };
   confirmRandomWagerQuestion: (drawnQuestion?: QuestionCard) => void;
   resolveWager: (correct: boolean) => void;
@@ -647,10 +650,11 @@ function createPlayStore() {
               ...nextSession.config,
               mode,
               wagerEnabled: isWagerAvailable(mode),
-              entryTokenCharge: tokenCost,
+              // Charge only when the board starts (topics chosen).
+              entryTokenCharge: 0,
             },
           });
-          return { session: nextSession };
+          return { session: nextSession, entryReservationId: null };
         });
         return { ok: true };
       },
@@ -893,7 +897,14 @@ function createPlayStore() {
         if (rumbleAssignment && !rumbleAssignment.ok) {
           return { ok: false, error: rumbleAssignment.error };
         }
-        const board = rumbleAssignment ? rumbleAssignment.board : rawBoard;
+        const board = rumbleAssignment
+          ? rumbleAssignment.board
+          : session.mode === 'random'
+            ? assignRandomQuestionOwners(
+                rawBoard,
+                teams.map((team) => team.id)
+              )
+            : rawBoard;
         const hotSeat = isHotSeatAvailable(session.mode)
           ? buildHotSeatState(teams, session.config.hotSeatRounds ?? 0)
           : undefined;
@@ -1297,6 +1308,24 @@ function createPlayStore() {
           };
         }),
 
+      reviewCompletedBoard: () =>
+        set((state) => {
+          const session = state.session;
+          if (!session || session.step !== 'end') return state;
+          return { session: { ...session, step: 'board' } };
+        }),
+
+      returnToEndScreen: () =>
+        set((state) => {
+          const session = state.session;
+          if (!session) return state;
+          const remaining = session.board.filter(
+            (question) => !session.usedQuestionIds.has(question.id) && !question.used
+          );
+          if (remaining.length > 0) return state;
+          return { session: { ...session, step: 'end', phase: 'completed' } };
+        }),
+
       reopenLastResolvedTurn: () =>
         set((state) => {
           const session = state.session;
@@ -1358,7 +1387,9 @@ function createPlayStore() {
           const question =
             drawnQuestion && !session.usedQuestionIds.has(drawnQuestion.id)
               ? drawnQuestion
-              : getRandomRemainingQuestion(session.board, session.usedQuestionIds);
+              : getRandomRemainingQuestion(session.board, session.usedQuestionIds, {
+                  teamId: session.mode === 'random' ? session.currentTeamId : undefined,
+                });
           if (!question) {
             return {
               session: {
@@ -1447,7 +1478,7 @@ const existingPlayStore = playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__
 export const usePlayStore =
   // Check the newest store method so a stale cached instance from before a code
   // update is discarded instead of reused across Fast Refresh.
-  existingPlayStore && typeof existingPlayStore.getState().commitEntryCharge === 'function'
+  existingPlayStore && typeof existingPlayStore.getState().returnToEndScreen === 'function'
     ? existingPlayStore
     : (playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__ = createPlayStore());
 

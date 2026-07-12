@@ -108,3 +108,7 @@ pids/
 /ios
 /android
 tmp-*.png
+
+# Pix Agent
+.pi/
+.pi-lens/

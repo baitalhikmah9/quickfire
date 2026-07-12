@@ -55,6 +55,7 @@ function createQuestion(overrides: Partial<QuestionCard> & Pick<QuestionCard, 'i
     boardSide: overrides.boardSide,
     rumbleFirstTeamId: overrides.rumbleFirstTeamId,
     rumbleSecondTeamId: overrides.rumbleSecondTeamId,
+    assignedTeamId: overrides.assignedTeamId,
   };
 }
 
@@ -407,6 +408,40 @@ describe('usePlayStore', () => {
       for (const question of questions) {
         expect(question.rumbleSecondTeamId).not.toBe(question.rumbleFirstTeamId);
       }
+    }
+  });
+
+  it('assigns random-mode questions evenly across 100, 200, and 300 value buckets', () => {
+    usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
+    const store = usePlayStore.getState();
+    store.setMode('random');
+    const categories = usePlayStore.getState().session?.availableCategories.slice(0, 6) ?? [];
+
+    for (const category of categories) {
+      usePlayStore.getState().toggleCategory(category.slug);
+    }
+
+    const result = usePlayStore.getState().startBoard();
+
+    expect(result).toMatchObject({ ok: true });
+    const session = usePlayStore.getState().session!;
+    expect(session.teams).toHaveLength(2);
+
+    const byBucket = session.board.reduce<Record<number, typeof session.board>>((groups, question) => {
+      groups[question.pointValue] = groups[question.pointValue] ?? [];
+      groups[question.pointValue].push(question);
+      return groups;
+    }, {});
+
+    expect(Object.keys(byBucket).sort()).toEqual(['100', '200', '300']);
+
+    for (const questions of Object.values(byBucket)) {
+      expect(questions).toHaveLength(12);
+      const ownerCounts = questions.reduce<Record<string, number>>((counts, question) => {
+        counts[question.assignedTeamId!] = (counts[question.assignedTeamId!] ?? 0) + 1;
+        return counts;
+      }, {});
+      expect(ownerCounts).toEqual({ team_1: 6, team_2: 6 });
     }
   });
 
@@ -1094,10 +1129,11 @@ describe('usePlayStore', () => {
     }
 
     expect(usePlayStore.getState().tokens).toBe(20);
-    expect(usePlayStore.getState().session?.config.entryTokenCharge).toBe(10);
+    expect(usePlayStore.getState().session?.config.entryTokenCharge).toBe(0);
 
     const boardResult = usePlayStore.getState().startBoard();
     expect(boardResult).toMatchObject({ ok: true });
     expect(usePlayStore.getState().tokens).toBe(20);
+    expect(usePlayStore.getState().session?.config.entryTokenCharge).toBe(10);
   });
 });

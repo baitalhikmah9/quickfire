@@ -16,7 +16,12 @@ import {
   getCategoryPictureSource,
   MISSING_CATEGORY_PICTURE_LABEL,
 } from '@/constants/categoryPictures';
-import { computeBoardVerticalLayout } from '@/features/play/boardLayout';
+import {
+  computeBoardVerticalLayout,
+  getBoardBodyHeight,
+  getBoardTopicCellBox,
+  getBoardTopicGridAlignment,
+} from '@/features/play/boardLayout';
 import { getRandomRemainingQuestion } from '@/features/play/data';
 import {
   RANDOM_FLASH_GREEN,
@@ -357,7 +362,9 @@ export default function PlayBoardScreen() {
 
     let cancelled = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
-    const question = getRandomRemainingQuestion(session.board, session.usedQuestionIds);
+    const question = getRandomRemainingQuestion(session.board, session.usedQuestionIds, {
+      teamId: session.mode === 'random' ? session.currentTeamId : undefined,
+    });
     if (!question) {
       setRandomPick(null);
       if (mode === 'wager') {
@@ -424,7 +431,9 @@ export default function PlayBoardScreen() {
     };
   }, [
     confirmRandomWagerQuestion,
+    session?.currentTeamId,
     session?.id,
+    session?.mode,
     session?.step,
     showRandomSelector,
     showWagerSelector,
@@ -486,13 +495,13 @@ export default function PlayBoardScreen() {
     () => computeTopicFit(boardLayoutWidth, metrics, gridColumnCount, width),
     [boardLayoutWidth, metrics, gridColumnCount, width]
   );
-  // Equal top/bottom inset so the grid is not flush under the header while the
-  // bottom still clears the home indicator / viewport edge.
-  const gridEdgePadding =
+  // Top matches question chrome→content gap; bottom still clears home indicator.
+  const gridTopPadding = SPACING.xs;
+  const gridBottomPadding =
     Platform.OS === 'web'
       ? SPACING.sm
       : Math.max(insets.bottom, SPACING.xs) + SPACING.sm;
-  const gridVerticalPadding = gridEdgePadding * 2;
+  const gridVerticalPadding = gridTopPadding + gridBottomPadding;
   const maxQuestionRows = Math.max(1, ...grouped.map((column) => column.rows.length));
   /** Matches topicCenterBlock gap so pill rail targets image + title stack. */
   const topicCenterBlockGap = 2;
@@ -511,10 +520,23 @@ export default function PlayBoardScreen() {
       (topicFit.titleHeight + topicCenterBlockGap) / topicArtHeightRatio) /
       (2 / maxQuestionRows + 1 / topicArtHeightRatio)
   );
+  /**
+   * Fixed body height under the match header. Prefer window math over onLayout:
+   * the edge-to-edge scaffold often measures content height only, which zeros out
+   * free-space centering and leaves 3-topic boards stuck under the header.
+   */
+  const matchHeaderReserve = height < 420 ? 88 : 108;
+  const boardBodyHeight = getBoardBodyHeight({
+    windowHeight: height,
+    bottomInset: Math.max(insets.bottom, 0),
+    headerReserve: matchHeaderReserve,
+  });
+  /** Prefer measured width; height always uses the window body floor for layout. */
+  const layoutViewportHeight = Math.max(boardBodyHeight, gridViewport.height);
   const verticalLayout = useMemo(
     () =>
       computeBoardVerticalLayout({
-        viewportHeight: Math.max(1, gridViewport.height),
+        viewportHeight: layoutViewportHeight,
         gridVerticalPadding,
         gridRowCount: Math.max(1, gridRows.length),
         maxQuestionRows,
@@ -528,10 +550,10 @@ export default function PlayBoardScreen() {
         maxRowContentHeight,
       }),
     [
+      layoutViewportHeight,
       gridVerticalPadding,
       maxRowContentHeight,
       gridRows.length,
-      gridViewport.height,
       maxQuestionRows,
       metrics.gridGap,
       metrics.pointRailClipBleed,
@@ -546,6 +568,8 @@ export default function PlayBoardScreen() {
   /** Side length of each 100/200/300 control — rounded square, not a capsule. */
   const pointTileSize = verticalLayout.pointPillHeight;
   const topicRowGap = verticalLayout.topicRowGap;
+  const topicGridAlignment = getBoardTopicGridAlignment();
+  const topicCellBox = getBoardTopicCellBox(topicFit.cellWidth, fittedBoardRowHeight);
   /** Rails must be at least as wide as the square tiles. */
   const pointRailWidth = Math.max(topicFit.railWidth, Math.ceil(pointTileSize));
   /** Actual rendered art width — group and title track it so rails hug the art like phone. */
@@ -587,7 +611,16 @@ export default function PlayBoardScreen() {
 
   const refundEntryMutation = useMutation(api.wallet.refundEntry);
 
+  // Completed match being reviewed from the end screen: back returns to the
+  // winner screen instead of the abandon-match flow.
+  const matchComplete = remainingQuestionCount === 0;
+
   const leaveMatch = () => {
+    if (matchComplete) {
+      usePlayStore.getState().returnToEndScreen();
+      router.replace('/play/end');
+      return;
+    }
     const performLeave = async () => {
       await abandonGameEntry(refundEntryMutation, {
         reservationId: usePlayStore.getState().entryReservationId,
@@ -734,7 +767,7 @@ export default function PlayBoardScreen() {
     const railHeight = imgH + topicCenterBlockGap + titleHeight;
 
     return (
-      <View key={column.categoryId} style={[styles.categoryGridCell, { height: fittedBoardRowHeight }]}>
+      <View key={column.categoryId} style={[styles.categoryGridCell, topicCellBox]}>
         <View style={[styles.categoryBlock, { width: topicGroupWidth }]}>
           <View style={[styles.topicArtRow, { columnGap: topicFit.artGap }]}>
           <View
@@ -912,8 +945,8 @@ export default function PlayBoardScreen() {
         /** Top edge skipped while status bar is hidden; keep bottom for home-indicator clearance. */
         safeAreaEdges={['bottom']}
         chromeColumnStyle={{
-          paddingTop: Platform.OS === 'web' ? 4 : 2,
-          paddingBottom: Platform.OS === 'web' ? 4 : 2,
+          // Top pad comes from PlayScaffold (question-screen standard / with insets).
+          paddingBottom: SPACING.xs,
         }}
       >
         {wager && !showWagerSelector ? (
@@ -945,17 +978,21 @@ export default function PlayBoardScreen() {
         ) : null}
 
         <View
+          testID="board-topic-grid"
           onLayout={handleGridLayout}
           style={[
             styles.gridScroll,
-            styles.gridScrollContent,
             {
               backgroundColor: T.colors.canvas,
+              // Give Android a definite body height so the topic block can center reliably.
+              flexGrow: 0,
+              flexShrink: 0,
+              height: boardBodyHeight,
               paddingLeft: bodyPadLeft,
               paddingRight: bodyPadRight,
-              gap: topicRowGap,
-              paddingTop: gridEdgePadding,
-              paddingBottom: gridEdgePadding,
+              paddingTop: gridTopPadding,
+              paddingBottom: gridBottomPadding,
+              justifyContent: topicGridAlignment.contentJustifyContent,
             },
           ]}
         >
@@ -972,14 +1009,16 @@ export default function PlayBoardScreen() {
             {gridRows.map((row, ri) => (
               <View
                 key={`row-${ri}`}
-                style={[styles.gridRow, { gap: metrics.gridGap, height: fittedBoardRowHeight }]}
+                style={[
+                  styles.gridRow,
+                  {
+                    gap: metrics.gridGap,
+                    height: fittedBoardRowHeight,
+                    justifyContent: topicGridAlignment.rowJustifyContent,
+                  },
+                ]}
               >
                 {row.map((col) => categoryCell(col))}
-                {row.length < gridColumnCount
-                  ? Array.from({ length: gridColumnCount - row.length }).map((_, ei) => (
-                      <View key={`empty-${ri}-${ei}`} style={styles.gridCellSpacer} />
-                    ))
-                  : null}
               </View>
             ))}
           </View>
@@ -1265,30 +1304,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   gridScroll: {
-    flex: 1,
-    minHeight: 0,
-    overflow: 'hidden',
-  },
-  gridScrollContent: {
     width: '100%',
+    alignSelf: 'stretch',
     minWidth: 0,
-    /** Top/bottom padding applied inline so header gap matches viewport-edge gap. */
-    justifyContent: 'flex-start',
+    minHeight: 0,
+    // Column so top/bottom flex spacers share leftover height equally.
+    flexDirection: 'column',
   },
   gridRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'center',
+    /** Horizontal justify applied inline (centers incomplete last rows). */
     width: '100%',
   },
-  gridCellSpacer: {
-    flex: 1,
-  },
   categoryGridCell: {
-    flex: 1,
+    /** Width/height from getBoardTopicCellBox — fixed so incomplete rows center mid-row. */
     minWidth: 0,
     alignItems: 'center',
-    /** Topic block (image + title + rails) centered; leftover row height is breathing room. */
+    /** Center art+rails inside the fixed row box. */
     justifyContent: 'center',
   },
   boardCenterContainer: {
@@ -1296,12 +1329,13 @@ const styles = StyleSheet.create({
     maxWidth: 1200,
     alignSelf: 'center',
     flexGrow: 0,
-    flexShrink: 1,
+    flexShrink: 0,
   },
   headerCenterWrap: {
     width: '100%',
     maxWidth: 1200,
     alignSelf: 'center',
+    overflow: 'visible',
   },
   categoryBlock: {
     flexGrow: 0,

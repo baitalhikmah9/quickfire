@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, useClerk, useUser } from '@clerk/clerk-expo';
 import {
+  HEADER,
   SPACING,
   BORDER_RADIUS,
   COLORS,
@@ -23,6 +24,7 @@ import {
   LAYOUT,
   SOFT_SURFACE_FACE,
   softSurfaceLift,
+  getStandardChromeTopPadding,
   type ThemePaletteId,
 } from '@/constants';
 import {
@@ -768,8 +770,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    minHeight: 72,
-    paddingVertical: SPACING.md,
+    minHeight: Platform.OS === 'web' ? HEADER.heightWeb : HEADER.heightNative,
+    paddingTop: getStandardChromeTopPadding(Platform.OS === 'web'),
+    paddingBottom: SPACING.xs,
   },
   headerSide: {
     width: 116,

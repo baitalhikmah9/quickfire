@@ -1,0 +1,422 @@
+[
+  {
+    "categorySlug": "19th-century",
+    "locale": "en",
+    "title": "19th Century"
+  },
+  {
+    "categorySlug": "19th-century-europe",
+    "locale": "en",
+    "title": "19th Century Europe"
+  },
+  {
+    "categorySlug": "20th-century",
+    "locale": "en",
+    "title": "20th Century"
+  },
+  {
+    "categorySlug": "21st-century",
+    "locale": "en",
+    "title": "21st Century"
+  },
+  {
+    "categorySlug": "ancient-civilisations",
+    "locale": "en",
+    "title": "Ancient Civilisations"
+  },
+  {
+    "categorySlug": "ark-survival-evolved",
+    "locale": "en",
+    "title": "ARK: Survival Evolved"
+  },
+  {
+    "categorySlug": "attack-on-titan",
+    "locale": "en",
+    "title": "Attack on Titan"
+  },
+  {
+    "categorySlug": "avatar-the-last-airbender",
+    "locale": "en",
+    "title": "Avatar: The Last Airbender"
+  },
+  {
+    "categorySlug": "before-they-were-famous",
+    "locale": "en",
+    "title": "Before They Were Famous"
+  },
+  {
+    "categorySlug": "breaking-bad",
+    "locale": "en",
+    "title": "Breaking Bad"
+  },
+  {
+    "categorySlug": "cold-war",
+    "locale": "en",
+    "title": "Cold War"
+  },
+  {
+    "categorySlug": "corporations",
+    "locale": "en",
+    "title": "Corporations"
+  },
+  {
+    "categorySlug": "countries-and-capitals",
+    "locale": "en",
+    "title": "Countries and Capitals"
+  },
+  {
+    "categorySlug": "cricket",
+    "locale": "en",
+    "title": "Cricket"
+  },
+  {
+    "categorySlug": "dc-extended-universe",
+    "locale": "en",
+    "title": "DC Extended Universe"
+  },
+  {
+    "categorySlug": "dexter",
+    "locale": "en",
+    "title": "Dexter"
+  },
+  {
+    "categorySlug": "disney",
+    "locale": "en",
+    "title": "Disney"
+  },
+  {
+    "categorySlug": "dota",
+    "locale": "en",
+    "title": "Dota"
+  },
+  {
+    "categorySlug": "dragon-ball",
+    "locale": "en",
+    "title": "Dragon Ball"
+  },
+  {
+    "categorySlug": "ertugrul",
+    "locale": "en",
+    "title": "Ertugrul"
+  },
+  {
+    "categorySlug": "european-christendom",
+    "locale": "en",
+    "title": "European Christendom"
+  },
+  {
+    "categorySlug": "european-history",
+    "locale": "en",
+    "title": "European History"
+  },
+  {
+    "categorySlug": "famous-firsts",
+    "locale": "en",
+    "title": "Famous Firsts"
+  },
+  {
+    "categorySlug": "famous-quotes",
+    "locale": "en",
+    "title": "Famous Quotes"
+  },
+  {
+    "categorySlug": "fast-and-furious",
+    "locale": "en",
+    "title": "Fast and Furious"
+  },
+  {
+    "categorySlug": "fifa-world-cup",
+    "locale": "en",
+    "title": "FIFA World Cup"
+  },
+  {
+    "categorySlug": "formula-1",
+    "locale": "en",
+    "title": "Formula 1"
+  },
+  {
+    "categorySlug": "friends",
+    "locale": "en",
+    "title": "Friends"
+  },
+  {
+    "categorySlug": "game-of-thrones",
+    "locale": "en",
+    "title": "Game of Thrones"
+  },
+  {
+    "categorySlug": "general-knowledge",
+    "locale": "en",
+    "title": "General Knowledge"
+  },
+  {
+    "categorySlug": "geography",
+    "locale": "en",
+    "title": "Geography"
+  },
+  {
+    "categorySlug": "guess-the-decade",
+    "locale": "en",
+    "title": "Guess The Decade"
+  },
+  {
+    "categorySlug": "guess-the-flag",
+    "locale": "en",
+    "title": "Guess the Flag"
+  },
+  {
+    "categorySlug": "guess-the-year",
+    "locale": "en",
+    "title": "Guess the Year"
+  },
+  {
+    "categorySlug": "halo",
+    "locale": "en",
+    "title": "Halo"
+  },
+  {
+    "categorySlug": "harry-potter",
+    "locale": "en",
+    "title": "Harry Potter"
+  },
+  {
+    "categorySlug": "how-i-met-your-mother",
+    "locale": "en",
+    "title": "How I Met Your Mother"
+  },
+  {
+    "categorySlug": "in-between",
+    "locale": "en",
+    "title": "In between:"
+  },
+  {
+    "categorySlug": "initials",
+    "locale": "en",
+    "title": "Initials"
+  },
+  {
+    "categorySlug": "invented-where",
+    "locale": "en",
+    "title": "Invented Where?"
+  },
+  {
+    "categorySlug": "james-bond",
+    "locale": "en",
+    "title": "James Bond"
+  },
+  {
+    "categorySlug": "kurulu-osman",
+    "locale": "en",
+    "title": "Kuruluş: Osman"
+  },
+  {
+    "categorySlug": "league-of-legends",
+    "locale": "en",
+    "title": "League of Legends"
+  },
+  {
+    "categorySlug": "marvel",
+    "locale": "en",
+    "title": "Marvel"
+  },
+  {
+    "categorySlug": "match-the-nickname",
+    "locale": "en",
+    "title": "Match the Nickname"
+  },
+  {
+    "categorySlug": "minecraft",
+    "locale": "en",
+    "title": "Minecraft"
+  },
+  {
+    "categorySlug": "naruto",
+    "locale": "en",
+    "title": "Naruto"
+  },
+  {
+    "categorySlug": "national-icons",
+    "locale": "en",
+    "title": "National Icons"
+  },
+  {
+    "categorySlug": "nba",
+    "locale": "en",
+    "title": "NBA"
+  },
+  {
+    "categorySlug": "odd-one-out",
+    "locale": "en",
+    "title": "Odd One Out"
+  },
+  {
+    "categorySlug": "one-piece",
+    "locale": "en",
+    "title": "One Piece"
+  },
+  {
+    "categorySlug": "overwatch",
+    "locale": "en",
+    "title": "Overwatch"
+  },
+  {
+    "categorySlug": "peaky-blinders",
+    "locale": "en",
+    "title": "Peaky Blinders"
+  },
+  {
+    "categorySlug": "pirates-of-the-caribbean",
+    "locale": "en",
+    "title": "Pirates of the Caribbean"
+  },
+  {
+    "categorySlug": "pokemon",
+    "locale": "en",
+    "title": "Pokemon"
+  },
+  {
+    "categorySlug": "premier-league",
+    "locale": "en",
+    "title": "Premier League"
+  },
+  {
+    "categorySlug": "prison-break",
+    "locale": "en",
+    "title": "Prison Break"
+  },
+  {
+    "categorySlug": "red-dead-redemption",
+    "locale": "en",
+    "title": "Red Dead Redemption"
+  },
+  {
+    "categorySlug": "science",
+    "locale": "en",
+    "title": "Science"
+  },
+  {
+    "categorySlug": "spongebob-squarepants",
+    "locale": "en",
+    "title": "SpongeBob SquarePants"
+  },
+  {
+    "categorySlug": "star-wars",
+    "locale": "en",
+    "title": "Star Wars"
+  },
+  {
+    "categorySlug": "stranger-things",
+    "locale": "en",
+    "title": "Stranger Things"
+  },
+  {
+    "categorySlug": "suits",
+    "locale": "en",
+    "title": "Suits"
+  },
+  {
+    "categorySlug": "super-mario-bros",
+    "locale": "en",
+    "title": "Super Mario Bros."
+  },
+  {
+    "categorySlug": "talab-ul-ilm",
+    "locale": "en",
+    "title": "Talab-ul Ilm"
+  },
+  {
+    "categorySlug": "the-big-bang-theory",
+    "locale": "en",
+    "title": "The Big Bang Theory"
+  },
+  {
+    "categorySlug": "the-legend-of-zelda",
+    "locale": "en",
+    "title": "The Legend of Zelda"
+  },
+  {
+    "categorySlug": "the-modern-middle-east",
+    "locale": "en",
+    "title": "The Modern Middle East"
+  },
+  {
+    "categorySlug": "the-office-us",
+    "locale": "en",
+    "title": "The Office US"
+  },
+  {
+    "categorySlug": "trump-quotes",
+    "locale": "en",
+    "title": "Trump Quotes"
+  },
+  {
+    "categorySlug": "uefa-champions-league",
+    "locale": "en",
+    "title": "UEFA Champions League"
+  },
+  {
+    "categorySlug": "ufc",
+    "locale": "en",
+    "title": "UFC"
+  },
+  {
+    "categorySlug": "uk",
+    "locale": "en",
+    "title": "UK"
+  },
+  {
+    "categorySlug": "uk-history",
+    "locale": "en",
+    "title": "UK History"
+  },
+  {
+    "categorySlug": "us-history",
+    "locale": "en",
+    "title": "US History"
+  },
+  {
+    "categorySlug": "usa",
+    "locale": "en",
+    "title": "USA"
+  },
+  {
+    "categorySlug": "what-happened-next",
+    "locale": "en",
+    "title": "What happened next?"
+  },
+  {
+    "categorySlug": "what-s-the-connection",
+    "locale": "en",
+    "title": "What's the connection?"
+  },
+  {
+    "categorySlug": "which-country",
+    "locale": "en",
+    "title": "Which Country"
+  },
+  {
+    "categorySlug": "which-player",
+    "locale": "en",
+    "title": "Which Player?"
+  },
+  {
+    "categorySlug": "who-said-this-quote",
+    "locale": "en",
+    "title": "Who Said This Quote?"
+  },
+  {
+    "categorySlug": "world-laws",
+    "locale": "en",
+    "title": "World Laws"
+  },
+  {
+    "categorySlug": "ww1",
+    "locale": "en",
+    "title": "WW1"
+  },
+  {
+    "categorySlug": "ww2",
+    "locale": "en",
+    "title": "WW2"
+  }
+]

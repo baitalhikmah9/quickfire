@@ -36,7 +36,11 @@ import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
-import { adjustGameEntryReservation, consumeGameEntry } from '@/lib/wallet/gameEntry';
+import {
+  consumeGameEntry,
+  refundGameEntry,
+  reserveGameEntry,
+} from '@/lib/wallet/gameEntry';
 import { getGameTokenCost } from '@/features/play/tokenCosts';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
@@ -262,8 +266,9 @@ export default function CategorySelectionScreen() {
   const startBoard = usePlayStore((state) => state.startBoard);
   const { isLoaded, isSignedIn } = useAuth();
   const authDisabled = isAuthDisabled();
-  const adjustEntryMutation = useMutation(api.wallet.adjustEntryReservation);
+  const reserveGameEntryMutation = useMutation(api.wallet.reserveGameEntry);
   const consumeEntryMutation = useMutation(api.wallet.consumeEntry);
+  const refundEntryMutation = useMutation(api.wallet.refundEntry);
 
   useLayoutEffect(() => {
     ensureDraft();
@@ -805,46 +810,59 @@ export default function CategorySelectionScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('play.startBoard')}
             onPress={async () => {
-              if (session && !authDisabled && isLoaded && isSignedIn && entryReservationId) {
-                const tokenCost = getGameTokenCost(
-                  session.mode,
-                  session.config.quickPlayTopicCount
-                );
-                const entryTokenCharge = session.config.entryTokenCharge ?? 0;
-                const delta = Math.max(0, tokenCost - entryTokenCharge);
-                if (delta > 0) {
-                  const adjusted = await adjustGameEntryReservation(adjustEntryMutation, {
-                    reservationId: entryReservationId,
-                    additionalCost: delta,
+              if (!session) return;
+
+              const tokenCost = getGameTokenCost(
+                session.mode,
+                session.config.quickPlayTopicCount
+              );
+
+              // Lock in + spend only once topics are chosen and the board starts.
+              let reservationId = entryReservationId;
+              if (!authDisabled && isLoaded && isSignedIn) {
+                if (!reservationId) {
+                  const reservation = await reserveGameEntry(reserveGameEntryMutation, {
+                    mode: session.mode,
+                    clientSessionId: session.id,
+                    cost: tokenCost,
                   });
-                  if (!adjusted.ok && adjusted.error === 'insufficient_balance') {
+                  if (!reservation.ok) {
                     Alert.alert('', t('play.needTokens'));
                     return;
                   }
+                  reservationId = reservation.reservationId;
+                  setEntryReservationId(reservationId);
                 }
               }
 
               const result = startBoard();
-              if (result.ok) {
-                if (!authDisabled && isLoaded && isSignedIn && entryReservationId) {
-                  const consumed = await consumeGameEntry(consumeEntryMutation, {
-                    reservationId: entryReservationId,
-                    completedSessionId: usePlayStore.getState().session?.id ?? '',
-                  }).catch(() => ({ ok: false as const, error: 'network' }));
-                  // Only a real balance failure blocks entry; stale reservation states
-                  // (already consumed/refunded from a previous run) are non-fatal.
-                  if (!consumed.ok && consumed.error === 'insufficient_balance') {
-                    Alert.alert('', t('play.needTokens'));
-                    return;
-                  }
+              if (!result.ok) {
+                if (reservationId && !authDisabled && isLoaded && isSignedIn) {
+                  await refundGameEntry(refundEntryMutation, {
+                    reservationId,
+                    reason: 'start_board_failed',
+                  }).catch(() => {});
+                  setEntryReservationId(null);
                 }
-                commitEntryCharge();
-                setEntryReservationId(null);
-                router.replace('/(app)/play/board');
+                Alert.alert('', result.error ?? t('play.needTokens'));
                 return;
               }
-              const errorMessage = result.error ?? t('play.needTokens');
-              Alert.alert('', errorMessage);
+
+              if (!authDisabled && isLoaded && isSignedIn && reservationId) {
+                const consumed = await consumeGameEntry(consumeEntryMutation, {
+                  reservationId,
+                  completedSessionId: usePlayStore.getState().session?.id ?? '',
+                }).catch(() => ({ ok: false as const, error: 'network' }));
+                // Only a real balance failure blocks entry; stale reservation states
+                // (already consumed/refunded from a previous run) are non-fatal.
+                if (!consumed.ok && consumed.error === 'insufficient_balance') {
+                  Alert.alert('', t('play.needTokens'));
+                  return;
+                }
+              }
+              commitEntryCharge();
+              setEntryReservationId(null);
+              router.replace('/(app)/play/board');
             }}
             style={({ pressed }) => [
               styles.startBtn,
@@ -871,7 +889,8 @@ export default function CategorySelectionScreen() {
 
 const styles = StyleSheet.create({
   compactChrome: {
-    paddingVertical: SPACING.xs,
+    // Keep shared HEADER top pad; only tighten bottom on short viewports.
+    paddingBottom: 0,
   },
   // ── Header ──────────────────────────────────────────────────────────
   headerWrap: {

@@ -1,8 +1,17 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { Platform, View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPACING, FONT_SIZES, BORDER_RADIUS, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import {
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  FONTS,
+  LAYOUT,
+  SOFT_SURFACE_FACE,
+  softSurfaceLift,
+  getStandardChromeTopPadding,
+} from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
@@ -21,7 +30,19 @@ export default function LobbySettingsModal() {
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
-      <View style={[styles.header, SOFT_SURFACE_FACE, softSurfaceLift(), { backgroundColor: surface, borderRadius: 14, marginHorizontal: LAYOUT.screenGutter, marginTop: SPACING.sm }]}>
+      <View
+        style={[
+          styles.header,
+          SOFT_SURFACE_FACE,
+          softSurfaceLift(),
+          {
+            backgroundColor: surface,
+            borderRadius: 14,
+            marginHorizontal: LAYOUT.screenGutter,
+            marginTop: getStandardChromeTopPadding(Platform.OS === 'web'),
+          },
+        ]}
+      >
         <View style={styles.headerSpacer} />
         <Text style={[styles.title, { color: textPrimary }]}>LOBBY SETTINGS</Text>
         <Pressable

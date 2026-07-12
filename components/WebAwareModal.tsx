@@ -35,6 +35,7 @@ export function WebAwareModal({ visible, onRequestClose, children }: WebAwareMod
       animationType="fade"
       presentationStyle="overFullScreen"
       statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onRequestClose}
     >
       <View style={styles.nativeFillShell} testID="web-aware-modal-shell">
@@ -47,7 +48,7 @@ export function WebAwareModal({ visible, onRequestClose, children }: WebAwareMod
 const styles = StyleSheet.create({
   webOverlayRoot: {
     // `fixed` escapes nested RN-web layouts (SafeAreaView, padded scaffolds).
-    // Explicit width/height keeps flex children and absoluteFill scrims full-viewport.
+    // Pin all edges + 100% so scrim children cover the whole viewport, not just content box.
     position: 'fixed' as 'absolute',
     top: 0,
     left: 0,
@@ -55,6 +56,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
+    minWidth: '100%',
+    minHeight: '100%',
     flex: 1,
     zIndex: 99999,
   },
@@ -62,5 +65,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+    minWidth: '100%',
+    minHeight: '100%',
   },
 });

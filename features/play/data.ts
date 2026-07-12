@@ -1,5 +1,6 @@
 import { mark } from '@/lib/startupTiming';
 import rawQuestions from '@/constants/questions.json';
+import { groupRumbleQuestionsByValueBucket } from '@/features/play/rumble';
 import type { CategoryOption, QuestionCard } from '@/features/shared';
 import type { SupportedLocale } from '@/lib/i18n/config';
 
@@ -283,8 +284,82 @@ export function getModeCategoryCount(
   return 6;
 }
 
-export function getRandomRemainingQuestion(board: QuestionCard[], usedQuestionIds: Set<string>): QuestionCard | null {
+export function getRandomRemainingQuestion(
+  board: QuestionCard[],
+  usedQuestionIds: Set<string>,
+  options?: { teamId?: string }
+): QuestionCard | null {
   const remaining = board.filter((question) => !usedQuestionIds.has(question.id));
   if (!remaining.length) return null;
+  if (options?.teamId) {
+    const owned = remaining.filter((question) => question.assignedTeamId === options.teamId);
+    if (owned.length) return pickRandom(owned);
+  }
   return pickRandom(remaining);
+}
+
+function shuffleItems<T>(items: T[]): T[] {
+  const shuffled = [...items];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    const current = shuffled[index]!;
+    shuffled[index] = shuffled[swapIndex]!;
+    shuffled[swapIndex] = current;
+  }
+  return shuffled;
+}
+
+function buildBalancedTeamSequence(teamIds: string[], repeats: number): string[] {
+  const sequence: string[] = [];
+  for (let repeat = 0; repeat < repeats; repeat += 1) {
+    sequence.push(...shuffleItems(teamIds));
+  }
+  return shuffleItems(sequence);
+}
+
+/**
+ * Fair random-mode ownership: each team gets an equal share of 100/200/300 tiles.
+ * Falls back to whole-board balance if value buckets are uneven.
+ */
+export function assignRandomQuestionOwners(
+  board: QuestionCard[],
+  teamIds: string[]
+): QuestionCard[] {
+  if (teamIds.length < 2 || board.length === 0) return board;
+
+  const assignments = new Map<string, string>();
+  const byValueBucket = groupRumbleQuestionsByValueBucket(board);
+
+  const assignBucket = (questions: QuestionCard[]) => {
+    if (questions.length % teamIds.length !== 0) return false;
+    const repeatsPerTeam = questions.length / teamIds.length;
+    const owners = buildBalancedTeamSequence(teamIds, repeatsPerTeam);
+    shuffleItems(questions).forEach((question, index) => {
+      assignments.set(question.id, owners[index]!);
+    });
+    return true;
+  };
+
+  if (byValueBucket) {
+    let ok = true;
+    for (const questions of byValueBucket.values()) {
+      if (!assignBucket(questions)) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) {
+      return board.map((question) => ({
+        ...question,
+        assignedTeamId: assignments.get(question.id),
+      }));
+    }
+  }
+
+  // ponytail: whole-board balance if buckets can't divide evenly
+  if (!assignBucket(board)) return board;
+  return board.map((question) => ({
+    ...question,
+    assignedTeamId: assignments.get(question.id),
+  }));
 }

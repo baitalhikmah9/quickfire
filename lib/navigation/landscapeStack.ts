@@ -20,5 +20,7 @@ const webSafeStack: NativeStackNavigationOptions =
 export const landscapeStackScreenOptions: NativeStackNavigationOptions = {
   headerShown: false,
   presentation: 'card',
+  // Keep system status bar hidden on every native-stack push (Expo Go re-shows it otherwise).
+  statusBarHidden: true,
   ...webSafeStack,
 };

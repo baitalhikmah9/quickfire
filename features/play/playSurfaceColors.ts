@@ -6,25 +6,21 @@ const T = HOME_SOFT_UI.colors;
 /** Shared play-surface tokens — respects dark palette via HOME_SOFT_UI proxy. */
 export function getPlaySurfaceColors() {
   const isDark = relativeLuminance(T.canvas) < 0.3;
-  // Match bundled topic art mats (medium slate) so MISSING frames read as cards, not cream voids.
-  const lightTopicMatte = '#5C616B';
+  // Neutral gray matte so letterboxed topic art still reads as a card.
+  const topicMatte = '#777777';
   return {
     canvas: T.canvas,
     surface: T.surface,
     textPrimary: T.textPrimary,
     textMuted: T.textMuted,
     tileBackground: T.surface,
-    imageFrameBackground: isDark ? 'rgba(255, 255, 255, 0.08)' : lightTopicMatte,
+    imageFrameBackground: isDark ? 'rgba(255, 255, 255, 0.08)' : topicMatte,
     imagePadding: isDark ? 2 : 6,
     isDark,
     topicImageContentFit: 'contain' as const,
-    /**
-     * Topic illustration matte — always visible.
-     * Dark mode: light matte for dark line-art PNGs.
-     * Light mode: slate matte matching packed pixel art (MISSING must not vanish into canvas).
-     */
-    topicImageMatte: isDark ? 'rgba(255, 255, 255, 0.92)' : lightTopicMatte,
+    /** Topic illustration matte — always visible behind contain-fit art. */
+    topicImageMatte: topicMatte,
     /** Label on empty topic frames — contrast against topicImageMatte. */
-    missingPictureLabelColor: isDark ? 'rgba(15, 23, 42, 0.45)' : 'rgba(255, 255, 255, 0.72)',
+    missingPictureLabelColor: 'rgba(255, 255, 255, 0.72)',
   };
 }

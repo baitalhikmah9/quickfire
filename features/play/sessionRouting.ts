@@ -5,9 +5,9 @@ export function isActiveMatchStep(step: PlayRouteStep | undefined | null): boole
   return step === 'board' || step === 'question' || step === 'answer';
 }
 
-/** Session steps that mean "game in progress" for the home resume prompt. */
+/** Session steps that mean "match locked in" for the home resume prompt. Setup is free. */
 export function isResumableSessionStep(step: PlayRouteStep | undefined | null): boolean {
-  return !!step && step !== 'hub' && step !== 'mode' && step !== 'end';
+  return isActiveMatchStep(step);
 }
 
 /** Expo Router path for a play session step, or null when there is no play route. */

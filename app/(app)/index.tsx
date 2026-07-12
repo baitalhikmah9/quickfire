@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, FONTS, SPACING, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import { COLORS, FONTS, HEADER, SPACING, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { GameHeader } from '@/components/GameHeader';
 import { HubTokenChip } from '@/components/HubTokenChip';
@@ -25,7 +25,7 @@ import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
 import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
 import { usePlayStore } from '@/store/play';
-import { reserveGameEntry, refundGameEntry } from '@/lib/wallet/gameEntry';
+import { refundGameEntry } from '@/lib/wallet/gameEntry';
 import { useThemeStore } from '@/store/theme';
 import { HOME_SOFT_UI } from '@/themes';
 import { isResumableSessionStep, routeForPlayStep } from '@/features/play/sessionRouting';
@@ -125,7 +125,6 @@ export default function AppHubScreen() {
   const session = usePlayStore((state) => state.session);
   const startModeSession = usePlayStore((state) => state.startModeSession);
   const setEntryReservationId = usePlayStore((state) => state.setEntryReservationId);
-  const reserveGameEntryMutation = useMutation(api.wallet.reserveGameEntry);
   const refundEntryMutation = useMutation(api.wallet.refundEntry);
   const [activeModeInfo, setActiveModeInfo] = useState<GameMode | null>(null);
   const [pendingMode, setPendingMode] = useState<GameMode | null>(null);
@@ -163,6 +162,8 @@ export default function AppHubScreen() {
       return;
     }
 
+    // Drop any leftover reservation from a prior abandoned flow. Tokens are only
+    // reserved/spent when the board starts after topics are chosen.
     const oldReservationId = usePlayStore.getState().entryReservationId;
     if (oldReservationId && !authDisabled && isLoaded && isSignedIn) {
       await refundGameEntry(refundEntryMutation, {
@@ -172,31 +173,8 @@ export default function AppHubScreen() {
       setEntryReservationId(null);
     }
 
-    // Reserve the game entry on Convex when the user is signed in.
-    if (!authDisabled && isLoaded && isSignedIn) {
-      const clientSessionId = `play_${Date.now()}`;
-      const reservation = await reserveGameEntry(reserveGameEntryMutation, {
-        mode,
-        clientSessionId,
-        cost: minimumCost,
-      });
-      if (!reservation.ok) {
-        Alert.alert('', t('play.needTokens'));
-        return;
-      }
-      setEntryReservationId(reservation.reservationId);
-    }
-
     const result = startModeSession(mode);
     if (!result.ok) {
-      const reservationId = usePlayStore.getState().entryReservationId;
-      if (reservationId && !authDisabled && isLoaded && isSignedIn) {
-        await refundGameEntry(refundEntryMutation, {
-          reservationId,
-          reason: 'start_mode_failed',
-        }).catch(() => {});
-        setEntryReservationId(null);
-      }
       Alert.alert('', result.error ?? t('play.needTokens'));
       return;
     }
@@ -207,7 +185,6 @@ export default function AppHubScreen() {
     isSignedIn,
     minimumTokenCostForMode,
     refundEntryMutation,
-    reserveGameEntryMutation,
     router,
     setEntryReservationId,
     startModeSession,
@@ -280,8 +257,14 @@ export default function AppHubScreen() {
         <ScreenContent fullWidth style={styles.viewport}>
           <View style={styles.pageColumn}>
             {/* Shared max-width aligns header bar + card row edges (hybrid hub column). */}
-            <View style={[styles.contentFrame, { maxWidth: hubMaxWidth }]}>
-            <GameHeader variant="logoOnly"
+            {/*
+              Top pad lives on a normal View — SafeAreaView can ignore/override paddingTop
+              when status-bar insets are 0 (hidden bar).
+            */}
+            <View style={[styles.contentFrame, styles.contentFrameTopPad, { maxWidth: hubMaxWidth }]}>
+            <GameHeader
+              variant="logoOnly"
+              topPad="home"
               barMaxWidthOverride={isWeb ? hubMaxWidth : undefined}
               leftSlot={
                 <HubTokenChip
@@ -625,6 +608,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: LAYOUT.screenGutter,
   },
+  /** Visible top gap while status bar is hidden (safe-area top ≈ 0). */
+  contentFrameTopPad: {
+    paddingTop: SPACING.xl,
+  },
   mainFill: {
     flex: 1,
     minWidth: 0,
@@ -768,14 +755,20 @@ const styles = StyleSheet.create({
   },
   /**
    * Full-viewport scrim hosted by WebAwareModal (native Modal / web fixed shell).
-   * Must use absoluteFill — not flex-only — so elevated home chrome cannot sit above the dim.
+   * flex + explicit size + absoluteFill — same belt-and-suspenders as PlayMatchMenuModal.
+   * absoluteFill alone can leave edges undimmed when the shell sizes via flex only.
    */
   infoModalRoot: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.xl,
     backgroundColor: COLORS.overlay,
+    zIndex: 1000,
+    elevation: 1000,
   },
   infoModalBackdrop: {
     ...StyleSheet.absoluteFillObject,

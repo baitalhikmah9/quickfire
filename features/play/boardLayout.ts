@@ -7,6 +7,97 @@
  * bands. Stacked topic rows keep a modest inter-row gap.
  */
 
+/** Alignment policy for the board topic grid (quick play 3/4/5, classic 6). */
+export type BoardTopicGridAlignment = {
+  /** Vertically center topic rows when content is shorter than the viewport. */
+  contentJustifyContent: 'center';
+  /** Horizontally center topics within each row. */
+  rowJustifyContent: 'center';
+  /**
+   * When false, incomplete last rows (e.g. 2 of 3 for 5 topics) are not
+   * left-padded with empty flex spacers — remaining cells keep fixed width
+   * and center as a group (same idea as topic select).
+   */
+  padIncompleteRowsWithSpacers: false;
+};
+
+export function getBoardTopicGridAlignment(): BoardTopicGridAlignment {
+  return {
+    contentJustifyContent: 'center',
+    rowJustifyContent: 'center',
+    padIncompleteRowsWithSpacers: false,
+  };
+}
+
+/** Fixed cell box so incomplete rows center at the same width as full rows. */
+export function getBoardTopicCellBox(cellWidth: number, rowHeight: number) {
+  return {
+    width: Math.max(0, cellWidth),
+    height: Math.max(0, rowHeight),
+    flexGrow: 0 as const,
+    flexShrink: 0 as const,
+  };
+}
+
+/**
+ * Empty flex spacers for incomplete grid rows.
+ * Prefer 0 + fixed cell width + row justify center so remainders cluster mid-row.
+ */
+export function getBoardGridRowSpacerCount(
+  itemsInRow: number,
+  columnCount: number,
+  padIncompleteRowsWithSpacers: boolean
+): number {
+  if (!padIncompleteRowsWithSpacers) return 0;
+  return Math.max(0, columnCount - itemsInRow);
+}
+
+/**
+ * Equal top/bottom padding that Y-centers the topic block when it is shorter
+ * than the board body (e.g. quick play 3 topics / single row).
+ */
+export function getBoardGridVerticalInsets(input: {
+  viewportHeight: number;
+  edgePadding: number;
+  rowCount: number;
+  rowHeight: number;
+  rowGap: number;
+}): { paddingTop: number; paddingBottom: number; freeSpace: number } {
+  const rows = Math.max(1, Math.floor(input.rowCount));
+  const edge = Math.max(0, input.edgePadding);
+  const rowHeight = Math.max(0, input.rowHeight);
+  const rowGap = Math.max(0, input.rowGap);
+  const blockHeight = rowHeight * rows + rowGap * Math.max(0, rows - 1);
+  const available = Math.max(0, input.viewportHeight - edge * 2);
+  const freeSpace = Math.max(0, available - blockHeight);
+  const half = freeSpace / 2;
+  return {
+    paddingTop: edge + half,
+    paddingBottom: edge + half,
+    freeSpace,
+  };
+}
+
+/**
+ * Fixed height for the board topic body under the match header.
+ * Used with equal flex spacers so short boards (3 topics) sit mid-screen
+ * even when the flex chain under PlayScaffold only wraps content height.
+ */
+export function getBoardBodyHeight(input: {
+  windowHeight: number;
+  bottomInset: number;
+  headerReserve: number;
+  minHeight?: number;
+}): number {
+  const minHeight = input.minHeight ?? 160;
+  return Math.max(
+    minHeight,
+    Math.max(0, input.windowHeight) -
+      Math.max(0, input.bottomInset) -
+      Math.max(0, input.headerReserve)
+  );
+}
+
 export type BoardVerticalLayoutInput = {
   viewportHeight: number;
   /**

@@ -15,6 +15,15 @@ import { usePlayStore } from '@/store/play';
 
 const T = HOME_SOFT_UI;
 
+/** BackFire flame palette for the active-turn glow: hot red-orange core, ember warmth. */
+const FIRE = {
+  flame: '#FF5A1F', // ring — hot flame orange-red
+  glow: '#FF3D00', // halo — deeper fire red for the burn
+  text: '#E8420C', // name/score — legible ember red
+  emberFace: '#FFF3EC', // pill face — faint warm ember light
+  emberBadge: 'rgba(255, 90, 31, 0.16)', // score badge fill
+};
+
 const WAGER_HEADER_ART = require('@/assets/wager.png');
 const HOT_SEAT_HEADER_ART = require('@/assets/hot seat.png');
 
@@ -75,12 +84,8 @@ export function PlayMatchTopBar({
   const shortSide = Math.min(width, height);
   const isTightHeader = compactQuestionHeader && (width < 760 || shortSide < 430);
   const isVeryTightHeader = compactQuestionHeader && shortSide < 390;
+  /** Same sizing as home `GameHeader` logoOnly. */
   const logoWidth = getGameHeaderLogoDisplayWidth(width, height);
-  /** Board chrome (pills next to logo) uses a shorter wordmark so the whole header row stays low. */
-  const boardChromeLogoWidth = Math.min(
-    logoWidth,
-    Math.round(shortSide < 400 ? 96 : shortSide < 480 ? 112 : 128)
-  );
   const sideMaxWidth = compactQuestionHeader ? (isVeryTightHeader ? 142 : isTightHeader ? 158 : 214) : undefined;
   const showWager = session.config.wagerEnabled && onWagerInfoPress;
   const showHotSeat = isHotSeatConfigured(session) && onHotSeatInfoPress;
@@ -160,12 +165,7 @@ export function PlayMatchTopBar({
           style={[
             styles.headerScoreCard,
             useCompactScore && styles.compactScoreCard,
-            isActive
-              ? {
-                  borderColor: T.colors.accentGlow,
-                  backgroundColor: T.colors.surface,
-                }
-              : { borderColor: 'rgba(15, 23, 42, 0.1)' },
+            isActive ? styles.headerScoreCardActive : { borderColor: 'rgba(15, 23, 42, 0.1)' },
           ]}
         >
           <View style={[styles.headerTeamRow, useCompactScore && styles.compactTeamRow]}>
@@ -187,7 +187,7 @@ export function PlayMatchTopBar({
               style={[
                 styles.headerScoreBadge,
                 useCompactScore && styles.compactScoreBadge,
-                isActive && { backgroundColor: T.colors.surface, borderColor: T.colors.accentGlow },
+                isActive && styles.headerScoreBadgeActive,
               ]}
             >
               <Text
@@ -225,7 +225,8 @@ export function PlayMatchTopBar({
         style={[
           styles.logoScorePill,
           dense && styles.logoScorePillDense,
-          isActive && { borderColor: T.colors.accentGlow, backgroundColor: T.colors.surface },
+          isRumble && styles.logoScorePillRumble,
+          isActive && styles.logoScorePillActive,
         ]}
       >
         <Pressable
@@ -242,13 +243,21 @@ export function PlayMatchTopBar({
         </Pressable>
         <View style={styles.logoScoreTextBlock}>
           <Text
-            style={[styles.logoScoreName, dense && styles.logoScoreNameDense]}
+            style={[
+              styles.logoScoreName,
+              dense && styles.logoScoreNameDense,
+              isActive && styles.logoScoreNameActive,
+            ]}
             numberOfLines={1}
           >
             {team.name}
           </Text>
           <Text
-            style={[styles.logoScoreValue, dense && styles.logoScoreValueDense]}
+            style={[
+              styles.logoScoreValue,
+              dense && styles.logoScoreValueDense,
+              isActive && styles.logoScoreValueActive,
+            ]}
             numberOfLines={1}
           >
             {team.score}
@@ -281,11 +290,11 @@ export function PlayMatchTopBar({
         <View style={[styles.logoOnlyTopBar, styles.logoOnlyTopBarDense, styles.logoOnlyTopBarRumble]}>
           <Pressable
             onPress={onLogoPress}
-            style={styles.headerLogoContainer}
+            style={[styles.headerLogoContainer, { width: logoWidth }]}
             accessibilityRole="button"
             accessibilityLabel={t('play.matchMenuA11y')}
           >
-            <BackfireTitleLogo width={boardChromeLogoWidth} accessibilityLabel="BackFire" />
+            <BackfireTitleLogo width={logoWidth} accessibilityLabel="BackFire" />
           </Pressable>
           <View
             style={[
@@ -307,12 +316,12 @@ export function PlayMatchTopBar({
         ) : null}
         <Pressable
           onPress={onLogoPress}
-          style={styles.headerLogoContainer}
+          style={[styles.headerLogoContainer, { width: logoWidth }]}
           accessibilityRole="button"
           accessibilityLabel={t('play.matchMenuA11y')}
         >
           <BackfireTitleLogo
-            width={scorePillsNextToLogo ? boardChromeLogoWidth : logoWidth}
+            width={logoWidth}
             accessibilityLabel="BackFire"
           />
         </Pressable>
@@ -348,7 +357,7 @@ export function PlayMatchTopBar({
       <View style={styles.topBarTitle}>
         <Pressable
           onPress={onLogoPress}
-          style={styles.headerLogoContainer}
+          style={[styles.headerLogoContainer, { width: logoWidth }]}
           accessibilityRole="button"
           accessibilityLabel={t('play.matchMenuA11y')}
         >
@@ -393,11 +402,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 2,
+    overflow: 'visible',
   },
-  /** Board: kill vertical dead space so team pills + logo sit in one short strip. */
+  /** Board: room for amber turn glow so parent overflow doesn't clip it. */
   logoOnlyTopBarDense: {
     gap: 6,
-    paddingVertical: 0,
+    paddingVertical: 10,
     minHeight: 0,
   },
   /** Rumble: logo anchored left; every team score pill stays to its right. */
@@ -436,7 +446,15 @@ const styles = StyleSheet.create({
   },
   logoScorePillsRumble: {
     flex: 1,
-    justifyContent: 'flex-start',
+    flexWrap: 'nowrap',
+  },
+  /** Rumble board: equal flex so N teams fill the header row. */
+  logoScorePillRumble: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    maxWidth: 9999,
   },
   logoScorePillsDense: {
     gap: 4,
@@ -468,6 +486,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 2,
     elevation: 1,
+  },
+  /** Fire glow — BackFire flame ember: red-orange ring + hot halo, warm ember-lit face. */
+  logoScorePillActive: {
+    borderWidth: 2,
+    borderColor: FIRE.flame,
+    backgroundColor: FIRE.emberFace,
+    shadowColor: FIRE.glow,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.85,
+    shadowRadius: 14,
+    elevation: 10,
   },
   logoScorePillDense: {
     minWidth: 88,
@@ -523,6 +552,9 @@ const styles = StyleSheet.create({
     fontSize: 9,
     lineHeight: 11,
   },
+  logoScoreNameActive: {
+    color: FIRE.text,
+  },
   logoScoreValue: {
     fontFamily: FONTS.displayBold,
     fontSize: 14,
@@ -533,6 +565,9 @@ const styles = StyleSheet.create({
   logoScoreValueDense: {
     fontSize: 12,
     lineHeight: 14,
+  },
+  logoScoreValueActive: {
+    color: FIRE.text,
   },
   teamScoreHeader: {
     flexDirection: 'row',
@@ -561,6 +596,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 4,
     elevation: 2,
+  },
+  headerScoreCardActive: {
+    borderWidth: 2,
+    borderColor: FIRE.flame,
+    backgroundColor: FIRE.emberFace,
+    shadowColor: FIRE.glow,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.85,
+    shadowRadius: 16,
+    elevation: 10,
   },
   compactScoreCard: {
     height: 34,
@@ -608,6 +653,7 @@ const styles = StyleSheet.create({
 
   headerTeamNameActive: {
     fontFamily: FONTS.uiBold,
+    color: FIRE.text,
   },
   headerScoreBadge: {
     minWidth: 40,
@@ -632,6 +678,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 2,
     elevation: 1,
+  },
+  headerScoreBadgeActive: {
+    backgroundColor: FIRE.emberBadge,
+    borderColor: FIRE.flame,
   },
 
   headerScoreValue: {

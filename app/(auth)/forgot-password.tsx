@@ -1,11 +1,19 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, TextInput, View, ScrollView } from 'react-native';
+import { Platform, StyleSheet, Text, TextInput, View, ScrollView } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useSignIn } from '@clerk/clerk-expo';
-import { SPACING, FONTS, LAYOUT, COLORS, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import {
+  SPACING,
+  FONTS,
+  LAYOUT,
+  COLORS,
+  SOFT_SURFACE_FACE,
+  softSurfaceLift,
+  getStandardChromeTopPadding,
+} from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
@@ -242,7 +250,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: LAYOUT.screenGutter,
+    paddingHorizontal: LAYOUT.screenGutter,
+    paddingTop: getStandardChromeTopPadding(Platform.OS === 'web'),
     paddingBottom: SPACING.xxl,
     gap: SPACING.xl,
   },

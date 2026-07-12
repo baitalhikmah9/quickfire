@@ -1,8 +1,16 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { Platform, View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPACING, FONT_SIZES, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import {
+  SPACING,
+  FONT_SIZES,
+  FONTS,
+  LAYOUT,
+  SOFT_SURFACE_FACE,
+  softSurfaceLift,
+  getStandardChromeTopPadding,
+} from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
@@ -22,7 +30,19 @@ export default function RulesModal() {
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
-      <View style={[styles.header, SOFT_SURFACE_FACE, softSurfaceLift(), { backgroundColor: surface, marginHorizontal: LAYOUT.screenGutter, marginTop: SPACING.sm, borderRadius: 14 }]}>
+      <View
+        style={[
+          styles.header,
+          SOFT_SURFACE_FACE,
+          softSurfaceLift(),
+          {
+            backgroundColor: surface,
+            marginHorizontal: LAYOUT.screenGutter,
+            marginTop: getStandardChromeTopPadding(Platform.OS === 'web'),
+            borderRadius: 14,
+          },
+        ]}
+      >
         <Pressable
           onPress={handleClose}
           accessibilityRole="button"

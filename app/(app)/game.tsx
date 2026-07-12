@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { Platform, View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,7 +7,7 @@ import { useGameStore } from '@/store/game';
 import { LobbyBuilder } from '@/features/lobby/LobbyBuilder';
 import { Board } from '@/features/gameplay/Board';
 import type { GameConfig, QuestionCard } from '@/features/shared';
-import { SPACING, FONTS, LAYOUT, COLORS } from '@/constants';
+import { SPACING, FONTS, LAYOUT, COLORS, getStandardChromeTopPadding } from '@/constants';
 import { getResolvedContentLocaleChain } from '@/lib/i18n/config';
 import { HOME_SOFT_UI } from '@/themes';
 import { useLocaleStore } from '@/store/locale';
@@ -358,7 +358,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: LAYOUT.screenGutter,
-    height: 80,
+    paddingTop: getStandardChromeTopPadding(Platform.OS === 'web'),
+    minHeight: 80,
   },
   headerTitle: {
     fontSize: 16,

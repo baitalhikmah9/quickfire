@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { Platform, View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +11,13 @@ import { StepSplitTeams } from '@/features/lobby/StepSplitTeams';
 import { lifelinesToConfig } from '@/features/shared';
 import type { GameConfig, TeamConfig, LifelineId, QuestionCard } from '@/features/shared';
 import { FALLBACK_CATEGORIES } from '@/constants/categories';
-import { SPACING, FONTS, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import {
+  SPACING,
+  FONTS,
+  SOFT_SURFACE_FACE,
+  softSurfaceLift,
+  getStandardChromeTopPadding,
+} from '@/constants';
 import { getResolvedContentLocaleChain } from '@/lib/i18n/config';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
@@ -256,8 +262,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    height: 72,
+    paddingTop: getStandardChromeTopPadding(Platform.OS === 'web'),
+    paddingBottom: SPACING.md,
+    minHeight: 72,
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
     zIndex: 10,

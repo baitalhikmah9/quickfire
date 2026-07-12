@@ -65,7 +65,7 @@ export interface GameConfig {
   wagerEnabled: boolean;
   overtimeThreshold?: number;
   boardSize?: number;
-  /** Tokens already charged at mode selection before board start. */
+  /** Tokens already committed for this session (set when the board starts). */
   entryTokenCharge?: number;
 }
 
@@ -88,6 +88,8 @@ export interface QuestionCard {
   rumbleFirstTeamId?: string;
   /** Rumble party that gets the second timed answer window. */
   rumbleSecondTeamId?: string;
+  /** Random mode: team that owns this tile for fair value-bucket draws. */
+  assignedTeamId?: string;
 }
 
 export interface CategoryOption {

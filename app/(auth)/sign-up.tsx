@@ -5,7 +5,14 @@ import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { SPACING, FONTS, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import {
+  SPACING,
+  FONTS,
+  LAYOUT,
+  SOFT_SURFACE_FACE,
+  softSurfaceLift,
+  getStandardChromeTopPadding,
+} from '@/constants';
 import { OAuthProviderButtons } from '@/components/OAuthProviderButtons';
 import { AuthOrDivider } from '@/components/auth/AuthCard';
 import { AuthEmailSignUpForm } from '@/components/auth/AuthEmailSignUpForm';
@@ -127,7 +134,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: LAYOUT.screenGutter,
+    paddingHorizontal: LAYOUT.screenGutter,
+    paddingTop: getStandardChromeTopPadding(Platform.OS === 'web'),
     paddingBottom: SPACING.xxl,
     gap: SPACING.xl,
   },

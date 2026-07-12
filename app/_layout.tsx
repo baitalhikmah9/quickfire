@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar, setStatusBarHidden } from 'expo-status-bar';
@@ -23,7 +23,18 @@ SplashScreen.preventAutoHideAsync();
 void SplashScreen.hideAsync();
 
 /** Stable reference for static layout groups — avoids navigation descriptor churn each render. */
-const ROOT_NESTED_STACK_SCREEN_OPTIONS = { headerShown: false };
+const ROOT_NESTED_STACK_SCREEN_OPTIONS = {
+  headerShown: false,
+  // Expo Go / native-stack can re-show the system bar per screen without this.
+  statusBarHidden: true,
+} as const;
+
+function hideSystemStatusBar() {
+  if (Platform.OS === 'web') return;
+  // Both APIs: expo-status-bar for Expo, RN StatusBar for native-stack / Expo Go races.
+  setStatusBarHidden(true, 'fade');
+  RNStatusBar.setHidden(true, 'fade');
+}
 
 export default function RootLayout() {
   markOnce('RootLayout first render');
@@ -31,6 +42,7 @@ export default function RootLayout() {
   const rootStackScreenOptions = useMemo(
     () => ({
       headerShown: false,
+      statusBarHidden: true,
       contentStyle: {
         flex: 1,
         backgroundColor: PALETTES[paletteId].background,
@@ -65,10 +77,8 @@ export default function RootLayout() {
     // Immersive chrome: keep system status bar (time / battery / wifi) hidden so
     // play UI gets vertical space. Users still open notifications / Control Center
     // with an edge swipe; OS may flash bars briefly, then we re-hide on resume.
-    const hideStatusBar = () => {
-      setStatusBarHidden(true, 'fade');
-    };
-    hideStatusBar();
+    // Note: app.json UIStatusBarHidden only applies to standalone/dev builds, not Expo Go.
+    hideSystemStatusBar();
 
     let appStateSub: ReturnType<typeof AppState.addEventListener> | undefined;
     let cancelled = false;
@@ -85,14 +95,14 @@ export default function RootLayout() {
         appStateSub = AppState.addEventListener('change', (next) => {
           if (next === 'active') {
             lockLandscape();
-            hideStatusBar();
+            hideSystemStatusBar();
           }
         });
       })
       .catch(() => {
         /* orientation optional; avoid breaking app bootstrap */
         appStateSub = AppState.addEventListener('change', (next) => {
-          if (next === 'active') hideStatusBar();
+          if (next === 'active') hideSystemStatusBar();
         });
       });
 

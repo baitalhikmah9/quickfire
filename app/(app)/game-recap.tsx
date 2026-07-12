@@ -1,8 +1,15 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
-import { BORDER_RADIUS, FONT_SIZES, SPACING, FONTS, LAYOUT } from '@/constants';
+import {
+  BORDER_RADIUS,
+  FONT_SIZES,
+  SPACING,
+  FONTS,
+  LAYOUT,
+  getStandardChromeTopPadding,
+} from '@/constants';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { usePlayStore } from '@/store/play';
@@ -163,7 +170,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: LAYOUT.screenGutter,
+    paddingHorizontal: LAYOUT.screenGutter,
+    paddingTop: getStandardChromeTopPadding(Platform.OS === 'web'),
+    paddingBottom: LAYOUT.screenGutter,
     borderBottomWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',

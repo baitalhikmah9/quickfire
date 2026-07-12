@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Pressable } from '@/components/ui/Pressable';
 import { HeaderBackButton } from '@/components/HeaderBackButton';
-import { BORDER_RADIUS, LAYOUT, SPACING, FONTS } from '@/constants';
+import { BORDER_RADIUS, LAYOUT, SPACING, FONTS, getChromeTopPaddingWithInsets } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import {
@@ -276,6 +276,11 @@ export default function PlayQuestionScreen() {
     Math.min(SPACING.xl, Math.round(windowWidth * 0.025))
   );
   const chromeSideWidth = isVeryCompactHeader ? 70 : isCompactHeader ? 78 : 112;
+  /** Matches shared non-home chrome (manual inset — no SafeAreaView top edge). */
+  const questionChromePaddingTop = getChromeTopPaddingWithInsets(
+    insets.top,
+    Platform.OS === 'web'
+  );
   const questionContentWidth = Math.min(
     windowWidth - headerHorizontalPadding * 2,
     Platform.OS === 'web' ? LAYOUT.playMaxWidth : Math.min(LAYOUT.playMaxWidth, 980)
@@ -444,6 +449,13 @@ export default function PlayQuestionScreen() {
     </View>
   );
 
+  // Keep the active wager visible through the answer reveal, which is embedded in this route.
+  const wagerMultiplier = session.wager ? (
+    <Text style={[styles.wagerMultiplierText, { color: BRAND.amber }]}>
+      Wager x{session.wager.multiplier}
+    </Text>
+  ) : null;
+
   const rumblePartyChips = isRumbleQuestion ? (
     <View
       testID="rumble-party-chips"
@@ -517,7 +529,7 @@ export default function PlayQuestionScreen() {
           style={[
             styles.pillChromeBlock,
             {
-              paddingTop: insets.top + (isCompactHeader ? SPACING.xs : SPACING.sm),
+              paddingTop: questionChromePaddingTop,
               paddingLeft: Math.max(insets.left, headerHorizontalPadding),
               paddingRight: Math.max(insets.right, headerHorizontalPadding),
             },
@@ -545,6 +557,7 @@ export default function PlayQuestionScreen() {
               {timerNode}
             </View>
           </View>
+          {wagerMultiplier}
           {rumblePartyChips}
           {rumbleTimingGuide ? (
             <Text
@@ -560,7 +573,14 @@ export default function PlayQuestionScreen() {
         </View>
       ) : (
         <>
-          <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
+          <View
+            style={[
+              styles.header,
+              {
+                paddingTop: questionChromePaddingTop,
+              },
+            ]}
+          >
             <View
               style={[
                 styles.backButtonSlot,
@@ -596,12 +616,13 @@ export default function PlayQuestionScreen() {
             <Text style={[styles.pointsText, { color: BRAND.charcoal + '88' }]}>
               {`Points: ${q.pointValue}`}
             </Text>
+            {wagerMultiplier}
           </View>
           <View
             style={[
               styles.timerContainer,
               {
-                top: insets.top + MATCH_TOP_BAR_EST_HEIGHT + SPACING.xs,
+                top: MATCH_TOP_BAR_EST_HEIGHT + questionChromePaddingTop,
                 right: Math.max(insets.right, SPACING.sm),
               },
             ]}
@@ -956,6 +977,13 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     lineHeight: 13,
     letterSpacing: 0.55,
+  },
+  wagerMultiplierText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.4,
+    textAlign: 'center',
   },
   timerRingPill: {
     minWidth: 68,

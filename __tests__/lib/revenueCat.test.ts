@@ -1,12 +1,26 @@
 import { describe, expect, it } from '@jest/globals';
+import { NativeModules } from 'react-native';
 
 import {
+  configureRevenueCatOnce,
   hasActiveEntitlement,
   isPurchaseCancelledError,
   normalizeCustomerInfo,
 } from '@/lib/payments/revenueCat';
 
 describe('revenueCat helpers', () => {
+  it('fails clearly when the native purchases module is unavailable', async () => {
+    const nativeModules = NativeModules as Record<string, unknown>;
+    const original = nativeModules.RNPurchases;
+    nativeModules.RNPurchases = undefined;
+
+    try {
+      await expect(configureRevenueCatOnce()).rejects.toThrow('development build');
+    } finally {
+      nativeModules.RNPurchases = original;
+    }
+  });
+
   it('detects SDK purchase cancellation errors', () => {
     expect(isPurchaseCancelledError({ userCancelled: true })).toBe(true);
     expect(isPurchaseCancelledError({ code: 'PURCHASE_CANCELLED_ERROR' })).toBe(true);

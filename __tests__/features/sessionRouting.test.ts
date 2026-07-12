@@ -18,10 +18,13 @@ describe('sessionRouting', () => {
     expect(isActiveMatchStep(null)).toBe(false);
   });
 
-  it('marks in-progress setup and match steps as resumable, but not hub/mode/end', () => {
+  it('marks only locked-in match steps as resumable; setup is free to abandon', () => {
     expect(isResumableSessionStep('board')).toBe(true);
-    expect(isResumableSessionStep('team-setup')).toBe(true);
-    expect(isResumableSessionStep('quick-play-length')).toBe(true);
+    expect(isResumableSessionStep('question')).toBe(true);
+    expect(isResumableSessionStep('answer')).toBe(true);
+    expect(isResumableSessionStep('team-setup')).toBe(false);
+    expect(isResumableSessionStep('quick-play-length')).toBe(false);
+    expect(isResumableSessionStep('categories')).toBe(false);
     expect(isResumableSessionStep('hub')).toBe(false);
     expect(isResumableSessionStep('mode')).toBe(false);
     expect(isResumableSessionStep('end')).toBe(false);

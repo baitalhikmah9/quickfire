@@ -14,6 +14,8 @@ export {
   LAYOUT,
   AUTH_CARD_RADIUS,
   HEADER,
+  getStandardChromeTopPadding,
+  getChromeTopPaddingWithInsets,
   SOFT_SURFACE_FACE,
   softSurfaceLift,
   type ThemePaletteId,
