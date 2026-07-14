@@ -684,9 +684,61 @@ describe('usePlayStore', () => {
     expect(usePlayStore.getState().tokens).toBe(9);
     expect(hydrated?.mode).toBe('quickPlay');
     expect(hydrated?.step).toBe('team-setup');
-    expect(hydrated?.selectedCategoryIds).toEqual(['science', 'history']);
+    // Stale removed topics are dropped; live catalog is re-read from questions.json.
+    expect(hydrated?.selectedCategoryIds).toEqual(['science']);
+    expect(hydrated?.availableCategories.some((category) => category.slug === 'science')).toBe(true);
+    expect(hydrated?.availableCategories.some((category) => category.slug === 'history')).toBe(false);
+    expect(hydrated?.availableCategories.length).toBeGreaterThan(1);
     expect(hydrated?.teams.map((team) => team.name)).toEqual(['Gamma', 'Delta']);
     expect(hydrated?.wagersPerTeam).toBe(4);
+  });
+
+  it('refreshes available categories on hydrate and drops removed topic selections outside active matches', async () => {
+    const session = createSession({
+      step: 'categories',
+      phase: 'lobby',
+      selectedCategoryIds: ['science', 'arab-history', 'south-asian-history'],
+      availableCategories: [
+        {
+          id: 'h6',
+          slug: 'arab-history',
+          title: 'Arab History',
+          questionCount: 1,
+          resolvedLocale: 'en',
+          fellBackToEnglish: false,
+        },
+        {
+          id: 'h9',
+          slug: 'south-asian-history',
+          title: 'South Asian History',
+          questionCount: 1,
+          resolvedLocale: 'en',
+          fellBackToEnglish: false,
+        },
+      ],
+      board: [],
+      currentQuestion: undefined,
+      wager: null,
+      usedQuestionIds: new Set(),
+      scores: { team_1: 0, team_2: 0 },
+      teams: [
+        { id: 'team_1', name: 'Alpha', playerNames: ['Ava'], score: 0, wagersUsed: 0 },
+        { id: 'team_2', name: 'Beta', playerNames: ['Ben'], score: 0, wagersUsed: 0 },
+      ],
+    });
+
+    seedPlayStorage(4, session);
+    await usePlayStore.getState().hydrate();
+
+    const hydrated = usePlayStore.getState().session;
+    expect(hydrated?.availableCategories.some((category) => category.slug === 'arab-history')).toBe(
+      false
+    );
+    expect(
+      hydrated?.availableCategories.some((category) => category.slug === 'south-asian-history')
+    ).toBe(false);
+    expect(hydrated?.availableCategories.some((category) => category.slug === 'science')).toBe(true);
+    expect(hydrated?.selectedCategoryIds).toEqual(['science']);
   });
 
   it('hydrates a started board from storage with a real set of used questions', async () => {

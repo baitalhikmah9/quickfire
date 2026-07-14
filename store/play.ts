@@ -44,6 +44,7 @@ import {
   serializeRapidFire,
 } from '@/store/gameSessionPersistence';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
+import { isActiveMatchStep } from '@/features/play/sessionRouting';
 import { useLocaleStore } from '@/store/locale';
 import { isAuthDisabled } from '@/lib/authMode';
 
@@ -228,6 +229,32 @@ function stripHotSeatSurfaceWhenDisabled(session: GameSessionState): GameSession
       ...session,
       config: { ...session.config, hotSeatRounds: 0, hotSeatEnabled: false },
     }),
+  };
+}
+
+/**
+ * Always re-read topics from the current questions bundle on hydrate.
+ * Persisted availableCategories go stale when topics/images ship in a new deploy.
+ */
+function withFreshAvailableCategories(session: GameSessionState): GameSessionState {
+  const availableCategories = getPlayableCategories(session.contentLocaleChain);
+  if (isActiveMatchStep(session.step)) {
+    return { ...session, availableCategories };
+  }
+
+  const availableSlugs = new Set(availableCategories.map((category) => category.slug));
+  const selectedCategoryIds = (session.selectedCategoryIds ?? []).filter((slug) =>
+    availableSlugs.has(slug)
+  );
+
+  return {
+    ...session,
+    availableCategories,
+    selectedCategoryIds,
+    config: {
+      ...session.config,
+      categories: selectedCategoryIds,
+    },
   };
 }
 
@@ -556,7 +583,7 @@ function mergePersistedPlayState(
   const nextSession =
     nextSessionRaw === null || nextSessionRaw === undefined
       ? nextSessionRaw
-      : stripHotSeatSurfaceWhenDisabled(nextSessionRaw);
+      : withFreshAvailableCategories(stripHotSeatSurfaceWhenDisabled(nextSessionRaw));
 
   const nextRapidFire =
     partialState.rapidFire === undefined
@@ -631,7 +658,7 @@ function createPlayStore() {
           return { ok: false, error: 'You need more tokens to start a new game.' };
         }
         set((current) => {
-          const session = current.session ?? createDraftSession();
+          const session = withFreshAvailableCategories(current.session ?? createDraftSession());
           const teams = normalizeTeamsForMode(mode, session.teams);
           const nextStep = mode === 'quickPlay' ? 'quick-play-length' : 'team-setup';
           const nextSession: GameSessionState = {
@@ -661,7 +688,7 @@ function createPlayStore() {
 
       setMode: (mode) =>
         set((state) => {
-          const session = state.session ?? createDraftSession();
+          const session = withFreshAvailableCategories(state.session ?? createDraftSession());
           const teams = normalizeTeamsForMode(mode, session.teams);
           const nextStep = mode === 'quickPlay' ? 'quick-play-length' : 'team-setup';
           const nextSession: GameSessionState = {
@@ -709,7 +736,7 @@ function createPlayStore() {
 
       setQuickPlayTopicCount: (count) =>
         set((state) => {
-          const base = state.session ?? createDraftSession();
+          const base = withFreshAvailableCategories(state.session ?? createDraftSession());
           const quickPlayTopicCount = normalizeQuickPlayTopicCount(count);
           const teams = normalizeTeamsForMode('quickPlay', base.teams);
           const session: GameSessionState = {
