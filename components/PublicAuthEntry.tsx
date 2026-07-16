@@ -6,11 +6,12 @@ import { FONTS, SOFT_SURFACE_FACE, softSurfaceLift, SPACING } from '@/constants'
 import { isAuthDisabled } from '@/lib/authMode';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
-/** `docs/BRAND_GUIDELINES.md` — standard raised button radius (default). */
+/** `docs/BRAND_GUIDELINES.md` - standard raised button radius (default). */
 const RAISED_BUTTON_RADIUS = 14;
 
 export type PublicAuthEntryProps = {
@@ -28,6 +29,7 @@ export function PublicAuthEntry({ showCreateAccount = true, style }: PublicAuthE
   const { isLoaded, isSignedIn } = useAuth();
   const { direction, t } = useI18n();
   const rowDirection = getRowDirection(direction);
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   if (isAuthDisabled() || !isLoaded || isSignedIn) {
     return null;
@@ -46,6 +48,7 @@ export function PublicAuthEntry({ showCreateAccount = true, style }: PublicAuthE
         style={({ pressed }) => [
           styles.raisedButton,
           SOFT_SURFACE_FACE,
+          darkModeFlatTop,
           softSurfaceLift(),
           {
             backgroundColor: surface,
@@ -69,6 +72,7 @@ export function PublicAuthEntry({ showCreateAccount = true, style }: PublicAuthE
             styles.raisedButton,
             styles.raisedButtonPrimary,
             SOFT_SURFACE_FACE,
+            darkModeFlatTop,
             softSurfaceLift(),
             {
               backgroundColor: surface,

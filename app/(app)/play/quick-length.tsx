@@ -8,13 +8,13 @@ import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import { isActiveMatchStep, routeForPlayStep } from '@/features/play/sessionRouting';
 import { QUICK_PLAY_TOPIC_OPTIONS } from '@/features/play/tokenCosts';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
 import { usePlayStore } from '@/store/play';
 import type { SupportedLocale } from '@/lib/i18n/config';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
-import { HOME_SOFT_UI } from '@/themes';
-
-const T = HOME_SOFT_UI.colors;
+import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
+import { useThemeStore } from '@/store/theme';
 
 const QUICK_LENGTH_LABEL_KEYS = {
   3: 'play.quickLength.option3',
@@ -28,7 +28,7 @@ const QUICK_LENGTH_COPY_KEYS = {
   5: 'play.quickLength.option5Copy',
 } as const;
 
-/** Web-only option row with hover tracking — extracted to keep hooks at top level. */
+/** Web-only option row with hover tracking - extracted to keep hooks at top level. */
 function OptionRow({
   option,
   isWebRow,
@@ -51,6 +51,9 @@ function OptionRow({
   onSelect: (count: number) => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const darkModeFlatTop = useDarkModeFlatTop();
+  useThemeStore((state) => state.paletteId);
+  const surfaceColors = getPlaySurfaceColors();
 
   return (
     <Pressable
@@ -65,9 +68,10 @@ function OptionRow({
             ? styles.optionCardCompact
             : styles.optionCardNative,
         SOFT_SURFACE_STYLES.face,
+        darkModeFlatTop,
         SOFT_SURFACE_STYLES.raised,
-        { backgroundColor: T.surface },
-        isWebRow && hovered && styles.optionCardWebHover,
+        { backgroundColor: surfaceColors.controlBackground },
+        isWebRow && hovered && { backgroundColor: surfaceColors.hoverSurface },
         pressed && styles.optionCardPressed,
       ]}
       onPress={() => onSelect(option.count)}
@@ -82,7 +86,7 @@ function OptionRow({
             : compact
               ? styles.optionTitleCompact
               : styles.optionTitleNative,
-          { color: T.textPrimary },
+          { color: surfaceColors.textPrimary },
           getTextStyle(undefined, 'displayBold', 'start'),
         ]}
       >
@@ -92,7 +96,7 @@ function OptionRow({
         <Ionicons
           name="diamond"
           size={isWebRow ? 13 : compact ? 11 : 13}
-          color={T.textPrimary}
+          color={surfaceColors.textPrimary}
         />
         <Text
           testID={`quick-length-token-cost-${option.count}`}
@@ -103,7 +107,7 @@ function OptionRow({
               : compact
                 ? styles.tokenCostTextCompact
                 : styles.tokenCostTextNative,
-            { color: T.textPrimary },
+            { color: surfaceColors.textPrimary },
             getTextStyle(undefined, 'bodyBold', 'start'),
           ]}
         >
@@ -118,7 +122,7 @@ function OptionRow({
             : compact
               ? styles.optionCopyCompact
               : styles.optionCopyNative,
-          { color: T.textMuted },
+          { color: surfaceColors.textMuted },
           getTextStyle(),
         ]}
       >
@@ -283,9 +287,6 @@ const styles = StyleSheet.create({
     height: 140,
     minHeight: 130,
     maxHeight: 150,
-  },
-  optionCardWebHover: {
-    backgroundColor: '#FDFCFA',
   },
   optionCardPressed: {
     opacity: 0.85,

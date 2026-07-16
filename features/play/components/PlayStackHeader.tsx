@@ -35,7 +35,7 @@ export type PlayStackHeaderProps = {
 };
 
 /**
- * Play stack top bar — docs/BRAND_GUIDELINES.md soft UI: cream-context chrome, white squircles, charcoal type.
+ * Play stack top bar - docs/BRAND_GUIDELINES.md soft UI: cream-context chrome, white squircles, charcoal type.
  *
  * Wraps the shared <GameHeader /> in title-only mode so all play screens use
  * consistent header positioning, safe-area handling, and spacing tokens.

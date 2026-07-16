@@ -1,18 +1,19 @@
 import { Platform } from 'react-native';
 import { Redirect, Stack } from 'expo-router';
+import { landscapeStackScreenOptions } from '@/lib/navigation/landscapeStack';
 
 /**
  * Standalone admin routes (public entry points like sign-in).
  * The `(admin)/` group provides the authenticated admin shell.
  */
 export default function AdminStandaloneLayout() {
-  // Block native access — admin is web-only
+  // Block native access - admin is web-only
   if (Platform.OS !== 'web') {
     return <Redirect href="/(app)/" />;
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, statusBarHidden: true }}>
+    <Stack screenOptions={landscapeStackScreenOptions}>
       <Stack.Screen name="index" />
       <Stack.Screen name="promo-codes" />
       <Stack.Screen name="wallets" />

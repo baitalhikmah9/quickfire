@@ -3,8 +3,10 @@ import { WebAwareModal } from '@/components/WebAwareModal';
 import { Pressable } from '@/components/ui/Pressable';
 import { COLORS, FONTS, SPACING } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
+import { usePlayTextScale } from '@/store/display';
 
 export type PlayMatchMenuModalProps = {
   visible: boolean;
@@ -24,6 +26,8 @@ export function PlayMatchMenuModal({
 }: PlayMatchMenuModalProps) {
   const { t } = useI18n();
   const surfaceColors = getPlaySurfaceColors();
+  const darkModeFlatTop = useDarkModeFlatTop();
+  const textSize = Math.round(15 * usePlayTextScale());
 
   return (
     <WebAwareModal visible={visible} onRequestClose={onClose}>
@@ -42,6 +46,7 @@ export function PlayMatchMenuModal({
           style={[
             styles.card,
             SOFT_SURFACE_STYLES.face,
+            darkModeFlatTop,
             SOFT_SURFACE_STYLES.raised,
             { backgroundColor: surfaceColors.surface },
           ]}
@@ -61,7 +66,7 @@ export function PlayMatchMenuModal({
               },
             ]}
           >
-            <Text style={[styles.actionButtonText, { color: surfaceColors.textPrimary }]}>
+            <Text style={[styles.actionButtonText, { color: surfaceColors.textPrimary, fontSize: textSize }]}>
               {t('common.settings').toUpperCase()}
             </Text>
           </Pressable>
@@ -75,7 +80,7 @@ export function PlayMatchMenuModal({
               { opacity: pressed ? 0.85 : 1 },
             ]}
           >
-            <Text style={styles.exitButtonText}>{t('play.exitGame').toUpperCase()}</Text>
+            <Text style={[styles.exitButtonText, { fontSize: textSize }]}>{t('play.exitGame').toUpperCase()}</Text>
           </Pressable>
         </View>
       </View>

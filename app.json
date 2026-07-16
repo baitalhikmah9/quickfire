@@ -3,7 +3,7 @@
     "name": "BackFire",
     "slug": "backfire",
     "scheme": "backfire",
-    "version": "1.0.6",
+    "version": "1.0",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -15,10 +15,11 @@
     "ios": {
       "supportsTablet": true,
       "requireFullScreen": true,
-      "buildNumber": "6",
+      "buildNumber": "1",
       "bundleIdentifier": "com.playbackfire.app",
       "infoPlist": {
-        "UIStatusBarHidden": true
+        "UIStatusBarHidden": true,
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "androidStatusBar": {
@@ -42,7 +43,10 @@
               "host": "com.playbackfire.app.callback"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -71,7 +75,10 @@
         "expo-build-properties",
         {
           "android": {
-            "buildArchs": ["arm64-v8a", "armeabi-v7a"]
+            "buildArchs": [
+              "arm64-v8a",
+              "armeabi-v7a"
+            ]
           }
         }
       ],

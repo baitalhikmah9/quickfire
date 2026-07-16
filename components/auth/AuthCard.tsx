@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, TextInput, View, type TextInputPro
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, FONTS, SOFT_SURFACE_FACE } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 const T = HOME_SOFT_UI;
 
@@ -24,12 +25,13 @@ export type AuthCardProps = {
 };
 
 /**
- * Shadcn-inspired auth shell: white card, subtle ring, soft lift — on brand canvas/surface system
+ * Shadcn-inspired auth shell: white card, subtle ring, soft lift - on brand canvas/surface system
  * (`docs/BRAND_GUIDELINES.md`).
  */
 export function AuthCard({ children, maxWidth = 400 }: AuthCardProps) {
   const surface = T.colors.surface;
   const shadowHex = T.colors.shadowStrong;
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   return (
     <View
@@ -41,6 +43,7 @@ export function AuthCard({ children, maxWidth = 400 }: AuthCardProps) {
           maxWidth,
         },
         SOFT_SURFACE_FACE,
+        darkModeFlatTop,
         cardLiftShadow(shadowHex),
       ]}
     >
@@ -75,7 +78,7 @@ export type AuthOrDividerProps = {
   mutedColor?: string;
 };
 
-/** “Or continue with” row — matches common shadcn auth examples. */
+/** “Or continue with” row - matches common shadcn auth examples. */
 export function AuthOrDivider({ label, mutedColor }: AuthOrDividerProps) {
   const line = mutedColor ?? T.colors.textMuted;
 
@@ -130,6 +133,7 @@ export function AuthSubmitButton({ label, onPress, disabled, loading }: AuthSubm
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const shadowHex = T.colors.shadowStrong;
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   return (
     <Pressable
@@ -139,6 +143,7 @@ export function AuthSubmitButton({ label, onPress, disabled, loading }: AuthSubm
       style={({ pressed }) => [
         styles.submitOuter,
         SOFT_SURFACE_FACE,
+        darkModeFlatTop,
         {
           backgroundColor: surface,
           opacity: disabled || loading ? 0.55 : pressed ? 0.92 : 1,

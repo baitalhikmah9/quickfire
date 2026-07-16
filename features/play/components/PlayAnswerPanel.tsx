@@ -1,13 +1,12 @@
 import { useMemo } from 'react';
 import {
-  Alert,
   View,
   Text,
   StyleSheet,
   useWindowDimensions,
-  Platform,
   type ViewStyle,
 } from 'react-native';
+import { showThemedAlert } from '@/store/themedAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
@@ -21,20 +20,17 @@ import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softSurface';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { useDarkModeFlatTop, useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
+import { usePlayTextScale } from '@/store/display';
 import { abandonGameEntry } from '@/lib/wallet/gameEntry';
+import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { HOME_SOFT_UI } from '@/themes';
 import type { GameSessionState, TeamState } from '@/features/shared';
 
 const T = HOME_SOFT_UI.colors;
-const BRAND_CHARCOAL = T.textPrimary;
-const BRAND_BORDER = 'rgba(51, 51, 51, 0.12)';
-const BRAND_SUBTLE_TEXT = T.textMuted;
-const RAIL_IDLE = T.surface;
-const NEITHER_DASH = 'rgba(51, 51, 51, 0.22)';
 
-/** Deeper drop shadow — reads as a raised plastic tile (tier scales with control size). */
+/** Deeper drop shadow - reads as a raised plastic tile (tier scales with control size). */
 function neumorphicLift(
   shadowColor: string,
   tier: 'hero' | 'header' | 'pill' | 'card'
@@ -45,7 +41,7 @@ function neumorphicLift(
   };
 }
 
-/** Light top lip + soft bottom edge — reads extruded on white squircles. */
+/** Light top lip + soft bottom edge - reads extruded on white squircles. */
 const PLASTIC_FACE: ViewStyle = {
   ...SOFT_SURFACE_FACE,
 };
@@ -220,9 +216,9 @@ function roundPx(n: number) {
   return Math.max(1, Math.round(n));
 }
 
-function scaleAnswerDensity(d: AnswerDensity, scale: number): AnswerDensity {
+function scaleAnswerDensity(d: AnswerDensity, scale: number, textScale = 1): AnswerDensity {
   const r = (n: number) => roundPx(n * scale);
-  const rFont = (n: number, min = 8) => Math.max(min, Math.round(n * scale));
+  const rFont = (n: number, min = 8) => Math.max(min, Math.round(n * scale * textScale));
   return {
     ...d,
     borderWidth: Math.max(1, Math.min(2, r(d.borderWidth))),
@@ -287,7 +283,10 @@ export function PlayAnswerPanel({
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const colors = useTheme();
+  const darkModeFlatTop = useDarkModeFlatTop();
+  const surfaceColors = getPlaySurfaceColors();
   const { direction, getTextStyle, t } = useI18n();
+  const playTextScale = usePlayTextScale();
   const session = usePlayStore((state) => state.session);
   const resetSession = usePlayStore((state) => state.resetSession);
   const refundEntryMutation = useMutation(api.wallet.refundEntry);
@@ -314,8 +313,8 @@ export function PlayAnswerPanel({
 
   /** Tighter only on very short embedded answer layouts; web/tablet should feel like a reveal stage. */
   const combinedCardLayoutScale = scrollChain ? (windowHeight < 430 ? 0.88 : 0.96) : 1;
-  /** Keep the white “correct answer” card prominent after reveal. */
-  const answerCardOnlyScale = scrollChain ? (windowHeight < 430 ? 0.92 : 1.06) : 1;
+  /** Keep the embedded correct-answer card compact so scoring controls remain visually distinct. */
+  const answerCardOnlyScale = scrollChain ? (windowHeight < 430 ? 0.88 : 0.94) : 1;
 
   const awardRowGap = useMemo(
     () => Math.max(SPACING.xs, Math.round(SPACING.md * (0.85 * answerViewportScale + 0.15))),
@@ -357,7 +356,8 @@ export function PlayAnswerPanel({
           wagerFooter: false,
           bonusSubtitle: false,
         }),
-        answerViewportScale
+        answerViewportScale,
+        playTextScale
       );
     }
     const wagerActive = !!session.wager;
@@ -377,9 +377,10 @@ export function PlayAnswerPanel({
         wagerFooter: wagerActive,
         bonusSubtitle,
       }),
-      answerViewportScale
+      answerViewportScale,
+      playTextScale
     );
-  }, [windowWidth, windowHeight, insets.top, insets.bottom, session, answerViewportScale]);
+  }, [windowWidth, windowHeight, insets.top, insets.bottom, session, answerViewportScale, playTextScale]);
 
   const rowDir = getRowDirection(direction);
   const chromeGap =
@@ -398,17 +399,7 @@ export function PlayAnswerPanel({
       router.replace('/(app)/');
     };
 
-    if (Platform.OS === 'web' && typeof globalThis.confirm === 'function') {
-      const confirmed = globalThis.confirm(
-        `${t('play.leaveMatchTitle')}\n\n${t('play.leaveMatchBody')}`
-      );
-      if (confirmed) {
-        void performLeave();
-      }
-      return;
-    }
-
-    Alert.alert(t('play.leaveMatchTitle'), t('play.leaveMatchBody'), [
+    showThemedAlert(t('play.leaveMatchTitle'), t('play.leaveMatchBody'), [
       { text: t('common.stay'), style: 'cancel' },
       {
         text: t('common.leave'),
@@ -461,7 +452,7 @@ export function PlayAnswerPanel({
     : null;
 
   const teamAwardSurface = (teamId: string, variant: 'stack' | 'rail' | 'tile'): string => {
-    const idle = variant === 'rail' ? RAIL_IDLE : T.surface;
+    const idle = variant === 'rail' ? colors.backgroundSecondary : colors.cardBackground;
     if (awardChoiceCommitted) {
       return session.lastAwardedTeamId === teamId
         ? 'rgba(255, 179, 71, 0.18)'
@@ -474,7 +465,7 @@ export function PlayAnswerPanel({
   };
 
   const neitherAwardSurface = (variant: 'stack' | 'rail' | 'tile'): string => {
-    const idle = variant === 'rail' ? RAIL_IDLE : T.surface;
+    const idle = variant === 'rail' ? colors.backgroundSecondary : colors.cardBackground;
     if (awardChoiceCommitted && session.lastAwardedTeamId === null) {
       return 'rgba(255, 179, 71, 0.14)';
     }
@@ -490,8 +481,12 @@ export function PlayAnswerPanel({
             resolveWager(true);
             router.replace('/play/board');
           }}
-          style={styles.softUiBtn}
-          textStyle={[styles.softUiBtnText, getTextStyle(undefined, 'bodySemibold', 'center')]}
+          style={[styles.softUiBtn, darkModeFlatTop, { backgroundColor: colors.cardBackground }]}
+          textStyle={[
+            styles.softUiBtnText,
+            { color: colors.textOnBackground },
+            getTextStyle(undefined, 'bodySemibold', 'center'),
+          ]}
         />
       </View>
       <View style={styles.footerBtn}>
@@ -501,7 +496,11 @@ export function PlayAnswerPanel({
             resolveWager(false);
             router.replace('/play/board');
           }}
-          style={[styles.softUiBtn, { backgroundColor: '#FEE2E2' }]}
+          style={[
+            styles.softUiBtn,
+            darkModeFlatTop,
+            { backgroundColor: surfaceColors.dangerSoftBackground },
+          ]}
           textStyle={[styles.softUiBtnText, { color: COLORS.error }, getTextStyle(undefined, 'bodySemibold', 'center')]}
         />
       </View>
@@ -522,7 +521,7 @@ export function PlayAnswerPanel({
     Math.round(layoutDensity.segmentMetaSize * (scrollChain ? 1.08 : 1))
   );
   const awardSelectedBorder = '#FFB347';
-  const awardIdleBorder = 'rgba(51, 51, 51, 0.1)';
+  const awardIdleBorder = colors.border;
 
   const postScoreActions = showPostScoreActions ? (
     <View style={[styles.postScoreActionRow, { flexDirection: rowDir, gap: sectionGap }]}>
@@ -533,8 +532,12 @@ export function PlayAnswerPanel({
             continueAfterStandardQuestion();
             router.replace('/play/board');
           }}
-          style={styles.softUiBtn}
-          textStyle={[styles.softUiBtnText, getTextStyle(undefined, 'bodySemibold', 'center')]}
+          style={[styles.softUiBtn, darkModeFlatTop, { backgroundColor: colors.cardBackground }]}
+          textStyle={[
+            styles.softUiBtnText,
+            { color: colors.textOnBackground },
+            getTextStyle(undefined, 'bodySemibold', 'center'),
+          ]}
         />
       </View>
       {canWager && !suppressPostScoreWagerButton ? (
@@ -547,7 +550,7 @@ export function PlayAnswerPanel({
                 router.replace('/play/board');
               }
             }}
-            style={[styles.softUiBtn, { backgroundColor: COLORS.secondary }]}
+            style={[styles.softUiBtn, darkModeFlatTop, { backgroundColor: COLORS.secondary }]}
             textStyle={[styles.softUiBtnText, { color: '#FFFFFF' }, getTextStyle(undefined, 'bodySemibold', 'center')]}
           />
         </View>
@@ -571,6 +574,7 @@ export function PlayAnswerPanel({
                 key={team.id}
                 style={({ pressed }) => [
                   styles.awardTile,
+                  darkModeFlatTop,
                   {
                     borderRadius: Math.max(8, Math.round(awardTileRadius * combinedCardLayoutScale)),
                     backgroundColor: teamAwardSurface(team.id, 'tile'),
@@ -606,7 +610,7 @@ export function PlayAnswerPanel({
                 <Text
                   style={[
                     styles.segmentMeta,
-                    { color: BRAND_SUBTLE_TEXT, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
+                    { color: colors.textSecondaryOnBackground, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
                     getTextStyle(undefined, 'body', 'center'),
                   ]}
                   numberOfLines={1}
@@ -626,7 +630,7 @@ export function PlayAnswerPanel({
                 paddingHorizontal: Math.max(10, Math.round(SPACING.sm * combinedCardLayoutScale)),
                 alignSelf: 'stretch',
                 borderWidth: awardChoiceCommitted && session.lastAwardedTeamId === null ? 2 : 1,
-                borderColor: awardChoiceCommitted && session.lastAwardedTeamId === null ? awardSelectedBorder : NEITHER_DASH,
+                borderColor: awardChoiceCommitted && session.lastAwardedTeamId === null ? awardSelectedBorder : colors.border,
                 opacity: isTimedOut ? 0.45 : pressed ? 0.92 : 1,
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               },
@@ -651,7 +655,7 @@ export function PlayAnswerPanel({
             <Text
               style={[
                 styles.segmentMeta,
-                { color: BRAND_SUBTLE_TEXT, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
+                { color: colors.textSecondaryOnBackground, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
                 getTextStyle(undefined, 'body', 'center'),
               ]}
               numberOfLines={2}
@@ -670,6 +674,7 @@ export function PlayAnswerPanel({
             key={team.id}
             style={({ pressed }) => [
               styles.awardTile,
+              darkModeFlatTop,
               {
                 borderRadius: Math.max(8, Math.round(awardTileRadius * combinedCardLayoutScale)),
                 minHeight: Math.max(44, Math.round(awardTileMinHeight * combinedCardLayoutScale)),
@@ -704,7 +709,7 @@ export function PlayAnswerPanel({
             <Text
               style={[
                 styles.segmentMeta,
-                { color: BRAND_SUBTLE_TEXT, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
+                { color: colors.textSecondaryOnBackground, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
                 getTextStyle(undefined, 'body', 'center'),
               ]}
               numberOfLines={1}
@@ -723,7 +728,7 @@ export function PlayAnswerPanel({
               paddingHorizontal: Math.max(10, Math.round(SPACING.xs * combinedCardLayoutScale)),
               backgroundColor: neitherAwardSurface('tile'),
               borderWidth: awardChoiceCommitted && session.lastAwardedTeamId === null ? 2 : 1,
-              borderColor: awardChoiceCommitted && session.lastAwardedTeamId === null ? awardSelectedBorder : NEITHER_DASH,
+              borderColor: awardChoiceCommitted && session.lastAwardedTeamId === null ? awardSelectedBorder : colors.border,
               opacity: isTimedOut ? 0.45 : pressed ? 0.92 : 1,
               transform: [{ scale: pressed ? 0.98 : 1 }],
             },
@@ -748,7 +753,7 @@ export function PlayAnswerPanel({
           <Text
             style={[
               styles.segmentMeta,
-              { color: BRAND_SUBTLE_TEXT, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
+              { color: colors.textSecondaryOnBackground, fontSize: awardMetaFontSize, lineHeight: Math.round(awardMetaFontSize * 1.2) },
               getTextStyle(undefined, 'body', 'center'),
             ]}
             numberOfLines={2}
@@ -806,6 +811,22 @@ export function PlayAnswerPanel({
   /** Centered “correct answer + solution” (reference: single white panel, no green chrome). */
   const answerTextBlockCombined = (
     <>
+      {isTimedOut ? (
+        <View
+          testID="timeout-result-status"
+          accessibilityRole="text"
+          accessibilityLabel={`${t('play.timeUpTitle')}. ${t('play.noPointsAwarded')}`}
+          style={[styles.timeoutResultStatus, { backgroundColor: colors.backgroundSecondary }]}
+        >
+          <Text style={[styles.timeoutResultText, { color: colors.textOnBackground }]}>
+            {t('play.timeUpTitle').toUpperCase()}
+          </Text>
+          <Text style={[styles.timeoutResultDivider, { color: colors.textSecondaryOnBackground }]}>·</Text>
+          <Text style={[styles.timeoutResultText, { color: colors.textSecondaryOnBackground }]}>
+            {t('play.noPointsAwarded').toUpperCase()}
+          </Text>
+        </View>
+      ) : null}
       {currentQuestion.answerImageUrl ? (
         <Image
           source={{ uri: currentQuestion.answerImageUrl }}
@@ -825,6 +846,7 @@ export function PlayAnswerPanel({
       <Text
         style={[
           styles.referenceAnswerLabel,
+          { color: colors.textSecondaryOnBackground },
           combinedCardLayoutScale < 1
             ? {
                 fontSize: Math.max(8, Math.round(12 * combinedCardLayoutScale * answerCardOnlyScale)),
@@ -840,6 +862,7 @@ export function PlayAnswerPanel({
         style={[
           styles.referenceAnswerMain,
           {
+            color: colors.textOnBackground,
             fontSize: Math.max(
               17,
               Math.round(
@@ -877,6 +900,7 @@ export function PlayAnswerPanel({
           embedded ? styles.shellEmbedded : null,
           scrollChain && styles.shellScroll,
           {
+            backgroundColor: colors.background,
             paddingLeft: Math.max(SPACING.md, insets.left),
             paddingRight: Math.max(SPACING.md, insets.right),
           },
@@ -913,21 +937,29 @@ export function PlayAnswerPanel({
               {/* Question route already renders pill chrome + prompt above this panel (`scrollEmbedded`). */}
               {!scrollChain ? (
                 <>
-                  <View style={[styles.questionMetaPill, { flexDirection: rowDir }]}>
-                    <Text style={styles.questionMetaText}>
+                  <View
+                    style={[
+                      styles.questionMetaPill,
+                      darkModeFlatTop,
+                      { flexDirection: rowDir, backgroundColor: colors.cardBackground },
+                    ]}
+                  >
+                    <Text style={[styles.questionMetaText, { color: colors.textOnBackground }]}>
                       {session.teams.find((t) => t.id === session.currentTeamId)?.name.toUpperCase() ?? 'TEAM 1'}
                     </Text>
-                    <View style={styles.questionMetaDivider} />
-                    <Text style={styles.questionMetaText}>
+                    <View style={[styles.questionMetaDivider, { backgroundColor: colors.border }]} />
+                    <Text style={[styles.questionMetaText, { color: colors.textOnBackground }]}>
                       TOPIC: {currentQuestion.categoryName.toUpperCase()}
                     </Text>
-                    <View style={styles.questionMetaDivider} />
-                    <Text style={styles.questionMetaText}>
+                    <View style={[styles.questionMetaDivider, { backgroundColor: colors.border }]} />
+                    <Text style={[styles.questionMetaText, { color: colors.textOnBackground }]}>
                       Points: {currentQuestion.pointValue}
                     </Text>
                   </View>
 
-                  <Text style={styles.questionPromptText}>{currentQuestion.prompt}</Text>
+                  <Text style={[styles.questionPromptText, { color: colors.textOnBackground }]}>
+                    {currentQuestion.prompt}
+                  </Text>
                 </>
               ) : null}
 
@@ -935,10 +967,11 @@ export function PlayAnswerPanel({
                 <View
                   style={[
                     styles.answerRevealCard,
+                    darkModeFlatTop,
                     {
-                      borderColor: BRAND_BORDER,
+                      borderColor: colors.border,
                       borderWidth: layoutDensity.borderWidth,
-                      backgroundColor: T.surface,
+                      backgroundColor: colors.cardBackground,
                       shadowColor: colors.primary,
                       paddingVertical: layoutDensity.answerCardPadV * 1.5,
                       paddingHorizontal: layoutDensity.answerCardPadH,
@@ -956,7 +989,9 @@ export function PlayAnswerPanel({
                   <View
                     style={[
                       styles.combinedAnswerScoringCard,
+                      darkModeFlatTop,
                       {
+                        backgroundColor: colors.cardBackground,
                         borderRadius: Math.max(
                           14,
                           Math.round(cardRadiusScaled * combinedCardLayoutScale * answerCardOnlyScale)
@@ -991,7 +1026,7 @@ export function PlayAnswerPanel({
                       {answerTextBlockCombined}
                     </View>
                   </View>
-                  {session.phase === 'scoring' || (session.phase === 'answerLock' && !session.reviewingUsedQuestion) ? (
+                  {!isTimedOut && (session.phase === 'scoring' || (session.phase === 'answerLock' && !session.reviewingUsedQuestion)) ? (
                   <View
                     style={[
                       styles.scoringSectionPlain,
@@ -1013,6 +1048,7 @@ export function PlayAnswerPanel({
                       style={[
                         styles.whoGetsPointsHeading,
                         {
+                          color: colors.textOnBackground,
                           fontSize: Math.max(
                             FONT_SIZES.xs,
                             Math.round(
@@ -1036,6 +1072,7 @@ export function PlayAnswerPanel({
                       <Text
                         style={[
                           styles.awardConfirmationText,
+                          { color: colors.textSecondaryOnBackground },
                           getTextStyle(undefined, 'bodySemibold', 'center'),
                         ]}
                         numberOfLines={1}
@@ -1063,13 +1100,21 @@ export function PlayAnswerPanel({
 
   if (embedded) {
     return (
-      <View style={[styles.embeddedRoot, scrollChain && styles.embeddedRootScroll]}>
+      <View
+        style={[
+          styles.embeddedRoot,
+          scrollChain && styles.embeddedRootScroll,
+          { backgroundColor: colors.background },
+        ]}
+      >
         {answerBody}
         {footer ? (
           <View
             style={[
               styles.embeddedWagerFooter,
               {
+                backgroundColor: colors.background,
+                borderTopColor: colors.border,
                 paddingLeft: Math.max(SPACING.md, insets.left),
                 paddingRight: Math.max(SPACING.md, insets.right),
                 paddingBottom: Math.max(insets.bottom, SPACING.md),
@@ -1086,7 +1131,7 @@ export function PlayAnswerPanel({
   return (
     <PlayScaffold
       title={t('play.resolveTurnTitle')}
-      backgroundColor={T.canvas}
+      backgroundColor={colors.background}
       subtitle={
         hideSubtitle || !session.bonus.active ? undefined : t('play.resolveBonusSubtitle')
       }
@@ -1108,7 +1153,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     minWidth: 0,
-    backgroundColor: T.canvas,
   },
   /** In ScrollView (`scrollEmbedded`), `flex: undefined` does not override a prior `flex: 1`; children then measure height 0 and overlap siblings that overflow. Use explicit `flex: 0` so the column sizes to its content. */
   embeddedRootScroll: {
@@ -1118,7 +1162,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch' as const,
     width: '100%',
     minWidth: 0,
-    backgroundColor: T.canvas,
   },
   bleedScroll: {
     flex: 0,
@@ -1148,9 +1191,7 @@ const styles = StyleSheet.create({
   embeddedWagerFooter: {
     flexShrink: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: BRAND_BORDER,
     paddingTop: SPACING.sm,
-    backgroundColor: T.canvas,
   },
   bleed: {
     flex: 1,
@@ -1162,7 +1203,6 @@ const styles = StyleSheet.create({
     minHeight: 0,
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.xs,
-    backgroundColor: T.canvas,
   },
   shellEmbedded: {
     paddingTop: 0,
@@ -1203,7 +1243,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    backgroundColor: T.surface,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: 24,
@@ -1214,20 +1253,17 @@ const styles = StyleSheet.create({
   questionMetaText: {
     fontFamily: FONTS.uiBold,
     fontSize: 12,
-    color: T.textPrimary,
     letterSpacing: 0.5,
   },
   questionMetaDivider: {
     width: 1,
     height: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     marginHorizontal: SPACING.md,
   },
   questionPromptText: {
     fontFamily: FONTS.displayBold,
     fontSize: 16,
     lineHeight: 24,
-    color: T.textPrimary,
     textAlign: 'center',
     paddingHorizontal: SPACING.md,
   },
@@ -1254,37 +1290,58 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'stretch',
   },
-  /** Scoring copy + point buttons — no white card (sits on screen canvas). */
+  /** Scoring copy + point buttons - no white card (sits on screen canvas). */
   scoringSectionPlain: {
     width: '100%',
     backgroundColor: 'transparent',
   },
-  /** Single raised card — BRAND_GUIDELINES: white surface, neumorphic lip, standard raised shadow, large radius. */
+  /** Single raised card - BRAND_GUIDELINES: white surface, neumorphic lip, standard raised shadow, large radius. */
   combinedAnswerScoringCard: {
     position: 'relative',
     width: '100%',
     alignSelf: 'stretch',
-    backgroundColor: T.surface,
     borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
     ...SOFT_SURFACE_FACE,
     ...softSurfaceLift(),
   },
+  timeoutResultStatus: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    borderRadius: BORDER_RADIUS.pill,
+    paddingVertical: 5,
+    paddingHorizontal: SPACING.md,
+    marginBottom: SPACING.sm,
+    maxWidth: '100%',
+  },
+  timeoutResultText: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 10,
+    lineHeight: 13,
+    letterSpacing: 0.7,
+    flexShrink: 1,
+    textAlign: 'center',
+  },
+  timeoutResultDivider: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 12,
+    lineHeight: 13,
+  },
   referenceAnswerLabel: {
     ...TYPE_SCALE.labelCap,
     textTransform: 'uppercase',
     textAlign: 'center',
-    color: BRAND_SUBTLE_TEXT,
   },
   referenceAnswerMain: {
     fontFamily: FONTS.displayBold,
-    color: BRAND_CHARCOAL,
     textAlign: 'center',
   },
   whoGetsPointsHeading: {
     fontFamily: FONTS.uiBold,
     textAlign: 'center',
-    color: BRAND_CHARCOAL,
     marginBottom: SPACING.lg,
     maxWidth: '100%',
   },
@@ -1292,7 +1349,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.uiSemibold,
     fontSize: 13,
     lineHeight: 18,
-    color: BRAND_CHARCOAL,
     textAlign: 'center',
     marginTop: -SPACING.sm,
     marginBottom: SPACING.md,
@@ -1301,12 +1357,11 @@ const styles = StyleSheet.create({
   answerCardTop: {
     width: '100%',
   },
-  /** Matches question `promptCard` — single card on page background */
+  /** Matches question `promptCard` - single card on page background */
   answerRevealCard: {
     position: 'relative',
     borderRadius: BORDER_RADIUS.xl,
     alignSelf: 'stretch',
-    backgroundColor: T.surface,
     ...SOFT_SURFACE_FACE,
     ...softSurfaceLift(),
     shadowColor: COLORS.primary,
@@ -1353,7 +1408,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'stretch',
   },
-  /** Tappable score cell — same raised white control as BRAND_GUIDELINES Standard button surface (radius 14). */
+  /** Tappable score cell - same raised white control as BRAND_GUIDELINES Standard button surface (radius 14). */
   awardTile: {
     position: 'relative',
     flex: 1,
@@ -1361,7 +1416,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: T.surface,
     borderRadius: 14,
     ...SOFT_SURFACE_FACE,
     ...softSurfaceLift(),
@@ -1374,11 +1428,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: T.surface,
     borderRadius: 14,
     borderStyle: 'dashed',
     borderWidth: 1,
-    borderColor: NEITHER_DASH,
     ...softSurfaceLift(),
   },
   awardCheckMark: {
@@ -1405,13 +1457,11 @@ const styles = StyleSheet.create({
   segmentTitle: {
     fontFamily: FONTS.uiBold,
     fontWeight: '700',
-    color: BRAND_CHARCOAL,
     textAlign: 'center',
   },
   segmentMeta: {
     fontFamily: FONTS.ui,
     fontVariant: ['tabular-nums'],
-    color: BRAND_SUBTLE_TEXT,
     textAlign: 'center',
   },
   footerRow: {
@@ -1423,13 +1473,11 @@ const styles = StyleSheet.create({
   },
   softUiBtn: {
     width: '100%',
-    backgroundColor: T.surface,
     borderRadius: BORDER_RADIUS.button,
     ...PLASTIC_FACE,
     ...neumorphicLift('rgba(15, 23, 42, 0.14)', 'pill'),
   },
   softUiBtnText: {
-    color: T.textPrimary,
     fontFamily: FONTS.displayBold,
     letterSpacing: 2,
     fontSize: 14,

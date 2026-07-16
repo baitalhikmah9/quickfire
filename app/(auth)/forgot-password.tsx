@@ -15,6 +15,7 @@ import {
   getStandardChromeTopPadding,
 } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
 
@@ -37,6 +38,7 @@ export default function ForgotPasswordScreen() {
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   const handleSubmit = async () => {
     if (!email.trim()) return;
@@ -110,6 +112,7 @@ export default function ForgotPasswordScreen() {
           style={({ pressed }) => [
             styles.headerSquircleInner,
             SOFT_SURFACE_FACE,
+            darkModeFlatTop,
             softSurfaceLift(),
             {
               backgroundColor: surface,
@@ -157,6 +160,7 @@ export default function ForgotPasswordScreen() {
               style={({ pressed }) => [
                 styles.primaryCta,
                 SOFT_SURFACE_FACE,
+                darkModeFlatTop,
                 softSurfaceLift(),
                 {
                   backgroundColor: surface,
@@ -175,7 +179,7 @@ export default function ForgotPasswordScreen() {
             </Pressable>
           </View>
         ) : completed ? (
-          <View style={[styles.successCard, SOFT_SURFACE_FACE, { backgroundColor: surface }, softSurfaceLift()]}>
+          <View style={[styles.successCard, SOFT_SURFACE_FACE, darkModeFlatTop, { backgroundColor: surface }, softSurfaceLift()]}>
             <Ionicons name="checkmark-circle-outline" size={48} color={textPrimary} style={{ marginBottom: SPACING.md }} />
             <Text style={[styles.successText, { color: textPrimary }]}>Password reset complete.</Text>
           </View>
@@ -212,6 +216,7 @@ export default function ForgotPasswordScreen() {
               style={({ pressed }) => [
                 styles.primaryCta,
                 SOFT_SURFACE_FACE,
+                darkModeFlatTop,
                 softSurfaceLift(),
                 {
                   backgroundColor: surface,

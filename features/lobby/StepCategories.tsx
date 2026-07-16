@@ -3,9 +3,12 @@ import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, FONTS, COLORS, BORDER_RADIUS } from '@/constants';
 import { CategoryCard } from './CategoryCard';
+import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { HOME_SOFT_UI } from '@/themes';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getCategoryPictureSource } from '@/constants/categoryPictures';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
+import { useThemeStore } from '@/store/theme';
 
 const T = HOME_SOFT_UI;
 
@@ -53,11 +56,14 @@ export function StepCategories({
 }: StepCategoriesProps) {
   const [bodyH, setBodyH] = useState(0);
   const gridGap = SPACING.md;
+  const darkModeFlatTop = useDarkModeFlatTop();
+  useThemeStore((state) => state.paletteId);
+  const surfaceColors = getPlaySurfaceColors();
 
-  const canvas = T.colors.canvas;
-  const surface = T.colors.surface;
-  const textPrimary = T.colors.textPrimary;
-  const textMuted = T.colors.textMuted;
+  const canvas = surfaceColors.canvas;
+  const surface = surfaceColors.surface;
+  const textPrimary = surfaceColors.textPrimary;
+  const textMuted = surfaceColors.textMuted;
   const accentColor = T.colors.resumeAccent; // Electric Blue for functional state
 
   const toggle = (slug: string) => {
@@ -161,7 +167,11 @@ export function StepCategories({
           style={({ pressed }) => [
             styles.nextButton,
             {
-              backgroundColor: canNext ? accentColor : '#F1F5F9',
+              backgroundColor: canNext
+                ? accentColor
+                : surfaceColors.isDark
+                  ? surfaceColors.subtleFillStrong
+                  : '#F1F5F9',
               opacity: canNext ? (pressed ? 0.94 : 1) : 1,
               transform: canNext && pressed ? [{ scale: 0.98 }, { translateY: 2 }] : [{ scale: 1 }, { translateY: 0 }],
               
@@ -177,13 +187,20 @@ export function StepCategories({
               shadowRadius: 0,
               elevation: pressed ? 1 : 4,
             },
+            darkModeFlatTop,
           ]}
           onPress={onNext}
           disabled={!canNext}
         >
           <Text style={[
             styles.nextButtonText, 
-            { color: canNext ? '#FFF' : '#94A3B8' }
+            {
+              color: canNext
+                ? '#FFF'
+                : surfaceColors.isDark
+                  ? surfaceColors.textMuted
+                  : '#94A3B8',
+            }
           ]}>
             {canNext ? 'CONTINUE CHALLENGE' : 'PICK 6 CATEGORIES'}
           </Text>

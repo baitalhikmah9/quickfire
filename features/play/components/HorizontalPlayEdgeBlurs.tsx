@@ -12,12 +12,12 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 type HorizontalPlayEdgeBlursProps = {
-  /** Fade band width — keep modest so the edge read is atmospheric, not a UI block. */
+  /** Fade band width - keep modest so the edge read is atmospheric, not a UI block. */
   stripWidth: number;
 };
 
 /**
- * Soft horizontal vignette into `colors.background`. Does not use backdrop blur — blur views
+ * Soft horizontal vignette into `colors.background`. Does not use backdrop blur - blur views
  * sample the saturated board (primary blue) and read as an obvious colored slab.
  */
 export function HorizontalPlayEdgeBlurs({ stripWidth }: HorizontalPlayEdgeBlursProps) {

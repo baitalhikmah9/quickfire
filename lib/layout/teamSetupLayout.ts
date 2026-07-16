@@ -32,7 +32,7 @@ export type TeamSetupClassicBodyLayout = {
     alignSelf: 'center';
     /**
      * Pin side team cards to the shared frame edges (same as header back/token).
-     * `space-between` + flex side panels — not `center`, which inset cards from the frame.
+     * `space-between` + flex side panels - not `center`, which inset cards from the frame.
      */
     justifyContent: 'space-between';
     alignItems: 'center';

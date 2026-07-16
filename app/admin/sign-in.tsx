@@ -16,6 +16,7 @@ import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { FONTS, LAYOUT, SPACING } from '@/constants/theme';
 import { HOME_SOFT_UI } from '@/themes';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 const T = HOME_SOFT_UI;
 
@@ -27,7 +28,7 @@ export default function AdminSignInScreen() {
     signIn,
     setActive,
   } = useSignIn();
-  /** Only when Clerk reports a session — avoids querying Convex as a signed-out user after signOut. */
+  /** Only when Clerk reports a session - avoids querying Convex as a signed-out user after signOut. */
   const shouldLoadProfile = Platform.OS === 'web' && isLoaded && isSignedIn;
   const userProfile = useQuery(
     api.users.getCurrentProfile,
@@ -40,7 +41,7 @@ export default function AdminSignInScreen() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  /** Cleared after Convex JWT is ready — `setActive` alone is not enough. */
+  /** Cleared after Convex JWT is ready - `setActive` alone is not enough. */
   const [pendingClearIdentifier, setPendingClearIdentifier] = useState<string | null>(null);
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function AdminSignInScreen() {
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
   const shadowHex = T.colors.shadowStrong;
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   if (Platform.OS !== 'web') {
     return <Redirect href="/(app)/" />;
@@ -112,6 +114,7 @@ export default function AdminSignInScreen() {
             style={({ pressed }) => [
               styles.submitButton,
               styles.plasticFace,
+              darkModeFlatTop,
               {
                 opacity: pressed ? 0.9 : 1,
                 transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
@@ -148,7 +151,7 @@ export default function AdminSignInScreen() {
         const result = await signIn.create({ identifier, password });
         if (result.status === 'complete' && result.createdSessionId) {
           // Activate Clerk session; clear failures only after Convex JWT is ready
-          // (see useEffect + useConvexAuth — immediate clear races auth propagation).
+          // (see useEffect + useConvexAuth - immediate clear races auth propagation).
           await setActive({ session: result.createdSessionId });
           setPendingClearIdentifier(identifier);
           return;
@@ -197,6 +200,7 @@ export default function AdminSignInScreen() {
               style={[
                 styles.input,
                 styles.plasticFace,
+                darkModeFlatTop,
                 {
                   backgroundColor: surface,
                   color: textPrimary,
@@ -222,6 +226,7 @@ export default function AdminSignInScreen() {
               style={[
                 styles.input,
                 styles.plasticFace,
+                darkModeFlatTop,
                 {
                   backgroundColor: surface,
                   color: textPrimary,
@@ -240,6 +245,7 @@ export default function AdminSignInScreen() {
             style={({ pressed }) => [
               styles.submitButton,
               styles.plasticFace,
+              darkModeFlatTop,
               {
                 opacity: isSubmitting ? 0.65 : pressed ? 0.9 : 1,
                 transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],

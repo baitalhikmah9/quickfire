@@ -10,10 +10,10 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   {
     heading: 'Information we collect',
     paragraphs: [
-      'Account and profile data: When you sign in with Clerk using a supported provider (such as Google or Apple), we receive and store identifiers and profile details needed to operate your account—for example your Clerk user id, and optional fields such as name and email when provided by the identity provider or your profile.',
+      'Account and profile data: When you sign in with Clerk using a supported provider (such as Google or Apple), we receive and store identifiers and profile details needed to operate your account - for example your Clerk user id, and optional fields such as name and email when provided by the identity provider or your profile.',
       'Gameplay and product usage: We process information about how you use Backfire, including game configuration, match and session records, scores and events, category and language preferences, and related metadata needed to run matches and show history.',
       'Device and installation identifiers: We associate activity with a stable installation or device identifier so we can sync local progress, reduce duplicate questions where designed to do so, and tie optional purchases to the correct wallet before or after you sign in.',
-      'Purchases and virtual currency: When you buy tokens or related products through mobile storefronts, Apple and/or Google process payment. We receive purchase-related records through our backend (including webhook payloads from RevenueCat) such as product identifiers, transaction references, timestamps, and pricing fields when supplied—so we can credit your wallet, prevent duplicate grants, and meet accounting and fraud-prevention needs.',
+      'Purchases and virtual currency: When you buy tokens or related products through mobile storefronts, Apple and/or Google process payment. We receive purchase-related records through our backend (including webhook payloads from RevenueCat) such as product identifiers, transaction references, timestamps, and pricing fields when supplied - so we can credit your wallet, prevent duplicate grants, and meet accounting and fraud-prevention needs.',
       'Support and safety: We may collect information you send us (for example crash details you choose to share) and technical logs needed to secure the Service.',
     ],
   },

@@ -29,10 +29,8 @@ const RAW_CATEGORIES: { id: string; name: string }[] = [
   { id: 'gen5', name: 'USA' },
   { id: 'gen6', name: 'Countries and Capitals' },
   { id: 'gen7', name: 'Famous Firsts' },
-  { id: 'gen8', name: 'Famous Quotes' },
   { id: 'gen9', name: 'General Knowledge' },
   { id: 'gen10', name: 'Guess The Decade' },
-  { id: 'gen11', name: 'Guess the Flag' },
   { id: 'gen12', name: 'Guess the Year' },
   { id: 'gen13', name: 'In between:' },
   { id: 'gen14', name: 'Initials' },
@@ -45,8 +43,7 @@ const RAW_CATEGORIES: { id: string; name: string }[] = [
   { id: 'gen21', name: 'What happened next?' },
   { id: 'gen22', name: 'What\'s the connection?' },
   { id: 'gen23', name: 'Which Country' },
-  { id: 'gen24', name: 'Who Said This Quote?' },
-  { id: 'gen25', name: 'World Laws' },
+  { id: 'gen24', name: 'Famous Quotes' },
   { id: 'gen26', name: 'Before They Were Famous' },
   { id: 'h1', name: '19th Century' },
   { id: 'h2', name: '19th Century Europe' },
@@ -103,5 +100,6 @@ export const FALLBACK_CATEGORIES = RAW_CATEGORIES.map((c) => ({
   id: c.id,
   slug: slugify(c.name),
   title: c.name,
-  // Illustrations are resolved by getCategoryPictureSource() in categoryPictures.ts
+  // Illustrations: getCategoryPictureSource() in categoryPictures.ts
+  // Hidden for now (not in fallback): gen8 Finish the Quote, gen11 Guess the Flag, gen25 World Laws
 }));

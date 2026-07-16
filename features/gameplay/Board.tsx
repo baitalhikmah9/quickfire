@@ -5,6 +5,7 @@ import type { QuestionCard } from '@/features/shared';
 import { SPACING, FONTS } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
 import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 const T = HOME_SOFT_UI;
 
@@ -87,6 +88,7 @@ function getBoardMetrics(
 
 export function Board({ questions, onSelectQuestion, selectedQuestionId }: BoardProps) {
   const fontSizes = useResponsivePlayFontSizes();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const [layout, setLayout] = useState({ width: 0, height: 0 });
   const grouped = groupByCategory(questions);
   const categories = Array.from(grouped.keys());
@@ -160,6 +162,7 @@ export function Board({ questions, onSelectQuestion, selectedQuestionId }: Board
                       style={({ pressed }) => [
                         styles.cell,
                         styles.plasticFace,
+                        darkModeFlatTop,
                         {
                           backgroundColor: surface,
                           height: boardMetrics.cellHeight,

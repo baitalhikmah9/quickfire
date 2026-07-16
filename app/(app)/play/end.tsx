@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 import {
-  Platform,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
@@ -20,17 +18,21 @@ import {
   FONTS,
   LAYOUT,
   SPACING,
-  getStandardChromeTopPadding,
 } from '@/constants';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { useDarkModeFlatTop, useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
 import { consumeGameEntry } from '@/lib/wallet/gameEntry';
 import { HOME_SOFT_UI } from '@/themes';
 import type { GameSessionState, TeamState } from '@/features/shared';
 import { getRowDirection } from '@/lib/i18n/direction';
+import { usePlayTextScale } from '@/store/display';
+
+/** Same QR payload for Android / iOS / Web promo tiles on the match-end screen. */
+const PROMO_SITE_URL = 'playbackfire.com';
+const PROMO_QR_SOURCE = require('../../../assets/final-match/web-qr.png');
 
 const TEAM_COLORS = ['#CFF1C5', '#FFE8A8', '#FFD2A5', '#F7BFC4'];
 const ACTION_COLORS = {
@@ -38,13 +40,6 @@ const ACTION_COLORS = {
   another: '#35C759',
   home: '#FF2435',
 } as const;
-
-function rankIcon(rank: number): keyof typeof Ionicons.glyphMap | null {
-  if (rank === 0) return 'trophy';
-  if (rank === 1) return 'star';
-  if (rank === 2) return 'ribbon';
-  return null;
-}
 
 function teamColor(rank: number, teamCount: number): string {
   if (teamCount === 2) return rank === 0 ? TEAM_COLORS[0]! : '#F7C5C9';
@@ -64,17 +59,19 @@ function FinalHeader({ title, compact }: { title: string; compact: boolean }) {
   const { width, height } = useLandscapeDimensions();
   const { direction, t, uiLocale } = useI18n();
   const tokens = usePlayStore((state) => state.tokens);
+  const textScale = usePlayTextScale();
+  const textPrimary = HOME_SOFT_UI.colors.textPrimary;
   const tiny = height < 500;
-  const logoWidth = Math.min(compact ? 260 : 380, Math.max(tiny ? 130 : 170, width * (tiny ? 0.22 : 0.3)));
+  const logoWidth = Math.min(compact ? 240 : 340, Math.max(tiny ? 120 : 150, width * (tiny ? 0.2 : 0.26)));
   const formattedTokens = tokens.toLocaleString(uiLocale, { maximumFractionDigits: 0 });
 
   return (
     <View
       style={[
         styles.finalHeader,
-        {
-          paddingTop: getStandardChromeTopPadding(Platform.OS === 'web'),
-        },
+        compact && styles.finalHeaderCompact,
+        // Match scaffold bottom pad (contentFit paddingBottom: SPACING.xs) — tight edge inset.
+        { paddingTop: SPACING.xs },
       ]}
     >
       <View style={[styles.headerRow, { height: logoWidth / 4 }]}>
@@ -102,7 +99,18 @@ function FinalHeader({ title, compact }: { title: string; compact: boolean }) {
           />
         </View>
       </View>
-      <Text style={[styles.matchTitle, compact && styles.matchTitleCompact, tiny && styles.matchTitleTiny]}>
+      <Text
+        style={[
+          styles.matchTitle,
+          compact && styles.matchTitleCompact,
+          tiny && styles.matchTitleTiny,
+          {
+            color: textPrimary,
+            fontSize: Math.round((tiny ? 16 : compact ? 20 : 28) * textScale),
+            lineHeight: Math.round((tiny ? 19 : compact ? 24 : 34) * textScale),
+          },
+        ]}
+      >
         {title.toUpperCase()}
       </Text>
     </View>
@@ -116,7 +124,9 @@ function TeamCard({ team, rank, teamCount, compact, tiny }: {
   compact: boolean;
   tiny: boolean;
 }) {
-  const icon = rankIcon(rank);
+  const textScale = usePlayTextScale();
+  const teamNameSize = (compact ? 13 : 18) * textScale;
+  const teamScoreSize = (tiny ? 22 : compact ? 29 : 46) * textScale;
 
   return (
     <View
@@ -128,13 +138,12 @@ function TeamCard({ team, rank, teamCount, compact, tiny }: {
         { backgroundColor: teamColor(rank, teamCount) },
       ]}
     >
-      {icon ? (
-        <View style={[styles.rankBadge, compact && styles.rankBadgeCompact]}>
-          <Ionicons name={icon} size={compact ? 16 : 22} color="#FFFFFF" />
-        </View>
-      ) : null}
       <Text
-        style={[styles.teamName, compact && styles.teamNameCompact]}
+        style={[
+          styles.teamName,
+          compact && styles.teamNameCompact,
+          { fontSize: Math.round(teamNameSize), lineHeight: Math.round(teamNameSize * 1.25) },
+        ]}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.7}
@@ -142,7 +151,12 @@ function TeamCard({ team, rank, teamCount, compact, tiny }: {
         {team.name}
       </Text>
       <Text
-        style={[styles.teamScore, compact && styles.teamScoreCompact, tiny && styles.teamScoreTiny]}
+        style={[
+          styles.teamScore,
+          compact && styles.teamScoreCompact,
+          tiny && styles.teamScoreTiny,
+          { fontSize: Math.round(teamScoreSize), lineHeight: Math.round(teamScoreSize * 1.13) },
+        ]}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.65}
@@ -154,26 +168,54 @@ function TeamCard({ team, rank, teamCount, compact, tiny }: {
 }
 
 function Scoreboard({ session, compact, tiny }: { session: GameSessionState; compact: boolean; tiny: boolean }) {
-  const rankedTeams = [...session.teams].sort((a, b) => b.score - a.score);
-  const isVersus = rankedTeams.length === 2;
-  const displayTeams = isVersus ? [rankedTeams[1]!, rankedTeams[0]!] : rankedTeams;
+  const textScale = usePlayTextScale();
+  const darkModeFlatTop = useDarkModeFlatTop();
+  const surface = HOME_SOFT_UI.colors.surface;
+  const textPrimary = HOME_SOFT_UI.colors.textPrimary;
+  // Rank by score for trophy/colors, but always render teams in setup order
+  // so Team 1 stays on the left (and Team 2 on the right in versus).
+  const rankedByScore = [...session.teams].sort((a, b) => b.score - a.score);
+  const rankById = new Map(rankedByScore.map((team, index) => [team.id, index]));
+  const displayTeams = session.teams;
+  const isVersus = displayTeams.length === 2;
 
   return (
-    <View style={[styles.scoreboard, compact && styles.scoreboardCompact, tiny && styles.scoreboardTiny]}>
-      {displayTeams.map((team, index) => {
-        const rank = isVersus ? (index === 0 ? 1 : 0) : index;
+    <View
+      style={[
+        styles.scoreboard,
+        compact && styles.scoreboardCompact,
+        tiny && styles.scoreboardTiny,
+        SOFT_SURFACE_STYLES.face,
+        darkModeFlatTop,
+        SOFT_SURFACE_STYLES.raised,
+        { backgroundColor: surface },
+      ]}
+    >
+      {displayTeams.map((team) => {
+        const rank = rankById.get(team.id) ?? 0;
         return (
           <TeamCard
             key={team.id}
             team={team}
             rank={rank}
-            teamCount={rankedTeams.length}
+            teamCount={displayTeams.length}
             compact={compact}
             tiny={tiny}
           />
         );
       })}
-      {isVersus ? <View style={[styles.vsBadge, compact && styles.vsBadgeCompact]}><Text style={styles.vsText}>VS</Text></View> : null}
+      {isVersus ? (
+        <View
+          style={[
+            styles.vsBadge,
+            compact && styles.vsBadgeCompact,
+            SOFT_SURFACE_STYLES.raised,
+            { backgroundColor: surface },
+          ]}
+        >
+          <Text style={[styles.vsText, { color: textPrimary, fontSize: Math.round(16 * textScale) }]}>VS</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -185,17 +227,57 @@ function PromoCard({ platform, url, source, compact, width }: {
   compact: boolean;
   width: number;
 }) {
+  const textScale = usePlayTextScale();
+  const darkModeFlatTop = useDarkModeFlatTop();
+  const surface = HOME_SOFT_UI.colors.surface;
+  const textPrimary = HOME_SOFT_UI.colors.textPrimary;
+  const textMuted = HOME_SOFT_UI.colors.textMuted;
+  const labelSize = (compact ? 11 : 15) * textScale;
+  const urlSize = (compact ? 8 : 12) * textScale;
+  const qrSize = Math.max(56, width - (compact ? 14 : 20));
+
   return (
-    <View style={[styles.promoCard, compact && styles.promoCardCompact, { width }]}>
+    <View
+      style={[
+        styles.promoCard,
+        compact && styles.promoCardCompact,
+        SOFT_SURFACE_STYLES.face,
+        darkModeFlatTop,
+        SOFT_SURFACE_STYLES.raised,
+        { width, backgroundColor: surface },
+      ]}
+    >
       <Image
         source={source}
-        style={{ width: Math.max(64, width - (compact ? 16 : 24)), aspectRatio: 1 }}
+        style={{ width: qrSize, aspectRatio: 1 }}
         contentFit="contain"
         accessibilityRole="image"
         accessibilityLabel={`${platform} QR code`}
       />
-      <Text style={[styles.promoLabel, compact && styles.promoLabelCompact]}>{platform}</Text>
-      {url ? <Text style={[styles.promoUrl, compact && styles.promoUrlCompact]}>{url}</Text> : null}
+      <Text
+        style={[
+          styles.promoLabel,
+          compact && styles.promoLabelCompact,
+          { color: textPrimary, fontSize: Math.round(labelSize), lineHeight: Math.round(labelSize * 1.2) },
+        ]}
+      >
+        {platform}
+      </Text>
+      {url ? (
+        <Text
+          style={[
+            styles.promoUrl,
+            compact && styles.promoUrlCompact,
+            {
+              color: textMuted,
+              fontSize: Math.max(7, Math.round(urlSize)),
+              lineHeight: Math.max(9, Math.round(urlSize * 1.25)),
+            },
+          ]}
+        >
+          {url}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -205,6 +287,7 @@ export default function PlayEndScreen() {
   const colors = useTheme();
   const { t } = useI18n();
   const { width, height } = useLandscapeDimensions();
+  const textScale = usePlayTextScale();
   // Android phones reserve meaningful landscape space for system navigation.
   const compact = height < 800;
   // Phone landscape: viewport is very short, shrink everything harder so nothing clips.
@@ -233,7 +316,7 @@ export default function PlayEndScreen() {
       }
       commitEntryCharge();
     } catch {
-      // Non-fatal — the reservation expires server-side eventually.
+      // Non-fatal - the reservation expires server-side eventually.
     }
   }, [consumeEntryMutation, entryReservationId, commitEntryCharge, session?.id]);
 
@@ -244,18 +327,19 @@ export default function PlayEndScreen() {
   if (!session) {
     return (
       <PlayScaffold title={t('play.matchComplete')} bodyScrollEnabled={false}>
-        <Text style={{ color: colors.text }}>{t('play.sessionCleared')}</Text>
+        <Text style={{ color: colors.text, fontSize: Math.round(14 * textScale) }}>{t('play.sessionCleared')}</Text>
       </PlayScaffold>
     );
   }
 
+  // QR tiles share vertical room with scoreboard + slogan + tall actions.
   const promoWidth = Math.min(
-    compact ? 130 : 220,
-    Math.max(compact ? 82 : 112, width * (compact ? 0.12 : 0.14)),
-    // Never let promo cards eat more than ~1/5 of a short viewport's height.
-    Math.max(70, height * 0.2),
+    compact ? 150 : 240,
+    Math.max(compact ? 96 : 130, width * (compact ? 0.14 : 0.16)),
+    Math.max(72, height * (tiny ? 0.24 : compact ? 0.28 : 0.34)),
   );
-  const promoGap = Math.min(56, Math.max(10, width * 0.035));
+  const promoGap = Math.min(36, Math.max(10, width * 0.025));
+  const actionLabelSize = Math.round((tiny ? 14 : compact ? 15 : 17) * textScale);
   const handleHome = () => {
     void consumeCurrentEntry().then(() => {
       resetSession();
@@ -282,29 +366,46 @@ export default function PlayEndScreen() {
       <View style={[styles.endColumn, compact && styles.endColumnCompact, tiny && styles.endColumnTiny]}>
         <Scoreboard session={session} compact={compact} tiny={tiny} />
 
-        <View style={[styles.promoRow, { gap: promoGap }]}>
-          <PromoCard
-            platform="Android"
-            source={require('../../../assets/final-match/android-qr.png')}
-            compact={compact}
-            width={promoWidth}
-          />
-          <PromoCard
-            platform="iOS"
-            source={require('../../../assets/final-match/ios-qr.png')}
-            compact={compact}
-            width={promoWidth}
-          />
-          <PromoCard
-            platform="Web"
-            url="playbackfire.com"
-            source={require('../../../assets/final-match/web-qr.png')}
-            compact={compact}
-            width={promoWidth}
-          />
+        <View style={[styles.promoBlock, compact && styles.promoBlockCompact]}>
+          <View style={[styles.promoRow, { gap: promoGap }]}>
+            <PromoCard
+              platform="Android"
+              url={PROMO_SITE_URL}
+              source={PROMO_QR_SOURCE}
+              compact={compact}
+              width={promoWidth}
+            />
+            <PromoCard
+              platform="iOS"
+              url={PROMO_SITE_URL}
+              source={PROMO_QR_SOURCE}
+              compact={compact}
+              width={promoWidth}
+            />
+            <PromoCard
+              platform="Web"
+              url={PROMO_SITE_URL}
+              source={PROMO_QR_SOURCE}
+              compact={compact}
+              width={promoWidth}
+            />
+          </View>
         </View>
 
-        <Text style={[styles.slogan, compact && styles.sloganCompact, tiny && styles.sloganTiny]}>Play BackFire Today</Text>
+        <Text
+          style={[
+            styles.slogan,
+            compact && styles.sloganCompact,
+            tiny && styles.sloganTiny,
+            {
+              color: HOME_SOFT_UI.colors.textPrimary,
+              fontSize: Math.round((tiny ? 15 : compact ? 18 : 26) * textScale),
+              lineHeight: Math.round((tiny ? 18 : compact ? 22 : 32) * textScale),
+            },
+          ]}
+        >
+          Play BackFire Today!
+        </Text>
 
         <View style={[styles.actions, compact && styles.actionsCompact]}>
           {session.lastResolvedTurn ? (
@@ -315,20 +416,20 @@ export default function PlayEndScreen() {
                 router.replace('/play/question');
               }}
               style={[styles.actionButton, compact && styles.actionButtonCompact, tiny && styles.actionButtonTiny, { backgroundColor: ACTION_COLORS.review }]}
-              textStyle={styles.actionText}
+              textStyle={[styles.actionText, { fontSize: actionLabelSize, lineHeight: Math.round(actionLabelSize * 1.2) }]}
             />
           ) : null}
           <Button
             title={t('play.startAnotherMatch')}
             onPress={handleAnotherMatch}
             style={[styles.actionButton, compact && styles.actionButtonCompact, tiny && styles.actionButtonTiny, { backgroundColor: ACTION_COLORS.another }]}
-            textStyle={styles.actionText}
+            textStyle={[styles.actionText, { fontSize: actionLabelSize, lineHeight: Math.round(actionLabelSize * 1.2) }]}
           />
           <Button
             title={t('play.backToHome')}
             onPress={handleHome}
             style={[styles.actionButton, compact && styles.actionButtonCompact, tiny && styles.actionButtonTiny, { backgroundColor: ACTION_COLORS.home }]}
-            textStyle={styles.actionText}
+            textStyle={[styles.actionText, { fontSize: actionLabelSize, lineHeight: Math.round(actionLabelSize * 1.2) }]}
           />
         </View>
       </View>
@@ -340,7 +441,10 @@ const styles = StyleSheet.create({
   finalHeader: {
     width: '100%',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  finalHeaderCompact: {
+    marginBottom: 2,
   },
   headerRow: {
     width: '100%',
@@ -359,20 +463,23 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   matchTitle: {
+    // Color applied inline from theme textPrimary (dark-mode safe).
     color: '#111111',
     fontFamily: FONTS.displayBold,
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 28,
+    lineHeight: 34,
     letterSpacing: 0.8,
     textAlign: 'center',
+    marginTop: SPACING.xs,
   },
   matchTitleCompact: {
-    fontSize: 24,
-    lineHeight: 28,
+    fontSize: 20,
+    lineHeight: 24,
+    marginTop: 2,
   },
   matchTitleTiny: {
-    fontSize: 18,
-    lineHeight: 21,
+    fontSize: 16,
+    lineHeight: 19,
   },
   endColumn: {
     flex: 1,
@@ -380,36 +487,45 @@ const styles = StyleSheet.create({
     maxWidth: LAYOUT.playWideMaxWidth,
     alignSelf: 'center',
     minHeight: 0,
-    justifyContent: 'center',
-    gap: SPACING.md,
+    justifyContent: 'flex-start',
+    gap: SPACING.sm,
+    // Bottom viewport pad is owned by PlayScaffold chromeColumnStyle (matches top edgePad).
+    paddingBottom: 0,
   },
   endColumnCompact: {
-    justifyContent: 'flex-start',
-    gap: SPACING.xs,
+    gap: 6,
   },
   endColumnTiny: {
     gap: 4,
   },
+  promoBlock: {
+    flex: 1,
+    minHeight: 0,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  promoBlockCompact: {
+    paddingVertical: 2,
+  },
   scoreboard: {
     width: '100%',
-    minHeight: 116,
+    flexShrink: 0,
+    minHeight: 96,
     padding: SPACING.sm,
     borderRadius: BORDER_RADIUS.xl,
-    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: SPACING.sm,
-    ...SOFT_SURFACE_STYLES.face,
-    ...SOFT_SURFACE_STYLES.raised,
   },
   scoreboardCompact: {
-    minHeight: 86,
+    minHeight: 72,
     padding: 6,
     gap: 6,
     borderRadius: BORDER_RADIUS.lg,
   },
   scoreboardTiny: {
-    minHeight: 62,
+    minHeight: 58,
     padding: 4,
     gap: 4,
   },
@@ -419,47 +535,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     minWidth: 0,
   },
   teamCardVersus: {
     flex: 1,
-    minHeight: 128,
+    minHeight: 96,
   },
   teamCardVersusCompact: {
-    minHeight: 86,
+    minHeight: 68,
   },
   teamCardGrid: {
     flex: 1,
-    minHeight: 100,
+    minHeight: 88,
   },
   teamCardGridCompact: {
-    minHeight: 76,
+    minHeight: 64,
   },
   teamCardTiny: {
-    minHeight: 54,
+    minHeight: 50,
     paddingVertical: SPACING.xs,
   },
-  rankBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-  },
-  rankBadgeCompact: {
-    top: 4,
-    right: 4,
-    width: 25,
-    height: 25,
-    borderRadius: 13,
-  },
   teamName: {
-    color: '#111111',
+    // Pastel team tiles stay light in both themes — charcoal label is intentional.
+    color: '#1A1A1A',
     fontFamily: FONTS.uiBold,
     fontSize: 18,
     lineHeight: 23,
@@ -471,7 +570,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   teamScore: {
-    color: '#050505',
+    color: '#0A0A0A',
     fontFamily: FONTS.displayBold,
     fontSize: 46,
     lineHeight: 52,
@@ -479,8 +578,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   teamScoreCompact: {
-    fontSize: 29,
-    lineHeight: 32,
+    fontSize: 28,
+    lineHeight: 31,
   },
   teamScoreTiny: {
     fontSize: 22,
@@ -496,8 +595,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    ...SOFT_SURFACE_STYLES.raised,
+    zIndex: 2,
   },
   vsBadgeCompact: {
     width: 40,
@@ -506,7 +604,6 @@ const styles = StyleSheet.create({
     marginLeft: -20,
   },
   vsText: {
-    color: '#111111',
     fontFamily: FONTS.uiBold,
     fontSize: 16,
   },
@@ -517,63 +614,63 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   promoCard: {
-    minHeight: 150,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    ...SOFT_SURFACE_STYLES.face,
-    ...SOFT_SURFACE_STYLES.raised,
   },
   promoCardCompact: {
-    minHeight: 76,
     padding: 6,
     borderRadius: BORDER_RADIUS.sm,
   },
   promoLabel: {
     marginTop: 4,
-    color: '#111111',
     fontFamily: FONTS.uiBold,
-    fontSize: 18,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 18,
   },
   promoLabelCompact: {
-    marginTop: 1,
-    fontSize: 12,
-    lineHeight: 14,
+    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 13,
   },
   promoUrl: {
-    color: '#111111',
     fontFamily: FONTS.ui,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 15,
   },
   promoUrlCompact: {
     fontSize: 8,
     lineHeight: 10,
   },
   slogan: {
-    color: '#111111',
     fontFamily: FONTS.displayBold,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 32,
     textAlign: 'center',
+    flexShrink: 0,
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.xs,
   },
   sloganCompact: {
     fontSize: 18,
     lineHeight: 22,
+    marginTop: 4,
+    marginBottom: 6,
   },
   sloganTiny: {
-    fontSize: 14,
-    lineHeight: 17,
+    fontSize: 15,
+    lineHeight: 18,
+    marginTop: 2,
+    marginBottom: 4,
   },
   actions: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'stretch',
     justifyContent: 'center',
-    gap: SPACING.xl,
+    gap: SPACING.md,
+    flexShrink: 0,
   },
   actionsCompact: {
     gap: SPACING.sm,
@@ -581,19 +678,22 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     minWidth: 0,
-    minHeight: 58,
+    minHeight: 64,
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
   },
   actionButtonCompact: {
-    minHeight: 44,
+    minHeight: 54,
     borderRadius: BORDER_RADIUS.sm,
+    paddingVertical: SPACING.xs,
   },
   actionButtonTiny: {
-    minHeight: 38,
+    minHeight: 48,
   },
   actionText: {
-    color: '#111111',
+    // Labels sit on bright CTA fills — charcoal stays readable in light and dark.
+    color: '#0A0A0A',
     fontFamily: FONTS.uiBold,
     fontSize: 17,
     lineHeight: 21,

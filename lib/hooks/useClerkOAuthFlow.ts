@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { useSSO } from '@clerk/clerk-expo';
 import type { OAuthStrategy } from '@clerk/types';
 import { clerkOAuthRedirectUrl } from '@/lib/auth/clerkOAuthRedirect';
+import { showThemedAlert } from '@/store/themedAlert';
 
 /**
  * Google / Apple OAuth via Clerk SSO. Redirect returns to the app shell after session is created.
@@ -16,7 +17,7 @@ export function useClerkOAuthFlow(redirectPath = '/(app)/') {
     async (strategy: OAuthStrategy) => {
       if (inFlight.current) return;
       if (strategy === 'oauth_apple' && Platform.OS === 'android') {
-        Alert.alert(
+        showThemedAlert(
           'Unavailable',
           'Sign in with Apple is not available on this device. Use Google or try on iOS or web.',
         );
@@ -37,7 +38,7 @@ export function useClerkOAuthFlow(redirectPath = '/(app)/') {
         console.error('[Clerk SSO]', e);
         const message =
           e instanceof Error ? e.message : 'Something went wrong. Please try again.';
-        Alert.alert('Sign-in failed', message);
+        showThemedAlert('Sign-in failed', message);
       } finally {
         inFlight.current = false;
         setBusy(false);

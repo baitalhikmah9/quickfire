@@ -196,7 +196,7 @@ describe('TeamSetupScreen', () => {
     useThemeStore.setState({ paletteId: 'dark' });
     const { rerender } = render(<TeamSetupScreen />);
 
-    expect(StyleSheet.flatten(screen.getAllByTestId('team-setup-team-card')[0].props.style).backgroundColor).toBe('#1C1C1E');
+    expect(StyleSheet.flatten(screen.getAllByTestId('team-setup-team-card')[0].props.style).backgroundColor).toBe('#111E2E');
 
     act(() => {
       useThemeStore.setState({ paletteId: 'default' });
@@ -216,6 +216,44 @@ describe('TeamSetupScreen', () => {
     const removeControl = screen.getByLabelText('Remove a team member');
 
     expect(addControl.props.style).not.toEqual(removeControl.props.style);
+  });
+
+  it('renders Add Player as a navy filled control with light label text', () => {
+    render(<TeamSetupScreen />);
+
+    const addControl = screen.getAllByLabelText('Add a team member')[0];
+    const styleProp = addControl.props.style;
+    const resolved =
+      typeof styleProp === 'function' ? styleProp({ pressed: false }) : styleProp;
+    const flat = StyleSheet.flatten(resolved);
+
+    // Navy / slate fill (not white surface) with light label for contrast.
+    expect(flat.backgroundColor).toBe(COLORS.text);
+    expect(flat.backgroundColor).not.toBe('#FFFFFF');
+
+    const addLabel = screen.getAllByText('Add Player')[0];
+    const labelFlat = StyleSheet.flatten(addLabel.props.style);
+    expect(labelFlat.color).toBe('#FFFFFF');
+  });
+
+  it('keeps Add Player navy with white text in dark mode', () => {
+    useThemeStore.setState({ paletteId: 'dark' });
+    render(<TeamSetupScreen />);
+
+    const addControl = screen.getAllByLabelText('Add a team member')[0];
+    const styleProp = addControl.props.style;
+    const resolved =
+      typeof styleProp === 'function' ? styleProp({ pressed: false }) : styleProp;
+    const flat = StyleSheet.flatten(resolved);
+
+    // Must not invert to light fill + dark text when palette is dark.
+    expect(flat.backgroundColor).toBe(COLORS.text);
+    expect(flat.backgroundColor).not.toBe('#F7FAFF');
+    expect(flat.backgroundColor).not.toBe('#FFFFFF');
+
+    const addLabel = screen.getAllByText('Add Player')[0];
+    const labelFlat = StyleSheet.flatten(addLabel.props.style);
+    expect(labelFlat.color).toBe('#FFFFFF');
   });
 
   it('uses settings-style icon-only back control (not labeled play pill)', () => {

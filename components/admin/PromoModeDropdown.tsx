@@ -14,7 +14,7 @@ import { HOME_SOFT_UI } from '@/themes';
 
 const SOFT = HOME_SOFT_UI.colors;
 
-/** Native / Jest: modal menu. Web uses `PromoModeDropdown.web.tsx` (Radix — shadcn-style). */
+/** Native / Jest: modal menu. Web uses `PromoModeDropdown.web.tsx` (Radix - shadcn-style). */
 export default function PromoModeDropdown({ value, options, onValueChange }: PromoModeDropdownProps) {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);

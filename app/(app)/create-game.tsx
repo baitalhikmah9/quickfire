@@ -20,6 +20,7 @@ import {
 } from '@/constants';
 import { getResolvedContentLocaleChain } from '@/lib/i18n/config';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { useGameStore } from '@/store/game';
 import { useLocaleStore } from '@/store/locale';
@@ -34,6 +35,7 @@ const STEPS = ['categories', 'teamInfo', 'splitTeams'] as const;
 export default function CreateGameScreen() {
   const router = useRouter();
   const { direction, t } = useI18n();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const contentLocaleChain = getResolvedContentLocaleChain(
     useLocaleStore.getState().contentLocales
   );
@@ -208,7 +210,7 @@ export default function CreateGameScreen() {
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
-      <View style={[styles.header, SOFT_SURFACE_FACE, { backgroundColor: surface }, softSurfaceLift()]}>
+      <View style={[styles.header, SOFT_SURFACE_FACE, darkModeFlatTop, { backgroundColor: surface }, softSurfaceLift()]}>
         <View style={styles.headerLeft}>
           <Pressable
             onPress={handleBack}
@@ -217,6 +219,7 @@ export default function CreateGameScreen() {
             style={({ pressed }) => [
               styles.backButton,
               SOFT_SURFACE_FACE,
+              darkModeFlatTop,
               softSurfaceLift(),
               { backgroundColor: surface, opacity: pressed ? 0.94 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
             ]}

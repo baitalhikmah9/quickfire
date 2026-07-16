@@ -22,7 +22,7 @@ function resolveIdentifierKey(raw: string): string {
 
 /**
  * Call before Clerk password sign-in; uses server time for the sliding window.
- * Advisory only for clients that call it — Clerk dashboard lockout is the real control.
+ * Advisory only for clients that call it - Clerk dashboard lockout is the real control.
  */
 export const passwordSignInPreflight = mutation({
   args: { identifier: v.string() },

@@ -34,6 +34,13 @@ export const seedCategories = internalMutation({
           artwork: cat.artwork,
           enabled: cat.enabled,
         });
+      } else {
+        await ctx.db.patch(existing._id, {
+          title: cat.title,
+          themeGroup: cat.themeGroup,
+          artwork: cat.artwork,
+          enabled: cat.enabled,
+        });
       }
     }
   },
@@ -66,6 +73,7 @@ export const seedCategoryTranslations = internalMutation({
         .unique();
 
       if (existing) {
+        await ctx.db.patch(existing._id, { title: translation.title });
         continue;
       }
 

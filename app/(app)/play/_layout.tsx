@@ -1,12 +1,16 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { Redirect, Stack } from 'expo-router';
+import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { isAuthDisabled } from '@/lib/authMode';
 import { landscapeStackScreenOptions } from '@/lib/navigation/landscapeStack';
+import { useThemeStore } from '@/store/theme';
 
 export default function PlayLayout() {
   const { isLoaded, isSignedIn } = useAuth();
   const authDisabled = isAuthDisabled();
+  useThemeStore((state) => state.paletteId);
+  const surfaceColors = getPlaySurfaceColors();
 
   if (!isSignedIn && !authDisabled && isLoaded) {
     return <Redirect href="/(auth)/sign-in" />;
@@ -17,7 +21,7 @@ export default function PlayLayout() {
    * which redirects to home (`/(app)/`). Show a boot overlay instead when Clerk is still settling.
    */
   return (
-    <View style={styles.stackRoot}>
+    <View style={[styles.stackRoot, { backgroundColor: surfaceColors.canvas }]}>
       <Stack screenOptions={landscapeStackScreenOptions}>
         <Stack.Screen name="index" />
         <Stack.Screen name="mode" />
@@ -30,8 +34,11 @@ export default function PlayLayout() {
         <Stack.Screen name="end" />
       </Stack>
       {!isLoaded && !authDisabled ? (
-        <View style={styles.bootOverlay} pointerEvents="auto">
-          <ActivityIndicator size="large" />
+        <View
+          style={[styles.bootOverlay, { backgroundColor: surfaceColors.bootScrim }]}
+          pointerEvents="auto"
+        >
+          <ActivityIndicator size="large" color={surfaceColors.textPrimary} />
         </View>
       ) : null}
     </View>
@@ -44,6 +51,5 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(250, 249, 246, 0.92)',
   },
 });

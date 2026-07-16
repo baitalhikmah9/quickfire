@@ -51,6 +51,18 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, '');
 }
 
+/** Temporarily hidden topics (questions kept in seed, not playable). */
+const DISABLED_THEME_GROUPS = new Set(['gen11', 'gen25']);
+
+/** Keep stable slugs when display titles change (avoids seed/DB collisions). */
+const SLUG_BY_THEME_GROUP: Record<string, string> = {
+  // Renamed "Who Said This Quote?" → "Famous Quotes"; old famous-quotes was finish-the-blank (removed).
+  gen24: 'who-said-this-quote',
+};
+
+/** Slugs retired from source — disable on re-seed if still in DB. */
+const RETIRED_SLUGS = ['famous-quotes'];
+
 function main() {
   const inputPath = path.join(
     process.cwd(),
@@ -70,13 +82,13 @@ function main() {
   const questions: NormalizedQuestion[] = [];
 
   for (const g of groups) {
-    const slug = slugify(g.name);
+    const slug = SLUG_BY_THEME_GROUP[g.categoryId] ?? slugify(g.name);
     if (!categoryMap.has(slug)) {
       categoryMap.set(slug, {
         slug,
         title: g.name,
         themeGroup: g.categoryId,
-        enabled: true,
+        enabled: !DISABLED_THEME_GROUPS.has(g.categoryId),
       });
       categoryTranslations.push({
         categorySlug: slug,
@@ -99,6 +111,16 @@ function main() {
   }
 
   const categories = Array.from(categoryMap.values());
+  for (const slug of RETIRED_SLUGS) {
+    if (!categoryMap.has(slug)) {
+      categories.push({
+        slug,
+        title: 'Famous Quotes (retired)',
+        themeGroup: '',
+        enabled: false,
+      });
+    }
+  }
 
   if (!fs.existsSync(seedDir)) {
     fs.mkdirSync(seedDir, { recursive: true });

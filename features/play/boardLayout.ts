@@ -3,7 +3,7 @@
  *
  * Point pills (100/200/300) share the height of the topic image + title
  * (including in-rail gaps). On tall viewports, topic art grows to fill the
- * available row budget so free space becomes larger cards — not empty cream
+ * available row budget so free space becomes larger cards - not empty cream
  * bands. Stacked topic rows keep a modest inter-row gap.
  */
 
@@ -15,7 +15,7 @@ export type BoardTopicGridAlignment = {
   rowJustifyContent: 'center';
   /**
    * When false, incomplete last rows (e.g. 2 of 3 for 5 topics) are not
-   * left-padded with empty flex spacers — remaining cells keep fixed width
+   * left-padded with empty flex spacers - remaining cells keep fixed width
    * and center as a group (same idea as topic select).
    */
   padIncompleteRowsWithSpacers: false;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { AppState, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar, setStatusBarHidden } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
@@ -13,16 +14,16 @@ import { useThemeStore } from '@/store/theme';
 import { mark, markOnce } from '@/lib/startupTiming';
 import {
   FONTS,
-  PALETTES,
   paletteUsesLightStatusBarContent,
 } from '@/constants/theme';
+import { HOME_SOFT_UI } from '@/themes';
 
 mark('root layout module loaded');
 
 SplashScreen.preventAutoHideAsync();
 void SplashScreen.hideAsync();
 
-/** Stable reference for static layout groups — avoids navigation descriptor churn each render. */
+/** Stable reference for static layout groups - avoids navigation descriptor churn each render. */
 const ROOT_NESTED_STACK_SCREEN_OPTIONS = {
   headerShown: false,
   // Expo Go / native-stack can re-show the system bar per screen without this.
@@ -39,16 +40,30 @@ function hideSystemStatusBar() {
 export default function RootLayout() {
   markOnce('RootLayout first render');
   const paletteId = useThemeStore((state) => state.paletteId);
+  // Soft-UI canvas (cream / dark) — not palette.background white, which flashes under fade pushes.
+  const backgroundColor = HOME_SOFT_UI.colors.canvas;
+  const navigationTheme = useMemo(() => {
+    const baseTheme = paletteId === 'dark' ? DarkTheme : DefaultTheme;
+    return {
+      ...baseTheme,
+      colors: {
+        ...baseTheme.colors,
+        background: backgroundColor,
+        card: backgroundColor,
+      },
+    };
+  }, [backgroundColor, paletteId]);
   const rootStackScreenOptions = useMemo(
     () => ({
       headerShown: false,
+      animation: 'fade' as const,
       statusBarHidden: true,
       contentStyle: {
         flex: 1,
-        backgroundColor: PALETTES[paletteId].background,
+        backgroundColor,
       },
     }),
-    [paletteId]
+    [backgroundColor]
   );
 
   useEffect(() => {
@@ -121,17 +136,19 @@ export default function RootLayout() {
           hidden
           style={paletteUsesLightStatusBarContent(paletteId) ? 'light' : 'dark'}
         />
-        <Stack screenOptions={rootStackScreenOptions}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="sso-callback" />
-          <Stack.Screen name="how-to-play" />
-          <Stack.Screen name="terms" />
-          <Stack.Screen name="privacy" />
-          <Stack.Screen name="(auth)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
-          <Stack.Screen name="(app)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
-          <Stack.Screen name="(admin)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
-          <Stack.Screen name="admin" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
-        </Stack>
+        <ThemeProvider value={navigationTheme}>
+          <Stack screenOptions={rootStackScreenOptions}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="sso-callback" />
+            <Stack.Screen name="how-to-play" />
+            <Stack.Screen name="terms" />
+            <Stack.Screen name="privacy" />
+            <Stack.Screen name="(auth)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
+            <Stack.Screen name="(app)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
+            <Stack.Screen name="(admin)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
+            <Stack.Screen name="admin" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
+          </Stack>
+        </ThemeProvider>
       </Providers>
     </ErrorBoundary>
   );

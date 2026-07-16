@@ -13,12 +13,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/clerk-expo';
 import { FONTS, LAYOUT, SPACING } from '@/constants/theme';
 import { HOME_SOFT_UI } from '@/themes';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 const T = HOME_SOFT_UI;
 
 export default function AdminSignOutScreen() {
   const { isLoaded, signOut } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   const canvas = T.colors.canvas;
   const textPrimary = T.colors.textPrimary;
@@ -70,6 +72,7 @@ export default function AdminSignOutScreen() {
             style={({ pressed }) => [
               styles.submitButton,
               styles.plasticFace,
+              darkModeFlatTop,
               {
                 opacity: isSigningOut ? 0.65 : pressed ? 0.9 : 1,
                 transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],

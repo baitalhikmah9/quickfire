@@ -6,6 +6,7 @@ import { Modal, Platform, StyleSheet } from 'react-native';
 import AppHubScreen from '@/app/(app)/index';
 import { COLORS, FONTS } from '@/constants';
 import { usePlayStore } from '@/store/play';
+import { useThemeStore } from '@/store/theme';
 
 const mockPush = jest.fn();
 const mockUseAuth = jest.fn(() => ({ isLoaded: true, isSignedIn: true }));
@@ -89,6 +90,7 @@ describe('AppHubScreen', () => {
     mockPush.mockClear();
     mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: true });
     mockIsAuthDisabled.mockReturnValue(false);
+    useThemeStore.setState({ paletteId: 'default' });
     usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
     await usePlayStore.getState().hydrate();
   });
@@ -124,6 +126,18 @@ describe('AppHubScreen', () => {
     expect(screen.getByTestId('home-mode-token-cost-classic')).toHaveTextContent('10 TOKENS');
     expect(screen.getByTestId('home-mode-token-cost-random')).toHaveTextContent('10 TOKENS');
     expect(screen.getByTestId('home-mode-token-cost-rumble')).toHaveTextContent('10 TOKENS');
+  });
+
+  it('removes raised white top borders from dark mode cards', () => {
+    useThemeStore.setState({ paletteId: 'dark' });
+    render(<AppHubScreen />);
+
+    expect(
+      StyleSheet.flatten(screen.getByTestId('home-mode-card-quickPlay').props.style)
+    ).toMatchObject({ borderTopWidth: 0, borderTopColor: 'transparent' });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('hub-token-chip-face').props.style)
+    ).toMatchObject({ borderTopWidth: 0, borderTopColor: 'transparent' });
   });
 
   it('shows three people for rumble', () => {
@@ -259,42 +273,14 @@ describe('AppHubScreen', () => {
     expect(screen.queryByTestId('home-backfire-mode-art')).toBeNull();
   });
 
-  it('opens a small explanation when tapping the mode info icon', () => {
+  it('hides mode info icons while SHOW_HOME_MODE_INFO_UI is off', () => {
     render(<AppHubScreen />);
 
-    fireEvent.press(screen.getByLabelText('Quick Play info'));
-
-    expect(mockPush).not.toHaveBeenCalled();
-    // Card copy + modal body share the same string once open.
-    expect(
-      screen.getAllByText('Pick 3, 4, or 5 topics for a faster match with wagers.').length
-    ).toBeGreaterThan(1);
-    expect(screen.getByTestId('home-mode-info-overlay')).toBeTruthy();
-  });
-
-  it('presents mode explanations in a full-viewport scrim shell', () => {
-    render(<AppHubScreen />);
-
-    expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
-
-    fireEvent.press(screen.getByLabelText('Random info'));
-
-    // Native uses RN Modal portal so elevated home chrome cannot punch through the dim.
-    // Web uses a fixed shell (no Modal) to avoid nested-layout paint crashes.
-    if (Platform.OS === 'web') {
-      expect(screen.UNSAFE_queryByType(Modal)).toBeNull();
-    } else {
-      expect(screen.UNSAFE_queryByType(Modal)).not.toBeNull();
-    }
-    expect(screen.getAllByText('Random questions each turn.').length).toBeGreaterThan(0);
-
-    const overlay = screen.getByTestId('home-mode-info-overlay');
-    const overlayStyle = StyleSheet.flatten(overlay.props.style);
-    expect(overlayStyle.top).toBe(0);
-    expect(overlayStyle.right).toBe(0);
-    expect(overlayStyle.bottom).toBe(0);
-    expect(overlayStyle.left).toBe(0);
-    expect(overlayStyle.backgroundColor).toBe(COLORS.overlay);
+    expect(screen.queryByLabelText('Quick Play info')).toBeNull();
+    expect(screen.queryByLabelText('Classic info')).toBeNull();
+    expect(screen.queryByLabelText('Random info')).toBeNull();
+    expect(screen.queryByLabelText('Rumble info')).toBeNull();
+    expect(screen.queryByTestId('home-mode-info-overlay')).toBeNull();
   });
 
   it('dims the full viewport behind the continue-or-start-fresh modal', () => {

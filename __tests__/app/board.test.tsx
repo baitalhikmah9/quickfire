@@ -1,11 +1,14 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type { GameConfig, GameSessionState, QuestionCard } from '@/features/shared';
 
 import PlayBoardScreen from '@/app/(app)/play/board';
+import { PALETTES } from '@/constants/theme';
+import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { usePlayStore } from '@/store/play';
+import { useThemeStore } from '@/store/theme';
 
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
@@ -190,8 +193,39 @@ describe('PlayBoardScreen', () => {
   beforeEach(() => {
     mockPush.mockClear();
     mockReplace.mockClear();
+    useThemeStore.setState({ paletteId: 'default' });
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+  });
+
+  it('renders score pills with dark surface and light text in dark mode', () => {
+    useThemeStore.setState({ paletteId: 'dark' });
+    usePlayStore.setState({
+      session: createSession({ mode: 'classic' }),
+    });
+
+    render(<PlayBoardScreen />);
+
+    // Inactive team uses the default pill face (not the fire active-turn glow).
+    const teamName = screen.getByText('Beta');
+    let node: { parent?: unknown; props?: { style?: unknown } } | null = teamName as never;
+    let pillStyle: Record<string, unknown> | undefined;
+    for (let i = 0; i < 8 && node; i += 1) {
+      const flat = StyleSheet.flatten(node.props?.style);
+      if (flat?.backgroundColor && typeof flat.borderRadius === 'number') {
+        pillStyle = flat as Record<string, unknown>;
+        break;
+      }
+      node = (node as { parent?: typeof node }).parent ?? null;
+    }
+
+    expect(pillStyle?.backgroundColor).toBe(PALETTES.dark.cardBackground);
+    expect(pillStyle?.backgroundColor).not.toBe('#FFFFFF');
+    expect(pillStyle?.backgroundColor).not.toBe('#FFF3EC');
+
+    const nameStyle = StyleSheet.flatten(teamName.props.style);
+    expect(nameStyle.color).toBe(getPlaySurfaceColors().textMuted);
+    expect(nameStyle.color).not.toBe('#333333');
   });
 
   it('opens a match menu from the Backfire logo with Settings and Exit Game', () => {

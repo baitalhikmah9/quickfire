@@ -15,7 +15,7 @@ import { useThemeStore } from '@/store/theme';
 
 /** Match `HubActionCard` pill3d chrome (squared + lip). */
 const CHIP_RADIUS = BORDER_RADIUS.sm;
-/** Settings/store header back control — docs/BRAND_GUIDELINES.md (44×44, r≈14). */
+/** Settings/store header back control - docs/BRAND_GUIDELINES.md (44×44, r≈14). */
 const SOFT_SQUIRCLE_SIZE = 44;
 const SOFT_SQUIRCLE_RADIUS = 14;
 const DEPTH_LIP = 8;
@@ -29,8 +29,8 @@ type HubTokenChipProps = {
   onPress?: () => void;
   accessibilityLabel?: string;
   /**
-   * `softUi` — docs/BRAND_GUIDELINES.md: white squircle, charcoal type, soft shadow (lobby / play hub).
-   * `default` — legacy electric-blue 3D chip.
+   * `softUi` - docs/BRAND_GUIDELINES.md: white squircle, charcoal type, soft shadow (lobby / play hub).
+   * `default` - legacy electric-blue 3D chip.
    */
   variant?: 'default' | 'softUi';
   /** Merged onto the outer wrapper (e.g. `alignSelf: 'flex-start'` for home leading column). */
@@ -47,7 +47,7 @@ function TokenMark({
   isDark: boolean;
   iconColor: string;
 }) {
-  /** Wordmark PNG has an opaque black matte — use accent diamond on dark surfaces. */
+  /** Wordmark PNG has an opaque black matte - use accent diamond on dark surfaces. */
   if (isDark) {
     return (
       <View style={styles.darkDiamondMark} accessible={false}>
@@ -71,7 +71,7 @@ function TokenMark({
 }
 
 /**
- * Token readout styled like hub 3D CTAs — primary face, accent depth lip, uppercase label.
+ * Token readout styled like hub 3D CTAs - primary face, accent depth lip, uppercase label.
  * `softUi` matches the settings/store header back squircle (height 44, radius 14).
  */
 export function HubTokenChip({
@@ -91,7 +91,8 @@ export function HubTokenChip({
 
   const softFaceStyle: ViewStyle = {
     backgroundColor: soft.surface,
-    borderTopColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.78)',
+    borderTopWidth: isDark ? 0 : 2,
+    borderTopColor: isDark ? 'transparent' : 'rgba(255, 255, 255, 0.78)',
     borderBottomColor: isDark ? 'rgba(0, 0, 0, 0.28)' : 'rgba(0, 0, 0, 0.08)',
     shadowColor: isDark ? 'rgba(0, 0, 0, 0.36)' : 'rgba(51, 51, 51, 0.15)',
   };
@@ -156,7 +157,7 @@ export function HubTokenChip({
             },
           ]}
         />
-        <View style={styles.face}>
+        <View style={[styles.face, isDark && { borderTopWidth: 0, borderTopColor: 'transparent' }]}>
           <View style={[styles.row, { flexDirection: rowDirection }]}>
             {artworkSource && !isDark ? (
               <Image source={artworkSource} style={styles.artwork} resizeMode="contain" />

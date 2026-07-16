@@ -1,5 +1,5 @@
 /**
- * Visual system tokens — aligned with docs/BRAND_GUIDELINES.md
+ * Visual system tokens - aligned with docs/BRAND_GUIDELINES.md
  * (Electric Blue, Lively Orange, Vivid Purple; Clash Display + General Sans).
  */
 
@@ -13,19 +13,19 @@ export const FONTS = {
   uiBold: 'GeneralSans-Bold',
 } as const;
 
-/** Brand primary — Electric Blue (single source for primary + page background) */
+/** Brand primary - Electric Blue (single source for primary + page background) */
 const BRAND_PRIMARY = '#007BFF' as const;
 
 export const COLORS = {
-  /** Primary accent — Electric Blue */
+  /** Primary accent - Electric Blue */
   primary: BRAND_PRIMARY,
-  /** Secondary brand — Lively Orange */
+  /** Secondary brand - Lively Orange */
   secondary: '#FF8C00',
-  /** Utility — Vivid Purple (settings, profile accents) */
+  /** Utility - Vivid Purple (settings, profile accents) */
   tertiary: '#A18FFC',
   /** Darker blue for emphasis / continue CTAs */
   accent: '#0056B3',
-  /** Page chrome — default app shell (light) */
+  /** Page chrome - default app shell (light) */
   background: '#FFFFFF',
   surface: '#FFFFFF',
   text: '#0F172A',
@@ -53,7 +53,7 @@ export const COLORS = {
   timerDanger: '#DC2626',
   timerRing: '#D4E5FA',
 
-  /** Full-screen modal scrim — charcoal brand dim (matches Soft UI #333). */
+  /** Full-screen modal scrim - charcoal brand dim (matches Soft UI #333). */
   overlay: 'rgba(51, 51, 51, 0.45)',
   cardShadow: 'rgba(0, 123, 255, 0.12)',
   modalShadow: 'rgba(15, 23, 42, 0.18)',
@@ -101,7 +101,7 @@ export const TYPE_SCALE = {
   caption: { fontSize: 12, lineHeight: 16, ...uiMedium },
   button: { fontSize: 16, lineHeight: 20, ...uiSemibold },
   scoreNumber: { fontSize: 32, lineHeight: 36, ...displayBold },
-  /** UI labels / caplines — General Sans, uppercase at use site */
+  /** UI labels / caplines - General Sans, uppercase at use site */
   labelCap: {
     fontSize: 12,
     lineHeight: 16,
@@ -123,7 +123,7 @@ export const SPACING = {
 };
 
 /**
- * Standard raised control — docs/BRAND_GUIDELINES.md (“Standard button surface (raised)”).
+ * Standard raised control - docs/BRAND_GUIDELINES.md (“Standard button surface (raised)”).
  * Use for admin chrome, settings-style actions, and cards that should read as molded white on cream.
  */
 export const BRAND_RAISED_SURFACE = {
@@ -148,7 +148,7 @@ export const BRAND_ADMIN_TABLE = {
   inputBorder: 'rgba(51, 51, 51, 0.12)',
 } as const;
 
-/** Soft, bubbly radii — cards and chrome read round / “sticker” cartoon */
+/** Soft, bubbly radii - cards and chrome read round / “sticker” cartoon */
 export const BORDER_RADIUS = {
   sm: 16,
   md: 26,
@@ -158,7 +158,7 @@ export const BORDER_RADIUS = {
   tile: 28,
   modal: 44,
   /**
-   * Standard control / action button corner — rounded square (squircle), not capsule.
+   * Standard control / action button corner - rounded square (squircle), not capsule.
    * Matches docs/BRAND_GUIDELINES.md “Standard button surface” (14).
    */
   button: 14,
@@ -204,7 +204,7 @@ export const BREAKPOINTS = {
 
 /** Shared horizontal bounds and content columns on wide viewports */
 export const LAYOUT = {
-  /** Single-column flows (auth, forms) — alias of formMaxWidth */
+  /** Single-column flows (auth, forms) - alias of formMaxWidth */
   contentMaxWidth: 560,
   /** Auth / settings / form columns */
   formMaxWidth: 560,
@@ -224,17 +224,17 @@ export const LAYOUT = {
 export const AUTH_CARD_RADIUS = 48;
 
 /**
- * Shared header height / spacing tokens — one system per platform.
+ * Shared header height / spacing tokens - one system per platform.
  * Used by <GameHeader /> and all screens that position content below the header.
  *
  * Values are platform-aware defaults; the GameHeader component applies the correct
  * one based on `Platform.OS` so every page gets consistent header measurements.
  *
- * - `height`       — bar height (left/center/right row). Native: 56, Web: 64
- * - `topPadding`   — base pad above the header bar. Native: sm(8), Web: md(12)
- * - `topExtra`     — extra breathing room under the top edge for non-home screens
- * - `bottomGap`    — gap below the full header (bar + subtitle) before main content
- * - `titleBelowGap` — gap between logo bottom and title text (when both shown)
+ * - `height`       - bar height (left/center/right row). Native: 56, Web: 64
+ * - `topPadding`   - base pad above the header bar. Native: sm(8), Web: md(12)
+ * - `topExtra`     - extra breathing room under the top edge for non-home screens
+ * - `bottomGap`    - gap below the full header (bar + subtitle) before main content
+ * - `titleBelowGap` - gap between logo bottom and title text (when both shown)
  *
  * Home hub uses `topPadding` alone (plus its own frame pad). Every other screen
  * uses `getStandardChromeTopPadding()` / `getChromeTopPaddingWithInsets()` so
@@ -386,25 +386,25 @@ export const PALETTES: Record<ThemePaletteId, Record<string, string>> = {
     shadow: COLORS.cardShadow,
   },
   dark: {
-    primary: '#007BFF',
-    secondary: '#FF8C00',
-    tertiary: '#A18FFC',
-    background: '#000000',
-    text: '#FFFFFF',
-    cardBackground: '#1C1C1E',
-    textSecondary: '#EBEBF5',
-    textOnBackground: '#FFFFFF',
-    textSecondaryOnBackground: '#EBEBF5',
-    border: '#38383A',
+    primary: '#4DA3FF',
+    secondary: '#FF9F43',
+    tertiary: '#B4A7FF',
+    background: '#07111F',
+    text: '#F7FAFF',
+    cardBackground: '#111E2E',
+    textSecondary: '#B8C7D9',
+    textOnBackground: '#F7FAFF',
+    textSecondaryOnBackground: '#B8C7D9',
+    border: '#29405C',
     success: COLORS.success,
     warning: COLORS.warning,
     error: COLORS.error,
-    backgroundSecondary: '#1C1C1E',
-    boardCell: '#2C2C2E',
+    backgroundSecondary: '#17263A',
+    boardCell: '#17263A',
     boardCellActive: COLORS.activeTile,
     boardCellActiveText: COLORS.activeTileText,
-    boardCellUsed: '#3A3A3C',
-    shadow: COLORS.modalShadow,
+    boardCellUsed: '#22334A',
+    shadow: 'rgba(0, 5, 15, 0.58)',
   },
 };
 
@@ -424,7 +424,7 @@ export function paletteUsesLightStatusBarContent(id: ThemePaletteId): boolean {
 }
 
 /**
- * Shared raised-surface face treatment — docs/BRAND_GUIDELINES.md “Standard button surface (raised)”.
+ * Shared raised-surface face treatment - docs/BRAND_GUIDELINES.md “Standard button surface (raised)”.
  * Top lip + soft bottom edge so controls read as extruded on warm cream.
  */
 export const SOFT_SURFACE_FACE = {
@@ -435,7 +435,7 @@ export const SOFT_SURFACE_FACE = {
 } as const;
 
 /**
- * Shared raised drop shadow — hard shadow (radius=0), charcoal tint.
+ * Shared raised drop shadow - hard shadow (radius=0), charcoal tint.
  * Use across all raised controls, cards, buttons so depth is visually uniform.
  */
 export function softSurfaceLift(): Pick<ReturnType<typeof import('react-native').StyleSheet.create>, never> & {

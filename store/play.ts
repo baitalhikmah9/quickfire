@@ -192,6 +192,68 @@ function createDraftSession(): GameSessionState {
   };
 }
 
+/** Completed Quick Play session for local winner-screen debugging. */
+function createDebugWinnerSession(): GameSessionState {
+  const contentLocaleChain = getResolvedContentLocaleChain(
+    useLocaleStore.getState().contentLocales
+  );
+  const teams: TeamState[] = [
+    {
+      id: 'team_1',
+      name: 'Team 1',
+      playerNames: ['Player 1'],
+      score: 3100,
+      wagersUsed: 0,
+    },
+    {
+      id: 'team_2',
+      name: 'Team 2',
+      playerNames: ['Player 1'],
+      score: 300,
+      wagersUsed: 0,
+    },
+  ];
+  const reviewQuestion: QuestionCard = {
+    id: 'debug_end_q1',
+    canonicalKey: 'debug:100:0',
+    categoryId: 'debug_topic',
+    categoryName: 'Debug Topic',
+    prompt: 'Debug review prompt — what is 2 + 2?',
+    answer: '4',
+    pointValue: 100,
+    locale: contentLocaleChain[0] ?? 'en',
+    resolvedFromFallback: false,
+    used: true,
+  };
+
+  return {
+    id: `debug_end_${Date.now()}`,
+    mode: 'quickPlay',
+    config: {
+      ...getDefaultConfig('quickPlay', teams, contentLocaleChain),
+      categories: ['debug_topic'],
+      quickPlayTopicCount: 3,
+      entryTokenCharge: 0,
+    },
+    contentLocaleChain,
+    step: 'end',
+    phase: 'completed',
+    availableCategories: getPlayableCategories(contentLocaleChain),
+    selectedCategoryIds: ['debug_topic'],
+    board: [reviewQuestion],
+    teams,
+    scores: buildScores(teams),
+    usedQuestionIds: new Set([reviewQuestion.id]),
+    seed: `debug_seed_${Date.now()}`,
+    wagersPerTeam: DEFAULT_WAGERS_PER_TEAM,
+    wager: null,
+    bonus: { ...DEFAULT_BONUS, played: true },
+    scoreEvents: [],
+    lastResolvedTurn: buildLastResolvedTurn(reviewQuestion, 'team_1', 100),
+    lastAwardedTeamId: 'team_1',
+  };
+}
+
 function getOtherTeamId(teams: TeamState[], teamId?: string): string | undefined {
   return teams.find((team) => team.id !== teamId)?.id;
 }
@@ -548,6 +610,8 @@ interface PlayStore {
   reopenLastResolvedTurn: () => void;
   reviewCompletedBoard: () => void;
   returnToEndScreen: () => void;
+  /** Dev-only helper: seed a completed match so `/play/end` can be opened instantly. */
+  loadDebugWinnerSession: () => void;
   initiateWager: () => { ok: boolean; error?: string };
   confirmRandomWagerQuestion: (drawnQuestion?: QuestionCard) => void;
   resolveWager: (correct: boolean) => void;
@@ -619,7 +683,7 @@ function createPlayStore() {
       },
 
       ensureDraft: () => {
-        // Avoid persisting default tokens/session before rehydrate — child screens use
+        // Avoid persisting default tokens/session before rehydrate - child screens use
         // useLayoutEffect and can run before AppHydration's hydrate() effect, which would
         // overwrite AsyncStorage with the initial token balance (see zustand persist setState → setItem).
         if (!usePlayStore.persist.hasHydrated()) {
@@ -1126,7 +1190,7 @@ function createPlayStore() {
 
           let teams = session.teams.map((t) => ({ ...t }));
 
-          /** User may change who gets points before tapping Next — revert the prior pick first. */
+          /** User may change who gets points before tapping Next - revert the prior pick first. */
           const switchingAward =
             session.phase === 'scoring' && session.lastAwardedTeamId !== undefined;
 
@@ -1353,6 +1417,13 @@ function createPlayStore() {
           return { session: { ...session, step: 'end', phase: 'completed' } };
         }),
 
+      loadDebugWinnerSession: () =>
+        set(() => ({
+          session: createDebugWinnerSession(),
+          rapidFire: null,
+          entryReservationId: null,
+        })),
+
       reopenLastResolvedTurn: () =>
         set((state) => {
           const session = state.session;
@@ -1505,7 +1576,7 @@ const existingPlayStore = playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__
 export const usePlayStore =
   // Check the newest store method so a stale cached instance from before a code
   // update is discarded instead of reused across Fast Refresh.
-  existingPlayStore && typeof existingPlayStore.getState().returnToEndScreen === 'function'
+  existingPlayStore && typeof existingPlayStore.getState().loadDebugWinnerSession === 'function'
     ? existingPlayStore
     : (playStoreSingletonHolder.__DOUBLEPLAY_USE_PLAY_STORE__ = createPlayStore());
 

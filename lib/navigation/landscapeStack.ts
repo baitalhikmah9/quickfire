@@ -8,7 +8,7 @@ const webSafeStack: NativeStackNavigationOptions =
         animation: 'fade',
       }
     : {
-        animation: 'slide_from_right',
+        animation: 'fade',
         gestureDirection: 'horizontal',
         fullScreenGestureEnabled: true,
       };

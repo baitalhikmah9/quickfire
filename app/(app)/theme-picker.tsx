@@ -10,7 +10,7 @@ import {
   LAYOUT,
   type ThemePaletteId,
 } from '@/constants';
-import { useThemePicker } from '@/lib/hooks/useTheme';
+import { useDarkModeFlatTop, useThemePicker } from '@/lib/hooks/useTheme';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { Screen } from '@/components/ScreenContent';
@@ -35,6 +35,7 @@ export default function ThemePickerModal() {
   const router = useRouter();
   const { direction, t } = useI18n();
   const { paletteId, setPalette } = useThemePicker();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
@@ -53,6 +54,7 @@ export default function ThemePickerModal() {
           style={({ pressed }) => [
             styles.backButton,
             styles.plasticFace,
+            darkModeFlatTop,
             {
               backgroundColor: surface,
               opacity: pressed ? 0.94 : 1,
@@ -80,6 +82,7 @@ export default function ThemePickerModal() {
                 style={({ pressed }) => [
                   styles.paletteCard,
                   styles.plasticFace,
+                  darkModeFlatTop,
                   { backgroundColor: surface, opacity: pressed ? 0.94 : 1 },
                   neumorphicLift3D(shadowHex, 'card'),
                   isSelected && styles.paletteCardSelected,

@@ -29,6 +29,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { isAuthDisabled } from '@/lib/authMode';
 import { BRAND_ADMIN_TABLE, BRAND_RAISED_SURFACE, COLORS, FONTS, SPACING } from '@/constants/theme';
 import { HOME_SOFT_UI } from '@/themes';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
+import { landscapeStackScreenOptions } from '@/lib/navigation/landscapeStack';
 
 const SOFT = HOME_SOFT_UI.colors;
 
@@ -43,7 +45,7 @@ const ADMIN_HEADER_HEIGHT = 56;
 /**
  * Web only: animate sidebar width. shadcn sidebar uses
  * `transition-[left,right,width] duration-200 ease-linear` (see docs/sidebar.md).
- * RN layout toggles width in one frame otherwise — no tween on native without Reanimated.
+ * RN layout toggles width in one frame otherwise - no tween on native without Reanimated.
  */
 const SIDEBAR_WIDTH_TRANSITION_WEB = {
   transition: 'width 200ms linear',
@@ -210,6 +212,7 @@ function AdminSidebar({ pathname }: { pathname: string }) {
 // ── Mobile sidebar overlay ───────────────────────────────────────────
 function MobileSidebarOverlay({ pathname }: { pathname: string }) {
   const { mobileOpen, toggleMobile } = useSidebarCtx();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const [presented, setPresented] = useState(false);
   const translateX = useRef(new Animated.Value(-SIDEBAR_WIDTH_EXPANDED)).current;
 
@@ -280,6 +283,7 @@ function MobileSidebarOverlay({ pathname }: { pathname: string }) {
               accessibilityLabel="Close sidebar"
               style={({ pressed }) => [
                 styles.mobileCloseBtn,
+                darkModeFlatTop,
                 { opacity: pressed ? 0.8 : 1 },
               ]}
             >
@@ -369,6 +373,7 @@ function MobileSidebarOverlay({ pathname }: { pathname: string }) {
 // ── Top bar ──────────────────────────────────────────────────────────
 function AdminTopBar() {
   const { toggleMobile, toggleExpanded, expanded } = useSidebarCtx();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
 
@@ -381,6 +386,7 @@ function AdminTopBar() {
           accessibilityLabel={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
           style={({ pressed }) => [
             styles.topBarIconBtn,
+            darkModeFlatTop,
             { opacity: pressed ? 0.8 : 1 },
           ]}
         >
@@ -397,6 +403,7 @@ function AdminTopBar() {
           accessibilityLabel="Open navigation"
           style={({ pressed }) => [
             styles.topBarIconBtn,
+            darkModeFlatTop,
             { opacity: pressed ? 0.8 : 1 },
           ]}
         >
@@ -502,7 +509,7 @@ function AdminBackendUnavailableScreen() {
 export default function AdminLayout() {
   return (
     <AdminAccessBoundary>
-      <Stack screenOptions={{ headerShown: false, statusBarHidden: true }}>
+      <Stack screenOptions={landscapeStackScreenOptions}>
         <Stack.Screen name="index" />
         <Stack.Screen name="promo-codes" />
         <Stack.Screen name="wallets" />
@@ -605,7 +612,7 @@ const styles = StyleSheet.create({
   navItem: {
     borderRadius: 12,
   },
-  /** Row inside nav Pressable — fixes web `<a>` children stacking without flex row. */
+  /** Row inside nav Pressable - fixes web `<a>` children stacking without flex row. */
   navItemInner: {
     flexDirection: 'row',
     alignItems: 'center',

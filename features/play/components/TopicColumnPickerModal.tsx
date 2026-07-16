@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   useWindowDimensions,
-  type PressableProps,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { WebAwareModal } from '@/components/WebAwareModal';
@@ -21,6 +20,7 @@ import type { QuestionCard } from '@/features/shared';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useTheme } from '@/lib/hooks/useTheme';
+import { usePlayTextScale } from '@/store/display';
 
 export type TopicColumnPickerPayload = {
   categoryId: string;
@@ -36,12 +36,6 @@ type TopicColumnPickerModalProps = {
   onPickQuestion: (question: QuestionCard) => void;
 };
 
-const stopCardPressFromClosingOverlay: PressableProps['onPress'] = (e) => {
-  if (typeof e.stopPropagation === 'function') {
-    e.stopPropagation();
-  }
-};
-
 export function TopicColumnPickerModal({
   visible,
   column,
@@ -53,6 +47,8 @@ export function TopicColumnPickerModal({
   const { width, height } = useWindowDimensions();
   const { direction, getTextStyle, t } = useI18n();
   const rowDir = getRowDirection(direction);
+  const textScale = usePlayTextScale();
+  const textSize = (size: number, minimum = 8) => Math.max(minimum, Math.round(size * textScale));
 
   const cardMaxWidth = useMemo(() => Math.min(width - SPACING.lg * 2, 680), [width]);
   const heroMinHeight = useMemo(() => Math.min(220, Math.max(160, height * 0.28)), [height]);
@@ -97,11 +93,11 @@ export function TopicColumnPickerModal({
           style={[
             styles.valueTileText,
             getTextStyle(question.locale, 'bodyBold', 'center'),
-            { color: used ? colors.textSecondary : colors.primary },
+            { color: used ? colors.textSecondary : colors.primary, fontSize: textSize(22) },
           ]}
           numberOfLines={1}
         >
-          {used ? '—' : question.pointValue}
+          {used ? '-' : question.pointValue}
         </Text>
       </Pressable>
     );
@@ -141,7 +137,7 @@ export function TopicColumnPickerModal({
                   ) : (
                     <View style={[styles.heroFallback, { backgroundColor: `${accent}28` }]}>
                       <Text
-                        style={[styles.heroFallbackLetter, { color: accent }]}
+                        style={[styles.heroFallbackLetter, { color: accent, fontSize: textSize(22) }]}
                         accessibilityLabel={MISSING_CATEGORY_PICTURE_LABEL}
                       >
                         {MISSING_CATEGORY_PICTURE_LABEL}
@@ -153,7 +149,7 @@ export function TopicColumnPickerModal({
                       style={[
                         styles.heroTitle,
                         getTextStyle(locale, 'bodyBold', 'center'),
-                        { fontSize: FONT_SIZES.lg, lineHeight: FONT_SIZES.lg + 4 },
+                        { fontSize: textSize(FONT_SIZES.lg), lineHeight: textSize(FONT_SIZES.lg + 4) },
                       ]}
                       numberOfLines={3}
                     >
@@ -163,7 +159,7 @@ export function TopicColumnPickerModal({
                 </View>
               </View>
 
-              <Text style={[styles.hint, { color: colors.textSecondary }, getTextStyle(undefined, 'body', 'center')]}>
+              <Text style={[styles.hint, { color: colors.textSecondary, fontSize: textSize(FONT_SIZES.sm), lineHeight: textSize(20) }, getTextStyle(undefined, 'body', 'center')]}>
                 {t('play.boardTopicModalHint')}
               </Text>
 
@@ -181,7 +177,7 @@ export function TopicColumnPickerModal({
                     <View key={row.pointValue} style={[styles.rowPair, { flexDirection: rowDir }]}>
                       {renderValueButton(row.left, 'pairFirst', 'split')}
                       <View style={styles.rowPairCenter}>
-                        <Text style={[styles.rowPointLabel, { color: colors.textSecondary }, getTextStyle()]}>
+                        <Text style={[styles.rowPointLabel, { color: colors.textSecondary, fontSize: textSize(FONT_SIZES.sm) }, getTextStyle()]}>
                           {row.pointValue}
                         </Text>
                       </View>
@@ -204,7 +200,7 @@ export function TopicColumnPickerModal({
                 accessibilityRole="button"
                 accessibilityLabel={t('play.boardTopicModalClose')}
               >
-                <Text style={[styles.closeButtonLabel, { color: colors.text }, getTextStyle(undefined, 'bodySemibold', 'center')]}>
+                <Text style={[styles.closeButtonLabel, { color: colors.text, fontSize: textSize(FONT_SIZES.md) }, getTextStyle(undefined, 'bodySemibold', 'center')]}>
                   {t('play.boardTopicModalClose')}
                 </Text>
               </Pressable>

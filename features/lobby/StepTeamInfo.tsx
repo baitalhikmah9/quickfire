@@ -4,6 +4,7 @@ import { LIFELINES, LIFELINES_PER_TEAM, type LifelineId } from './lifelines';
 import { SPACING, FONTS } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
 import { Ionicons } from '@expo/vector-icons';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 const T = HOME_SOFT_UI;
 
@@ -57,6 +58,7 @@ export function StepTeamInfo({
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
   const shadowHex = T.colors.shadowStrong;
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   const canNext =
     team1Name.trim().length > 0 &&
@@ -88,6 +90,7 @@ export function StepTeamInfo({
                 style={({ pressed }) => [
                   styles.lifelineCard,
                   styles.plasticFace,
+                  darkModeFlatTop,
                   {
                     backgroundColor: surface,
                     opacity: disabled ? 0.4 : pressed ? 0.94 : 1,
@@ -126,7 +129,7 @@ export function StepTeamInfo({
         <View style={styles.inputSection}>
           <View style={styles.col}>
             <Text style={[styles.label, { color: textMuted }]}>TEAM 1 NAME</Text>
-            <View style={[styles.inputWrap, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'header')]}>
+            <View style={[styles.inputWrap, styles.plasticFace, darkModeFlatTop, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'header')]}>
               <TextInput
                 style={[styles.input, { color: textPrimary }]}
                 value={team1Name}
@@ -140,7 +143,7 @@ export function StepTeamInfo({
 
           <View style={styles.col}>
             <Text style={[styles.label, { color: textMuted }]}>TEAM 2 NAME</Text>
-            <View style={[styles.inputWrap, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'header')]}>
+            <View style={[styles.inputWrap, styles.plasticFace, darkModeFlatTop, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'header')]}>
               <TextInput
                 style={[styles.input, { color: textPrimary }]}
                 value={team2Name}
@@ -157,11 +160,12 @@ export function StepTeamInfo({
         {renderLifelineSection('Team 2', team2Lifelines, onTeam2LifelineToggle)}
       </ScrollView>
 
-      <View style={[styles.footer, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'pill')]}>
+      <View style={[styles.footer, styles.plasticFace, darkModeFlatTop, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'pill')]}>
         <Pressable
           style={({ pressed }) => [
             styles.button,
             styles.plasticFace,
+            darkModeFlatTop,
             { backgroundColor: surface, opacity: canNext ? (pressed ? 0.94 : 1) : 0.5 },
             neumorphicLift3D(shadowHex, 'pill'),
             canNext && { shadowColor: '#FFB347', shadowOpacity: 0.45 },

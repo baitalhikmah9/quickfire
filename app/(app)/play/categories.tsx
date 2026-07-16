@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  Alert,
   useWindowDimensions,
   Platform,
   type ImageStyle,
@@ -18,7 +17,8 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BREAKPOINTS, SPACING, FONTS, FONT_SIZES, LAYOUT } from '@/constants';
+import { HeaderBackButton } from '@/components/HeaderBackButton';
+import { BREAKPOINTS, SPACING, FONTS, FONT_SIZES, LAYOUT, BORDER_RADIUS } from '@/constants';
 import {
   getCategoryPictureSource,
   MISSING_CATEGORY_PICTURE_LABEL,
@@ -33,7 +33,10 @@ import {
   type CategorySection,
 } from '@/features/play/categorySections';
 import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
+import { showThemedAlert } from '@/store/themedAlert';
+import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { isAuthDisabled } from '@/lib/authMode';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import {
@@ -49,13 +52,13 @@ import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
 // ── Grid constants ──────────────────────────────────────────────────────
 
 const WEB_GRID_MAX_WIDTH = LAYOUT.playWideMaxWidth;
-const WEB_GRID_GAP = 30;
-const NATIVE_GRID_GAP = 24;
-const NATIVE_COMPACT_GRID_GAP = 12;
+const WEB_GRID_GAP = 24;
+const NATIVE_GRID_GAP = 16;
+const NATIVE_COMPACT_GRID_GAP = 8;
 const WEB_GRID_INNER_PAD = 40; // padding inside the max-width container
 const WEB_CARD_HEIGHT = 190;
-const NATIVE_CARD_ASPECT = 0.72; // height = width * aspect
-const COLS = 4;
+const NATIVE_CARD_ASPECT = 0.82; // Taller cards preserve artwork size across five columns.
+const COLS = 5;
 const ANDROID_LIST_IMAGE_TRANSITION = 0;
 const WEB_LIST_IMAGE_TRANSITION = 200;
 
@@ -151,6 +154,10 @@ interface CategoryCardProps {
   topicImageMatte?: string;
   topicImageContentFit: 'cover' | 'contain';
   missingPictureLabelColor?: string;
+  topicLabelBackground: string;
+  topicLabelText: string;
+  topicLabelBorder: string;
+  selectedBorder: string;
   onToggle: (slug: string) => void;
 }
 
@@ -168,10 +175,15 @@ const CategoryCard = memo(function CategoryCard({
   topicImageMatte,
   topicImageContentFit,
   missingPictureLabelColor,
+  topicLabelBackground,
+  topicLabelText,
+  topicLabelBorder,
+  selectedBorder,
   onToggle,
 }: CategoryCardProps) {
   const imageSource = getCategoryPictureSource(category.id);
   const useLightListSurface = Platform.OS === 'android';
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   return (
     <Pressable
@@ -189,8 +201,9 @@ const CategoryCard = memo(function CategoryCard({
           transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
         },
         SOFT_SURFACE_STYLES.face,
+        darkModeFlatTop,
         !useLightListSurface && SOFT_SURFACE_STYLES.raised,
-        selected && styles.topicCardSelected,
+        selected && [styles.topicCardSelected, { borderColor: selectedBorder }],
       ]}
     >
       <View
@@ -222,12 +235,22 @@ const CategoryCard = memo(function CategoryCard({
         )}
       </View>
 
-      <View style={[styles.cardTitleBar, { height: titleBarH, backgroundColor: surface }]}>
+      <View
+        testID={`topic-label-${category.slug}`}
+        style={[
+          styles.cardTitleBar,
+          {
+            height: titleBarH,
+            backgroundColor: topicLabelBackground,
+            borderTopColor: topicLabelBorder,
+          },
+        ]}
+      >
         <Text
           style={[
             styles.cardTitle,
             {
-              color: textPrimary,
+              color: topicLabelText,
               fontSize: topicTitleSize,
               lineHeight: Math.round(topicTitleSize * 1.18),
             },
@@ -254,7 +277,7 @@ export default function CategorySelectionScreen() {
   const { direction, getTextStyle, t } = useI18n();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const fontSizes = useResponsivePlayFontSizes();
-  useThemeStore((state) => state.paletteId);
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   const session = usePlayStore((state) => state.session);
   const entryReservationId = usePlayStore((state) => state.entryReservationId);
@@ -274,7 +297,7 @@ export default function CategorySelectionScreen() {
     ensureDraft();
   }, [ensureDraft]);
 
-  // Browser/history back can reopen setup while a match is live — return to the leave-capable match UI.
+  // Browser/history back can reopen setup while a match is live - return to the leave-capable match UI.
   useEffect(() => {
     const step = session?.step;
     if (!isActiveMatchStep(step) || !step) return;
@@ -308,7 +331,7 @@ export default function CategorySelectionScreen() {
   const compactHeader = !useWebLayout && isLandscape;
 
   // ── Grid dimension calculations ─────────────────────────────────────
-  // Always 4 columns per row as requested.
+  // Always five columns per row as requested.
   const gridGap = useWebLayout
     ? WEB_GRID_GAP
     : windowWidth < 430
@@ -329,8 +352,7 @@ export default function CategorySelectionScreen() {
     Math.min(maxGridW, availableGridW) - (useWebLayout ? gridInnerPad * 2 : 0)
   );
 
-  // Card width fills exactly 4 columns: (innerW - 3 gaps) / 4.
-  // Keep this derived from the actual padded body width so phones do not wrap to 3 columns.
+  // Card width fills exactly five columns.
   const cardW = Math.max(
     1,
     Math.min(320, Math.floor((innerW - gridGap * (COLS - 1)) / COLS))
@@ -339,7 +361,7 @@ export default function CategorySelectionScreen() {
   const cardH = useWebLayout
     ? WEB_CARD_HEIGHT
     : Math.floor(cardW * NATIVE_CARD_ASPECT);
-  const imageAreaH = Math.floor(cardH * 0.58);
+  const imageAreaH = Math.floor(cardH * 0.78);
   const titleBarH = cardH - imageAreaH;
 
   // ── Handlers ─────────────────────────────────────────────────────────
@@ -404,14 +426,31 @@ export default function CategorySelectionScreen() {
           )
         )
       : 0;
+  // Subscribe so canvas/surface tokens recompute when the palette changes.
+  useThemeStore((state) => state.paletteId);
   const surfaceColors = getPlaySurfaceColors();
   const canvas = surfaceColors.canvas;
   const surface = surfaceColors.surface;
   const textPrimary = surfaceColors.textPrimary;
+  const controlBackground = surfaceColors.controlBackground;
   const canChooseRandom = session && selectedCount < required;
   const categorySections = useMemo(
     () => (session ? groupCategoriesBySection(session.availableCategories) : []),
     [session]
+  );
+  const longestTopicTitleLength = Math.max(
+    1,
+    ...categorySections.flatMap((section) =>
+      section.categories.map((category) => category.title.length)
+    )
+  );
+  const topicTitleSize = Math.max(
+    5,
+    Math.min(
+      fontSizes.topicTitle,
+      Math.floor((titleBarH - 4) / (2 * 1.18)),
+      Math.floor(((cardW - 12) * 2) / (longestTopicTitleLength * 0.6))
+    )
   );
   const sectionTitleHeight = Math.round(fontSizes.subtitle * 1.2);
   const { categoryListRows, categoryItemLayouts, categorySlugToIndex } = useMemo(() => {
@@ -520,10 +559,14 @@ export default function CategorySelectionScreen() {
                   titleBarH={titleBarH}
                   surface={surface}
                   textPrimary={textPrimary}
-                  topicTitleSize={fontSizes.topicTitle}
+                  topicTitleSize={topicTitleSize}
                   topicImageMatte={surfaceColors.topicImageMatte}
                   topicImageContentFit={surfaceColors.topicImageContentFit}
                   missingPictureLabelColor={surfaceColors.missingPictureLabelColor}
+                  topicLabelBackground={surfaceColors.topicLabelBackground}
+                  topicLabelText={surfaceColors.topicLabelText}
+                  topicLabelBorder={surfaceColors.topicLabelBorder}
+                  selectedBorder={surfaceColors.selectedBorder}
                   onToggle={handleToggleCategory}
                 />
               );
@@ -536,7 +579,6 @@ export default function CategorySelectionScreen() {
       cardH,
       cardW,
       fontSizes.subtitle,
-      fontSizes.topicTitle,
       gridGap,
       handleToggleCategory,
       imageAreaH,
@@ -546,10 +588,15 @@ export default function CategorySelectionScreen() {
       selectedCount,
       surface,
       surfaceColors.missingPictureLabelColor,
+      surfaceColors.selectedBorder,
       surfaceColors.topicImageContentFit,
       surfaceColors.topicImageMatte,
+      surfaceColors.topicLabelBackground,
+      surfaceColors.topicLabelBorder,
+      surfaceColors.topicLabelText,
       textPrimary,
       titleBarH,
+      topicTitleSize,
     ]
   );
 
@@ -570,32 +617,22 @@ export default function CategorySelectionScreen() {
             {/* Header row: back + counter | title | random button */}
             <View style={[styles.headerRow, compactHeader && styles.headerRowCompact]}>
               <View style={styles.headerLeft}>
-                <Pressable
+                <HeaderBackButton
                   onPress={() => goBackOrReplace(router, '/play/team-setup')}
-                  accessibilityRole="button"
+                  direction={direction}
+                  rowDirection={getRowDirection(direction)}
+                  label={t('common.back')}
                   accessibilityLabel="Back to team setup"
-                  style={({ pressed }) => [
-                    styles.backButton,
-                    compactHeader && styles.backButtonCompact,
-                    styles.surfaceRaised,
-                    SOFT_SURFACE_STYLES.face,
-                    SOFT_SURFACE_STYLES.raised,
-                    pressed && styles.controlPressed,
-                  ]}
-                >
-                  <Ionicons
-                    name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'}
-                    size={compactHeader ? 18 : 20}
-                    color={textPrimary}
-                  />
-                </Pressable>
+                  variant="icon"
+                />
                 <View
                   style={[
                     styles.counterBadge,
-                    compactHeader && styles.counterBadgeCompact,
                     styles.surfaceRaised,
                     SOFT_SURFACE_STYLES.face,
+                    darkModeFlatTop,
                     SOFT_SURFACE_STYLES.raised,
+                    { backgroundColor: controlBackground },
                   ]}
                 >
                   <Text
@@ -603,14 +640,8 @@ export default function CategorySelectionScreen() {
                       styles.counterText,
                       {
                         color: textPrimary,
-                        fontSize: compactHeader
-                          ? Math.round(fontSizes.headerButton * 0.92)
-                          : fontSizes.headerButton,
-                        lineHeight: Math.round(
-                          (compactHeader
-                            ? Math.round(fontSizes.headerButton * 0.92)
-                            : fontSizes.headerButton) * 1.2
-                        ),
+                        fontSize: fontSizes.headerButton,
+                        lineHeight: Math.round(fontSizes.headerButton * 1.2),
                       },
                     ]}
                   >
@@ -654,29 +685,25 @@ export default function CategorySelectionScreen() {
                   accessibilityState={{ disabled: !canChooseRandom }}
                   style={({ pressed }) => [
                     styles.randomBtn,
-                    compactHeader && styles.randomBtnCompact,
                     styles.surfaceRaised,
                     SOFT_SURFACE_STYLES.face,
+                    darkModeFlatTop,
                     SOFT_SURFACE_STYLES.raised,
                     {
-                      opacity: !canChooseRandom ? 0.45 : pressed ? 0.85 : 1,
+                      backgroundColor: controlBackground,
+                      opacity: !canChooseRandom ? 0.45 : pressed ? 0.9 : 1,
+                      transform: pressed && canChooseRandom ? [{ scale: 0.98 }] : [{ scale: 1 }],
                     },
                   ]}
                 >
-                  <Ionicons name="shuffle-outline" size={compactHeader ? 14 : 16} color={textPrimary} />
+                  <Ionicons name="shuffle-outline" size={18} color={textPrimary} />
                   <Text
                     style={[
                       styles.randomBtnLabel,
                       {
                         color: textPrimary,
-                        fontSize: compactHeader
-                          ? Math.round(fontSizes.headerButton * 0.9)
-                          : fontSizes.headerButton,
-                        lineHeight: Math.round(
-                          (compactHeader
-                            ? Math.round(fontSizes.headerButton * 0.9)
-                            : fontSizes.headerButton) * 1.2
-                        ),
+                        fontSize: fontSizes.headerButton,
+                        lineHeight: Math.round(fontSizes.headerButton * 1.2),
                       },
                     ]}
                     numberOfLines={1}
@@ -687,7 +714,7 @@ export default function CategorySelectionScreen() {
               </View>
             </View>
 
-            {/* Subtitle — compact, directly below title */}
+            {/* Subtitle - compact, directly below title */}
             <Text
               style={[
                 styles.subtitle,
@@ -720,7 +747,7 @@ export default function CategorySelectionScreen() {
         </View>
       ) : (
         <View style={styles.contentRoot}>
-          {/* Selected topics strip — above the grid */}
+          {/* Selected topics strip - above the grid */}
           {selectedCategories.length > 0 && (
             <View style={styles.selectedStrip}>
               <View
@@ -738,10 +765,13 @@ export default function CategorySelectionScreen() {
                     accessibilityLabel={`Jump to ${category.title}`}
                     style={({ pressed }) => [
                       styles.selectedTopicPill,
-                      styles.surfaceRaised,
-                      SOFT_SURFACE_STYLES.face,
+                      compactHeader && styles.selectedTopicPillCompact,
                       SOFT_SURFACE_STYLES.raised,
-                      { opacity: pressed ? 0.85 : 1, width: selectedPillWidth },
+                      {
+                        backgroundColor: controlBackground,
+                        opacity: pressed ? 0.85 : 1,
+                        width: selectedPillWidth,
+                      },
                       isVeryDense && styles.selectedPillVeryDense,
                     ]}
                   >
@@ -749,21 +779,34 @@ export default function CategorySelectionScreen() {
                       style={[
                         styles.selectedPillText,
                         isVeryDense && styles.selectedPillTextDense,
-                        { color: textPrimary, fontSize: fontSizes.headerButton, lineHeight: Math.round(fontSizes.headerButton * 1.2) },
+                        {
+                          color: textPrimary,
+                          fontSize: fontSizes.headerButton,
+                          lineHeight: Math.round(fontSizes.headerButton * 1.2),
+                        },
                       ]}
                       numberOfLines={1}
                       ellipsizeMode="tail"
                     >
                       {category.title.toUpperCase()}
                     </Text>
-                    <View
-                      onStartShouldSetResponder={() => true}
-                      onResponderRelease={() => toggleCategory(category.slug)}
+                    <Pressable
+                      accessibilityRole="button"
                       accessibilityLabel={`Remove ${category.title}`}
-                      style={isVeryDense ? styles.selectedPillCloseDense : styles.selectedPillClose}
+                      // Extra hit area without adding visual inset past the right padding.
+                      hitSlop={8}
+                      onPress={() => toggleCategory(category.slug)}
+                      style={({ pressed }) => [
+                        isVeryDense ? styles.selectedPillCloseDense : styles.selectedPillClose,
+                        { opacity: pressed ? 0.55 : 1 },
+                      ]}
                     >
-                      <Ionicons name="close" size={isVeryDense ? 14 : 16} color={textPrimary} />
-                    </View>
+                      <Ionicons
+                        name="close"
+                        size={isVeryDense ? 14 : 16}
+                        color={textPrimary}
+                      />
+                    </Pressable>
                   </Pressable>
                 ))}
               </View>
@@ -783,7 +826,7 @@ export default function CategorySelectionScreen() {
               initialNumToRender={8}
               maxToRenderPerBatch={10}
               windowSize={7}
-              removeClippedSubviews={Platform.OS === 'android'}
+              removeClippedSubviews={false}
               contentContainerStyle={[
                 styles.gridScrollContent,
                 useWebLayout && styles.gridScrollContentWeb,
@@ -827,7 +870,7 @@ export default function CategorySelectionScreen() {
                     cost: tokenCost,
                   });
                   if (!reservation.ok) {
-                    Alert.alert('', t('play.needTokens'));
+                    showThemedAlert(t('play.needTokens'));
                     return;
                   }
                   reservationId = reservation.reservationId;
@@ -844,7 +887,7 @@ export default function CategorySelectionScreen() {
                   }).catch(() => {});
                   setEntryReservationId(null);
                 }
-                Alert.alert('', result.error ?? t('play.needTokens'));
+                showThemedAlert(result.error ?? t('play.needTokens'));
                 return;
               }
 
@@ -856,7 +899,7 @@ export default function CategorySelectionScreen() {
                 // Only a real balance failure blocks entry; stale reservation states
                 // (already consumed/refunded from a previous run) are non-fatal.
                 if (!consumed.ok && consumed.error === 'insufficient_balance') {
-                  Alert.alert('', t('play.needTokens'));
+                  showThemedAlert(t('play.needTokens'));
                   return;
                 }
               }
@@ -868,6 +911,7 @@ export default function CategorySelectionScreen() {
               styles.startBtn,
               styles.surfaceRaised,
               SOFT_SURFACE_STYLES.face,
+              darkModeFlatTop,
               SOFT_SURFACE_STYLES.raised,
               {
                 backgroundColor: surface,
@@ -904,13 +948,13 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     position: 'relative',
-    minHeight: 40,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
   },
   headerRowCompact: {
-    minHeight: 36,
+    minHeight: 44,
     gap: SPACING.xs,
   },
   headerLeft: {
@@ -966,32 +1010,14 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginBottom: SPACING.xs,
   },
-  // ── Header controls ─────────────────────────────────────────────────
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonCompact: {
-    width: 32,
-    height: 32,
-    borderRadius: 11,
-  },
+  // ── Header controls (match HeaderBackButton icon / standard raised controls) ──
   counterBadge: {
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    minWidth: 42,
-    borderRadius: 12,
+    height: 44,
+    minWidth: 44,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: BORDER_RADIUS.button,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  counterBadgeCompact: {
-    paddingVertical: 2,
-    paddingHorizontal: 7,
-    minWidth: 38,
-    borderRadius: 11,
   },
   counterText: {
     fontFamily: FONTS.uiBold,
@@ -1002,28 +1028,20 @@ const styles = StyleSheet.create({
   randomBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-  },
-  randomBtnCompact: {
-    gap: 4,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    borderRadius: 11,
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    height: 44,
+    minHeight: 44,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.button,
   },
   randomBtnLabel: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 12,
+    fontFamily: FONTS.uiSemibold,
+    fontSize: 14,
     letterSpacing: 0.3,
   },
   surfaceRaised: {
-    borderRadius: 14,
-  },
-  controlPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+    borderRadius: BORDER_RADIUS.button,
   },
   // ── Selected strip ───────────────────────────────────────────────────
   selectedStrip: {
@@ -1046,16 +1064,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xs,
   },
   selectedTopicPill: {
-    borderRadius: 14,
-    paddingVertical: 8,
+    borderRadius: BORDER_RADIUS.button,
+    // Equal left/right inset: text starts at 12, X ends at 12 (icon-sized control).
     paddingHorizontal: 12,
-    minHeight: 40,
-    justifyContent: 'center',
+    height: 44,
+    justifyContent: 'flex-start',
     alignItems: 'center',
     flexDirection: 'row',
     gap: 6,
     minWidth: 0,
     flexShrink: 0,
+    overflow: 'hidden',
+  },
+  selectedTopicPillCompact: {
+    height: 36,
+    paddingHorizontal: 10,
   },
   selectedPillVeryDense: {
     paddingHorizontal: 8,
@@ -1065,29 +1088,32 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.uiBold,
     fontSize: 12,
     letterSpacing: 0.3,
+    textAlign: 'left',
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
+    // Android: avoid extra font padding that unbalances row centering.
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   selectedPillTextDense: {
     fontSize: 11,
   },
+  // Icon-sized (not 24px circle) so right edge inset matches left text inset.
   selectedPillClose: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
+    width: 16,
+    height: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(51,51,51,0.08)',
+    alignSelf: 'center',
     flexShrink: 0,
   },
   selectedPillCloseDense: {
-    width: 20,
-    height: 20,
-    borderRadius: 7,
+    width: 14,
+    height: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(51,51,51,0.08)',
+    alignSelf: 'center',
     flexShrink: 0,
   },
   // ── Content root ─────────────────────────────────────────────────────
@@ -1141,7 +1167,6 @@ const styles = StyleSheet.create({
   },
   topicCardSelected: {
     borderWidth: 1.5,
-    borderColor: 'rgba(51, 51, 51, 0.2)',
   },
   cardImageArea: {
     width: '100%',
@@ -1167,13 +1192,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(51, 51, 51, 0.08)',
   },
   cardTitle: {
+    alignSelf: 'center',
     fontFamily: FONTS.uiBold,
     fontSize: 10,
     lineHeight: 13,
     textAlign: 'center',
+    textAlignVertical: 'center',
     letterSpacing: 0.3,
     width: '100%',
   },

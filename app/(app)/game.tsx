@@ -13,6 +13,7 @@ import { HOME_SOFT_UI } from '@/themes';
 import { useLocaleStore } from '@/store/locale';
 import { Ionicons } from '@expo/vector-icons';
 import { useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 const T = HOME_SOFT_UI;
 
@@ -61,6 +62,7 @@ function neumorphicLift3D(tier: 'pill' | 'card' | 'panel'): any {
 export default function GameScreen() {
   const router = useRouter();
   const fontSizes = useResponsivePlayFontSizes();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const params = useLocalSearchParams<{ mode?: string }>();
   
   const contentLocaleChain = getResolvedContentLocaleChain(
@@ -110,7 +112,7 @@ export default function GameScreen() {
   if (!session) {
     return (
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
-        <View style={[styles.header, styles.plasticFace, { backgroundColor: surface }]}>
+        <View style={[styles.header, styles.plasticFace, darkModeFlatTop, { backgroundColor: surface }]}>
           <Pressable onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={textPrimary} />
           </Pressable>
@@ -137,7 +139,7 @@ export default function GameScreen() {
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
-      <View style={[styles.header, styles.plasticFace, { backgroundColor: surface }]}>
+      <View style={[styles.header, styles.plasticFace, darkModeFlatTop, { backgroundColor: surface }]}>
         <Pressable onPress={handleBack} style={styles.backButton}>
           <Ionicons name="close" size={24} color={textPrimary} />
         </Pressable>
@@ -182,6 +184,7 @@ export default function GameScreen() {
               style={[
                 styles.questionPanel,
                 styles.plasticFace,
+                darkModeFlatTop,
                 { backgroundColor: surface },
                 neumorphicLift3D('panel'),
               ]}
@@ -210,6 +213,7 @@ export default function GameScreen() {
                       style={({ pressed }) => [
                         styles.actionBtn,
                         styles.plasticFace,
+                        darkModeFlatTop,
                         { 
                           backgroundColor: surface,
                           opacity: pressed ? 0.94 : 1,
@@ -231,6 +235,7 @@ export default function GameScreen() {
                       style={({ pressed }) => [
                         styles.actionBtn,
                         styles.plasticFace,
+                        darkModeFlatTop,
                         { 
                           backgroundColor: surface,
                           opacity: pressed ? 0.94 : 1,
@@ -262,6 +267,7 @@ export default function GameScreen() {
                       style={({ pressed }) => [
                         styles.actionBtn,
                         styles.plasticFace,
+                        darkModeFlatTop,
                         { backgroundColor: surface, opacity: pressed ? 0.94 : 1 },
                         neumorphicLift3D('pill'),
                       ]}
@@ -276,6 +282,7 @@ export default function GameScreen() {
                       style={({ pressed }) => [
                         styles.actionBtn,
                         styles.plasticFace,
+                        darkModeFlatTop,
                         { backgroundColor: surface, opacity: pressed ? 0.94 : 1 },
                         neumorphicLift3D('pill'),
                       ]}
@@ -290,6 +297,7 @@ export default function GameScreen() {
                       style={({ pressed }) => [
                         styles.actionBtn,
                         styles.plasticFace,
+                        darkModeFlatTop,
                         { backgroundColor: surface, opacity: pressed ? 0.94 : 1 },
                         neumorphicLift3D('pill'),
                       ]}
@@ -309,6 +317,7 @@ export default function GameScreen() {
                   style={({ pressed }) => [
                     styles.primaryBtn,
                     styles.plasticFace,
+                    darkModeFlatTop,
                     { 
                       backgroundColor: surface,
                       opacity: pressed ? 0.94 : 1,

@@ -34,7 +34,7 @@ import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI.colors;
 
-/** Deeper drop shadow — reads as a raised plastic tile (tier scales with control size). */
+/** Deeper drop shadow - reads as a raised plastic tile (tier scales with control size). */
 function neumorphicLift(
   shadowColor: string,
   tier: 'hero' | 'header' | 'pill' | 'card'
@@ -54,7 +54,7 @@ const AMBER_GLOW: ViewStyle = {
   elevation: 12,
 };
 
-/** Light top lip + soft bottom edge — reads extruded on white squircles. */
+/** Light top lip + soft bottom edge - reads extruded on white squircles. */
 const PLASTIC_FACE: ViewStyle = {
   ...SOFT_SURFACE_FACE,
 };
@@ -108,7 +108,7 @@ export default function TeamSetupScreen() {
   const shortScreen = !viewport.isTall;
   const landscape = windowWidth > windowHeight;
   const shortSide = viewport.shortSide;
-  /** Phones / mobile web narrow view — denser Continue strip (still keeps bottom inset). */
+  /** Phones / mobile web narrow view - denser Continue strip (still keeps bottom inset). */
   const tightContinueStrip =
     Platform.OS === 'ios' || Platform.OS === 'android' || shortSide < 560;
   /** Desktop web: three-column balanced layout with constrained panel widths. */
@@ -131,7 +131,7 @@ export default function TeamSetupScreen() {
   );
   const { getTextStyle, t } = useI18n();
   const paletteId = useThemeStore((state) => state.paletteId);
-  const themedStyles = useMemo(() => makeThemedStyles(), [paletteId]);
+  const themedStyles = useMemo(() => makeThemedStyles(paletteId), [paletteId]);
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
   const [hotSeatInfoOpen, setHotSeatInfoOpen] = useState(false);
 
@@ -145,7 +145,7 @@ export default function TeamSetupScreen() {
   const setWagersPerTeam = usePlayStore((state) => state.setWagersPerTeam);
   const setHotSeatRounds = usePlayStore((state) => state.setHotSeatRounds);
 
-  // Browser/history back can reopen setup while a match is live — return to the leave-capable match UI.
+  // Browser/history back can reopen setup while a match is live - return to the leave-capable match UI.
   useEffect(() => {
     const step = session?.step;
     if (!isActiveMatchStep(step) || !step) return;
@@ -256,7 +256,9 @@ export default function TeamSetupScreen() {
             style={[
               styles.teamTitleInput,
               themedStyles.teamTitleInput,
+              // Symmetric pad so centered title lines up with Add Player (not left-shifted by icon pad).
               styles.inputWithEditIcon,
+              styles.teamTitleInputIconPad,
               { fontSize: shortScreen ? 18 : compact ? 20 : 22 },
               shortScreen && styles.teamTitleInputTight,
               getTextStyle(undefined, 'display', 'center'),
@@ -665,7 +667,7 @@ export default function TeamSetupScreen() {
   );
 
   // Classic wide-web embeds Continue in the center column. Rumble (and non-web)
-  // use the floating strip — without this, rumble on desktop web has no CTA.
+  // use the floating strip - without this, rumble on desktop web has no CTA.
   const showFloatingContinue = !isWebLayout || rumbleMode;
 
   const mainContent = (
@@ -746,10 +748,14 @@ export default function TeamSetupScreen() {
   );
 }
 
-function makeThemedStyles() {
+function makeThemedStyles(paletteId: string) {
+  const flatTop = paletteId === 'dark'
+    ? { borderTopWidth: 0, borderTopColor: 'transparent' as const }
+    : undefined;
   return StyleSheet.create({
     rumblePanel: {
       backgroundColor: T.surface,
+      ...flatTop,
       ...neumorphicLift(T.shadowStrong, 'card'),
     },
     rumbleCardHeading: { color: T.textPrimary },
@@ -769,6 +775,7 @@ function makeThemedStyles() {
     rumbleCountTextSelected: { color: T.surface },
     teamCard: {
       backgroundColor: T.surface,
+      ...flatTop,
       ...neumorphicLift(T.shadowStrong, 'card'),
     },
     teamTitleInput: { color: T.textPrimary },
@@ -776,35 +783,40 @@ function makeThemedStyles() {
       backgroundColor: 'rgba(0,0,0,0.03)',
       color: T.textPrimary,
     },
+    // Navy fill + white label (stable across themes — do not invert with textPrimary).
     addPlayerAction: {
-      backgroundColor: T.textPrimary,
-      borderColor: T.textPrimary,
+      backgroundColor: COLORS.text,
+      borderColor: COLORS.text,
     },
     removePlayerAction: {
       backgroundColor: 'rgba(0,0,0,0.03)',
       borderColor: 'rgba(51,51,51,0.14)',
     },
-    addPlayerActionText: { color: T.canvas },
+    addPlayerActionText: { color: '#FFFFFF' },
     removePlayerActionText: { color: T.textMuted },
     linkText: { color: T.textPrimary },
     centerCard: {
       backgroundColor: T.surface,
+      ...flatTop,
       ...neumorphicLift(T.shadowStrong, 'card'),
     },
     centerCardTitle: { color: T.textPrimary },
     stepperButton: {
       backgroundColor: T.surface,
+      ...flatTop,
       ...neumorphicLift(T.shadowStrong, 'header'),
     },
     stepperGlyph: { color: T.textPrimary },
     stepperValue: { color: T.textPrimary },
     continueBtn: {
       backgroundColor: T.surface,
+      ...flatTop,
       ...neumorphicLift(T.shadowStrong, 'pill'),
     },
     continueBtnText: { color: T.textPrimary },
     modalCard: {
       backgroundColor: T.surface,
+      ...flatTop,
       ...neumorphicLift(T.shadowStrong, 'hero'),
     },
   });
@@ -912,7 +924,7 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     paddingVertical: SPACING.xs,
   },
-  /** Phone / narrow: no vertical inset or flex stretch — panel height follows content. */
+  /** Phone / narrow: no vertical inset or flex stretch - panel height follows content. */
   rumbleScrollContentContainerTight: {
     flexGrow: 0,
     justifyContent: 'flex-start',
@@ -1028,6 +1040,10 @@ const styles = StyleSheet.create({
   inputWithEditIcon: {
     paddingRight: SPACING.xl + SPACING.sm,
   },
+  /** Match right icon pad on the left so textAlign center stays true. */
+  teamTitleInputIconPad: {
+    paddingLeft: SPACING.xl + SPACING.sm,
+  },
   editIconWrap: {
     position: 'absolute',
     right: SPACING.md,
@@ -1085,9 +1101,10 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   addPlayerAction: {
-    backgroundColor: T.textPrimary,
+    // Navy slate (#0F172A) — same fill in light and dark so dark mode is never white-on-dark-text.
+    backgroundColor: COLORS.text,
     borderWidth: 1,
-    borderColor: T.textPrimary,
+    borderColor: COLORS.text,
   },
   removePlayerAction: {
     backgroundColor: 'rgba(0,0,0,0.03)',
@@ -1097,7 +1114,7 @@ const styles = StyleSheet.create({
   addPlayerActionText: {
     fontSize: FONT_SIZES.xs,
     fontFamily: FONTS.uiSemibold,
-    color: T.canvas,
+    color: '#FFFFFF',
   },
   removePlayerActionText: {
     fontSize: FONT_SIZES.xs,
@@ -1191,7 +1208,7 @@ const styles = StyleSheet.create({
   },
   floatingButtonWrapTight: {
     paddingTop: SPACING.xs,
-    /** Phone / narrow — keep CTA off the bottom edge and home indicator. */
+    /** Phone / narrow - keep CTA off the bottom edge and home indicator. */
     paddingBottom: SPACING.md,
   },
   footerInner: {

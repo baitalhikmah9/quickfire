@@ -138,12 +138,6 @@
     "enabled": true
   },
   {
-    "slug": "famous-quotes",
-    "title": "Famous Quotes",
-    "themeGroup": "gen8",
-    "enabled": true
-  },
-  {
     "slug": "fast-and-furious",
     "title": "Fast and Furious",
     "themeGroup": "pc26",
@@ -195,7 +189,7 @@
     "slug": "guess-the-flag",
     "title": "Guess the Flag",
     "themeGroup": "gen11",
-    "enabled": true
+    "enabled": false
   },
   {
     "slug": "guess-the-year",
@@ -247,7 +241,7 @@
   },
   {
     "slug": "kurulu-osman",
-    "title": "Kuruluş: Osman",
+    "title": "Kurulu\u015f: Osman",
     "themeGroup": "h18",
     "enabled": true
   },
@@ -481,7 +475,7 @@
   },
   {
     "slug": "who-said-this-quote",
-    "title": "Who Said This Quote?",
+    "title": "Famous Quotes",
     "themeGroup": "gen24",
     "enabled": true
   },
@@ -489,7 +483,7 @@
     "slug": "world-laws",
     "title": "World Laws",
     "themeGroup": "gen25",
-    "enabled": true
+    "enabled": false
   },
   {
     "slug": "ww1",
@@ -502,5 +496,11 @@
     "title": "WW2",
     "themeGroup": "h15",
     "enabled": true
+  },
+  {
+    "slug": "famous-quotes",
+    "title": "Famous Quotes (retired finish-the-blank)",
+    "themeGroup": "",
+    "enabled": false
   }
 ]

@@ -40,7 +40,7 @@ export default function PromoModeDropdown({ value, options, onValueChange }: Pro
           sideOffset={8}
           align="start"
           collisionPadding={12}
-          /* Radix renders a DOM node — must be a plain style object, not an RN style array. */
+          /* Radix renders a DOM node - must be a plain style object, not an RN style array. */
           style={StyleSheet.flatten(styles.content)}
         >
           {options.map((opt) => (

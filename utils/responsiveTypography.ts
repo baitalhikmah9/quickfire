@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
+import { usePlayTextScale } from '@/store/display';
 
 const BASE_SHORT_SIDE = 390;
 
@@ -19,21 +20,26 @@ export function scaleFont(
   return Math.round(clampFontSize(baseSize * scale, minSize, maxSize));
 }
 
-export function getResponsivePlayFontSizes(width: number, height: number) {
+export function getResponsivePlayFontSizes(width: number, height: number, textScale = 1) {
+  const scaled = (size: number) => Math.max(9, Math.round(size * textScale));
   return {
-    pageTitle: scaleFont(24, 20, 32, width, height),
-    subtitle: scaleFont(15, 14, 20, width, height),
-    topicTitle: scaleFont(14, 12, 18, width, height),
-    headerButton: scaleFont(14, 13, 18, width, height),
-    teamName: scaleFont(18, 16, 24, width, height),
-    scoreValue: scaleFont(20, 18, 28, width, height),
-    categoryTitle: scaleFont(15, 14, 22, width, height),
-    pointValue: scaleFont(16, 14, 22, width, height),
+    pageTitle: scaled(scaleFont(24, 20, 32, width, height)),
+    subtitle: scaled(scaleFont(15, 14, 20, width, height)),
+    topicTitle: scaled(scaleFont(14, 12, 18, width, height)),
+    headerButton: scaled(scaleFont(14, 13, 18, width, height)),
+    teamName: scaled(scaleFont(18, 16, 24, width, height)),
+    scoreValue: scaled(scaleFont(20, 18, 28, width, height)),
+    categoryTitle: scaled(scaleFont(15, 14, 22, width, height)),
+    pointValue: scaled(scaleFont(16, 14, 22, width, height)),
   };
 }
 
 export function useResponsivePlayFontSizes() {
   const { width, height } = useWindowDimensions();
+  const textScale = usePlayTextScale();
 
-  return useMemo(() => getResponsivePlayFontSizes(width, height), [height, width]);
+  return useMemo(
+    () => getResponsivePlayFontSizes(width, height, textScale),
+    [height, textScale, width]
+  );
 }

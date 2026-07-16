@@ -10,7 +10,7 @@ export function mark(name: string) {
   console.log(`[startup] +${Date.now() - t0}ms ${name}`);
 }
 
-/** Marks only the first occurrence — safe to call from render. */
+/** Marks only the first occurrence - safe to call from render. */
 export function markOnce(name: string) {
   if (seen.has(name)) return;
   seen.add(name);

@@ -10,7 +10,7 @@ import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
 import { usePlayStore } from '@/store/play';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { useThemeStore } from '@/store/theme';
-import { HOME_SOFT_UI } from '@/themes';
+import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import type { TranslationKey } from '@/lib/i18n/messages/en';
 
 type ModeDef = {
@@ -24,6 +24,7 @@ export default function PlayModeScreen() {
   const { width, height } = viewport;
   const { t, direction } = useI18n();
   useThemeStore((state) => state.paletteId);
+  const surfaceColors = getPlaySurfaceColors();
   const setMode = usePlayStore((state) => state.setMode);
   const storedMode = usePlayStore((state) => state.session?.mode);
 
@@ -129,14 +130,15 @@ export default function PlayModeScreen() {
                     {
                       width: tileSide,
                       height: tileSide,
-                      backgroundColor: HOME_SOFT_UI.colors.surface,
+                      backgroundColor: surfaceColors.controlBackground,
+                      shadowOpacity: surfaceColors.isDark ? 0.35 : 0.08,
                       opacity: pressed ? 0.94 : 1,
                     },
                   ]}
                 >
                   <View style={styles.tileInner} pointerEvents="none">
                     <Text
-                      style={[styles.tileLabel, { color: HOME_SOFT_UI.colors.textPrimary }]}
+                      style={[styles.tileLabel, { color: surfaceColors.textPrimary }]}
                       numberOfLines={2}
                       adjustsFontSizeToFit
                       minimumFontScale={0.72}

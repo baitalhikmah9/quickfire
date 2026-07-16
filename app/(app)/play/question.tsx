@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Platform,
   View,
   Text,
@@ -9,6 +8,7 @@ import {
   useWindowDimensions,
   type ViewStyle,
 } from 'react-native';
+import { showThemedAlert } from '@/store/themedAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -26,8 +26,9 @@ import { PlayAnswerPanel } from '@/features/play/components/PlayAnswerPanel';
 import { WagerInfoModal } from '@/features/play/components/WagerInfoModal';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop, useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
-import { useThemeStore } from '@/store/theme';
+import { usePlayTextScale } from '@/store/display';
 import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { HOME_SOFT_UI } from '@/themes';
 
@@ -43,6 +44,17 @@ function neumorphicLift3D(tier: 'hero' | 'pill'): ViewStyle {
  * `minimumFontScale` so the full prompt stays on one line without clipping.
  * Narrow viewports get a higher floor and scale so body-size prompts are easier to read.
  */
+export function getQuestionTextSafeWidth(
+  windowWidth: number,
+  insetLeft: number,
+  insetRight: number,
+  baseGutter: number
+): number {
+  const left = Math.max(baseGutter, insetLeft + SPACING.sm);
+  const right = Math.max(baseGutter, insetRight + SPACING.sm);
+  return Math.max(1, windowWidth - left - right);
+}
+
 function getQuestionPromptSizing(contentWidthPx: number): { maxFont: number; lineHeight: number } {
   const w = Math.max(200, Math.floor(contentWidthPx));
   const scale = w < 480 ? 0.056 : 0.048;
@@ -141,10 +153,13 @@ function RumblePartyChip({
   compact: boolean;
   t: RumbleChipTranslate;
 }) {
+  const darkModeFlatTop = useDarkModeFlatTop();
+  const theme = useTheme();
+
   const displayName = locked
     ? t('play.rumbleChipHiddenName')
     : teamName?.trim() || t('play.rumbleChipHiddenName');
-  // Both party slots answer in turn — never label the second team as a "steal".
+  // Both party slots answer in turn - never label the second team as a "steal".
   const subLabel = locked ? t('play.rumbleChipLocked') : t('play.rumbleChipAnswering');
 
   const roleNoun = role === 'first' ? 'First team' : 'Second team';
@@ -162,15 +177,21 @@ function RumblePartyChip({
         styles.rumblePartyChip,
         compact && styles.rumblePartyChipCompact,
         SOFT_SURFACE_STYLES.face,
+        darkModeFlatTop,
         SOFT_SURFACE_STYLES.raised,
+        { backgroundColor: theme.cardBackground, borderColor: theme.border },
         locked && styles.rumblePartyChipLocked,
-        active && styles.rumblePartyChipActive,
+        active && [
+          styles.rumblePartyChipActive,
+          { backgroundColor: theme.cardBackground, borderColor: theme.primary },
+        ],
       ]}
     >
       <Text
         style={[
           styles.rumblePartyChipName,
           compact && styles.rumblePartyChipNameCompact,
+          { color: theme.textOnBackground },
           locked && styles.rumblePartyChipNameLocked,
         ]}
         numberOfLines={1}
@@ -183,7 +204,8 @@ function RumblePartyChip({
         style={[
           styles.rumblePartyChipRole,
           compact && styles.rumblePartyChipRoleCompact,
-          active && styles.rumblePartyChipRoleActive,
+          { color: theme.textSecondaryOnBackground },
+          active && [styles.rumblePartyChipRoleActive, { color: theme.primary }],
         ]}
         numberOfLines={1}
       >
@@ -199,7 +221,9 @@ export default function PlayQuestionScreen() {
   const insets = useSafeAreaInsets();
   const { direction, getTextStyle, t } = useI18n();
   const rowDirection = getRowDirection(direction);
-  useThemeStore((state) => state.paletteId);
+  const darkModeFlatTop = useDarkModeFlatTop();
+  const theme = useTheme();
+  const playTextScale = usePlayTextScale();
   const surfaceColors = getPlaySurfaceColors();
   const BRAND = {
     canvas: surfaceColors.canvas,
@@ -218,7 +242,9 @@ export default function PlayQuestionScreen() {
   const [wagerInfoOpen, setWagerInfoOpen] = useState(false);
 
   const openHotSeatInfo = useCallback(() => {
-    Alert.alert(t('play.hotSeatInfoTitle'), t('play.hotSeatInfoBody'), [{ text: t('common.close') }]);
+    showThemedAlert(t('play.hotSeatInfoTitle'), t('play.hotSeatInfoBody'), [
+      { text: t('common.close') },
+    ]);
   }, [t]);
 
   const currentTeam = useMemo(() => {
@@ -265,7 +291,7 @@ export default function PlayQuestionScreen() {
     }
   }, [router, session?.currentQuestion]);
 
-  /** Center weighted responsive layout — must run before any early return (Rules of Hooks). */
+  /** Center weighted responsive layout - must run before any early return (Rules of Hooks). */
   const viewportShortSide = Math.min(windowWidth, windowHeight);
   const isCompactHeader = windowWidth < 760 || viewportShortSide < 430;
   const isVeryCompactHeader = viewportShortSide < 390;
@@ -276,7 +302,7 @@ export default function PlayQuestionScreen() {
     Math.min(SPACING.xl, Math.round(windowWidth * 0.025))
   );
   const chromeSideWidth = isVeryCompactHeader ? 70 : isCompactHeader ? 78 : 112;
-  /** Matches shared non-home chrome (manual inset — no SafeAreaView top edge). */
+  /** Matches shared non-home chrome (manual inset - no SafeAreaView top edge). */
   const questionChromePaddingTop = getChromeTopPaddingWithInsets(
     insets.top,
     Platform.OS === 'web'
@@ -285,18 +311,24 @@ export default function PlayQuestionScreen() {
     windowWidth - headerHorizontalPadding * 2,
     Platform.OS === 'web' ? LAYOUT.playMaxWidth : Math.min(LAYOUT.playMaxWidth, 980)
   );
-  /** Pixel width for prompt text — bounds `adjustsFontSizeToFit` (especially on web). */
-  const promptLayoutWidth = Math.max(
-    260,
-    Math.min(
-      questionContentWidth,
-      Platform.OS === 'web' ? LAYOUT.playMaxWidth - 80 : Math.min(LAYOUT.playMaxWidth, 920)
-    )
+  /** Keep prompt text clear of landscape camera cutouts and Android navigation bars. */
+  const promptLayoutWidth = Math.min(
+    questionContentWidth,
+    getQuestionTextSafeWidth(
+      windowWidth,
+      insets.left,
+      insets.right,
+      headerHorizontalPadding
+    ),
+    Platform.OS === 'web' ? LAYOUT.playMaxWidth - 80 : Math.min(LAYOUT.playMaxWidth, 920)
   );
-  const questionPromptSizing = useMemo(
-    () => getQuestionPromptSizing(promptLayoutWidth),
-    [promptLayoutWidth]
-  );
+  const questionPromptSizing = useMemo(() => {
+    const sizing = getQuestionPromptSizing(promptLayoutWidth);
+    return {
+      maxFont: Math.max(11, Math.round(sizing.maxFont * playTextScale)),
+      lineHeight: Math.max(14, Math.round(sizing.lineHeight * playTextScale)),
+    };
+  }, [playTextScale, promptLayoutWidth]);
 
   /** Tighter horizontal padding on small viewports; scales with short side on answer phase scroll. */
   const answerPhaseScrollPaddingH = useMemo(() => {
@@ -329,7 +361,7 @@ export default function PlayQuestionScreen() {
 
   const isAnswerPhase = session?.step === 'answer';
 
-  /** Same rules as `PlayAnswerPanel` canWager — after points are awarded, offer wager for the next team. */
+  /** Same rules as `PlayAnswerPanel` canWager - after points are awarded, offer wager for the next team. */
   const answerPhaseCanWager = useMemo(() => {
     if (!session) return false;
     if (!session.config.wagerEnabled) return false;
@@ -348,14 +380,15 @@ export default function PlayQuestionScreen() {
       Platform.OS === 'web' ? 38 : 34,
       Math.max(18, Math.round(promptLayoutWidth * (isCompactHeader ? 0.04 : 0.034)))
     );
+    const scaledBase = base * playTextScale;
     if (session?.phase === 'scoring' || session?.phase === 'answerLock') {
-      return Math.max(14, Math.round(base * 0.68));
+      return Math.max(12, Math.round(scaledBase * 0.68));
     }
     if (isAnswerPhase) {
-      return Math.max(16, Math.round(base * 0.82));
+      return Math.max(13, Math.round(scaledBase * 0.82));
     }
-    return base;
-  }, [isAnswerPhase, isCompactHeader, promptLayoutWidth, session?.phase]);
+    return Math.max(12, Math.round(scaledBase));
+  }, [isAnswerPhase, isCompactHeader, playTextScale, promptLayoutWidth, session?.phase]);
 
   if (!session?.currentQuestion) {
     return (
@@ -413,7 +446,17 @@ export default function PlayQuestionScreen() {
   };
 
   const timerNode = (
-    <View style={usePillHeader ? styles.timerRingPill : styles.timerRing}>
+    <View
+      style={
+        usePillHeader
+          ? [
+              styles.timerRingPill,
+              darkModeFlatTop,
+              { backgroundColor: theme.cardBackground, borderColor: theme.border },
+            ]
+          : styles.timerRing
+      }
+    >
       <Text
         style={[usePillHeader ? styles.timerValuePill : styles.timerValue, { color: BRAND.charcoal }]}
         numberOfLines={1}
@@ -424,7 +467,7 @@ export default function PlayQuestionScreen() {
     </View>
   );
 
-  /** Rumble keeps topic/points only — party chips show who is answering. */
+  /** Rumble keeps topic/points only - party chips show who is answering. */
   const metaPillLabel = isRumbleQuestion
     ? isVeryCompactHeader
       ? `${q.categoryName} | ${q.pointValue} PTS`
@@ -435,11 +478,21 @@ export default function PlayQuestionScreen() {
 
   const metaPill = (
     <View
-      style={[styles.metaPill, SOFT_SURFACE_STYLES.face, SOFT_SURFACE_STYLES.raised]}
+      style={[
+        styles.metaPill,
+        SOFT_SURFACE_STYLES.face,
+        darkModeFlatTop,
+        SOFT_SURFACE_STYLES.raised,
+        { backgroundColor: theme.cardBackground },
+      ]}
       accessibilityRole="summary"
     >
       <Text
-        style={[styles.metaPillText, isCompactHeader && styles.metaPillTextCompact]}
+        style={[
+          styles.metaPillText,
+          isCompactHeader && styles.metaPillTextCompact,
+          { color: theme.textOnBackground },
+        ]}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.72}
@@ -451,8 +504,14 @@ export default function PlayQuestionScreen() {
 
   // Keep the active wager visible through the answer reveal, which is embedded in this route.
   const wagerMultiplier = session.wager ? (
-    <Text style={[styles.wagerMultiplierText, { color: BRAND.amber }]}>
-      Wager x{session.wager.multiplier}
+    <Text
+      style={[styles.wagerMultiplierText, { color: BRAND.amber }]}
+      numberOfLines={2}
+      adjustsFontSizeToFit
+      minimumFontScale={0.8}
+    >
+      Wager x{session.wager.multiplier} (Correct: {session.wager.multiplier}x gain, incorrect:{' '}
+      {Math.max(0.5, session.wager.multiplier - 0.5)}x loss)
     </Text>
   ) : null;
 
@@ -600,9 +659,19 @@ export default function PlayQuestionScreen() {
               {`[${currentTeam?.name || 'TEAM'}]`.toUpperCase()}
             </Text>
             {hotSeatNames ? (
-              <View style={[styles.hotSeatBanner, { backgroundColor: BRAND.surface }]}>
-                <Text style={styles.hotSeatTitle}>{t('play.hotSeatActiveTitle').toUpperCase()}</Text>
-                <Text style={styles.hotSeatNames}>{hotSeatNames}</Text>
+              <View
+                style={[
+                  styles.hotSeatBanner,
+                  darkModeFlatTop,
+                  { backgroundColor: theme.cardBackground, borderColor: theme.border },
+                ]}
+              >
+                <Text style={[styles.hotSeatTitle, { color: theme.textSecondaryOnBackground }]}>
+                  {t('play.hotSeatActiveTitle').toUpperCase()}
+                </Text>
+                <Text style={[styles.hotSeatNames, { color: theme.textOnBackground }]}>
+                  {hotSeatNames}
+                </Text>
               </View>
             ) : null}
             <Text
@@ -659,12 +728,6 @@ export default function PlayQuestionScreen() {
               ]}
             >
               {promptBlock}
-              {hasTimedOut ? (
-                <View style={[styles.timeoutBanner, SOFT_SURFACE_STYLES.face, SOFT_SURFACE_STYLES.raised]}>
-                  <Text style={styles.timeoutTitle}>{t('play.timeUpTitle').toUpperCase()}</Text>
-                  <Text style={styles.timeoutBody}>{t('play.timeUpBody')}</Text>
-                </View>
-              ) : null}
               <PlayAnswerPanel
                 embedded
                 scrollEmbedded
@@ -700,6 +763,7 @@ export default function PlayQuestionScreen() {
                   style={({ pressed }) => [
                     styles.answerNextTurnButton,
                     SOFT_SURFACE_STYLES.face,
+                    darkModeFlatTop,
                     {
                       opacity: pressed ? 0.94 : 1,
                       transform: [{ scale: pressed ? 0.98 : 1 }],
@@ -725,6 +789,7 @@ export default function PlayQuestionScreen() {
                     style={({ pressed }) => [
                       styles.answerDockWagerButton,
                       SOFT_SURFACE_STYLES.face,
+                      darkModeFlatTop,
                       {
                         opacity: pressed ? 0.92 : 1,
                         transform: [{ scale: pressed ? 0.98 : 1 }],
@@ -818,8 +883,9 @@ export default function PlayQuestionScreen() {
                   style={({ pressed }) => [
                     styles.answerButton,
                     SOFT_SURFACE_STYLES.face,
+                    darkModeFlatTop,
                     {
-                      backgroundColor: T.surface,
+                      backgroundColor: theme.cardBackground,
                       transform: [{ scale: pressed ? 0.98 : 1 }],
                       opacity: !canShowAnswer ? 0.45 : pressed ? 0.95 : 1,
                     },
@@ -979,9 +1045,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.55,
   },
   wagerMultiplierText: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 11,
-    lineHeight: 14,
+    fontFamily: FONTS.displayBold,
+    fontSize: 15,
+    lineHeight: 19,
     letterSpacing: 0.4,
     textAlign: 'center',
   },
@@ -1107,28 +1173,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     gap: SPACING.md,
     marginBottom: SPACING.lg,
-  },
-  timeoutBanner: {
-    alignSelf: 'center',
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: BORDER_RADIUS.lg,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
-    maxWidth: 560,
-    width: '100%',
-  },
-  timeoutTitle: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 14,
-    color: '#DC2626',
-    letterSpacing: 0.6,
-  },
-  timeoutBody: {
-    fontFamily: FONTS.ui,
-    fontSize: 13,
-    color: T.textPrimary,
-    textAlign: 'center',
   },
   promptImageReveal: {
     width: '100%',

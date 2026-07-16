@@ -1,4 +1,8 @@
-export { SHOW_HOT_SEAT_UI } from './featureFlags';
+export {
+  SHOW_HOT_SEAT_UI,
+  SHOW_HOME_MODE_INFO_UI,
+  SHOW_LANGUAGE_SETTINGS_UI,
+} from './featureFlags';
 export { API_ENDPOINTS } from './legacy';
 export {
   COLORS,

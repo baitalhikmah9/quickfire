@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable, useWindowDimensions } from 'react-native';
 import { BackfireTitleLogo } from '@/components/BackfireTitleLogo';
 import { HEADER, SPACING, FONTS, FONT_SIZES, getStandardChromeTopPadding } from '@/constants';
 import { getGameHeaderLogoDisplayWidth } from '@/lib/layout/backfireTitleLogoWidth';
@@ -11,21 +11,21 @@ export type GameHeaderVariant = 'logoOnly' | 'logoTitle' | 'title';
 
 /**
  * Top pad density under the safe area:
- * - `home` — base HEADER.topPadding only (home hub keeps its own frame pad)
- * - `standard` — question-screen match (HEADER.topPadding + HEADER.topExtra)
- * - `none` — parent already applied chrome top pad (e.g. PlayScaffold edge chrome)
+ * - `home` - base HEADER.topPadding only (home hub keeps its own frame pad)
+ * - `standard` - question-screen match (HEADER.topPadding + HEADER.topExtra)
+ * - `none` - parent already applied chrome top pad (e.g. PlayScaffold edge chrome)
  */
 export type GameHeaderTopPad = 'home' | 'standard' | 'none';
 
 export type GameHeaderProps = {
   /**
    * Determines the header content:
-   * - `'logoOnly'` — centered Backfire logo, no title (home hub)
-   * - `'logoTitle'` — centered Backfire logo + title below (team setup)
-   * - `'title'` — centered heading text, no logo (mode selection, play stack)
+   * - `'logoOnly'` - centered Backfire logo, no title (home hub)
+   * - `'logoTitle'` - centered Backfire logo + title below (team setup)
+   * - `'title'` - centered heading text, no logo (mode selection, play stack)
    */
   variant: GameHeaderVariant;
-  /** Heading text — used as subtitle below logo for `logoTitle`, or centered title for `title`. */
+  /** Heading text - used as subtitle below logo for `logoTitle`, or centered title for `title`. */
   title?: string;
   /** Slot on the left side of the header (back button, token chip, etc.). */
   leftSlot?: ReactNode;
@@ -49,6 +49,8 @@ export type GameHeaderProps = {
    * Pass `home` only on the home hub so its larger frame pad is preserved.
    */
   topPad?: GameHeaderTopPad;
+  /** Optional long-press on the centered logo (e.g. __DEV__ debug shortcuts). */
+  onLogoLongPress?: () => void;
   /** Style override for the outer container. */
   style?: StyleProp<ViewStyle>;
 };
@@ -57,7 +59,7 @@ export type GameHeaderProps = {
  * Shared header for Backfire screens.
  *
  * The header always sits at the top of its container with a compact height.
- * It does **not** add outer horizontal inset or bottom margin/padding — screens
+ * It does **not** add outer horizontal inset or bottom margin/padding - screens
  * own `LAYOUT.screenGutter` and spacing between the header and main content.
  *
  * The center (logo or title) is absolutely positioned so it stays perfectly
@@ -78,6 +80,7 @@ export function GameHeader({
   variant,
   title,
   leftSlot,
+  onLogoLongPress,
   rightSlot,
   logoWidth,
   barMaxWidthOverride,
@@ -106,7 +109,7 @@ export function GameHeader({
 
   return (
     <View style={style}>
-      {/* Header bar — compact, sits at top of its container */}
+      {/* Header bar - compact, sits at top of its container */}
       <View
         style={[
           styles.bar,
@@ -127,14 +130,28 @@ export function GameHeader({
         {/* Left slot */}
         <View style={[styles.side, styles.sideLeft]}>{leftSlot}</View>
 
-        {/* Center content — absolutely positioned */}
+        {/* Center content - absolutely positioned */}
         {hasLogo || showCenterTitle ? (
-          <View style={styles.center} pointerEvents="none">
+          <View style={styles.center} pointerEvents={onLogoLongPress ? 'box-none' : 'none'}>
             {hasLogo ? (
-              <BackfireTitleLogo
-                width={getGameHeaderLogoDisplayWidth(windowWidth, windowHeight, logoWidth)}
-                containerStyle={styles.logoWrap}
-              />
+              onLogoLongPress ? (
+                <Pressable
+                  onLongPress={onLogoLongPress}
+                  accessibilityRole="button"
+                  accessibilityLabel="BackFire logo"
+                  delayLongPress={450}
+                  style={styles.logoWrap}
+                >
+                  <BackfireTitleLogo
+                    width={getGameHeaderLogoDisplayWidth(windowWidth, windowHeight, logoWidth)}
+                  />
+                </Pressable>
+              ) : (
+                <BackfireTitleLogo
+                  width={getGameHeaderLogoDisplayWidth(windowWidth, windowHeight, logoWidth)}
+                  containerStyle={styles.logoWrap}
+                />
+              )
             ) : null}
             {showCenterTitle ? (
               <Text

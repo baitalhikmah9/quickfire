@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AccessibilityInfo, Alert, View, Text, StyleSheet, useWindowDimensions, Platform, type LayoutChangeEvent } from 'react-native';
+import { AccessibilityInfo, View, Text, StyleSheet, useWindowDimensions, Platform, type LayoutChangeEvent } from 'react-native';
+import { showThemedAlert } from '@/store/themedAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable } from '@/components/ui/Pressable';
@@ -41,17 +42,17 @@ import { SOFT_SURFACE_FACE, softSurfaceLift } from '@/features/play/styles/softS
 import { hapticSuccess, hapticTick } from '@/lib/haptics';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { useDarkModeFlatTop, useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
-import { useThemeStore } from '@/store/theme';
 import { abandonGameEntry } from '@/lib/wallet/gameEntry';
 import { HOME_SOFT_UI } from '@/themes';
-import { getResponsivePlayFontSizes, scaleFont } from '@/utils/responsiveTypography';
+import { scaleFont, useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
+import { usePlayTextScale } from '@/store/display';
 
 const T = HOME_SOFT_UI;
 
 /** Topic art is a portrait tile: same width as the layout cap, extra height for the illustration.
- * Dynamic ratio — tighter on small screens to prevent clipping in native landscape. */
+ * Dynamic ratio - tighter on small screens to prevent clipping in native landscape. */
 function getTopicArtHeightRatio(screenHeight: number): number {
   if (screenHeight < 420) return 0.98;
   if (screenHeight < 560) return 1.06;
@@ -125,7 +126,7 @@ function getGridColumnCount(mode: string, categoryCount: number): number {
   return 3;
 }
 
-/** Keeps each topic column wide enough for rails + art + gaps — drops from 3→2→1 cols on narrow widths. */
+/** Keeps each topic column wide enough for rails + art + gaps - drops from 3→2→1 cols on narrow widths. */
 function clampGridColumns(
   preferredCols: number,
   innerWidth: number,
@@ -134,7 +135,7 @@ function clampGridColumns(
 ): number {
   if (categoryCount <= 0) return 1;
   const usableRow = Math.max(0, innerWidth);
-  /** Minimum space per topic cell before we reduce column count — must fit long category titles without abandoning the intended 3x2 board too early. */
+  /** Minimum space per topic cell before we reduce column count - must fit long category titles without abandoning the intended 3x2 board too early. */
   const MIN_CELL = 176;
   let cols = Math.min(preferredCols, categoryCount);
   while (cols > 1) {
@@ -180,7 +181,7 @@ function computeTopicFit(
   // Title tracks art width so long names wrap like phone (not a wider orphan band).
   const titleWidth = Math.min(Math.max(centerWidth, web ? centerWidth : 160), cellWidth);
   const lineHeight = Math.round(m.topicTitleFont * 1.12);
-  // Two-line budget — phone-like density; avoids a tall empty title slab under art.
+  // Two-line budget - phone-like density; avoids a tall empty title slab under art.
   const titleHeight = Math.max(Math.round(lineHeight * 2.15), Math.round(m.topicTitleFont * 2.2));
   return { cellWidth, groupWidth, topicImageSize, centerWidth, titleWidth, titleHeight, railWidth, artGap };
 }
@@ -224,7 +225,7 @@ function lifelineSlotsForTeam(teamId: string, config: GameConfig): LifelineId[] 
   return out.slice(0, 3);
 }
 
-/** Blocky plastic shadow tier — solid charcoal-tinted depth. */
+/** Blocky plastic shadow tier - solid charcoal-tinted depth. */
 function neumorphicLift3D(
   tier: 'card' | 'pill' | 'tile' | 'header' | 'score'
 ): any {
@@ -246,7 +247,7 @@ type BoardMetrics = {
   scoreFont: number;
   lifelineIcon: number;
   lifelineIconBox: number;
-  /** Square topic illustration — rails align to this height cluster (title sits below). */
+  /** Square topic illustration - rails align to this height cluster (title sits below). */
   topicImageSize: number;
   /** Horizontal gap between point rail and central image. */
   topicArtGap: number;
@@ -292,8 +293,8 @@ export default function PlayBoardScreen() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const colors = useTheme();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const { direction, getTextStyle, t, uiLocale } = useI18n();
-  useThemeStore((state) => state.paletteId);
   const session = usePlayStore((state) => state.session);
   const tokens = usePlayStore((state) => state.tokens);
   const selectQuestion = usePlayStore((state) => state.selectQuestion);
@@ -441,7 +442,8 @@ export default function PlayBoardScreen() {
   ]);
 
   const grouped = useMemo(() => (session ? groupBoardTrivia(session) : []), [session]);
-  const responsiveFontSizes = useMemo(() => getResponsivePlayFontSizes(width, height), [height, width]);
+  const responsiveFontSizes = useResponsivePlayFontSizes();
+  const playTextScale = usePlayTextScale();
   const metrics = useMemo(() => {
     const baseMetrics = getBoardMetrics(height, width);
     const isWebBoard = Platform.OS === 'web' && width >= BREAKPOINTS.wide;
@@ -458,19 +460,19 @@ export default function PlayBoardScreen() {
           topicTitleFont: Math.min(baseMetrics.topicTitleFont, 15),
         }
       : null;
-    const topicTitleFont = isWebBoard
+    const topicTitleFont = Math.round((isWebBoard
       ? scaleFont(18, 15, 22, width, height)
-      : scaleFont(20, 18, 26, width, height);
+      : scaleFont(20, 18, 26, width, height)) * playTextScale);
     return {
       ...baseMetrics,
       ...webDense,
       tileFont: isWebBoard
-        ? scaleFont(15, 13, 17, width, height)
+        ? Math.round(scaleFont(15, 13, 17, width, height) * playTextScale)
         : responsiveFontSizes.pointValue,
       topicTitleFont,
       scoreFont: responsiveFontSizes.scoreValue,
     };
-  }, [height, responsiveFontSizes, width]);
+  }, [height, playTextScale, responsiveFontSizes, width]);
   const topicArtHeightRatio = useMemo(() => getTopicArtHeightRatio(height), [height]);
   const bodyPadLeft = Math.max(insets.left, LAYOUT.screenGutter);
   const bodyPadRight = Math.max(insets.right, LAYOUT.screenGutter);
@@ -565,14 +567,14 @@ export default function PlayBoardScreen() {
     ]
   );
   const fittedBoardRowHeight = verticalLayout.boardRowHeight;
-  /** Side length of each 100/200/300 control — rounded square, not a capsule. */
+  /** Side length of each 100/200/300 control - rounded square, not a capsule. */
   const pointTileSize = verticalLayout.pointPillHeight;
   const topicRowGap = verticalLayout.topicRowGap;
   const topicGridAlignment = getBoardTopicGridAlignment();
   const topicCellBox = getBoardTopicCellBox(topicFit.cellWidth, fittedBoardRowHeight);
   /** Rails must be at least as wide as the square tiles. */
   const pointRailWidth = Math.max(topicFit.railWidth, Math.ceil(pointTileSize));
-  /** Actual rendered art width — group and title track it so rails hug the art like phone. */
+  /** Actual rendered art width - group and title track it so rails hug the art like phone. */
   const topicArtWidth = Math.max(
     48,
     Math.min(topicFit.centerWidth, Math.floor(verticalLayout.topicImageHeight / topicArtHeightRatio))
@@ -630,22 +632,14 @@ export default function PlayBoardScreen() {
       router.replace('/(app)/');
     };
 
-    if (Platform.OS === 'web' && typeof globalThis.confirm === 'function') {
-      const confirmed = globalThis.confirm(
-        `${t('play.leaveMatchTitle')}\n\n${t('play.leaveMatchBody')}`
-      );
-      if (confirmed) {
-        performLeave();
-      }
-      return;
-    }
-
-    Alert.alert(t('play.leaveMatchTitle'), t('play.leaveMatchBody'), [
+    showThemedAlert(t('play.leaveMatchTitle'), t('play.leaveMatchBody'), [
       { text: t('common.stay'), style: 'cancel' },
       {
         text: t('common.leave'),
         style: 'destructive',
-        onPress: performLeave,
+        onPress: () => {
+          void performLeave();
+        },
       },
     ]);
   };
@@ -685,6 +679,7 @@ export default function PlayBoardScreen() {
         style={({ pressed }) => [
           styles.topicPointTile,
           SOFT_SURFACE_FACE,
+          darkModeFlatTop,
           softSurfaceLift(),
           {
             backgroundColor: isGreenHighlight ? RANDOM_FLASH_GREEN : surfaceColors.tileBackground,
@@ -800,6 +795,7 @@ export default function PlayBoardScreen() {
                   transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
                 },
                 PLASTIC_FACE,
+                darkModeFlatTop,
                 neumorphicLift3D('card'),
               ]}
               onPress={() => {
@@ -1033,18 +1029,39 @@ export default function PlayBoardScreen() {
       />
 
       {activeTeam ? (
-        <View style={styles.teamModalRoot} accessibilityViewIsModal>
+        <View
+          style={[
+            styles.teamModalRoot,
+            {
+              backgroundColor: surfaceColors.isDark
+                ? 'rgba(7, 17, 31, 0.55)'
+                : 'rgba(250, 249, 246, 0.45)',
+            },
+          ]}
+          accessibilityViewIsModal
+        >
           <Pressable
             style={styles.teamModalBackdrop}
             accessibilityRole="button"
             accessibilityLabel={t('common.close')}
             onPress={() => setActiveTeamId(null)}
           />
-          <View style={[styles.teamModalCard, PLASTIC_FACE, neumorphicLift3D('tile')]}>
-            <Text style={styles.teamModalTitle} numberOfLines={1}>
+          <View
+            style={[
+              styles.teamModalCard,
+              PLASTIC_FACE,
+              darkModeFlatTop,
+              neumorphicLift3D('tile'),
+              { backgroundColor: surfaceColors.controlBackground },
+            ]}
+          >
+            <Text
+              style={[styles.teamModalTitle, { color: surfaceColors.textPrimary }]}
+              numberOfLines={1}
+            >
               {activeTeam.name.toUpperCase()}
             </Text>
-            <Text style={styles.teamModalScore}>
+            <Text style={[styles.teamModalScore, { color: surfaceColors.textPrimary }]}>
               {t('common.points', { count: activeTeam.score })}
             </Text>
             <View style={styles.teamModalButtonsRow}>
@@ -1056,12 +1073,14 @@ export default function PlayBoardScreen() {
                   style={({ pressed }) => [
                     styles.teamModalLifelineButton,
                     {
+                      backgroundColor: surfaceColors.subtleFill,
+                      borderColor: surfaceColors.hairlineBorder,
                       opacity: pressed ? 0.82 : 1,
                       transform: pressed ? [{ scale: 0.96 }] : [{ scale: 1 }],
                     },
                   ]}
                 >
-                  <Ionicons name={lifelineGlyph(id)} size={22} color={T.colors.textPrimary} />
+                  <Ionicons name={lifelineGlyph(id)} size={22} color={surfaceColors.textPrimary} />
                 </Pressable>
               ))}
             </View>
@@ -1071,10 +1090,15 @@ export default function PlayBoardScreen() {
               onPress={() => setActiveTeamId(null)}
               style={({ pressed }) => [
                 styles.teamModalCloseBtn,
-                { opacity: pressed ? 0.82 : 1 },
+                {
+                  backgroundColor: surfaceColors.subtleFillStrong,
+                  opacity: pressed ? 0.82 : 1,
+                },
               ]}
             >
-              <Text style={styles.teamModalCloseText}>{t('common.close')}</Text>
+              <Text style={[styles.teamModalCloseText, { color: surfaceColors.textPrimary }]}>
+                {t('common.close')}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -1090,7 +1114,7 @@ export default function PlayBoardScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('common.close')}
           />
-          <View style={[styles.hotSeatInfoCard, PLASTIC_FACE, neumorphicLift3D('card')]}>
+          <View style={[styles.hotSeatInfoCard, PLASTIC_FACE, darkModeFlatTop, neumorphicLift3D('card')]}>
             <Text
               style={[styles.modalTitle, { color: T.colors.textPrimary }, getTextStyle(undefined, 'display', 'center')]}
             >
@@ -1246,7 +1270,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: SPACING.lg,
-    backgroundColor: 'rgba(250, 249, 246, 0.45)',
   },
   teamModalBackdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -1255,7 +1278,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     borderRadius: BORDER_RADIUS.xl,
-    backgroundColor: T.colors.surface,
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.lg,
@@ -1264,13 +1286,11 @@ const styles = StyleSheet.create({
   teamModalTitle: {
     fontFamily: FONTS.displayBold,
     fontSize: FONT_SIZES.lg,
-    color: T.colors.textPrimary,
     letterSpacing: 0.8,
   },
   teamModalScore: {
     fontFamily: FONTS.uiSemibold,
     fontSize: FONT_SIZES.md,
-    color: T.colors.textPrimary,
   },
   teamModalButtonsRow: {
     width: '100%',
@@ -1286,21 +1306,17 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(51, 51, 51, 0.06)',
     borderWidth: StyleSheet.hairlineWidth * 2,
-    borderColor: 'rgba(51, 51, 51, 0.12)',
   },
   teamModalCloseBtn: {
     marginTop: SPACING.sm,
     borderRadius: BORDER_RADIUS.lg,
-    backgroundColor: 'rgba(0,0,0,0.05)',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
   },
   teamModalCloseText: {
     fontFamily: FONTS.uiBold,
     fontSize: FONT_SIZES.sm,
-    color: T.colors.textPrimary,
     letterSpacing: 0.6,
   },
   gridScroll: {
@@ -1318,7 +1334,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   categoryGridCell: {
-    /** Width/height from getBoardTopicCellBox — fixed so incomplete rows center mid-row. */
+    /** Width/height from getBoardTopicCellBox - fixed so incomplete rows center mid-row. */
     minWidth: 0,
     alignItems: 'center',
     /** Center art+rails inside the fixed row box. */
@@ -1343,7 +1359,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     maxWidth: '100%',
   },
-  /** Illustration + category title — stacked between side rails. */
+  /** Illustration + category title - stacked between side rails. */
   topicCenterBlock: {
     flex: 1,
     flexDirection: 'column',
@@ -1353,7 +1369,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 0,
   },
-  /** Rails + illustration — side rails fixed width; center flexes horizontally. */
+  /** Rails + illustration - side rails fixed width; center flexes horizontally. */
   topicArtRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1369,7 +1385,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 1,
   },
-  /** Point value control — rounded square (squircle corners), not a capsule pill. */
+  /** Point value control - rounded square (squircle corners), not a capsule pill. */
   topicPointTile: {
     alignSelf: 'center',
     alignItems: 'center',
@@ -1413,7 +1429,7 @@ const styles = StyleSheet.create({
   topicImageFill: {
     width: '100%',
     height: '100%',
-    // Mild zoom only — heavy scale crops portraits (e.g. Harry Potter) mid-torso.
+    // Mild zoom only - heavy scale crops portraits (e.g. Harry Potter) mid-torso.
     transform: [{ scale: 1.04 }],
   },
   pictureFallbackFill: {

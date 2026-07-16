@@ -17,7 +17,7 @@ const NARROW_SCORE_BREAKPOINT = 560;
 interface ScoreHudProps {
   session: GameSessionState;
   compact?: boolean;
-  /** Tighter chrome for board / landscape — stacks under compact. */
+  /** Tighter chrome for board / landscape - stacks under compact. */
   dense?: boolean;
 }
 

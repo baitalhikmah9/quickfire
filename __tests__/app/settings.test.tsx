@@ -4,7 +4,8 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Platform, StyleSheet } from 'react-native';
 
 import SettingsScreen from '@/app/(app)/settings';
-import { COLORS } from '@/constants';
+import { useThemeStore } from '@/store/theme';
+import { useDisplayStore } from '@/store/display';
 
 const mockBack = jest.fn();
 const mockPush = jest.fn();
@@ -46,6 +47,12 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
     setItem: jest.fn(async () => {}),
     removeItem: jest.fn(async () => {}),
   },
+}));
+
+// Keep language-settings UI tests covering the retained implementation while product flag is off.
+jest.mock('@/constants/featureFlags', () => ({
+  SHOW_HOT_SEAT_UI: false,
+  SHOW_LANGUAGE_SETTINGS_UI: true,
 }));
 
 jest.mock('@/lib/authMode', () => ({
@@ -100,7 +107,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'profile.rankBadgeRival': 'Rival',
         'profile.viewAnalytics': 'View Detailed Analytics',
         'profile.winRate': 'Win Rate',
-        'settings.accountAuthTitle': 'Account & auth',
+        'settings.accountAuthTitle': 'Account',
         'settings.appLanguageTitle': 'App Language',
         'settings.languagesUpToThreeTitle': 'Languages (up to 3)',
         'settings.legalHeading': 'Legal',
@@ -113,6 +120,9 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'common.theme': 'Theme',
         'settings.noTriviaLanguagesSelected': 'No trivia languages selected',
         'settings.themeSelectionTitle': 'Theme selection',
+        'settings.displayModeTitle': 'Game text size',
+        'settings.displayMode.tv': 'TV mode (smaller)',
+        'settings.displayMode.mobile': 'Mobile mode (larger)',
         'settings.themePickerDescription': 'Choose a color palette',
         'settings.appLanguagePickerDescription': 'Choose the app interface language',
         'settings.triviaLanguagesDescription': 'Pick up to 3 preferred trivia languages. English is always the fallback.',
@@ -122,7 +132,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'settings.activePalette': 'Active palette',
         'settings.tapToApply': 'Tap to apply',
         'settings.englishFallback': 'English fallback',
-        'settings.palette.default': 'Default',
+        'settings.palette.default': 'Light',
         'settings.palette.warm': 'Warm',
         'settings.palette.cool': 'Cool',
         'settings.palette.green': 'Green',
@@ -145,6 +155,8 @@ describe('SettingsScreen', () => {
     mockIsAuthDisabled.mockReturnValue(false);
     mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: true });
     mockUseClerk.mockReturnValue({ signOut: mockSignOut });
+    useThemeStore.setState({ paletteId: 'default' });
+    useDisplayStore.setState({ playDisplayMode: 'tv' });
     mockUseUser.mockReturnValue({
       user: {
         createdAt: new Date('2026-01-15T00:00:00.000Z'),
@@ -186,23 +198,34 @@ describe('SettingsScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/privacy');
   });
 
-  it('opens theme choices inline as a modal instead of navigating away', () => {
+  it('toggles directly between light and dark without opening a modal', () => {
     render(<SettingsScreen />);
 
-    fireEvent.press(screen.getByText('Theme selection'));
+    const toggle = screen.getByTestId('settings-theme-toggle');
+    expect(screen.getByText('Light')).toBeTruthy();
 
-    expect(mockPush).not.toHaveBeenCalled();
-    expect(screen.getByText('Choose a color palette')).toBeTruthy();
-    expect(screen.getByText('Warm')).toBeTruthy();
+    fireEvent.press(toggle);
+    expect(useThemeStore.getState().paletteId).toBe('dark');
+    expect(screen.getByText('Dark')).toBeTruthy();
+    expect(screen.queryByText('Choose a color palette')).toBeNull();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('settings-user-profile-card').props.style)
+    ).toMatchObject({ borderTopWidth: 0, borderTopColor: 'transparent' });
 
-    // Backdrop is the full-screen dim control; close icon reuses the same a11y label.
-    const backdrop = screen.getAllByLabelText('Close theme picker')[0];
-    const backdropStyle = StyleSheet.flatten(backdrop.props.style);
-    expect(backdropStyle.top).toBe(0);
-    expect(backdropStyle.right).toBe(0);
-    expect(backdropStyle.bottom).toBe(0);
-    expect(backdropStyle.left).toBe(0);
-    expect(backdropStyle.backgroundColor).toBe(COLORS.overlay);
+    fireEvent.press(toggle);
+    expect(useThemeStore.getState().paletteId).toBe('default');
+
+    useThemeStore.getState().setPalette('warm');
+    expect(useThemeStore.getState().paletteId).toBe('default');
+  });
+
+  it('defaults game text to TV size and toggles to mobile size', () => {
+    render(<SettingsScreen />);
+
+    expect(screen.getByText('TV mode (smaller)')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('settings-display-mode-toggle'));
+    expect(useDisplayStore.getState().playDisplayMode).toBe('mobile');
+    expect(screen.getByText('Mobile mode (larger)')).toBeTruthy();
   });
 
   it('opens app language choices inline as a modal instead of navigating away', () => {

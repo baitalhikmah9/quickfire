@@ -4,6 +4,18 @@ import { PALETTES, type ThemePaletteId } from '@/constants/theme';
 
 export type ThemePalette = (typeof PALETTES)[ThemePaletteId];
 
+const DARK_MODE_FLAT_TOP = {
+  borderTopWidth: 0,
+  borderTopColor: 'transparent',
+} as const;
+
+/** Removes light raised-surface highlights while preserving light-mode styling. */
+export function useDarkModeFlatTop() {
+  return useThemeStore((state) => state.paletteId === 'dark')
+    ? DARK_MODE_FLAT_TOP
+    : undefined;
+}
+
 /**
  * Returns the current theme palette. Call hydrate() once at app root (e.g. in _layout) before first render.
  */

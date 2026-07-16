@@ -13,6 +13,7 @@ import {
   getStandardChromeTopPadding,
 } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
 
@@ -21,6 +22,7 @@ const T = HOME_SOFT_UI;
 export default function LobbySettingsModal() {
   const router = useRouter();
   const { t } = useI18n();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const handleClose = () => goBackOrReplace(router, '/(app)/');
 
   const canvas = T.colors.canvas;
@@ -34,6 +36,7 @@ export default function LobbySettingsModal() {
         style={[
           styles.header,
           SOFT_SURFACE_FACE,
+          darkModeFlatTop,
           softSurfaceLift(),
           {
             backgroundColor: surface,
@@ -63,6 +66,7 @@ export default function LobbySettingsModal() {
           style={({ pressed }) => [
             styles.placeholderButton,
             SOFT_SURFACE_FACE,
+            darkModeFlatTop,
             softSurfaceLift(),
             { backgroundColor: surface },
             pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },

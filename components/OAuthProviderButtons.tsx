@@ -3,13 +3,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 /** Official multicolor Google "G" from Google Identity branding assets. */
 const GOOGLE_G_LOGO = require('@/assets/brand/google-g.png');
 
 const T = HOME_SOFT_UI;
 
-/** Raised plastic tile shadow — compact control (matches header squircle depth). */
+/** Raised plastic tile shadow - compact control (matches header squircle depth). */
 function neumorphicLift3D(shadowColor: string): {
   shadowColor: string;
   shadowOffset: { width: number; height: number };
@@ -26,7 +27,7 @@ function neumorphicLift3D(shadowColor: string): {
   };
 }
 
-/** Official multicolor Google "G" — SVG data URI for crisp scaling on web. */
+/** Official multicolor Google "G" - SVG data URI for crisp scaling on web. */
 const GOOGLE_LOGO_URI =
   'data:image/svg+xml,' +
   encodeURIComponent(
@@ -48,7 +49,7 @@ function accessibilityHint(primary?: string, secondary?: string): string {
   return parts.join('. ');
 }
 
-/** RN `Image` does not render SVG `data:` URIs on iOS/Android — use bundled official PNG there. */
+/** RN `Image` does not render SVG `data:` URIs on iOS/Android - use bundled official PNG there. */
 function GoogleBrandMark() {
   if (Platform.OS === 'web') {
     return (
@@ -107,6 +108,7 @@ export function OAuthProviderButtons({
 }: OAuthProviderButtonsProps) {
   const surface = T.colors.surface;
   const shadowHex = T.colors.shadowStrong;
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   return (
     <View style={styles.row} accessibilityRole="toolbar">
@@ -114,6 +116,7 @@ export function OAuthProviderButtons({
         style={({ pressed }) => [
           styles.iconButton,
           styles.plasticFace,
+          darkModeFlatTop,
           {
             backgroundColor: surface,
             opacity: pressed ? 0.92 : 1,
@@ -132,6 +135,7 @@ export function OAuthProviderButtons({
         style={({ pressed }) => [
           styles.iconButton,
           styles.plasticFace,
+          darkModeFlatTop,
           {
             backgroundColor: surface,
             opacity: pressed ? 0.92 : 1,

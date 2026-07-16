@@ -9,7 +9,7 @@ import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
-/** Email + password fields (no outer card — parent composes `AuthCard`). */
+/** Email + password fields (no outer card - parent composes `AuthCard`). */
 export function AuthEmailSignInForm() {
   const { t } = useI18n();
   const { signIn, setActive, isLoaded } = useSignIn();

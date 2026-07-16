@@ -18,6 +18,7 @@ import { AuthOrDivider } from '@/components/auth/AuthCard';
 import { AuthEmailSignUpForm } from '@/components/auth/AuthEmailSignUpForm';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useClerkOAuthFlow } from '@/lib/hooks/useClerkOAuthFlow';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
 
@@ -39,6 +40,7 @@ export default function SignUpScreen() {
   const router = useRouter();
   const { direction, t } = useI18n();
   const { busy, signInWithOAuthStrategy } = useClerkOAuthFlow();
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   const canvas = T.colors.canvas;
   const surface = T.colors.surface;
@@ -59,6 +61,7 @@ export default function SignUpScreen() {
           style={({ pressed }) => [
             styles.headerSquircleInner,
             SOFT_SURFACE_FACE,
+            darkModeFlatTop,
             softSurfaceLift(),
             {
               backgroundColor: surface,

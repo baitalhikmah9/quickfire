@@ -1,5 +1,5 @@
 /**
- * RevenueCat identifiers — keep in sync with the RevenueCat dashboard.
+ * RevenueCat identifiers - keep in sync with the RevenueCat dashboard.
  *
  * Products: App Store Connect / Play Console product IDs attached to offerings.
  */

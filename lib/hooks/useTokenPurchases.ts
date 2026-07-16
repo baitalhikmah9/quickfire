@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
 import {
   getStoreProducts,
   isPurchaseCancelledError,
@@ -33,7 +31,6 @@ interface UseTokenPurchasesOptions {
  * RevenueCat is configured and identified globally via `useRevenueCatSync`.
  */
 export function useTokenPurchases({ catalog, enabled }: UseTokenPurchasesOptions) {
-  const syncConsumablePurchase = useMutation(api.payments.syncConsumablePurchase);
   const [session, setSession] = useState<RevenueCatSessionState>({
     appUserId: null,
     ready: false,
@@ -116,19 +113,7 @@ export function useTokenPurchases({ catalog, enabled }: UseTokenPurchasesOptions
       setIsPurchasing(true);
       setError(null);
       try {
-        const result = await purchaseStoreProduct(product);
-        if (!result.transactionId) {
-          throw new Error('Purchase completed without a transaction id.');
-        }
-
-        await syncConsumablePurchase({
-          purchaserAccountId: session.appUserId,
-          productId: result.productIdentifier,
-          transactionId: result.transactionId,
-          store: result.store,
-        });
-
-        return result;
+        return await purchaseStoreProduct(product);
       } catch (cause: unknown) {
         if (isPurchaseCancelledError(cause)) {
           throw new Error('Purchase cancelled.');
@@ -138,7 +123,7 @@ export function useTokenPurchases({ catalog, enabled }: UseTokenPurchasesOptions
         setIsPurchasing(false);
       }
     },
-    [enabled, products, session.appUserId, session.ready, syncConsumablePurchase]
+    [enabled, products, session.appUserId, session.ready]
   );
 
   const combinedError = error ?? session.error;

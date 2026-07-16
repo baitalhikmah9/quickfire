@@ -3,6 +3,7 @@ import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, FONTS } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
 import { Ionicons } from '@expo/vector-icons';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 const T = HOME_SOFT_UI;
 
@@ -50,6 +51,7 @@ export function StepSplitTeams({
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
   const shadowHex = T.colors.shadowStrong;
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   const valid = totalPlayers >= 2 && team1Count + team2Count === totalPlayers && team1Count >= 1 && team2Count >= 1;
 
@@ -69,7 +71,7 @@ export function StepSplitTeams({
   const stepper = (label: string, value: string | number, onDec: () => void, onInc: () => void) => (
     <View style={styles.section}>
       <Text style={[styles.label, { color: textMuted }]}>{label.toUpperCase()}</Text>
-      <View style={[styles.stepperContainer, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'card')]}>
+      <View style={[styles.stepperContainer, styles.plasticFace, darkModeFlatTop, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'card')]}>
         <Pressable
           style={({ pressed }) => [
             styles.stepperBtn,
@@ -109,11 +111,12 @@ export function StepSplitTeams({
         </View>
       </View>
 
-      <View style={[styles.footer, styles.plasticFace, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'pill')]}>
+      <View style={[styles.footer, styles.plasticFace, darkModeFlatTop, { backgroundColor: surface }, neumorphicLift3D(shadowHex, 'pill')]}>
         <Pressable
           style={({ pressed }) => [
             styles.button,
             styles.plasticFace,
+            darkModeFlatTop,
             { backgroundColor: surface, opacity: valid ? (pressed ? 0.94 : 1) : 0.5 },
             neumorphicLift3D(shadowHex, 'pill'),
             valid && { shadowColor: '#FFB347', shadowOpacity: 0.45 },

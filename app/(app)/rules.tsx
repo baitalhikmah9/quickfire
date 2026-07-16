@@ -13,6 +13,7 @@ import {
 } from '@/constants';
 import { SHOW_HOT_SEAT_UI } from '@/constants/featureFlags';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
 
@@ -21,6 +22,7 @@ const T = HOME_SOFT_UI;
 export default function RulesModal() {
   const router = useRouter();
   const { t } = useI18n();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const handleClose = () => goBackOrReplace(router, '/(app)/');
 
   const canvas = T.colors.canvas;
@@ -34,6 +36,7 @@ export default function RulesModal() {
         style={[
           styles.header,
           SOFT_SURFACE_FACE,
+          darkModeFlatTop,
           softSurfaceLift(),
           {
             backgroundColor: surface,

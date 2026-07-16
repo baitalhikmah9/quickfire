@@ -3,7 +3,7 @@
  *
  * Defense-in-depth only: the sign-in form calls these Convex mutations around
  * Clerk's password API. An attacker who talks to Clerk directly bypasses this
- * limiter — real brute-force protection is Clerk's built-in attempt lockout
+ * limiter - real brute-force protection is Clerk's built-in attempt lockout
  * (verify enabled in the Clerk dashboard). Caps below limit unauthenticated
  * lockout/storage DoS against this advisory layer.
  */
@@ -74,15 +74,15 @@ export type AdminSignInIdentityClaims = {
   subject: string;
   email?: string | null;
   preferredUsername?: string | null;
-  /** @deprecated Not used for matching — user-editable display claims must not unlock others. */
+  /** @deprecated Not used for matching - user-editable display claims must not unlock others. */
   nickname?: string | null;
-  /** @deprecated Not used for matching — user-editable display claims must not unlock others. */
+  /** @deprecated Not used for matching - user-editable display claims must not unlock others. */
   name?: string | null;
 };
 
 /**
  * Stable identity keys that may match the sign-in identifier.
- * Only email, preferredUsername, and subject — not editable display name/nickname.
+ * Only email, preferredUsername, and subject - not editable display name/nickname.
  */
 export function identityKeysForAdminSignInClear(
   identity: AdminSignInIdentityClaims

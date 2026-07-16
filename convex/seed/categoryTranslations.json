@@ -115,11 +115,6 @@
     "title": "Famous Firsts"
   },
   {
-    "categorySlug": "famous-quotes",
-    "locale": "en",
-    "title": "Famous Quotes"
-  },
-  {
     "categorySlug": "fast-and-furious",
     "locale": "en",
     "title": "Fast and Furious"
@@ -402,7 +397,7 @@
   {
     "categorySlug": "who-said-this-quote",
     "locale": "en",
-    "title": "Who Said This Quote?"
+    "title": "Famous Quotes"
   },
   {
     "categorySlug": "world-laws",

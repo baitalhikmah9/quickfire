@@ -1,6 +1,6 @@
 import type { CategoryOption } from '@/features/shared';
 
-export type CategorySectionId = 'history' | 'gaming' | 'popCulture' | 'sports' | 'general';
+export type CategorySectionId = 'general' | 'history' | 'popCulture' | 'sports' | 'gaming';
 
 export interface CategorySection {
   id: CategorySectionId;
@@ -8,45 +8,74 @@ export interface CategorySection {
   categories: CategoryOption[];
 }
 
-const SECTION_ORDER: CategorySectionId[] = [
-  'history',
-  'gaming',
-  'popCulture',
-  'sports',
-  'general',
-];
-
-const SECTION_TITLES: Record<CategorySectionId, string> = {
-  history: 'History',
-  gaming: 'Gaming',
-  popCulture: 'Pop Culture',
-  sports: 'Sports',
-  general: 'General Knowledge',
+const TOPICS: Record<CategorySectionId, string[]> = {
+  general: [
+    'Corporations', 'Countries and Capitals', 'Famous Firsts', 'Famous Quotes',
+    'General Knowledge', 'Geography', 'Guess the Decade', 'Initials', 'Invented Where?', 'Match the Nickname', 'National Icons',
+    'Odd One Out', 'Science', 'Trump Quotes', 'UK', 'USA', 'What Happened Next?',
+    'What’s the Connection?', 'Which Country?',
+  ],
+  history: [
+    '19th Century', '19th Century Europe', '20th Century', '21st Century',
+    'Ancient Civilisations', 'Cold War', 'European Christendom', 'European History',
+    'Modern Middle East', 'Talab-ul Ilm', 'UK History', 'US History', 'WW1', 'WW2',
+  ],
+  popCulture: [
+    'Attack on Titan', 'Avatar: The Last Airbender', 'Before They Were Famous',
+    'Breaking Bad', 'DC Extended Universe', 'Dexter', 'Disney', 'Dragon Ball',
+    'Ertugrul', 'Fast and Furious', 'Friends', 'Game of Thrones', 'Halo',
+    'Harry Potter', 'How I Met Your Mother', 'James Bond', 'Kuruluş: Osman',
+    'Marvel', 'Naruto', 'One Piece', 'Peaky Blinders', 'Pirates of the Caribbean',
+    'Pokémon', 'Prison Break', 'SpongeBob SquarePants', 'Star Wars',
+    'Stranger Things', 'Suits', 'The Big Bang Theory', 'The Office US',
+  ],
+  sports: [
+    'Cricket', 'FIFA World Cup', 'Formula 1', 'NBA', 'Premier League', 'UFC',
+    'UEFA Champions League', 'Which Player?',
+  ],
+  gaming: [
+    'ARK: Survival Evolved', 'Dota', 'League of Legends', 'Minecraft', 'Overwatch',
+    'Pokémon', 'Red Dead Redemption', 'Super Mario Bros.', 'The Legend of Zelda',
+  ],
 };
 
+const SECTION_ORDER: CategorySectionId[] = ['general', 'history', 'popCulture', 'sports', 'gaming'];
+const SECTION_TITLES: Record<CategorySectionId, string> = {
+  general: 'General Knowledge',
+  history: 'History',
+  popCulture: 'Pop Culture',
+  sports: 'Sports',
+  gaming: 'Gaming',
+};
+
+function topicKey(title: string): string {
+  return title
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 export function getCategorySectionId(categoryId: string): CategorySectionId {
+  if (categoryId.startsWith('gen')) return 'general';
   if (categoryId.startsWith('h')) return 'history';
-  if (categoryId.startsWith('g')) return 'gaming';
   if (categoryId.startsWith('pc')) return 'popCulture';
   if (categoryId.startsWith('s')) return 'sports';
+  if (/^g\d+$/.test(categoryId)) return 'gaming';
   return 'general';
 }
 
 export function groupCategoriesBySection(categories: CategoryOption[]): CategorySection[] {
-  const buckets = new Map<CategorySectionId, CategoryOption[]>();
-  for (const sectionId of SECTION_ORDER) {
-    buckets.set(sectionId, []);
-  }
-
-  for (const category of categories) {
-    const sectionId = getCategorySectionId(category.id);
-    buckets.get(sectionId)!.push(category);
-  }
+  const byTitle = new Map(categories.map((category) => [topicKey(category.title), category]));
 
   return SECTION_ORDER.map((id) => ({
     id,
     title: SECTION_TITLES[id],
-    categories: buckets.get(id) ?? [],
+    categories: TOPICS[id].flatMap((title) => {
+      const key = topicKey(title);
+      const category = byTitle.get(key) ?? (key === 'modern-middle-east' ? byTitle.get('the-modern-middle-east') : undefined);
+      return category ? [{ ...category, title }] : [];
+    }),
   })).filter((section) => section.categories.length > 0);
 }
 

@@ -3,13 +3,13 @@ import { usePathname } from 'expo-router';
 import Head from 'expo-router/head';
 import { canonicalUrlForPath } from '@/constants/site';
 
-const DEFAULT_TITLE = 'Backfire — competitive trivia';
+const DEFAULT_TITLE = 'Backfire - competitive trivia';
 const DEFAULT_DESCRIPTION =
   'Backfire is a competitive multiplayer trivia game. Play real-time matches and climb the board.';
 
 /**
  * Injects canonical + Open Graph URLs for the static web export (official site: playbackfire.com).
- * No-op on native — web-only technical SEO.
+ * No-op on native - web-only technical SEO.
  */
 export function WebSeoHead() {
   if (Platform.OS !== 'web') return null;

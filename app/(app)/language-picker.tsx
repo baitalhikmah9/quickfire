@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, FONTS, LAYOUT } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { SUPPORTED_LOCALES } from '@/lib/i18n/config';
 import { useLocaleStore } from '@/store/locale';
 import { Screen } from '@/components/ScreenContent';
@@ -34,6 +35,7 @@ function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill' 
 export default function LanguagePickerScreen() {
   const router = useRouter();
   const { direction, getLocaleName, getTextStyle, t } = useI18n();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const uiLocale = useLocaleStore((state) => state.uiLocale);
   const setUiLocale = useLocaleStore((state) => state.setUiLocale);
 
@@ -58,6 +60,7 @@ export default function LanguagePickerScreen() {
           style={({ pressed }) => [
             styles.headerSquircleInner,
             styles.plasticFace,
+            darkModeFlatTop,
             { backgroundColor: surface, opacity: pressed ? 0.94 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
             neumorphicLift3D(shadowHex, 'header'),
           ]}
@@ -97,6 +100,7 @@ export default function LanguagePickerScreen() {
                   style={({ pressed }) => [
                     styles.row,
                     styles.plasticFace,
+                    darkModeFlatTop,
                     {
                       backgroundColor: surface,
                       opacity: pressed ? 0.96 : 1,

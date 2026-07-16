@@ -20,7 +20,7 @@ export type AdminScreenHeaderProps = {
 
 /**
  * Settings-style admin header: flat row on canvas, raised 44×44 squircle back control, centered title, mirrored spacer.
- * @see docs/BRAND_GUIDELINES.md — Header Instructions (Settings Pages)
+ * @see docs/BRAND_GUIDELINES.md - Header Instructions (Settings Pages)
  */
 export function AdminScreenHeader({
   title,

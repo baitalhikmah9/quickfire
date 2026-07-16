@@ -1,5 +1,5 @@
 /**
- * Default Backfire wordmark width — matches `GameHeader` `logoOnly` / `logoTitle`
+ * Default Backfire wordmark width - matches `GameHeader` `logoOnly` / `logoTitle`
  * when `logoWidth` is not overridden.
  */
 export function getBackfireTitleLogoWidth(windowWidth: number, windowHeight: number): number {

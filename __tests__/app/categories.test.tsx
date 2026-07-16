@@ -5,7 +5,9 @@ import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import type { ReactTestInstance } from 'react-test-renderer';
 
 import CategorySelectionScreen from '@/app/(app)/play/categories';
+import { PALETTES } from '@/constants/theme';
 import { usePlayStore } from '@/store/play';
+import { useThemeStore } from '@/store/theme';
 
 const mockBack = jest.fn();
 const mockCanGoBack = jest.fn(() => false);
@@ -113,9 +115,39 @@ describe('CategorySelectionScreen', () => {
     mockCanGoBack.mockReturnValue(false);
     mockPush.mockClear();
     mockReplace.mockClear();
+    useThemeStore.setState({ paletteId: 'default' });
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });
     await usePlayStore.getState().hydrate();
     usePlayStore.getState().ensureDraft();
+  });
+
+  it('uses shared 44×14 raised header controls for back and random topic', async () => {
+    render(<CategorySelectionScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Back to team setup')).toBeTruthy();
+    });
+
+    const back = screen.getByLabelText('Back to team setup');
+    const random = screen.getByLabelText('Choose a random topic');
+
+    const resolve = (node: ReturnType<typeof screen.getByLabelText>) => {
+      const styleProp = node.props.style;
+      return StyleSheet.flatten(
+        typeof styleProp === 'function'
+          ? styleProp({ pressed: false, hovered: false, focused: false })
+          : styleProp
+      );
+    };
+
+    const backStyle = resolve(back);
+    const randomStyle = resolve(random);
+
+    // Match HeaderBackButton icon squircle / app standard raised controls.
+    expect(backStyle).toMatchObject({ width: 44, height: 44, borderRadius: 14 });
+    expect(randomStyle.height).toBe(44);
+    expect(randomStyle.borderRadius).toBe(14);
+    expect(randomStyle.minHeight ?? randomStyle.height).toBe(44);
   });
 
   it('goes back to team setup without stacking another team-setup screen', async () => {
@@ -174,8 +206,8 @@ describe('CategorySelectionScreen', () => {
     expect(hasAbsolutePositionedAncestor(screen.getByText('0/6'))).toBe(false);
   });
 
-  it('lays topics out as fixed-width four-across logo-first cards', () => {
-    render(<CategorySelectionScreen />);
+  it('lays topics out as fixed-width five-across logo-first cards', () => {
+    const { UNSAFE_getAllByType } = render(<CategorySelectionScreen />);
 
     const category = usePlayStore.getState().session?.availableCategories[0];
 
@@ -184,10 +216,45 @@ describe('CategorySelectionScreen', () => {
     const topicCard = screen.getByLabelText(`Select ${category!.title}`);
     const cardStyle = getResolvedStyle(topicCard);
     const titleNode = screen.getByText(category!.title.toUpperCase());
+    const topicGrid = UNSAFE_getAllByType(FlatList).find((node) => node.props.horizontal !== true);
+    const fullRows = topicGrid?.props.data.filter(
+      (item: { kind: string; categories?: unknown[] }) => item.kind === 'row' && item.categories?.length === 5
+    );
 
     expect(typeof cardStyle.width).toBe('number');
     expect(cardStyle.width).toBeGreaterThan(0);
-    expect(titleNode).toBeTruthy();
+    expect(fullRows?.length).toBeGreaterThan(0);
+    const longerTitleNode = screen.getByText('COUNTRIES AND CAPITALS');
+    const titleStyle = StyleSheet.flatten(titleNode.props.style);
+    const longerTitleStyle = StyleSheet.flatten(longerTitleNode.props.style);
+    const labelStyle = StyleSheet.flatten(screen.getByTestId(`topic-label-${category!.slug}`).props.style);
+
+    expect(titleNode.props.numberOfLines).toBe(2);
+    expect(titleNode.props.adjustsFontSizeToFit).toBeUndefined();
+    expect(titleStyle.fontSize).toBe(longerTitleStyle.fontSize);
+    expect(titleStyle).toMatchObject({ alignSelf: 'center', textAlign: 'center', textAlignVertical: 'center' });
+    expect((titleStyle.lineHeight as number) * 2 + 4).toBeLessThanOrEqual(labelStyle.height as number);
+    expect(labelStyle.backgroundColor).toBe('#FFFFFF');
+  });
+
+  it('uses dark-mode topic label bars instead of pure white', async () => {
+    useThemeStore.setState({ paletteId: 'dark' });
+    render(<CategorySelectionScreen />);
+
+    const category = usePlayStore.getState().session?.availableCategories[0];
+    expect(category).toBeDefined();
+
+    const titleNode = screen.getByText(category!.title.toUpperCase());
+    const titleStyle = StyleSheet.flatten(titleNode.props.style);
+    const labelStyle = StyleSheet.flatten(screen.getByTestId(`topic-label-${category!.slug}`).props.style);
+    const topicCard = screen.getByLabelText(`Select ${category!.title}`);
+    const cardStyle = getResolvedStyle(topicCard);
+
+    expect(labelStyle.backgroundColor).toBe(PALETTES.dark.cardBackground);
+    expect(labelStyle.backgroundColor).not.toBe('#FFFFFF');
+    expect(titleStyle.color).toBe(PALETTES.dark.textOnBackground);
+    expect(titleStyle.color).not.toBe('#111111');
+    expect(cardStyle.backgroundColor).toBe(PALETTES.dark.cardBackground);
   });
 
   it('sizes each topic tile artwork from the computed card dimensions', () => {
@@ -259,6 +326,49 @@ describe('CategorySelectionScreen', () => {
     expect(firstPillStyle.width).toBeLessThan(onePillStyle.width as number);
   });
 
+  it('vertically centers selected topic title and remove control inside each pill', () => {
+    render(<CategorySelectionScreen />);
+
+    const category = usePlayStore.getState().session?.availableCategories[0];
+    expect(category).toBeDefined();
+
+    fireEvent.press(screen.getByLabelText(`Select ${category!.title}`));
+
+    const pill = screen.getByLabelText(`Jump to ${category!.title}`);
+    const pillStyle = getResolvedStyle(pill);
+    // Grid card + selected pill both show the title; pick the one inside the jump pill.
+    const pillTitle = screen.getAllByText(category!.title.toUpperCase()).find((node) => {
+      let current: typeof node | null = node;
+      while (current) {
+        if (current.props?.accessibilityLabel === `Jump to ${category!.title}`) {
+          return true;
+        }
+        current = current.parent as typeof node | null;
+      }
+      return false;
+    });
+    expect(pillTitle).toBeTruthy();
+    const titleStyle = StyleSheet.flatten(pillTitle!.props.style);
+    const remove = screen.getByLabelText(`Remove ${category!.title}`);
+    const removeStyle = getResolvedStyle(remove);
+
+    // Left-aligned row; fixed pill height + centered X control (no asymmetric face borders).
+    expect(pillStyle.flexDirection).toBe('row');
+    expect(pillStyle.justifyContent).toBe('flex-start');
+    expect(pillStyle.alignItems).toBe('center');
+    expect(pillStyle.height).toBe(44);
+    expect(pillStyle.borderTopWidth ?? 0).toBe(0);
+    expect(titleStyle.textAlign).toBe('left');
+    expect(titleStyle.flex).toBe(1);
+    // Icon-sized close control so right inset matches left text inset (paddingHorizontal).
+    expect(removeStyle.width).toBe(16);
+    expect(removeStyle.height).toBe(16);
+    expect(removeStyle.alignItems).toBe('center');
+    expect(removeStyle.justifyContent).toBe('center');
+    expect(removeStyle.alignSelf).toBe('center');
+    expect(pillStyle.paddingHorizontal).toBe(12);
+  });
+
   it('keeps the vertical topics list inside shrinkable wrappers so it can scroll', () => {
     const { UNSAFE_getAllByType } = render(<CategorySelectionScreen />);
 
@@ -270,6 +380,20 @@ describe('CategorySelectionScreen', () => {
 
     expect(topicGridScrollable).toBeDefined();
     expect(hasMinHeightZeroInAncestorChain(topicGridScrollable!)).toBe(true);
+  });
+
+  it('keeps cards mounted when a topic is selected then deselected', () => {
+    const { UNSAFE_getAllByType } = render(<CategorySelectionScreen />);
+    const category = usePlayStore.getState().session?.availableCategories[0];
+
+    expect(category).toBeDefined();
+    const card = screen.getByLabelText(`Select ${category!.title}`);
+    fireEvent.press(card);
+    fireEvent.press(card);
+
+    expect(screen.getByText(category!.title.toUpperCase())).toBeTruthy();
+    const topicGrid = UNSAFE_getAllByType(FlatList).find((node) => node.props.horizontal !== true);
+    expect(topicGrid?.props.removeClippedSubviews).toBe(false);
   });
 
   it('returns VirtualizedList getItemLayout frames that include index', () => {
@@ -321,10 +445,10 @@ describe('CategorySelectionScreen', () => {
 
     const data = (topicGrid!.props.data ?? []) as CategoryListRow[];
     const incompleteRow = data.find(
-      (item) => item.kind === 'row' && (item.categories?.length ?? 0) > 0 && (item.categories?.length ?? 0) < 4
+      (item) => item.kind === 'row' && (item.categories?.length ?? 0) > 0 && (item.categories?.length ?? 0) < 5
     );
 
-    // Draft sessions should include at least one section whose count is not a multiple of 4.
+    // Draft sessions should include at least one section whose count is not a multiple of 5.
     expect(incompleteRow).toBeDefined();
 
     const rowViews = UNSAFE_getAllByType(View).filter((node) => {

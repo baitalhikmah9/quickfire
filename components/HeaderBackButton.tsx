@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, BORDER_RADIUS, FONTS, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
 import { HOME_SOFT_UI } from '@/themes';
-import { useThemeStore } from '@/store/theme';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 const T = HOME_SOFT_UI.colors;
 
@@ -16,8 +16,8 @@ export type HeaderBackButtonProps = {
   label: string;
   accessibilityLabel?: string;
   /**
-   * - `labeled` — play-stack control (chevron + "Back" text)
-   * - `icon` — settings/store raised 44×44 squircle (chevron only)
+   * - `labeled` - play-stack control (chevron + "Back" text)
+   * - `icon` - settings/store raised 44×44 squircle (chevron only)
    */
   variant?: HeaderBackButtonVariant;
 };
@@ -44,7 +44,7 @@ export function HeaderBackButton({
   accessibilityLabel,
   variant = 'labeled',
 }: HeaderBackButtonProps) {
-  useThemeStore((state) => state.paletteId);
+  const darkModeFlatTop = useDarkModeFlatTop();
   const backIcon: keyof typeof Ionicons.glyphMap =
     direction === 'rtl' ? 'chevron-forward' : 'chevron-back';
   const a11y = accessibilityLabel ?? label;
@@ -56,6 +56,7 @@ export function HeaderBackButton({
         style={({ pressed }) => [
           styles.backIconSquircle,
           SOFT_SURFACE_FACE,
+          darkModeFlatTop,
           softSurfaceLift(),
           { backgroundColor: T.surface },
           {
@@ -76,6 +77,7 @@ export function HeaderBackButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.backPill,
+        darkModeFlatTop,
         BACK_PILL_SHADOW,
         { backgroundColor: T.surface, flexDirection: rowDirection },
         { opacity: pressed ? 0.92 : 1 },

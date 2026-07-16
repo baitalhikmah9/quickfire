@@ -13,7 +13,7 @@ export type WebAwareModalProps = {
  * instead of `Modal`; on native use `Modal` with hardware back via `onRequestClose`.
  *
  * Always host children in a full-viewport shell so overlay scrims (flex:1 or absoluteFill) cover the
- * entire screen — native `Modal` does not size direct children by default.
+ * entire screen - native `Modal` does not size direct children by default.
  */
 export function WebAwareModal({ visible, onRequestClose, children }: WebAwareModalProps) {
   if (!visible) {

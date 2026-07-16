@@ -5,10 +5,10 @@ import {
   StyleSheet,
   TextInput,
   useWindowDimensions,
-  Alert,
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { showThemedAlert } from '@/store/themedAlert';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@clerk/clerk-expo';
@@ -34,8 +34,10 @@ import {
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { isAuthDisabled } from '@/lib/authMode';
 import { usePlayStore } from '@/store/play';
+import { useThemeStore } from '@/store/theme';
 import { useTokenPurchases } from '@/lib/hooks/useTokenPurchases';
 import { HOME_SOFT_UI } from '@/themes';
 
@@ -86,12 +88,13 @@ function BundleCard({
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
   const accentGlow = T.colors.accentGlow;
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   const buyDisabled = isPurchasing || isPurchaseUnavailable;
   const buyLabel = isPurchasing
     ? '...'
     : isPurchaseUnavailable
-      ? '—'
+      ? '-'
       : 'BUY';
 
   return (
@@ -102,6 +105,7 @@ function BundleCard({
           compact && styles.bundleCardCompact,
           tight && styles.bundleCardTight,
           SOFT_SURFACE_FACE,
+          darkModeFlatTop,
           softSurfaceLift(),
           {
             backgroundColor: surface,
@@ -131,6 +135,7 @@ function BundleCard({
             styles.buyButton,
             compact && styles.buyButtonCompact,
             SOFT_SURFACE_FACE,
+            darkModeFlatTop,
             { backgroundColor: isPurchaseUnavailable ? textMuted : accentGlow },
           ]}
         >
@@ -155,6 +160,8 @@ export default function StoreScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
   const hubMaxWidth = useViewportLayout().contentMaxWidth('hub');
+  const darkModeFlatTop = useDarkModeFlatTop();
+  const isDarkTheme = useThemeStore((s) => s.paletteId) === 'dark';
   const isCompactViewport = height < 740 || width < 390;
   const isTightViewport = height < 660;
 
@@ -225,9 +232,9 @@ export default function StoreScreen() {
     async (bundle: DisplayBundle) => {
       if (!rcSupported || !rcReady || !catalogProducts) {
         if (!rcSupported) {
-          Alert.alert('Unavailable', 'In-app purchases are only available on iOS and Android.');
+          showThemedAlert('Unavailable', 'In-app purchases are only available on iOS and Android.');
         } else if (!rcReady) {
-          Alert.alert('Not Ready', 'The store is still loading. Please try again shortly.');
+          showThemedAlert('Not Ready', 'The store is still loading. Please try again shortly.');
         }
         return;
       }
@@ -236,23 +243,23 @@ export default function StoreScreen() {
         (p) => p.productKey === bundle.productKey
       );
       if (!catalogProduct) {
-        Alert.alert('Error', 'This product is no longer available.');
+        showThemedAlert('Error', 'This product is no longer available.');
         return;
       }
 
       setBuyingKey(bundle.productKey);
       try {
         await purchase(catalogProduct);
-        Alert.alert(
+        showThemedAlert(
           'Purchase Complete',
-          `${formatTokens(bundle.tokensGranted)} tokens have been added to your balance.`
+          `Your ${formatTokens(bundle.tokensGranted)} tokens will appear in your balance shortly.`
         );
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : '';
         if (message.toLowerCase().includes('cancelled')) {
           return; // Silent on user cancellation.
         }
-        Alert.alert('Purchase Failed', message || 'An unexpected error occurred. Please try again.');
+        showThemedAlert('Purchase Failed', message || 'An unexpected error occurred. Please try again.');
       } finally {
         setBuyingKey(null);
       }
@@ -287,7 +294,7 @@ export default function StoreScreen() {
     }
 
     if (!isSignedIn) {
-      Alert.alert(SIGN_IN_TO_REDEEM_MESSAGE);
+      showThemedAlert(SIGN_IN_TO_REDEEM_MESSAGE);
       router.push('/(auth)/sign-in');
       return;
     }
@@ -304,7 +311,7 @@ export default function StoreScreen() {
         return;
       }
 
-      // Do NOT grant tokens locally — the Convex mutation already patched the
+      // Do NOT grant tokens locally - the Convex mutation already patched the
       // wallet balance, and the useQuery subscription will update automatically.
       setVoucherCode('');
 
@@ -357,6 +364,10 @@ export default function StoreScreen() {
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
+  // Field fill: inset glass on dark; solid surface on light cream.
+  const redeemFieldBackground = isDarkTheme ? 'rgba(255, 255, 255, 0.08)' : surface;
+  const redeemFieldBorder = isDarkTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0,0,0,0.08)';
+  const applyButtonBackground = T.colors.accentGlow;
 
   return (
     <SafeAreaView
@@ -377,6 +388,7 @@ export default function StoreScreen() {
               style={({ pressed }) => [
                 styles.backButton,
                 SOFT_SURFACE_FACE,
+                darkModeFlatTop,
                 softSurfaceLift(),
                 { backgroundColor: surface },
                 {
@@ -482,6 +494,7 @@ export default function StoreScreen() {
                 style={[
                   styles.redeemCard,
                   SOFT_SURFACE_FACE,
+                  darkModeFlatTop,
                   { backgroundColor: surface },
                   softSurfaceLift(),
                 ]}
@@ -498,7 +511,8 @@ export default function StoreScreen() {
                     isCompactViewport && styles.redeemInputCompact,
                     {
                       color: textPrimary,
-                      borderColor: promoError ? '#D32F2F' : 'rgba(0,0,0,0.08)',
+                      backgroundColor: redeemFieldBackground,
+                      borderColor: promoError ? '#D32F2F' : redeemFieldBorder,
                       borderWidth: promoError ? 1.5 : 1,
                     },
                   ]}
@@ -510,9 +524,10 @@ export default function StoreScreen() {
                     styles.applyButton,
                     isCompactViewport && styles.applyButtonCompact,
                     SOFT_SURFACE_FACE,
+                    darkModeFlatTop,
                     softSurfaceLift(),
                     {
-                      backgroundColor: '#6D8EB1',
+                      backgroundColor: applyButtonBackground,
                       opacity: isRedeeming ? 0.65 : pressed ? 0.92 : 1,
                       transform: pressed && !isRedeeming ? [{ scale: 0.98 }] : [{ scale: 1 }],
                     },
@@ -547,7 +562,7 @@ const styles = StyleSheet.create({
   viewport: {
     flex: 1,
   },
-  /** Shared outer gutter + max width — header controls and store cards share the same edges as home. */
+  /** Shared outer gutter + max width - header controls and store cards share the same edges as home. */
   contentFrame: {
     flex: 1,
     width: '100%',
@@ -618,9 +633,9 @@ const styles = StyleSheet.create({
   tokenBalanceHint: {
     width: '100%',
     paddingHorizontal: SPACING.xs,
-    fontFamily: FONTS.ui,
-    fontSize: 11,
-    lineHeight: 15,
+    fontFamily: FONTS.uiSemibold,
+    fontSize: 15,
+    lineHeight: 21,
     textAlign: 'center',
   },
 
@@ -772,7 +787,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     fontFamily: FONTS.ui,
     fontSize: 14,
-    backgroundColor: '#FFFFFF',
   },
   redeemInputCompact: {
     height: 44,

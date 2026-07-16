@@ -75,7 +75,7 @@ function isOAuthCallbackPath(path: string): boolean {
 
 /** Rewrite third-party OAuth callback URLs to the Expo Router screen. */
 export function rewriteNativeOAuthCallbackPath(path: string, initial: boolean): string {
-  // OAuth returns while Chrome is foregrounded use `initial: false` — still rewrite.
+  // OAuth returns while Chrome is foregrounded use `initial: false` - still rewrite.
   if (isOAuthCallbackPath(path)) {
     return `/${CLERK_SSO_CALLBACK_PATH}`;
   }

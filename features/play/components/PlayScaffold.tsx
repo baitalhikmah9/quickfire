@@ -44,10 +44,10 @@ interface PlayScaffoldProps {
   scoreHudDense?: boolean;
   session?: GameSessionState | null;
   footer?: ReactNode;
-  /** Minimal padding and hairline top border — e.g. play board team strip. */
+  /** Minimal padding and hairline top border - e.g. play board team strip. */
   footerDense?: boolean;
   /**
-   * When false, the body is a flex region with no outer scroll — children should size to fit (or use nested scroll).
+   * When false, the body is a flex region with no outer scroll - children should size to fit (or use nested scroll).
    */
   bodyScrollEnabled?: boolean;
   /**
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 0,
   },
-  /** Top chrome only — body is a sibling (`edgeBodySlot`). Top pad applied via getStandardChromeTopPadding. */
+  /** Top chrome only - body is a sibling (`edgeBodySlot`). Top pad applied via getStandardChromeTopPadding. */
   edgeChromeWrap: {
     flexGrow: 0,
     flexShrink: 0,
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     minHeight: 0,
     padding: SPACING.sm,
   },
-  /** Scroll body without bordered card — same flex contract as `bodyCard` + `bodyCardFit`. */
+  /** Scroll body without bordered card - same flex contract as `bodyCard` + `bodyCardFit`. */
   bodyScrollShellFlush: {
     flex: 1,
     minHeight: 0,
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     width: '100%',
   },
-  /** No-scroll body without inner card — children sit on shell background. */
+  /** No-scroll body without inner card - children sit on shell background. */
   bodyShellFlush: {
     overflow: 'hidden',
     width: '100%',

@@ -4,11 +4,13 @@ import { WebAwareModal } from '@/components/WebAwareModal';
 import { Pressable } from '@/components/ui/Pressable';
 import { FONT_SIZES, SPACING, FONTS, COLORS } from '@/constants';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { HOME_SOFT_UI } from '@/themes';
+import { usePlayTextScale } from '@/store/display';
 
 const T = HOME_SOFT_UI.colors;
 
-/** Deeper drop shadow — reads as a raised plastic tile (tier scales with control size). */
+/** Deeper drop shadow - reads as a raised plastic tile (tier scales with control size). */
 function neumorphicLift(
   shadowColor: string,
   tier: 'hero' | 'header' | 'pill' | 'card'
@@ -30,7 +32,7 @@ function neumorphicLift(
   };
 }
 
-/** Light top lip + soft bottom edge — reads extruded on white squircles. */
+/** Light top lip + soft bottom edge - reads extruded on white squircles. */
 const PLASTIC_FACE: ViewStyle = {
   borderTopWidth: 2,
   borderTopColor: 'rgba(255, 255, 255, 0.78)',
@@ -45,6 +47,9 @@ type WagerInfoModalProps = {
 
 export function WagerInfoModal({ visible, onClose }: WagerInfoModalProps) {
   const { t, getTextStyle } = useI18n();
+  const darkModeFlatTop = useDarkModeFlatTop();
+  const textScale = usePlayTextScale();
+  const textSize = (size: number, minimum = 8) => Math.max(minimum, Math.round(size * textScale));
 
   return (
     <WebAwareModal visible={visible} onRequestClose={onClose}>
@@ -56,32 +61,32 @@ export function WagerInfoModal({ visible, onClose }: WagerInfoModalProps) {
           accessibilityRole="button"
         />
         <View
-          style={[styles.card, { backgroundColor: T.surface }, neumorphicLift(T.shadowStrong, 'header')]}
+          style={[styles.card, darkModeFlatTop, { backgroundColor: T.surface }, neumorphicLift(T.shadowStrong, 'header')]}
         >
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={[styles.title, { color: T.textPrimary }, getTextStyle(undefined, 'display', 'start')]}>
+            <Text style={[styles.title, { color: T.textPrimary, fontSize: textSize(FONT_SIZES.lg) }, getTextStyle(undefined, 'display', 'start')]}>
               {t('play.wagerInfoTitle')}
             </Text>
-            <Text style={[styles.para, { color: T.textMuted }, getTextStyle()]}>
+            <Text style={[styles.para, { color: T.textMuted, fontSize: textSize(FONT_SIZES.sm), lineHeight: textSize(18) }, getTextStyle()]}>
               {t('play.wagerInfoParagraph1')}
             </Text>
-            <Text style={[styles.para, { color: T.textMuted }, getTextStyle()]}>
+            <Text style={[styles.para, { color: T.textMuted, fontSize: textSize(FONT_SIZES.sm), lineHeight: textSize(18) }, getTextStyle()]}>
               {t('play.wagerInfoParagraph2')}
             </Text>
 
             <View style={[styles.table, { borderColor: T.shadow }]}>
               <View style={[styles.tableRow, styles.tableHeaderRow, { borderBottomColor: T.shadow }]}>
-                <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
+                <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary, fontSize: textSize(10) }, getTextStyle()]}>
                   {t('play.wagerInfoColMultiplier')}
                 </Text>
-                <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
+                <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary, fontSize: textSize(10) }, getTextStyle()]}>
                   {t('play.wagerInfoColCorrect')}
                 </Text>
-                <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary }, getTextStyle()]}>
+                <Text style={[styles.cell, styles.headerCell, { color: T.textPrimary, fontSize: textSize(10) }, getTextStyle()]}>
                   {t('play.wagerInfoColWrong')}
                 </Text>
               </View>
@@ -93,14 +98,14 @@ export function WagerInfoModal({ visible, onClose }: WagerInfoModalProps) {
                 ] as const
               ).map((row) => (
                 <View key={row[0]} style={[styles.tableRow, { borderBottomColor: T.shadow }]}>
-                  <Text style={[styles.cell, { color: T.textPrimary }, getTextStyle()]}>{row[0]}</Text>
-                  <Text style={[styles.cell, styles.cellPos, getTextStyle()]}>{row[1]}</Text>
-                  <Text style={[styles.cell, styles.cellNeg, getTextStyle()]}>{row[2]}</Text>
+                  <Text style={[styles.cell, { color: T.textPrimary, fontSize: textSize(FONT_SIZES.xs) }, getTextStyle()]}>{row[0]}</Text>
+                  <Text style={[styles.cell, styles.cellPos, { fontSize: textSize(FONT_SIZES.xs) }, getTextStyle()]}>{row[1]}</Text>
+                  <Text style={[styles.cell, styles.cellNeg, { fontSize: textSize(FONT_SIZES.xs) }, getTextStyle()]}>{row[2]}</Text>
                 </View>
               ))}
             </View>
 
-            <Text style={[styles.warning, { color: T.textMuted }, getTextStyle()]}>
+            <Text style={[styles.warning, { color: T.textMuted, fontSize: textSize(FONT_SIZES.xs), lineHeight: textSize(15) }, getTextStyle()]}>
               {t('play.wagerInfoWarning')}
             </Text>
           </ScrollView>

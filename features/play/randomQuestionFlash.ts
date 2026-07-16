@@ -16,7 +16,7 @@ export type RandomPickMode = 'random' | 'wager';
 /**
  * Builds a flash sequence over remaining board question ids.
  * Intermediate steps pick from the remaining pool (avoiding consecutive repeats when possible).
- * The final entry is always `finalId` — the already-chosen outcome that stays solid after the run.
+ * The final entry is always `finalId` - the already-chosen outcome that stays solid after the run.
  */
 export function buildRandomFlashSequence(
   remainingIds: readonly string[],

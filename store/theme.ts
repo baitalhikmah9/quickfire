@@ -31,8 +31,9 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
   paletteId: 'default',
 
   setPalette: (id) => {
-    set({ paletteId: id });
-    void setStoredTheme(id).catch(() => {
+    const paletteId = id === 'dark' ? 'dark' : 'default';
+    set({ paletteId });
+    void setStoredTheme(paletteId).catch(() => {
       // Ignore storage errors; the in-memory theme still updates immediately.
     });
   },
@@ -41,7 +42,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     try {
       const stored = await getStoredTheme();
       if (stored && stored in PALETTES) {
-        set({ paletteId: stored as ThemePaletteId });
+        set({ paletteId: stored === 'dark' ? 'dark' : 'default' });
       }
     } catch {
       // Ignore storage errors, keep default

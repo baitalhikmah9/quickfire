@@ -1,8 +1,8 @@
 import { httpAction, internalMutation, mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
+import { internal } from './_generated/api';
 import { v } from 'convex/values';
 import { ensureWalletDoc } from './lib/ensureWallet';
 import {
-  buildPurchaseGrantIdempotencyKey,
   buildPurchaseReversalIdempotencyKey,
   normalizeRevenueCatAliases,
   normalizeRevenueCatStore,
@@ -20,12 +20,15 @@ import {
 } from './lib/purchaserAccounts';
 import type { Id } from './_generated/dataModel';
 
-function getEvent(payload: unknown) {
-  if (payload && typeof payload === 'object' && 'event' in payload) {
-    return (payload as { event: Record<string, unknown> }).event;
+function getEvent(payload: unknown): Record<string, unknown> {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return {};
   }
 
-  return (payload ?? {}) as Record<string, unknown>;
+  const event = 'event' in payload ? (payload as { event: unknown }).event : payload;
+  return event && typeof event === 'object' && !Array.isArray(event)
+    ? (event as Record<string, unknown>)
+    : {};
 }
 
 function asString(value: unknown) {
@@ -58,6 +61,12 @@ async function findMatchingPurchaserAccount(
   for (const appUserId of appUserIds) {
     const purchaserAccount = await getPurchaserAccountByAppUserId(ctx, appUserId);
     if (purchaserAccount) {
+      if (purchaserAccount.state === 'merged' && purchaserAccount.mergedIntoId) {
+        return (
+          (await getPurchaserAccountByAppUserId(ctx, purchaserAccount.mergedIntoId)) ??
+          purchaserAccount
+        );
+      }
       return purchaserAccount;
     }
   }
@@ -225,39 +234,10 @@ export const syncConsumablePurchase = mutation({
       v.literal('test_store')
     ),
   },
-  handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
-    const purchaserAccount = await getPurchaserAccountByAppUserId(ctx, args.purchaserAccountId);
-    if (!purchaserAccount) {
-      throw new Error('Purchaser account not found');
-    }
-
-    const canonical = await ensureCanonicalPurchaserAccountForUser(ctx, user);
-    const allowedIds = new Set<string>([purchaserAccount.appUserId]);
-    if (canonical) {
-      allowedIds.add(canonical.appUserId);
-    }
-    if (purchaserAccount.mergedIntoId) {
-      allowedIds.add(purchaserAccount.mergedIntoId);
-    }
-
-    if (!allowedIds.has(args.purchaserAccountId)) {
-      throw new Error('Forbidden');
-    }
-
-    const targetPurchaserAccountId = canonical?.appUserId ?? purchaserAccount.appUserId;
-    const products = await listTokenProducts(ctx);
-
-    return await grantConsumablePurchase(ctx, {
-      products,
-      purchaserAccountId: targetPurchaserAccountId,
-      linkedUserId: user._id,
-      store: args.store,
-      productId: args.productId,
-      transactionId: args.transactionId,
-      revenueCatEventId: `client:${args.store}:${args.transactionId}`,
-      rawEvent: { source: 'client_sync', productId: args.productId },
-    });
+  handler: async (ctx) => {
+    await requireUser(ctx);
+    // Kept for older app builds. Only the authenticated RevenueCat webhook may grant tokens.
+    return { granted: false, pending: true };
   },
 });
 
@@ -325,10 +305,11 @@ export const linkGuestToCurrentUser = mutation({
 
 export const processRevenueCatWebhook = internalMutation({
   args: {
-    payload: v.any(),
+    payloadJson: v.string(),
   },
   handler: async (ctx, args) => {
-    const event = getEvent(args.payload);
+    const payload = JSON.parse(args.payloadJson) as unknown;
+    const event = getEvent(payload);
     const eventId = asString(event.id) ?? crypto.randomUUID();
     const type = asString(event.type) ?? 'UNKNOWN';
     const appUserId = asString(event.app_user_id);
@@ -356,7 +337,7 @@ export const processRevenueCatWebhook = internalMutation({
       aliases,
       receivedAt: Date.now(),
       status: 'received',
-      payload: args.payload,
+      payload: args.payloadJson,
     });
 
     const markWebhook = async (status: string, errorCode?: string) => {
@@ -426,22 +407,18 @@ export const processRevenueCatWebhook = internalMutation({
         return await markWebhook('failed', 'invalid_product');
       }
 
-      try {
-        await grantConsumablePurchase(ctx, {
-          products,
-          purchaserAccountId: purchaserAccount.appUserId,
-          linkedUserId: purchaserAccount.linkedUserId,
-          store,
-          productId,
-          transactionId,
-          revenueCatEventId: eventId,
-          purchasedAt:
-            typeof event.purchased_at_ms === 'number' ? event.purchased_at_ms : Date.now(),
-          rawEvent: event,
-        });
-      } catch {
-        return await markWebhook('failed', 'grant_failed');
-      }
+      await grantConsumablePurchase(ctx, {
+        products,
+        purchaserAccountId: purchaserAccount.appUserId,
+        linkedUserId: purchaserAccount.linkedUserId,
+        store,
+        productId,
+        transactionId,
+        revenueCatEventId: eventId,
+        purchasedAt:
+          typeof event.purchased_at_ms === 'number' ? event.purchased_at_ms : Date.now(),
+        rawEvent: args.payloadJson,
+      });
 
       return await markWebhook('processed');
     }
@@ -531,7 +508,7 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  const payload = await request.json();
-  await (ctx as any).runMutation(processRevenueCatWebhook, { payload });
+  const payloadJson = await request.text();
+  await ctx.runMutation(internal.payments.processRevenueCatWebhook, { payloadJson });
   return new Response('ok', { status: 200 });
 });

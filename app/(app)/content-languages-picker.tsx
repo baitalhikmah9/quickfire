@@ -11,6 +11,7 @@ import {
 } from '@/lib/i18n/config';
 import { getChevronName } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 import { useLocaleStore } from '@/store/locale';
 import { Screen } from '@/components/ScreenContent';
 import { HOME_SOFT_UI } from '@/themes';
@@ -34,6 +35,7 @@ function neumorphicLift3D(shadowColor: string, tier: 'header' | 'card'): any {
 export default function ContentLanguagesPickerScreen() {
   const router = useRouter();
   const { direction, getLocaleName, getTextStyle, t } = useI18n();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const contentLocales = useLocaleStore((state) => state.contentLocales);
   const setContentLocales = useLocaleStore((state) => state.setContentLocales);
   const moveContentLocale = useLocaleStore((state) => state.moveContentLocale);
@@ -72,6 +74,7 @@ export default function ContentLanguagesPickerScreen() {
           style={({ pressed }) => [
             styles.backButton,
             styles.plasticFace,
+            darkModeFlatTop,
             {
               backgroundColor: surface,
               opacity: pressed ? 0.94 : 1,
@@ -200,6 +203,7 @@ export default function ContentLanguagesPickerScreen() {
                     opacity: disabled ? 0.5 : 1,
                   },
                   styles.plasticFace,
+                  darkModeFlatTop,
                   neumorphicLift3D(shadowHex, 'card'),
                 ]}
                 onPress={() => toggleLocale(locale)}
@@ -232,6 +236,7 @@ export default function ContentLanguagesPickerScreen() {
                 opacity: 0.8,
               },
               styles.plasticFace,
+              darkModeFlatTop,
               neumorphicLift3D(shadowHex, 'card'),
             ]}
           >

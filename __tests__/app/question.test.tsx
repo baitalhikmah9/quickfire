@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type { GameConfig, GameSessionState, QuestionCard } from '@/features/shared';
 
-import PlayQuestionScreen from '@/app/(app)/play/question';
+import PlayQuestionScreen, { getQuestionTextSafeWidth } from '@/app/(app)/play/question';
 import { usePlayStore } from '@/store/play';
 
 const mockReplace = jest.fn();
@@ -53,6 +53,7 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'play.showAnswer': 'Show Answer',
         'play.timeUpTitle': "Time's up",
         'play.timeUpBody': 'The question expired. The answer is revealed and no points are awarded.',
+        'play.noPointsAwarded': 'No points awarded',
         'play.hotSeatActiveTitle': 'Hot Seat',
         'play.nextTurn': 'Next Turn',
         'play.whoGetsPoints': 'Who gets the points?',
@@ -153,6 +154,13 @@ function createSession(overrides: Partial<GameSessionState> = {}): GameSessionSt
     ...overrides,
   };
 }
+
+describe('question text safe width', () => {
+  it('keeps text clear of landscape cutout and navigation insets', () => {
+    expect(getQuestionTextSafeWidth(844, 42, 48, 16)).toBe(738);
+    expect(getQuestionTextSafeWidth(844, 0, 0, 16)).toBe(812);
+  });
+});
 
 describe('PlayQuestionScreen', () => {
   beforeEach(() => {
@@ -330,8 +338,11 @@ describe('PlayQuestionScreen', () => {
       jest.advanceTimersByTime(600_000);
     });
 
+    expect(screen.getByTestId('timeout-result-status')).toBeTruthy();
     expect(screen.getByText("TIME'S UP")).toBeTruthy();
-    expect(screen.getByText('The question expired. The answer is revealed and no points are awarded.')).toBeTruthy();
+    expect(screen.getByText('NO POINTS AWARDED')).toBeTruthy();
+    expect(screen.queryByText('The question expired. The answer is revealed and no points are awarded.')).toBeNull();
+    expect(screen.queryByText('Points awarded.')).toBeNull();
     expect(screen.getByText('A clock')).toBeTruthy();
     expect(usePlayStore.getState().session?.lastAwardedTeamId).toBeNull();
     expect(usePlayStore.getState().session?.timedOutQuestionId).toBe('q-timeout');
@@ -486,7 +497,9 @@ describe('PlayQuestionScreen', () => {
     });
 
     render(<PlayQuestionScreen />);
-    expect(screen.getByText('Wager x1.5')).toBeTruthy();
+    expect(
+      screen.getByText('Wager x1.5 (Correct: 1.5x gain, incorrect: 1x loss)')
+    ).toBeTruthy();
 
     act(() => {
       usePlayStore.setState({
@@ -501,6 +514,8 @@ describe('PlayQuestionScreen', () => {
       });
     });
 
-    expect(screen.getByText('Wager x1.5')).toBeTruthy();
+    expect(
+      screen.getByText('Wager x1.5 (Correct: 1.5x gain, incorrect: 1x loss)')
+    ).toBeTruthy();
   });
 });

@@ -14,7 +14,7 @@ import {
 import { ScreenContent } from '@/components/ScreenContent';
 import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { LegalDocumentBody } from '@/components/LegalDocumentBody';
-import { useTheme } from '@/lib/hooks/useTheme';
+import { useDarkModeFlatTop, useTheme } from '@/lib/hooks/useTheme';
 import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -29,8 +29,12 @@ export type LegalScrollScreenProps = {
 export function LegalScrollScreen({ title, sections }: LegalScrollScreenProps) {
   const router = useRouter();
   const colors = useTheme();
+  const darkModeFlatTop = useDarkModeFlatTop();
   const { direction, t } = useI18n();
   const rowDir = getRowDirection(direction);
+  // Read canvas/surface after useTheme subscription so dark mode resolves on first paint
+  // (avoids white ScrollView/native stack flash during root-stack push).
+  const canvas = HOME_SOFT_UI.colors.canvas;
   const surface = HOME_SOFT_UI.colors.surface;
   const textPrimary = HOME_SOFT_UI.colors.textPrimary;
   const backIcon: keyof typeof Ionicons.glyphMap =
@@ -43,12 +47,15 @@ export function LegalScrollScreen({ title, sections }: LegalScrollScreenProps) {
 
   return (
     <SafeAreaView
+      collapsable={false}
+      testID="legal-scroll-screen"
       edges={['top', 'bottom', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor: HOME_SOFT_UI.colors.canvas }]}
+      style={[styles.safeArea, { backgroundColor: canvas }]}
     >
-      <ScreenContent fullWidth style={styles.viewport}>
+      <ScreenContent fullWidth style={[styles.viewport, { backgroundColor: canvas }]}>
         <ScrollView
-          style={styles.scroll}
+          testID="legal-scroll-view"
+          style={[styles.scroll, { backgroundColor: canvas }]}
           contentContainerStyle={[styles.scrollContent, { paddingTop: chromeTopPad }]}
           showsVerticalScrollIndicator
         >
@@ -60,6 +67,7 @@ export function LegalScrollScreen({ title, sections }: LegalScrollScreenProps) {
               style={({ pressed }) => [
                 styles.backButton,
                 SOFT_SURFACE_FACE,
+                darkModeFlatTop,
                 softSurfaceLift(),
                 { backgroundColor: surface },
                 {

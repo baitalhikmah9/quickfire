@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, type TextStyle, type ViewStyle } from 'react-na
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, BORDER_RADIUS, SHADOWS, TYPE_SCALE, FONTS, COLORS } from '@/constants';
+import { relativeLuminance } from '@/constants/theme';
 import type { ThemePalette } from '@/lib/hooks/useTheme';
 
 /** Darker band below the face (extrusion). */
@@ -27,7 +28,7 @@ export type HubActionCardProps = {
   fixedWidth?: number;
   /** Tighter padding and tile height for landscape hubs */
   compact?: boolean;
-  /** Cartoony 3D pill (face + depth lip) — reference hub CTAs */
+  /** Cartoony 3D pill (face + depth lip) - reference hub CTAs */
   visualVariant?: 'card' | 'pill3d';
   /** Color role when `visualVariant` is `pill3d` */
   pillTone?: 'primary' | 'secondary' | 'tertiary' | 'accent';
@@ -53,6 +54,7 @@ export const HubActionCard = memo(function HubActionCard({
   pillTone = 'primary',
   fillAvailableHeight = true,
 }: HubActionCardProps) {
+  const isDark = relativeLuminance(colors.background) < 0.3;
   const cardShadow = {
     ...SHADOWS.card,
     shadowColor: accent,
@@ -147,6 +149,7 @@ export const HubActionCard = memo(function HubActionCard({
             <View
               style={[
                 styles.pill3dFace,
+                isDark && styles.flatTop,
                 fillHubHeight && styles.pill3dFaceFill,
                 {
                   backgroundColor: palette.face,
@@ -331,6 +334,10 @@ const styles = StyleSheet.create({
     gap: 6,
     borderTopWidth: StyleSheet.hairlineWidth * 2,
     borderTopColor: 'rgba(255, 255, 255, 0.28)',
+  },
+  flatTop: {
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
   },
   pill3dFaceFill: {
     flex: 1,

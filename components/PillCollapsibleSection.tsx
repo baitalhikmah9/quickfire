@@ -12,6 +12,7 @@ import { Image } from 'expo-image';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, FONTS } from '@/constants';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 const PILL_DEPTH_LIP = 10;
 const PILL_DEPTH_TOP_INSET = 5;
@@ -63,6 +64,7 @@ export const PillCollapsibleSection = memo(function PillCollapsibleSection({
   children,
 }: PillCollapsibleSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const darkModeFlatTop = useDarkModeFlatTop();
   const { face, depth } = pillPalette(tone);
   const pillShadow: ViewStyle = {
     shadowColor: '#0F172A',
@@ -92,7 +94,7 @@ export const PillCollapsibleSection = memo(function PillCollapsibleSection({
           },
         ]}
       />
-      <View style={[styles.pill3dFace, { backgroundColor: face }]}>
+      <View style={[styles.pill3dFace, darkModeFlatTop, { backgroundColor: face }]}>
         <View style={[styles.pillHeaderRow, { flexDirection: rowDir }]}>
           {iconImage ? (
             <Image

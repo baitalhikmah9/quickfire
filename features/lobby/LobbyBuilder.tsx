@@ -6,6 +6,7 @@ import { SPACING, FONTS } from '@/constants';
 import { getResolvedContentLocaleChain } from '@/lib/i18n/config';
 import { HOME_SOFT_UI } from '@/themes';
 import { useLocaleStore } from '@/store/locale';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 const T = HOME_SOFT_UI;
 
@@ -45,6 +46,7 @@ export function LobbyBuilder({ mode, onStart }: LobbyBuilderProps) {
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
   const accentGlow = T.colors.accentGlow;
+  const darkModeFlatTop = useDarkModeFlatTop();
 
   const handleStart = () => {
     const teams: TeamConfig[] = [
@@ -83,6 +85,7 @@ export function LobbyBuilder({ mode, onStart }: LobbyBuilderProps) {
             style={[
               styles.input,
               styles.plasticFace,
+              darkModeFlatTop,
               {
                 backgroundColor: surface,
                 color: textPrimary,
@@ -101,6 +104,7 @@ export function LobbyBuilder({ mode, onStart }: LobbyBuilderProps) {
             style={[
               styles.input,
               styles.plasticFace,
+              darkModeFlatTop,
               {
                 backgroundColor: surface,
                 color: textPrimary,
@@ -118,6 +122,7 @@ export function LobbyBuilder({ mode, onStart }: LobbyBuilderProps) {
           style={({ pressed }) => [
             styles.button,
             styles.plasticFace,
+            darkModeFlatTop,
             { 
               backgroundColor: surface,
               opacity: pressed ? 0.94 : 1,

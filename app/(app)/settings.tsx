@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ScrollView,
   useWindowDimensions,
-  Alert,
 } from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,14 +18,13 @@ import {
   SPACING,
   BORDER_RADIUS,
   COLORS,
-  PALETTES,
   FONTS,
   LAYOUT,
-  SOFT_SURFACE_FACE,
+  SOFT_SURFACE_FACE as LIGHT_SURFACE_FACE,
   softSurfaceLift,
   getStandardChromeTopPadding,
-  type ThemePaletteId,
 } from '@/constants';
+import { SHOW_LANGUAGE_SETTINGS_UI } from '@/constants/featureFlags';
 import {
   SUPPORTED_LOCALES,
   contentLocalePriorityToArray,
@@ -44,21 +42,17 @@ import { WebAwareModal } from '@/components/WebAwareModal';
 import { useLocaleStore } from '@/store/locale';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
+import { useDisplayStore } from '@/store/display';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
 
-const ALL_PALETTES: ThemePaletteId[] = ['dark', 'default', 'warm', 'cool', 'green', 'red'];
 const SELECTABLE_CONTENT_LOCALES = SUPPORTED_LOCALES.filter((locale) =>
   isNonEnglishContentLocale(locale)
 );
 
 function formatTokens(n: number, locale: string) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(n);
-}
-
-function getPaletteNameKey(id: ThemePaletteId) {
-  return `settings.palette.${id}` as const;
 }
 
 export default function SettingsScreen() {
@@ -71,7 +65,8 @@ export default function SettingsScreen() {
   const router = useRouter();
   const paletteId = useThemeStore((s) => s.paletteId);
   const setPalette = useThemeStore((s) => s.setPalette);
-  const [isThemeModalVisible, setThemeModalVisible] = useState(false);
+  const playDisplayMode = useDisplayStore((s) => s.playDisplayMode);
+  const setPlayDisplayMode = useDisplayStore((s) => s.setPlayDisplayMode);
   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
   const [isContentLanguagesModalVisible, setContentLanguagesModalVisible] = useState(false);
   const { direction, getLocaleName, t, uiLocale } = useI18n();
@@ -80,9 +75,11 @@ export default function SettingsScreen() {
   const setContentLocales = useLocaleStore((state) => state.setContentLocales);
   const moveContentLocale = useLocaleStore((state) => state.moveContentLocale);
   const storedTokens = usePlayStore((state) => state.tokens);
+  const loadDebugWinnerSession = usePlayStore((state) => state.loadDebugWinnerSession);
   const tokens = !authDisabled && !isSignedIn ? 0 : storedTokens;
 
-  const themeSummary = t(getPaletteNameKey(paletteId));
+  const isDarkTheme = paletteId === 'dark';
+  const themeSummary = t(isDarkTheme ? 'settings.palette.dark' : 'settings.palette.default');
   const selectedContentLocaleValues = contentLocalePriorityToArray(contentLocales);
   const selectedContentLocales = selectedContentLocaleValues
     .map((locale) => getLocaleName(locale, 'english'))
@@ -100,6 +97,9 @@ export default function SettingsScreen() {
   const surface = T.colors.surface;
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
+  const SOFT_SURFACE_FACE = isDarkTheme
+    ? { ...LIGHT_SURFACE_FACE, borderTopWidth: 0, borderTopColor: 'transparent' }
+    : LIGHT_SURFACE_FACE;
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
@@ -215,11 +215,42 @@ export default function SettingsScreen() {
                   { backgroundColor: surface },
                 ]}
               >
-                {/* Theme selection */}
+                {__DEV__ ? (
+                  <Pressable
+                    testID="settings-debug-winner-screen"
+                    accessibilityRole="button"
+                    accessibilityLabel="Debug: open winner screen"
+                    onPress={() => {
+                      loadDebugWinnerSession();
+                      router.push('/play/end');
+                    }}
+                    style={({ pressed }) => [
+                      styles.prefRow,
+                      { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
+                      pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
+                    ]}
+                  >
+                    <View style={[styles.prefMain, { flexDirection: rowDir }]}>
+                      <Ionicons name="flag-outline" size={18} color={textPrimary} />
+                      <View style={styles.prefTextBlock}>
+                        <Text style={[styles.prefLabel, { color: textPrimary }]} numberOfLines={1}>
+                          Debug: Winner screen
+                        </Text>
+                        <Text style={[styles.prefMeta, { color: textMuted }]} numberOfLines={1}>
+                          Jump to match-complete UI (dev only)
+                        </Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ) : null}
+
+                {/* Theme toggle */}
                 <Pressable
-                  accessibilityRole="button"
+                  testID="settings-theme-toggle"
+                  accessibilityRole="switch"
                   accessibilityLabel={t('settings.themeSelectionTitle')}
-                  onPress={() => setThemeModalVisible(true)}
+                  accessibilityState={{ checked: isDarkTheme }}
+                  onPress={() => setPalette(isDarkTheme ? 'default' : 'dark')}
                   style={({ pressed }) => [
                     styles.prefRow,
                     { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
@@ -227,7 +258,7 @@ export default function SettingsScreen() {
                   ]}
                 >
                   <View style={[styles.prefMain, { flexDirection: rowDir }]}>
-                      <Ionicons name="color-palette-outline" size={18} color={textPrimary} />
+                      <Ionicons name={isDarkTheme ? 'moon-outline' : 'sunny-outline'} size={18} color={textPrimary} />
                       <View style={styles.prefTextBlock}>
                         <Text
                           style={[styles.prefLabel, { color: textPrimary }]}
@@ -247,11 +278,12 @@ export default function SettingsScreen() {
                   </View>
                 </Pressable>
 
-                {/* App language */}
+                {/* Game text size */}
                 <Pressable
+                  testID="settings-display-mode-toggle"
                   accessibilityRole="button"
-                  accessibilityLabel={t('settings.appLanguageTitle')}
-                  onPress={() => setLanguageModalVisible(true)}
+                  accessibilityLabel={t('settings.displayModeTitle')}
+                  onPress={() => setPlayDisplayMode(playDisplayMode === 'tv' ? 'mobile' : 'tv')}
                   style={({ pressed }) => [
                     styles.prefRow,
                     { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
@@ -259,57 +291,89 @@ export default function SettingsScreen() {
                   ]}
                 >
                   <View style={[styles.prefMain, { flexDirection: rowDir }]}>
-                      <Ionicons name="language-outline" size={18} color={textPrimary} />
-                      <View style={styles.prefTextBlock}>
-                        <Text
-                          style={[styles.prefLabel, { color: textPrimary }]}
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                        >
-                          {t('settings.appLanguageTitle')}
-                        </Text>
-                        <Text
-                          style={[styles.prefMeta, { color: textMuted }]}
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                        >
-                          {getLocaleName(uiLocale, 'both')}
-                        </Text>
-                      </View>
+                    <Ionicons
+                      name={playDisplayMode === 'tv' ? 'tv-outline' : 'phone-portrait-outline'}
+                      size={18}
+                      color={textPrimary}
+                    />
+                    <View style={styles.prefTextBlock}>
+                      <Text style={[styles.prefLabel, { color: textPrimary }]} numberOfLines={1}>
+                        {t('settings.displayModeTitle')}
+                      </Text>
+                      <Text style={[styles.prefMeta, { color: textMuted }]} numberOfLines={1}>
+                        {t(playDisplayMode === 'tv' ? 'settings.displayMode.tv' : 'settings.displayMode.mobile')}
+                      </Text>
+                    </View>
                   </View>
                 </Pressable>
 
-                {/* Content languages */}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('settings.languagesUpToThreeTitle')}
-                  onPress={() => setContentLanguagesModalVisible(true)}
-                  style={({ pressed }) => [
-                    styles.prefRow,
-                    { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
-                    pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
-                  ]}
-                >
-                  <View style={[styles.prefMain, { flexDirection: rowDir }]}>
-                      <Ionicons name="chatbubbles-outline" size={18} color={textPrimary} />
-                      <View style={styles.prefTextBlock}>
-                        <Text
-                          style={[styles.prefLabel, { color: textPrimary }]}
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                        >
-                          {t('settings.languagesUpToThreeTitle')}
-                        </Text>
-                        <Text
-                          style={[styles.prefMeta, { color: textMuted }]}
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                        >
-                          {contentLanguageSummary}
-                        </Text>
+                {SHOW_LANGUAGE_SETTINGS_UI ? (
+                  <>
+                    {/* App language */}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('settings.appLanguageTitle')}
+                      onPress={() => setLanguageModalVisible(true)}
+                      style={({ pressed }) => [
+                        styles.prefRow,
+                        { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
+                        pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
+                      ]}
+                    >
+                      <View style={[styles.prefMain, { flexDirection: rowDir }]}>
+                          <Ionicons name="language-outline" size={18} color={textPrimary} />
+                          <View style={styles.prefTextBlock}>
+                            <Text
+                              style={[styles.prefLabel, { color: textPrimary }]}
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                            >
+                              {t('settings.appLanguageTitle')}
+                            </Text>
+                            <Text
+                              style={[styles.prefMeta, { color: textMuted }]}
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                            >
+                              {getLocaleName(uiLocale, 'both')}
+                            </Text>
+                          </View>
                       </View>
-                  </View>
-                </Pressable>
+                    </Pressable>
+
+                    {/* Content languages */}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('settings.languagesUpToThreeTitle')}
+                      onPress={() => setContentLanguagesModalVisible(true)}
+                      style={({ pressed }) => [
+                        styles.prefRow,
+                        { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
+                        pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
+                      ]}
+                    >
+                      <View style={[styles.prefMain, { flexDirection: rowDir }]}>
+                          <Ionicons name="chatbubbles-outline" size={18} color={textPrimary} />
+                          <View style={styles.prefTextBlock}>
+                            <Text
+                              style={[styles.prefLabel, { color: textPrimary }]}
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                            >
+                              {t('settings.languagesUpToThreeTitle')}
+                            </Text>
+                            <Text
+                              style={[styles.prefMeta, { color: textMuted }]}
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                            >
+                              {contentLanguageSummary}
+                            </Text>
+                          </View>
+                      </View>
+                    </Pressable>
+                  </>
+                ) : null}
 
               </View>
 
@@ -323,7 +387,7 @@ export default function SettingsScreen() {
               >
                 <Text
                   accessibilityRole="header"
-                  style={[styles.userProfileKicker, { color: textMuted, marginBottom: SPACING.xs }]}
+                  style={[styles.prefsGroupHeader, { color: textMuted }]}
                 >
                   {t('settings.legalHeading').toUpperCase()}
                 </Text>
@@ -427,95 +491,8 @@ export default function SettingsScreen() {
         </View>
       </ScreenContent>
 
-      <WebAwareModal
-        visible={isThemeModalVisible}
-        onRequestClose={() => setThemeModalVisible(false)}
-      >
-        <View style={styles.modalRoot}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.closeThemePicker')}
-            style={styles.modalBackdrop}
-            onPress={() => setThemeModalVisible(false)}
-          />
-          <View
-            style={[
-              styles.themeModalCard,
-              SOFT_SURFACE_FACE,
-              softSurfaceLift(),
-              { backgroundColor: surface },
-            ]}
-          >
-            <View style={styles.themeModalHeader}>
-              <View>
-                <Text style={[styles.themeModalTitle, { color: textPrimary }]}>{t('common.theme').toUpperCase()}</Text>
-                <Text style={[styles.themeModalSubtitle, { color: textMuted }]}>{t('settings.themePickerDescription')}</Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('settings.closeThemePicker')}
-                onPress={() => setThemeModalVisible(false)}
-                style={({ pressed }) => [
-                  styles.themeModalCloseButton,
-                  SOFT_SURFACE_FACE,
-                  softSurfaceLift(),
-                  {
-                    backgroundColor: surface,
-                    opacity: pressed ? 0.94 : 1,
-                    transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-                  },
-                ]}
-              >
-                <Ionicons name="close" size={20} color={textPrimary} />
-              </Pressable>
-            </View>
-
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.themePaletteGrid}
-            >
-              {ALL_PALETTES.map((id) => {
-                const palette = PALETTES[id];
-                const isSelected = id === paletteId;
-                return (
-                  <Pressable
-                    key={id}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t(getPaletteNameKey(id))} ${t('common.theme')}`}
-                    onPress={() => setPalette(id)}
-                    style={({ pressed }) => [
-                      styles.themePaletteCard,
-                      SOFT_SURFACE_FACE,
-                      softSurfaceLift(),
-                      {
-                        backgroundColor: surface,
-                        opacity: pressed ? 0.94 : 1,
-                        borderColor: isSelected ? textPrimary : 'rgba(51, 51, 51, 0.08)',
-                      },
-                    ]}
-                  >
-                    <View style={styles.themeSwatchRow}>
-                      <View style={[styles.themeSwatch, { backgroundColor: palette.primary }]} />
-                      <View style={[styles.themeSwatch, { backgroundColor: palette.background }]} />
-                      <View style={[styles.themeSwatch, { backgroundColor: palette.success }]} />
-                    </View>
-                    <View style={styles.themePaletteTextBlock}>
-                      <Text style={[styles.themePaletteName, { color: textPrimary }]}>
-                        {t(getPaletteNameKey(id))}
-                      </Text>
-                      <Text style={[styles.themePaletteMeta, { color: textMuted }]}>
-                        {isSelected ? t('settings.activePalette') : t('settings.tapToApply')}
-                      </Text>
-                    </View>
-                    {isSelected ? <Ionicons name="checkmark-circle" size={22} color={textPrimary} /> : null}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </WebAwareModal>
-
+      {SHOW_LANGUAGE_SETTINGS_UI ? (
+      <>
       <WebAwareModal
         visible={isLanguageModalVisible}
         onRequestClose={() => setLanguageModalVisible(false)}
@@ -736,6 +713,8 @@ export default function SettingsScreen() {
           </View>
         </View>
       </WebAwareModal>
+      </>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -752,7 +731,7 @@ const styles = StyleSheet.create({
   settingsViewport: {
     flex: 1,
   },
-  /** Shared outer gutter — header controls and content cards share the same edges. */
+  /** Shared outer gutter - header controls and content cards share the same edges. */
   contentFrame: {
     flex: 1,
     width: '100%',
@@ -818,6 +797,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.xs,
     gap: SPACING.xs,
+  },
+  prefsGroupHeader: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 1.2,
+    opacity: 0.65,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.sm,
   },
   authCard: {
     borderRadius: 32,
@@ -988,15 +976,6 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
-  },
-  themeSwatchRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  themeSwatch: {
-    width: 24,
-    height: 24,
-    borderRadius: BORDER_RADIUS.sm,
   },
   themePaletteTextBlock: {
     flex: 1,

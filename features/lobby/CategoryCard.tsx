@@ -4,8 +4,12 @@ import { View, Text, StyleSheet, type ViewStyle, Dimensions, Platform } from 're
 import { Pressable } from '@/components/ui/Pressable';
 import { SPACING, FONTS, COLORS, SHADOWS } from '@/constants/theme';
 import { MISSING_CATEGORY_PICTURE_LABEL } from '@/constants/categoryPictures';
+import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { HOME_SOFT_UI } from '@/themes';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
+import { useThemeStore } from '@/store/theme';
 
 const T = HOME_SOFT_UI;
 const { width } = Dimensions.get('window');
@@ -42,10 +46,16 @@ export function CategoryCard({
     isSelected,
     style,
 }: CategoryCardProps) {
-    const surface = T.colors.surface;
-    const textPrimary = T.colors.textPrimary;
+    useThemeStore((state) => state.paletteId);
+    const surfaceColors = getPlaySurfaceColors();
+    const surface = surfaceColors.surface;
+    const textPrimary = surfaceColors.textPrimary;
     const accentColor = T.colors.resumeAccent;
     const isActive = Boolean(isSelected);
+    const darkModeFlatTop = useDarkModeFlatTop();
+    const placeholderGradient = surfaceColors.isDark
+      ? (['#17263A', '#111E2E'] as const)
+      : (['#F8FAFC', '#F1F5F9'] as const);
 
     return (
         <View style={[styles.cardWrapper, style]}>
@@ -61,8 +71,12 @@ export function CategoryCard({
                             : [{ scale: 1 }, { translateY: 0 }],
                         
                         // Raised surface treatment
-                        borderTopWidth: 2,
-                        borderTopColor: isActive ? accentColor : 'rgba(255, 255, 255, 0.78)',
+                        borderTopWidth: isActive || surfaceColors.isDark ? (isActive ? 2 : 0) : 2,
+                        borderTopColor: isActive
+                          ? accentColor
+                          : surfaceColors.isDark
+                            ? 'transparent'
+                            : 'rgba(255, 255, 255, 0.78)',
                         borderBottomWidth: isActive ? 2.5 : 4,
                         borderBottomColor: isActive ? accentColor : 'rgba(0, 0, 0, 0.1)',
                         borderLeftWidth: isActive ? 2.5 : 0,
@@ -71,10 +85,11 @@ export function CategoryCard({
                         
                         ...getCardShadow(isActive),
                     },
+                    !isActive && darkModeFlatTop,
                 ]}
             >
                 {/* Full-Card Illustration Background */}
-                <View style={styles.imageContainer}>
+                <View style={[styles.imageContainer, { backgroundColor: surfaceColors.topicImageMatte }]}>
                     {illustration ? (
                         <Image 
                             source={illustration} 
@@ -84,12 +99,15 @@ export function CategoryCard({
                         />
                     ) : (
                         <LinearGradient
-                            colors={['#F8FAFC', '#F1F5F9']}
+                            colors={[...placeholderGradient]}
                             style={styles.fullImage}
                         >
                             <View style={styles.placeholderCenter}>
                                 <Text
-                                    style={styles.missingPictureLabel}
+                                    style={[
+                                      styles.missingPictureLabel,
+                                      { color: surfaceColors.missingPictureLabelColor },
+                                    ]}
                                     accessibilityLabel={MISSING_CATEGORY_PICTURE_LABEL}
                                 >
                                     {MISSING_CATEGORY_PICTURE_LABEL}
@@ -108,12 +126,17 @@ export function CategoryCard({
                 {/* Bottom strip like the reference sketch */}
                 <View style={[
                     styles.titleBar,
-                    { backgroundColor: isActive ? accentColor : 'rgba(255, 255, 255, 0.96)' }
+                    {
+                      backgroundColor: isActive
+                        ? accentColor
+                        : surfaceColors.topicLabelBackground,
+                      borderTopColor: surfaceColors.topicLabelBorder,
+                    },
                 ]}>
                     <Text
                         style={[
                             styles.titleText,
-                            { color: isActive ? '#FFF' : textPrimary }
+                            { color: isActive ? '#FFF' : surfaceColors.topicLabelText }
                         ]}
                     >
                         {title.toUpperCase()}
@@ -159,13 +182,11 @@ const styles = StyleSheet.create({
     card: {
         width: '100%',
         borderRadius: 24,
-        backgroundColor: '#FFF',
         overflow: 'hidden',
     },
     imageContainer: {
         width: '100%',
         aspectRatio: 0.95,
-        backgroundColor: '#F1F5F9',
     },
     fullImage: {
         width: '100%',
@@ -180,7 +201,6 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.uiBold,
         fontSize: 14,
         letterSpacing: 0.8,
-        color: 'rgba(15, 23, 42, 0.4)',
         textAlign: 'center',
         paddingHorizontal: 8,
     },

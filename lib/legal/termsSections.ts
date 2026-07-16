@@ -17,7 +17,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
   {
     heading: 'Gameplay and acceptable use',
     paragraphs: [
-      'Backfire is a competitive trivia experience. You agree not to interfere with the Service, other players, or our systems—including by cheating, exploiting bugs for unfair advantage, harassing others, scraping or reverse engineering the Service except as permitted by law, or attempting to access data or areas you are not authorized to use.',
+      'Backfire is a competitive trivia experience. You agree not to interfere with the Service, other players, or our systems - including by cheating, exploiting bugs for unfair advantage, harassing others, scraping or reverse engineering the Service except as permitted by law, or attempting to access data or areas you are not authorized to use.',
       'We may suspend or terminate access if we reasonably believe you have violated these Terms or pose risk to the Service or other users.',
     ],
   },

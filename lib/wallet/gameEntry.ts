@@ -183,7 +183,7 @@ export async function abandonGameEntry(
       reservationId: params.reservationId,
       reason: params.reason,
     }).catch(() => {
-      // Non-fatal — server-side TTL will eventually release the hold.
+      // Non-fatal - server-side TTL will eventually release the hold.
     });
   }
   params.resetSession();

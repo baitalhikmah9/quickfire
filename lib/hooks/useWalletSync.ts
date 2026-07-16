@@ -15,7 +15,7 @@ import { usePlayStore } from '@/store/play';
  * Also ensures the device has a purchaser account and the starter grant has
  * been applied (both operations are idempotent).
  *
- * Wire this once in AppHydration (lib/providers.tsx) — it handles all the
+ * Wire this once in AppHydration (lib/providers.tsx) - it handles all the
  * subscription lifecycle internally.
  */
 export function useWalletSync() {
@@ -37,7 +37,7 @@ export function useWalletSync() {
         if (!cancelled) setInstallationId(id);
       })
       .catch(() => {
-        // Non-fatal — the query subscription will be skipped and balance will
+        // Non-fatal - the query subscription will be skipped and balance will
         // use the local fallback until the next mount.
       });
 
@@ -65,13 +65,13 @@ export function useWalletSync() {
           appVersion: Constants.expoConfig?.version ?? 'unknown',
         });
       } catch {
-        // Non-fatal — the webhook will still credit the user on first purchase.
+        // Non-fatal - the webhook will still credit the user on first purchase.
       }
 
       try {
         await grantStarterBalance({ deviceId: installationId });
       } catch {
-        // Idempotent — will succeed on next mount if it failed transiently.
+        // Idempotent - will succeed on next mount if it failed transiently.
       }
 
       if (!cancelled) {

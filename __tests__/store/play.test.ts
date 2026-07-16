@@ -181,6 +181,18 @@ describe('usePlayStore', () => {
     expect(usePlayStore.getState().session?.config.quickPlayTopicCount).toBe(5);
   });
 
+  it('loads a debug winner session for end-screen QA', () => {
+    usePlayStore.getState().loadDebugWinnerSession();
+
+    const session = usePlayStore.getState().session;
+    expect(session?.step).toBe('end');
+    expect(session?.phase).toBe('completed');
+    expect(session?.mode).toBe('quickPlay');
+    expect(session?.teams.map((team) => team.name)).toEqual(['Team 1', 'Team 2']);
+    expect(session?.teams[0]?.score).toBeGreaterThan(session?.teams[1]?.score ?? 0);
+    expect(session?.lastResolvedTurn?.question.prompt).toBeTruthy();
+  });
+
   it('starts a fresh setup when changing quick play topic count after a match is in progress', () => {
     usePlayStore.setState({
       tokens: 20,

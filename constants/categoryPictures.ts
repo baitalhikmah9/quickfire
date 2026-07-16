@@ -1,5 +1,5 @@
 /**
- * Category artwork — local images from assets/topics/ only.
+ * Category artwork - local images from assets/topics/ only.
  * Categories without a bundled image resolve to null; UI shows MISSING.
  */
 
@@ -28,6 +28,7 @@ const LOCAL: Record<string, ImageSource> = {
   g7: require('../assets/topics/minecraft.png'),
   g8: require('../assets/topics/overwatch.png'),
   g9: require('../assets/topics/RDR2.png'),
+  g10: require('../assets/topics/super_mario_bros.png'),
   g11: require('../assets/topics/the-legend-of-zelda.png'),
   pc1: require('../assets/topics/atla.png'),
   pc2: require('../assets/topics/breaking_bad.png'),
@@ -69,10 +70,8 @@ const LOCAL: Record<string, ImageSource> = {
   s11: require('../assets/topics/which_player.png'),
   gen6: require('../assets/topics/capitals_and_cities.png'),
   gen7: require('../assets/topics/famous_firsts.png'),
-  gen8: require('../assets/topics/finish_the_quote.png'),
   gen9: require('../assets/topics/general_knowledge.png'),
   gen10: require('../assets/topics/which_decade.png'),
-  gen11: require('../assets/topics/guess_the_flag.png'),
   gen12: require('../assets/topics/guess_the_year.png'),
   gen13: require('../assets/topics/what_s_in_between.png'),
   gen14: require('../assets/topics/initials_only.png'),
@@ -83,11 +82,13 @@ const LOCAL: Record<string, ImageSource> = {
   gen19: require('../assets/topics/Talabul Ilm.png'),
   gen20: require('../assets/topics/trump_quotes.png'),
   gen21: require('../assets/topics/what_came_next.png'),
+  gen22: require('../assets/topics/whats_the_connection.png'),
   gen23: require('../assets/topics/Which_country.png'),
-  gen24: require('../assets/topics/who_said_this.png'),
+  gen24: require('../assets/topics/famous_quotes.png'),
   gen26: require('../assets/topics/before_they_were_famous.png'),
   h16: require('../assets/topics/european_christendom.png'),
   h17: require('../assets/topics/ertugral.png'),
+  h18: require('../assets/topics/kurulus_osman.png'),
   pc31: require('../assets/topics/attack_on_titan.png'),
   pc32: require('../assets/topics/peaky_blinders.png'),
   pc33: require('../assets/topics/suits.png'),

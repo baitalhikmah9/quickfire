@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   Image,
   Platform,
   View,
@@ -8,6 +7,7 @@ import {
   StyleSheet,
   type ViewStyle,
 } from 'react-native';
+import { showThemedAlert } from '@/store/themedAlert';
 import { Pressable } from '@/components/ui/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@clerk/clerk-expo';
@@ -15,7 +15,15 @@ import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, FONTS, HEADER, SPACING, LAYOUT, SOFT_SURFACE_FACE, softSurfaceLift } from '@/constants';
+import {
+  COLORS,
+  FONTS,
+  SPACING,
+  LAYOUT,
+  SHOW_HOME_MODE_INFO_UI,
+  SOFT_SURFACE_FACE,
+  softSurfaceLift,
+} from '@/constants';
 import { ScreenContent } from '@/components/ScreenContent';
 import { GameHeader } from '@/components/GameHeader';
 import { HubTokenChip } from '@/components/HubTokenChip';
@@ -119,11 +127,13 @@ export default function AppHubScreen() {
   if (isLoaded) markOnce('home screen: auth loaded');
   const authDisabled = isAuthDisabled();
   const { direction, t, uiLocale } = useI18n();
-  useThemeStore((state) => state.paletteId);
+  const paletteId = useThemeStore((state) => state.paletteId);
+  const isDarkTheme = paletteId === 'dark';
   const storedTokens = usePlayStore((state) => state.tokens);
   const tokens = !authDisabled && !isSignedIn ? 0 : storedTokens;
   const session = usePlayStore((state) => state.session);
   const startModeSession = usePlayStore((state) => state.startModeSession);
+  const loadDebugWinnerSession = usePlayStore((state) => state.loadDebugWinnerSession);
   const setEntryReservationId = usePlayStore((state) => state.setEntryReservationId);
   const refundEntryMutation = useMutation(api.wallet.refundEntry);
   const [activeModeInfo, setActiveModeInfo] = useState<GameMode | null>(null);
@@ -158,7 +168,7 @@ export default function AppHubScreen() {
   const startNewGame = useCallback(async (mode: GameMode) => {
     const minimumCost = minimumTokenCostForMode(mode);
     if (tokens < minimumCost) {
-      Alert.alert('', t('play.needTokens'));
+      showThemedAlert(t('play.needTokens'));
       return;
     }
 
@@ -175,7 +185,7 @@ export default function AppHubScreen() {
 
     const result = startModeSession(mode);
     if (!result.ok) {
-      Alert.alert('', result.error ?? t('play.needTokens'));
+      showThemedAlert(result.error ?? t('play.needTokens'));
       return;
     }
     router.push(mode === 'quickPlay' ? '/play/quick-length' : '/play/team-setup');
@@ -258,7 +268,7 @@ export default function AppHubScreen() {
           <View style={styles.pageColumn}>
             {/* Shared max-width aligns header bar + card row edges (hybrid hub column). */}
             {/*
-              Top pad lives on a normal View — SafeAreaView can ignore/override paddingTop
+              Top pad lives on a normal View - SafeAreaView can ignore/override paddingTop
               when status-bar insets are 0 (hidden bar).
             */}
             <View style={[styles.contentFrame, styles.contentFrameTopPad, { maxWidth: hubMaxWidth }]}>
@@ -266,6 +276,14 @@ export default function AppHubScreen() {
               variant="logoOnly"
               topPad="home"
               barMaxWidthOverride={isWeb ? hubMaxWidth : undefined}
+              onLogoLongPress={
+                __DEV__
+                  ? () => {
+                      loadDebugWinnerSession();
+                      router.push('/play/end');
+                    }
+                  : undefined
+              }
               leftSlot={
                 <HubTokenChip
                   label={t('common.tokens')}
@@ -341,6 +359,7 @@ export default function AppHubScreen() {
                           style={({ pressed }) => [
                             styles.modeTile,
                             styles.plasticFace,
+                            isDarkTheme && styles.plasticFaceDark,
                             {
                               backgroundColor: surface,
                               borderRadius: 44,
@@ -400,6 +419,7 @@ export default function AppHubScreen() {
                               style={[
                                 styles.modeTileSignInButton,
                                 SOFT_SURFACE_FACE,
+                                isDarkTheme && styles.plasticFaceDark,
                                 softSurfaceLift(),
                                 { backgroundColor: T.colors.accentGlow },
                                 isWeb && { marginTop: SPACING.xs },
@@ -436,24 +456,26 @@ export default function AppHubScreen() {
                         </Pressable>
                       );
                     })()}
-                    <Pressable
-                      onPress={() => openModeInfo(mode.id)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${t(mode.titleKey)} info`}
-                      style={({ pressed }) => [
-                        styles.modeInfoButton,
-                        {
-                          opacity: pressed ? 0.82 : 1,
-                          transform: pressed ? [{ scale: 0.94 }] : [{ scale: 1 }],
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name="information-circle-outline"
-                        size={modeInfoIconSize}
-                        color={textPrimary}
-                      />
-                    </Pressable>
+                    {SHOW_HOME_MODE_INFO_UI ? (
+                      <Pressable
+                        onPress={() => openModeInfo(mode.id)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t(mode.titleKey)} info`}
+                        style={({ pressed }) => [
+                          styles.modeInfoButton,
+                          {
+                            opacity: pressed ? 0.82 : 1,
+                            transform: pressed ? [{ scale: 0.94 }] : [{ scale: 1 }],
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="information-circle-outline"
+                          size={modeInfoIconSize}
+                          color={textPrimary}
+                        />
+                      </Pressable>
+                    ) : null}
                   </View>
                 ))}
               </View>
@@ -480,6 +502,7 @@ export default function AppHubScreen() {
               style={[
                 styles.infoModalCard,
                 styles.plasticFace,
+                isDarkTheme && styles.plasticFaceDark,
                 brandRaisedSurfaceShadow('hero'),
                 { backgroundColor: surface },
               ]}
@@ -497,6 +520,7 @@ export default function AppHubScreen() {
                 onPress={closeModeInfo}
                 style={({ pressed }) => [
                   styles.infoModalCloseButton,
+                  isDarkTheme && styles.plasticFaceDark,
                   { opacity: pressed ? 0.7 : 1 },
                 ]}
               >
@@ -543,6 +567,7 @@ export default function AppHubScreen() {
                   styles.raisedButton,
                   styles.primaryRaisedButton,
                   styles.primaryRaisedButtonDepth,
+                  isDarkTheme && styles.plasticFaceDark,
                   { opacity: pressed ? 0.88 : 1, transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] },
                 ]}
               >
@@ -556,6 +581,7 @@ export default function AppHubScreen() {
                   styles.raisedButton,
                   styles.secondaryRaisedButton,
                   styles.secondaryRaisedButtonDepth,
+                  isDarkTheme && styles.plasticFaceDark,
                   {
                     backgroundColor: surface,
                     opacity: pressed ? 0.88 : 1,
@@ -579,12 +605,16 @@ const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
   },
-  /** Light top lip + soft bottom edge — reads extruded on white squircles. */
+  /** Light top lip + soft bottom edge - reads extruded on white squircles. */
   plasticFace: {
     borderTopWidth: 2,
     borderTopColor: 'rgba(255, 255, 255, 0.78)',
     borderBottomWidth: 3,
     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  plasticFaceDark: {
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
   },
   safeArea: {
     flex: 1,
@@ -600,7 +630,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 0,
   },
-  /** Shared content frame — header and cards share one max-width + padding system. */
+  /** Shared content frame - header and cards share one max-width + padding system. */
   contentFrame: {
     flex: 1,
     width: '100%',
@@ -755,7 +785,7 @@ const styles = StyleSheet.create({
   },
   /**
    * Full-viewport scrim hosted by WebAwareModal (native Modal / web fixed shell).
-   * flex + explicit size + absoluteFill — same belt-and-suspenders as PlayMatchMenuModal.
+   * flex + explicit size + absoluteFill - same belt-and-suspenders as PlayMatchMenuModal.
    * absoluteFill alone can leave edges undimmed when the shell sizes via flex only.
    */
   infoModalRoot: {

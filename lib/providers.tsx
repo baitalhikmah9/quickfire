@@ -12,8 +12,10 @@ import { useGameHydration } from '@/store/game';
 import { usePlayHydration } from '@/store/play';
 import { useRevenueCatSync } from '@/lib/hooks/useRevenueCatSync';
 import { useWalletSync } from '@/lib/hooks/useWalletSync';
+import { useDisplayHydration } from '@/store/display';
 import { markOnce } from '@/lib/startupTiming';
 import { useEffect } from 'react';
+import { ThemedAlertHost } from '@/components/ThemedAlertModal';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
 const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL ?? '';
@@ -55,12 +57,18 @@ function AppHydration({ children }: { children: React.ReactNode }) {
     if (isLoaded) markOnce('clerk session resolved');
   }, [isLoaded]);
   useThemeHydration();
+  useDisplayHydration();
   useConvexUserProfileSync();
   useRevenueCatSync();
   useWalletSync();
   usePlayHydration();
   useGameHydration();
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <ThemedAlertHost />
+    </>
+  );
 }
 
 function SetupRequired() {
