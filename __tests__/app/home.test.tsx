@@ -3,6 +3,28 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Modal, Platform, StyleSheet } from 'react-native';
 
+/** Controllable viewport for compact (phone landscape) fill-height assertions. */
+const mockUseWindowDimensions = jest.fn(() => ({
+  width: 800,
+  height: 700,
+  scale: 2,
+  fontScale: 1,
+}));
+
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => mockUseWindowDimensions(),
+}));
+
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children, ...props }: { children?: React.ReactNode }) => {
+    const ReactLib = require('react');
+    const { View } = require('react-native');
+    return ReactLib.createElement(View, props, children);
+  },
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 import AppHubScreen from '@/app/(app)/index';
 import { COLORS, FONTS } from '@/constants';
 import { usePlayStore } from '@/store/play';
@@ -90,6 +112,12 @@ describe('AppHubScreen', () => {
     mockPush.mockClear();
     mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: true });
     mockIsAuthDisabled.mockReturnValue(false);
+    mockUseWindowDimensions.mockReturnValue({
+      width: 800,
+      height: 700,
+      scale: 2,
+      fontScale: 1,
+    });
     useThemeStore.setState({ paletteId: 'default' });
     usePlayStore.setState({ session: null, tokens: 20, rapidFire: null });
     await usePlayStore.getState().hydrate();
@@ -233,6 +261,56 @@ describe('AppHubScreen', () => {
       flexDirection: 'row',
       flexWrap: 'nowrap',
     });
+  });
+
+  it('keeps header chrome and taller aspect-ratio mode cards on compact phone landscape', () => {
+    mockUseWindowDimensions.mockReturnValue({
+      width: 874,
+      height: 402,
+      scale: 3,
+      fontScale: 1,
+    });
+
+    render(<AppHubScreen />);
+
+    expect(screen.getByTestId('home-header-chrome')).toBeTruthy();
+    expect(screen.getByLabelText('BackFire')).toBeTruthy();
+    expect(screen.getByTestId('home-open-settings')).toBeTruthy();
+
+    const rowStyle = StyleSheet.flatten(screen.getByTestId('home-mode-row').props.style);
+    expect(rowStyle).toMatchObject({
+      marginTop: 0,
+      paddingVertical: 4,
+      justifyContent: 'center',
+      alignItems: 'center',
+    });
+
+    expect(StyleSheet.flatten(screen.getByTestId('home-mode-tile-quickPlay').props.style)).toMatchObject({
+      aspectRatio: 0.72,
+    });
+  });
+
+  it('matches Android mode description size on compact iOS landscape without clipping long blurbs', () => {
+    // iPhone landscape short side is compact (< 560); Android 720-tall landscape is not.
+    mockUseWindowDimensions.mockReturnValue({
+      width: 874,
+      height: 402,
+      scale: 3,
+      fontScale: 1,
+    });
+
+    render(<AppHubScreen />);
+
+    for (const mode of ['quickPlay', 'classic', 'random', 'rumble'] as const) {
+      const copy = screen.getByTestId(`home-mode-card-copy-${mode}`);
+      expect(StyleSheet.flatten(copy.props.style)).toMatchObject({
+        fontSize: 11,
+        lineHeight: 15,
+        minHeight: 45,
+      });
+      // 3 lines: room for Rumble’s long EN blurb on ~155pt card width.
+      expect(copy.props.numberOfLines).toBe(3);
+    }
   });
 
   it('shows the BackFire logo image in the home header title area', () => {

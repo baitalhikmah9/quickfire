@@ -46,6 +46,7 @@ Do not add these as Vercel static web client variables unless the app starts rea
 - Android OAuth uses `clerk://com.playbackfire.app.callback` (auto-provisioned when `com.playbackfire.app` is registered under Native applications). `app/+native-intent.tsx` rewrites that callback to `app/sso-callback.tsx`.
 - Add HTTPS web redirects for the hosted domain, including `https://<production-domain>/` and any app paths used as OAuth return locations.
 - Confirm Google and Apple OAuth provider settings include the hosted Vercel domain where those providers require it.
+- **Apple:** Web uses Clerk browser `oauth_apple` (production needs Services ID + key credentials in Clerk). iOS uses native Sign in with Apple (`useSignInWithApple` + App ID capability); register the app under Clerk **Native applications** (Team ID + `com.playbackfire.app`). Android does not offer Apple Sign In in the product UI.
 - If the production publishable key encodes a custom Clerk Frontend API host such as `clerk.playbackfire.com`, verify that host resolves before deploying:
 
 ```bash

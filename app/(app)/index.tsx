@@ -14,7 +14,7 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   COLORS,
   FONTS,
@@ -32,7 +32,9 @@ import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { isAuthDisabled } from '@/lib/authMode';
 import { useViewportLayout } from '@/lib/hooks/useViewportLayout';
+import { getHomeModeCopyLayout, getHomeModeRowLayout } from '@/lib/layout/homeModeLayout';
 import { usePlayStore } from '@/store/play';
+import { useDisplayTokenBalance } from '@/lib/hooks/useDisplayTokenBalance';
 import { refundGameEntry } from '@/lib/wallet/gameEntry';
 import { useThemeStore } from '@/store/theme';
 import { HOME_SOFT_UI } from '@/themes';
@@ -128,8 +130,7 @@ export default function AppHubScreen() {
   const { direction, t, uiLocale } = useI18n();
   const paletteId = useThemeStore((state) => state.paletteId);
   const isDarkTheme = paletteId === 'dark';
-  const storedTokens = usePlayStore((state) => state.tokens);
-  const tokens = !authDisabled && !isSignedIn ? 0 : storedTokens;
+  const tokens = useDisplayTokenBalance();
   const session = usePlayStore((state) => state.session);
   const startModeSession = usePlayStore((state) => state.startModeSession);
   const loadDebugWinnerSession = usePlayStore((state) => state.loadDebugWinnerSession);
@@ -139,10 +140,27 @@ export default function AppHubScreen() {
   const [pendingMode, setPendingMode] = useState<GameMode | null>(null);
 
   const viewport = useViewportLayout();
+  const insets = useSafeAreaInsets();
   /** Tighter chrome when vertical space is limited (e.g. phone landscape). */
   const compact = viewport.isCompact;
   const hubMaxWidth = viewport.contentMaxWidth('hub');
   const hybridScale = viewport.isWide ? viewport.scale : 1;
+  const modeRowLayout = useMemo(
+    () =>
+      getHomeModeRowLayout({
+        isCompact: viewport.isCompact,
+        isWide: viewport.isWide,
+        isTall: viewport.isTall,
+      }),
+    [viewport.isCompact, viewport.isWide, viewport.isTall]
+  );
+  /**
+   * Horizontal gutters: max(safe-area, screen gutter) — not sum.
+   * SafeAreaView left/right + paddingHorizontal was stacking ~16pt of dead space
+   * on top of landscape Dynamic Island / home-indicator insets.
+   */
+  const padLeft = Math.max(insets.left, LAYOUT.screenGutter);
+  const padRight = Math.max(insets.right, LAYOUT.screenGutter);
 
   const rowDir = getRowDirection(direction);
   const formattedTokens = tokens.toLocaleString(uiLocale, { maximumFractionDigits: 0 });
@@ -158,7 +176,10 @@ export default function AppHubScreen() {
     : Math.round((isWeb ? 96 : 92) * hybridScale);
   const modeInfoIconSize = compact ? 20 : 24;
   const modeTitleSize = compact ? 12 : Math.round((isWeb ? 17 : 16) * hybridScale);
-  const modeCopySize = compact ? 10 : Math.round((isWeb ? 12 : 11) * hybridScale);
+  const modeCopyLayout = useMemo(
+    () => getHomeModeCopyLayout({ isWeb, hybridScale }),
+    [isWeb, hybridScale]
+  );
   const minimumTokenCostForMode = useCallback(
     (mode: GameMode) => (mode === 'quickPlay' ? getGameTokenCost(mode, 3) : getGameTokenCost(mode)),
     []
@@ -260,7 +281,8 @@ export default function AppHubScreen() {
     <View style={[styles.rootContainer, { backgroundColor: canvas }]}>
       <SafeAreaView
         collapsable={false}
-        edges={['top', 'bottom', 'left', 'right']}
+        // Vertical only — horizontal insets applied as max(safe, gutter) on the content frame.
+        edges={['top', 'bottom']}
         style={styles.safeArea}
       >
         <ScreenContent fullWidth style={styles.viewport}>
@@ -270,70 +292,86 @@ export default function AppHubScreen() {
               Top pad lives on a normal View - SafeAreaView can ignore/override paddingTop
               when status-bar insets are 0 (hidden bar).
             */}
-            <View style={[styles.contentFrame, styles.contentFrameTopPad, { maxWidth: hubMaxWidth }]}>
-            <GameHeader
-              variant="logoOnly"
-              topPad="home"
-              barMaxWidthOverride={isWeb ? hubMaxWidth : undefined}
-              onLogoLongPress={
-                __DEV__
-                  ? () => {
-                      loadDebugWinnerSession();
-                      router.push('/play/end');
-                    }
-                  : undefined
-              }
-              leftSlot={
-                <HubTokenChip
-                  label={t('common.tokens')}
-                  value={formattedTokens}
-                  rowDirection={rowDir}
-                  variant="softUi"
-                  outerStyle={{ alignSelf: 'flex-start' }}
-                  onPress={() => router.push('/(app)/store')}
-                  accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
-                />
-              }
-              rightSlot={
-                <Pressable
-                  testID="home-open-settings"
-                  onPress={() => router.push('/(app)/settings')}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.settings')}
-                  style={({ pressed }) => [
-                    styles.settingsImageButton,
-                    { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
-                  ]}
-                >
-                  <Image
-                    source={require('../../assets/QF Settings button.png')}
-                    style={styles.settingsImage}
-                    resizeMode="contain"
+            <View
+              style={[
+                styles.contentFrame,
+                {
+                  maxWidth: hubMaxWidth,
+                  paddingTop: modeRowLayout.contentTopPad,
+                  paddingLeft: padLeft,
+                  paddingRight: padRight,
+                },
+              ]}
+            >
+            {/* flexShrink:0 + zIndex keep logo/settings above the mode row on iOS. */}
+            <View style={styles.headerChrome} testID="home-header-chrome">
+              <GameHeader
+                variant="logoOnly"
+                topPad="home"
+                barMaxWidthOverride={isWeb ? hubMaxWidth : undefined}
+                onLogoLongPress={
+                  __DEV__
+                    ? () => {
+                        loadDebugWinnerSession();
+                        router.push('/play/end');
+                      }
+                    : undefined
+                }
+                leftSlot={
+                  <HubTokenChip
+                    label={t('common.tokens')}
+                    value={formattedTokens}
+                    rowDirection={rowDir}
+                    variant="softUi"
+                    outerStyle={{ alignSelf: 'flex-start' }}
+                    onPress={() => router.push('/(app)/store')}
+                    accessibilityLabel={`${t('common.tokens')}: ${formattedTokens}`}
                   />
-                </Pressable>
-              }
-            />
+                }
+                rightSlot={
+                  <Pressable
+                    testID="home-open-settings"
+                    onPress={() => router.push('/(app)/settings')}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('common.settings')}
+                    style={({ pressed }) => [
+                      styles.settingsImageButton,
+                      { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+                    ]}
+                  >
+                    <Image
+                      source={require('../../assets/QF Settings button.png')}
+                      style={styles.settingsImage}
+                      resizeMode="contain"
+                    />
+                  </Pressable>
+                }
+              />
+            </View>
 
-            <View style={[styles.mainFill, { justifyContent: viewport.mainJustify }]}>
+            <View style={[styles.mainFill, { justifyContent: modeRowLayout.mainJustify }]}>
               <View
                 testID="home-mode-row"
                 style={[
                   styles.modeGrid,
+                  modeRowLayout.fillHeight && styles.modeGridFill,
                   {
                     flexDirection: rowDir,
                     flexWrap: 'nowrap',
                     gap: modeGap,
-                    // Tall viewports center via mainFill; keep a small top offset only when top-aligned.
-                    marginTop: viewport.mainJustify === 'center' ? 0 : 36,
+                    marginTop: modeRowLayout.modeRowMarginTop,
+                    paddingVertical: modeRowLayout.modeRowPaddingVertical,
                   },
                 ]}
               >
                 {HOME_MODES.map((mode) => (
                   <View
                     key={mode.id}
+                    testID={`home-mode-tile-${mode.id}`}
                     style={[
                       styles.modeTileContainer,
-                      viewport.isWide && { aspectRatio: 0.95 },
+                      modeRowLayout.fillHeight && styles.modeTileContainerFill,
+                      { aspectRatio: modeRowLayout.tileAspectRatio },
                     ]}
                   >
                     {(() => {
@@ -357,6 +395,7 @@ export default function AppHubScreen() {
                           testID={`home-mode-card-${mode.id}`}
                           style={({ pressed }) => [
                             styles.modeTile,
+                            compact && styles.modeTileCompactPad,
                             styles.plasticFace,
                             isDarkTheme && styles.plasticFaceDark,
                             {
@@ -400,16 +439,14 @@ export default function AppHubScreen() {
                             testID={`home-mode-card-copy-${mode.id}`}
                             style={[
                               styles.modeTileCopy,
-                              compact && styles.modeTileCopyCompact,
                               {
                                 color: textMuted,
-                                fontSize: modeCopySize,
-                                lineHeight: Math.round(modeCopySize * 1.35),
+                                fontSize: modeCopyLayout.fontSize,
+                                lineHeight: modeCopyLayout.lineHeight,
+                                minHeight: modeCopyLayout.minHeight,
                               },
                             ]}
-                            numberOfLines={2}
-                            adjustsFontSizeToFit
-                            minimumFontScale={0.82}
+                            numberOfLines={modeCopyLayout.maxLines}
                           >
                             {t(mode.copyKey)}
                           </Text>
@@ -635,17 +672,24 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: LAYOUT.hubMaxWidth,
     alignSelf: 'center',
-    paddingHorizontal: LAYOUT.screenGutter,
+    // Horizontal padding applied inline via max(safe-area, screenGutter).
   },
-  /** Visible top gap while status bar is hidden (safe-area top ≈ 0). */
-  contentFrameTopPad: {
-    paddingTop: SPACING.xl,
+  /** Never let the mode row flex-shrink the logo / settings bar on iOS. */
+  headerChrome: {
+    flexGrow: 0,
+    flexShrink: 0,
+    width: '100%',
+    zIndex: 2,
+    elevation: 2,
   },
   mainFill: {
     flex: 1,
     minWidth: 0,
     minHeight: 0,
     justifyContent: 'flex-start',
+    zIndex: 0,
+    // Contain mode tiles so they cannot paint over header chrome.
+    overflow: 'hidden',
   },
 
   settingsImageButton: {
@@ -655,23 +699,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   settingsImage: {
-    width: '100%',
-    height: '100%',
+    width: 52,
+    height: 52,
   },
   modeGrid: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 0,
-    marginTop: 36,
     width: '100%',
+  },
+  /**
+   * Phone landscape: expand into leftover height under the header, then
+   * center the aspect-locked tiles inside (alignItems center — not stretch).
+   */
+  modeGridFill: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minHeight: 0,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modeTileContainer: {
     flex: 1,
-    aspectRatio: 0.88,
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  /** Keep aspect-driven height; do not stretch to full row height. */
+  modeTileContainerFill: {
+    maxHeight: '100%',
+    alignSelf: 'center',
   },
   modeTile: {
     width: '100%',
@@ -682,6 +741,11 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.lg,
     overflow: 'hidden',
     zIndex: 1,
+  },
+  /** Tighter side pad on phone landscape so 3-line blurbs use full card width. */
+  modeTileCompactPad: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.md,
   },
   modeInfoButton: {
     position: 'absolute',
@@ -700,6 +764,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textTransform: 'uppercase',
     zIndex: 1,
+    flexShrink: 0,
   },
   modeTileLabelCompact: {
     fontSize: 12,
@@ -713,10 +778,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.15,
     textAlign: 'center',
     zIndex: 1,
-  },
-  modeTileCopyCompact: {
-    fontSize: 10,
-    lineHeight: 13,
+    width: '100%',
+    alignSelf: 'stretch',
+    flexShrink: 0,
   },
   modeTileCostRow: {
     marginTop: SPACING.sm,

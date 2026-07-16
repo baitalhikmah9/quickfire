@@ -121,8 +121,16 @@ export function PlayScaffold({
   const padLeft = Math.max(insets.left, LAYOUT.screenGutter);
   const padRight = Math.max(insets.right, LAYOUT.screenGutter);
   const isWeb = Platform.OS === 'web';
+  /**
+   * Prefer max(safe, gutter) for horizontal insets on both edge and framed layouts.
+   * Stacking SafeAreaView left/right + paddingHorizontal wastes ~16pt per side on
+   * landscape iPhones (Dynamic Island / home indicator already provide large insets).
+   */
   const resolvedSafeAreaEdges: readonly Edge[] =
-    safeAreaEdges ?? (bodyEdgeToEdge ? (['top', 'bottom'] as const) : (['top', 'bottom', 'left', 'right'] as const));
+    safeAreaEdges ??
+    (bodyEdgeToEdge
+      ? (['top', 'bottom'] as const)
+      : (['top', 'bottom'] as const));
   /** Question-screen match: if top safe-area is applied by SafeAreaView, only add standard pad. */
   const chromeTopPad = resolvedSafeAreaEdges.includes('top')
     ? getStandardChromeTopPadding(isWeb)
@@ -213,7 +221,13 @@ export function PlayScaffold({
           paddingRight: padRight,
         },
       ]
-    : contentStyles;
+    : [
+        ...contentStyles,
+        {
+          paddingLeft: padLeft,
+          paddingRight: padRight,
+        },
+      ];
 
   /**
    * Shared content frame (home/store pattern): when `contentMaxWidth` is set, header
@@ -328,7 +342,7 @@ const styles = StyleSheet.create({
   contentFit: {
     flex: 1,
     paddingTop: 0,
-    paddingHorizontal: LAYOUT.screenGutter,
+    // Horizontal padding applied inline via max(safe-area, screenGutter).
     paddingBottom: SPACING.xs,
     minHeight: 0,
   },

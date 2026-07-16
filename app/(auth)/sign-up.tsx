@@ -1,5 +1,13 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { Pressable } from '@/components/ui/Pressable';
 import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
@@ -23,6 +31,8 @@ import { goBackOrReplace } from '@/lib/navigation/goBackOrReplace';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
+const AUTH_CARD_MAX_WIDTH = 400;
+const BACK_CONTROL_SIZE = 44;
 
 function useWarmUpBrowser() {
   useEffect(() => {
@@ -38,6 +48,7 @@ function useWarmUpBrowser() {
 export default function SignUpScreen() {
   useWarmUpBrowser();
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { direction, t } = useI18n();
   const { busy, signInWithOAuthStrategy } = useClerkOAuthFlow();
   const darkModeFlatTop = useDarkModeFlatTop();
@@ -47,6 +58,14 @@ export default function SignUpScreen() {
   const textPrimary = T.colors.textPrimary;
   const textMuted = T.colors.textMuted;
 
+  const cardEdgeClearance = useMemo(() => {
+    const contentWidth = Math.max(0, width - LAYOUT.screenGutter * 2);
+    const cardWidth = Math.min(AUTH_CARD_MAX_WIDTH, contentWidth);
+    const cardSideInset = Math.max(0, (contentWidth - cardWidth) / 2);
+    const needed = BACK_CONTROL_SIZE + SPACING.sm;
+    return Math.max(0, needed - cardSideInset);
+  }, [width]);
+
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: canvas }]}>
       <ScrollView
@@ -54,46 +73,60 @@ export default function SignUpScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable
-          onPress={() => goBackOrReplace(router, '/(app)/')}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          style={({ pressed }) => [
-            styles.headerSquircleInner,
-            SOFT_SURFACE_FACE,
-            darkModeFlatTop,
-            softSurfaceLift(),
-            {
-              backgroundColor: surface,
-              opacity: pressed ? 0.94 : 1,
-              transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-            },
-          ]}
-        >
-          <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
-        </Pressable>
+        <View style={styles.heroBlock}>
+          <Pressable
+            onPress={() => goBackOrReplace(router, '/(app)/')}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.back')}
+            style={({ pressed }) => [
+              styles.headerSquircleInner,
+              styles.backEdge,
+              direction === 'rtl' ? styles.backEdgeEnd : styles.backEdgeStart,
+              SOFT_SURFACE_FACE,
+              darkModeFlatTop,
+              softSurfaceLift(),
+              {
+                backgroundColor: surface,
+                opacity: pressed ? 0.94 : 1,
+                transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+              },
+            ]}
+          >
+            <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
+          </Pressable>
 
-        <AuthEmailSignUpForm
-          renderCollectFooter={() =>
-            busy ? (
-              <View style={styles.busy}>
-                <ActivityIndicator size="large" color={textPrimary} />
-              </View>
-            ) : (
-              <>
-                <AuthOrDivider label={t('auth.continueWith')} />
-                <OAuthProviderButtons
-                  onGooglePress={() => void signInWithOAuthStrategy('oauth_google')}
-                  onApplePress={() => void signInWithOAuthStrategy('oauth_apple')}
-                  googlePrimaryLabel={t('auth.signIn.google')}
-                  googleSecondaryLabel={t('auth.signUp.fastSecure')}
-                  applePrimaryLabel={t('auth.signIn.apple')}
-                  appleSecondaryLabel={t('auth.signUp.fastSecure')}
-                />
-              </>
-            )
-          }
-        />
+          <View
+            style={[
+              styles.cardSlot,
+              cardEdgeClearance > 0 &&
+                (direction === 'rtl'
+                  ? { paddingEnd: cardEdgeClearance }
+                  : { paddingStart: cardEdgeClearance }),
+            ]}
+          >
+            <AuthEmailSignUpForm
+              renderCollectFooter={() =>
+                busy ? (
+                  <View style={styles.busy}>
+                    <ActivityIndicator size="large" color={textPrimary} />
+                  </View>
+                ) : (
+                  <>
+                    <AuthOrDivider label={t('auth.continueWith')} />
+                    <OAuthProviderButtons
+                      onGooglePress={() => void signInWithOAuthStrategy('oauth_google')}
+                      onApplePress={() => void signInWithOAuthStrategy('oauth_apple')}
+                      googlePrimaryLabel={t('auth.signIn.google')}
+                      googleSecondaryLabel={t('auth.signUp.fastSecure')}
+                      applePrimaryLabel={t('auth.signIn.apple')}
+                      appleSecondaryLabel={t('auth.signUp.fastSecure')}
+                    />
+                  </>
+                )
+              }
+            />
+          </View>
+        </View>
 
         <View style={styles.links}>
           <View style={styles.footerRow}>
@@ -142,13 +175,30 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxl,
     gap: SPACING.xl,
   },
+  heroBlock: {
+    width: '100%',
+    position: 'relative',
+  },
+  cardSlot: {
+    width: '100%',
+  },
+  backEdge: {
+    position: 'absolute',
+    top: 0,
+    zIndex: 2,
+  },
+  backEdgeStart: {
+    left: 0,
+  },
+  backEdgeEnd: {
+    right: 0,
+  },
   headerSquircleInner: {
-    width: 44,
-    height: 44,
+    width: BACK_CONTROL_SIZE,
+    height: BACK_CONTROL_SIZE,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.sm,
   },
   busy: {
     paddingVertical: SPACING.md,

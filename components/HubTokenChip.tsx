@@ -115,7 +115,7 @@ export function HubTokenChip({
       >
         <View style={[styles.row, styles.softRow, { flexDirection: rowDirection }]}>
           <TokenMark artworkSource={artworkSource} isDark={isDark} iconColor={tokenIconColor} />
-          <Text style={[styles.softValue, { color: soft.textPrimary }]} numberOfLines={1}>
+          <Text testID="hub-token-chip-value" style={[styles.softValue, { color: soft.textPrimary }]}>
             {value}
           </Text>
         </View>
@@ -125,6 +125,7 @@ export function HubTokenChip({
     if (onPress) {
       return (
         <Pressable
+          testID="hub-token-chip"
           onPress={onPress}
           style={[styles.outerSoft, outerStyle]}
           accessibilityRole="button"
@@ -137,6 +138,7 @@ export function HubTokenChip({
 
     return (
       <View
+        testID="hub-token-chip"
         style={[styles.outerSoft, outerStyle]}
         accessibilityRole="text"
         accessibilityLabel={accessibilityLabel ?? `${label}: ${value}`}
@@ -168,7 +170,7 @@ export function HubTokenChip({
                 <Ionicons name="diamond" size={13} color="#FFFFFF" accessibilityIgnoresInvertColors />
               </View>
             )}
-            <Text style={styles.value} numberOfLines={1}>
+            <Text testID="hub-token-chip-value" style={styles.value}>
               {value}
             </Text>
           </View>
@@ -180,6 +182,7 @@ export function HubTokenChip({
   if (onPress) {
     return (
       <Pressable
+        testID="hub-token-chip"
         onPress={onPress}
         style={[styles.outer, outerStyle]}
         accessibilityRole="button"
@@ -192,6 +195,7 @@ export function HubTokenChip({
 
   return (
     <View
+      testID="hub-token-chip"
       style={[styles.outer, outerStyle]}
       accessibilityRole="text"
       accessibilityLabel={accessibilityLabel ?? `${label}: ${value}`}
@@ -202,13 +206,16 @@ export function HubTokenChip({
 }
 
 const styles = StyleSheet.create({
+  // Content-sized: never max-width or shrink, so large balances stay fully visible.
   outer: {
     alignSelf: 'flex-end',
-    maxWidth: 240,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   outerSoft: {
     alignSelf: 'flex-end',
-    maxWidth: 240,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   softFace: {
     height: SOFT_SQUIRCLE_SIZE,
@@ -217,20 +224,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'flex-start',
+    flexShrink: 0,
+    overflow: 'visible',
   },
   softRow: {
     gap: 8,
+    flexShrink: 0,
   },
   softValue: {
     fontFamily: FONTS.uiBold,
     fontSize: 16,
     fontVariant: ['tabular-nums'],
+    flexShrink: 0,
   },
   darkDiamondMark: {
     width: 28,
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   darkDiamondUnderlay: {
     position: 'absolute',
@@ -238,16 +251,19 @@ const styles = StyleSheet.create({
   artwork: {
     width: 22,
     height: 22,
+    flexShrink: 0,
   },
   pressable: {
     borderRadius: CHIP_RADIUS,
-    overflow: 'hidden',
+    overflow: 'visible',
     backgroundColor: COLORS.primary,
+    flexShrink: 0,
   },
   stack: {
     position: 'relative',
-    alignSelf: 'stretch',
+    alignSelf: 'flex-start',
     paddingBottom: DEPTH_LIP,
+    flexShrink: 0,
   },
   depth: {
     position: 'absolute',
@@ -263,11 +279,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     borderTopWidth: StyleSheet.hairlineWidth * 2,
     borderTopColor: 'rgba(255, 255, 255, 0.28)',
+    flexShrink: 0,
   },
   row: {
     alignItems: 'center',
     gap: 8,
     justifyContent: 'center',
+    flexShrink: 0,
   },
   iconTile: {
     width: 22,
@@ -276,11 +294,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   value: {
     fontFamily: FONTS.uiBold,
     fontSize: 16,
     color: '#FFFFFF',
     fontVariant: ['tabular-nums'],
+    flexShrink: 0,
   },
 });

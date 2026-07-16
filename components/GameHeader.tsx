@@ -213,10 +213,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   side: {
-    flex: 1,
-    minWidth: 0,
+    // Grow to balance the bar, but do not force-shrink slot content (token chip, back).
+    flexGrow: 1,
+    flexShrink: 0,
+    flexBasis: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
   },
   sideLeft: {
     alignItems: 'flex-start',

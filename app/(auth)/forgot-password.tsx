@@ -105,32 +105,36 @@ export default function ForgotPasswordScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable
-          onPress={() => goBackOrReplace(router, '/(auth)/sign-in')}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          style={({ pressed }) => [
-            styles.headerSquircleInner,
-            SOFT_SURFACE_FACE,
-            darkModeFlatTop,
-            softSurfaceLift(),
-            {
-              backgroundColor: surface,
-              opacity: pressed ? 0.94 : 1,
-              transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-            },
-          ]}
-        >
-          <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
-        </Pressable>
+        <View style={styles.heroBlock}>
+          <Pressable
+            onPress={() => goBackOrReplace(router, '/(auth)/sign-in')}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.back')}
+            style={({ pressed }) => [
+              styles.headerSquircleInner,
+              styles.backEdge,
+              direction === 'rtl' ? styles.backEdgeEnd : styles.backEdgeStart,
+              SOFT_SURFACE_FACE,
+              darkModeFlatTop,
+              softSurfaceLift(),
+              {
+                backgroundColor: surface,
+                opacity: pressed ? 0.94 : 1,
+                transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+              },
+            ]}
+          >
+            <Ionicons name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'} size={22} color={textPrimary} />
+          </Pressable>
 
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: textPrimary }]}>
-            {t('auth.forgot.title')}
-          </Text>
-          <Text style={[styles.subtitle, { color: textMuted }]}>
-            {completed ? 'Your password has been updated.' : t('auth.forgot.subtitle')}
-          </Text>
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: textPrimary }]}>
+              {t('auth.forgot.title')}
+            </Text>
+            <Text style={[styles.subtitle, { color: textMuted }]}>
+              {completed ? 'Your password has been updated.' : t('auth.forgot.subtitle')}
+            </Text>
+          </View>
         </View>
 
         {!submitted ? (
@@ -260,16 +264,32 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxl,
     gap: SPACING.xl,
   },
+  heroBlock: {
+    width: '100%',
+    position: 'relative',
+  },
+  backEdge: {
+    position: 'absolute',
+    top: 0,
+    zIndex: 2,
+  },
+  backEdgeStart: {
+    left: 0,
+  },
+  backEdgeEnd: {
+    right: 0,
+  },
   headerSquircleInner: {
     width: 44,
     height: 44,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.sm,
   },
   header: {
     gap: SPACING.xs,
+    // Keep title clear of the absolute edge back control.
+    paddingHorizontal: 52,
   },
   title: {
     fontFamily: FONTS.displayBold,

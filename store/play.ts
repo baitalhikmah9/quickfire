@@ -674,7 +674,9 @@ function createPlayStore() {
   return create<PlayStore>()(
   persist(
     (set, get) => ({
-      tokens: 100,
+      // Signed-out / pre-auth default is 0. Signed-in balances come from Convex
+      // via useWalletSync; auth-disabled local mode can still grant/set tokens.
+      tokens: 0,
       session: null,
       rapidFire: null,
       entryReservationId: null,

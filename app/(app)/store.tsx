@@ -39,6 +39,7 @@ import { isAuthDisabled } from '@/lib/authMode';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
 import { useTokenPurchases } from '@/lib/hooks/useTokenPurchases';
+import { resolveDisplayTokenBalance } from '@/lib/wallet/displayTokenBalance';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
@@ -176,12 +177,14 @@ export default function StoreScreen() {
   const redeemPromoCode = useMutation(api.promo.redeemCode);
 
   // Display token balance: signed-out users always see 0.
-  const displayTokens =
-    !authDisabled && !isSignedIn
-      ? 0
-      : balanceData && typeof balanceData.balance === 'number'
+  const displayTokens = resolveDisplayTokenBalance({
+    authDisabled,
+    isSignedIn,
+    storedTokens:
+      balanceData && typeof balanceData.balance === 'number'
         ? balanceData.balance
-        : localTokens;
+        : localTokens,
+  });
   const formattedDisplayTokens = formatTokens(displayTokens);
 
   // ── RevenueCat purchases ────────────────────────────────────────────────
@@ -604,7 +607,9 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xs,
   },
   headerSide: {
-    width: 116,
+    // Grow with content (token chip) — fixed width was clipping larger balances.
+    minWidth: 44,
+    flexShrink: 0,
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
@@ -613,6 +618,7 @@ const styles = StyleSheet.create({
   },
   headerCenter: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

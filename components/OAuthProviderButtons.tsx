@@ -1,7 +1,8 @@
-import { View, StyleSheet, Image, Platform } from 'react-native';
+import { View, StyleSheet, Image, Platform, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from '@/components/ui/Pressable';
-import { SPACING } from '@/constants';
+import { FONTS, SPACING } from '@/constants';
+import { supportsAppleSignIn } from '@/lib/auth/appleSignIn';
 import { HOME_SOFT_UI } from '@/themes';
 import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
@@ -40,8 +41,8 @@ const APPLE_LOGO_URI =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#000000" d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>`
   );
 
-const LOGO_SIZE = 24;
-const ICON_BUTTON = 44;
+const LOGO_SIZE = 22;
+const BUTTON_HEIGHT = 48;
 const ICON_RADIUS = 14;
 
 function accessibilityHint(primary?: string, secondary?: string): string {
@@ -71,7 +72,7 @@ function GoogleBrandMark() {
   );
 }
 
-function AppleBrandMark() {
+function AppleBrandMark({ color = '#000000' }: { color?: string }) {
   if (Platform.OS === 'web') {
     return (
       <Image
@@ -82,12 +83,13 @@ function AppleBrandMark() {
       />
     );
   }
-  return <Ionicons name="logo-apple" size={LOGO_SIZE} color="#000000" accessibilityIgnoresInvertColors />;
+  return <Ionicons name="logo-apple" size={LOGO_SIZE} color={color} accessibilityIgnoresInvertColors />;
 }
 
 export type OAuthProviderButtonsProps = {
   onGooglePress: () => void;
-  onApplePress: () => void;
+  /** Required when Apple is shown (iOS / web). Ignored on Android. */
+  onApplePress?: () => void;
   googlePrimaryLabel?: string;
   applePrimaryLabel?: string;
   googleSecondaryLabel?: string;
@@ -95,28 +97,39 @@ export type OAuthProviderButtonsProps = {
 };
 
 /**
- * Icon-only OAuth entry points (Google / Apple). Labels are used for accessibility only.
+ * OAuth entry points (Google / Apple).
+ * - iOS / web with both providers: equal half-width labeled buttons spanning the card
+ * - Android (Apple hidden): full-width labeled Google button
  * Visual: brand squircle raised tiles (`docs/BRAND_GUIDELINES.md`).
  */
 export function OAuthProviderButtons({
   onGooglePress,
   onApplePress,
-  googlePrimaryLabel = 'Continue with Google',
-  applePrimaryLabel = 'Continue with Apple',
+  googlePrimaryLabel = 'Google',
+  applePrimaryLabel = 'Apple',
   googleSecondaryLabel,
   appleSecondaryLabel,
 }: OAuthProviderButtonsProps) {
   const surface = T.colors.surface;
+  const textPrimary = T.colors.textPrimary;
   const shadowHex = T.colors.shadowStrong;
   const darkModeFlatTop = useDarkModeFlatTop();
+  const showApple = supportsAppleSignIn() && typeof onApplePress === 'function';
+  /** Solo Google (Android): one full-width control. Dual: each takes half the row. */
+  const splitHalf = showApple;
+  const outlineStyle = {
+    borderWidth: 1.5,
+    borderColor: textPrimary,
+  } as const;
 
   return (
     <View style={styles.row} accessibilityRole="toolbar">
       <Pressable
         style={({ pressed }) => [
-          styles.iconButton,
-          styles.plasticFace,
+          styles.providerButton,
+          splitHalf ? styles.halfWidthButton : styles.fullWidthButton,
           darkModeFlatTop,
+          outlineStyle,
           {
             backgroundColor: surface,
             opacity: pressed ? 0.92 : 1,
@@ -128,54 +141,93 @@ export function OAuthProviderButtons({
         accessibilityRole="button"
         accessibilityLabel={accessibilityHint(googlePrimaryLabel, googleSecondaryLabel)}
       >
-        <GoogleBrandMark />
+        <View style={styles.buttonContent}>
+          <GoogleBrandMark />
+          <Text
+            style={[styles.buttonLabel, { color: textPrimary }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {googlePrimaryLabel}
+          </Text>
+        </View>
       </Pressable>
 
-      <Pressable
-        style={({ pressed }) => [
-          styles.iconButton,
-          styles.plasticFace,
-          darkModeFlatTop,
-          {
-            backgroundColor: surface,
-            opacity: pressed ? 0.92 : 1,
-            transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
-          },
-          neumorphicLift3D(shadowHex),
-        ]}
-        onPress={onApplePress}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityHint(applePrimaryLabel, appleSecondaryLabel)}
-      >
-        <AppleBrandMark />
-      </Pressable>
+      {showApple ? (
+        <Pressable
+          style={({ pressed }) => [
+            styles.providerButton,
+            styles.halfWidthButton,
+            darkModeFlatTop,
+            outlineStyle,
+            {
+              backgroundColor: surface,
+              opacity: pressed ? 0.92 : 1,
+              transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
+            },
+            neumorphicLift3D(shadowHex),
+          ]}
+          onPress={onApplePress}
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityHint(applePrimaryLabel, appleSecondaryLabel)}
+        >
+          <View style={styles.buttonContent}>
+            <AppleBrandMark color={textPrimary} />
+            <Text
+              style={[styles.buttonLabel, { color: textPrimary }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {applePrimaryLabel}
+            </Text>
+          </View>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  plasticFace: {
-    borderTopWidth: 0,
-    borderTopColor: 'transparent',
-    borderBottomWidth: 0,
-    borderBottomColor: 'transparent',
-  },
   row: {
+    width: '100%',
+    alignSelf: 'stretch',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'center',
-    gap: SPACING.lg,
+    gap: SPACING.sm,
   },
-  iconButton: {
-    width: ICON_BUTTON,
-    height: ICON_BUTTON,
+  providerButton: {
+    minHeight: BUTTON_HEIGHT,
     borderRadius: ICON_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: SPACING.sm,
     overflow: 'hidden',
+  },
+  fullWidthButton: {
+    width: '100%',
+    alignSelf: 'stretch',
+    flex: 1,
+  },
+  halfWidthButton: {
+    flex: 1,
+    minWidth: 0,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    maxWidth: '100%',
+  },
+  buttonLabel: {
+    fontFamily: FONTS.uiSemibold,
+    fontSize: 14,
+    flexShrink: 1,
   },
   brandImage: {
     width: LOGO_SIZE,
     height: LOGO_SIZE,
+    flexShrink: 0,
   },
 });

@@ -44,6 +44,7 @@ import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useDarkModeFlatTop, useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
+import { useDisplayTokenBalance } from '@/lib/hooks/useDisplayTokenBalance';
 import { abandonGameEntry } from '@/lib/wallet/gameEntry';
 import { HOME_SOFT_UI } from '@/themes';
 import { scaleFont, useResponsivePlayFontSizes } from '@/utils/responsiveTypography';
@@ -296,7 +297,7 @@ export default function PlayBoardScreen() {
   const darkModeFlatTop = useDarkModeFlatTop();
   const { direction, getTextStyle, t, uiLocale } = useI18n();
   const session = usePlayStore((state) => state.session);
-  const tokens = usePlayStore((state) => state.tokens);
+  const tokens = useDisplayTokenBalance();
   const selectQuestion = usePlayStore((state) => state.selectQuestion);
   const reviewBoardQuestion = usePlayStore((state) => state.reviewBoardQuestion);
   const confirmRandomWagerQuestion = usePlayStore((state) => state.confirmRandomWagerQuestion);

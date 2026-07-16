@@ -15,12 +15,14 @@
     "ios": {
       "supportsTablet": true,
       "requireFullScreen": true,
+      "usesAppleSignIn": true,
       "buildNumber": "2",
       "bundleIdentifier": "com.playbackfire.app",
       "infoPlist": {
         "UIStatusBarHidden": true,
         "UIViewControllerBasedStatusBarAppearance": false,
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true
       }
     },
     "androidStatusBar": {
@@ -91,7 +93,8 @@
       ],
       "expo-web-browser",
       "expo-font",
-      "expo-image"
+      "expo-image",
+      "expo-apple-authentication"
     ],
     "extra": {
       "router": {},

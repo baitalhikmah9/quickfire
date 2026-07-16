@@ -43,6 +43,7 @@ import { useLocaleStore } from '@/store/locale';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
 import { useDisplayStore } from '@/store/display';
+import { useDisplayTokenBalance } from '@/lib/hooks/useDisplayTokenBalance';
 import { HOME_SOFT_UI } from '@/themes';
 
 const T = HOME_SOFT_UI;
@@ -74,9 +75,8 @@ export default function SettingsScreen() {
   const contentLocales = useLocaleStore((state) => state.contentLocales);
   const setContentLocales = useLocaleStore((state) => state.setContentLocales);
   const moveContentLocale = useLocaleStore((state) => state.moveContentLocale);
-  const storedTokens = usePlayStore((state) => state.tokens);
   const loadDebugWinnerSession = usePlayStore((state) => state.loadDebugWinnerSession);
-  const tokens = !authDisabled && !isSignedIn ? 0 : storedTokens;
+  const tokens = useDisplayTokenBalance();
 
   const isDarkTheme = paletteId === 'dark';
   const themeSummary = t(isDarkTheme ? 'settings.palette.dark' : 'settings.palette.default');
@@ -754,7 +754,9 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xs,
   },
   headerSide: {
-    width: 116,
+    // Grow with content (token chip) — fixed width was clipping larger balances.
+    minWidth: 44,
+    flexShrink: 0,
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
@@ -763,6 +765,7 @@ const styles = StyleSheet.create({
   },
   headerCenter: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

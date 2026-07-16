@@ -93,17 +93,27 @@ export function useWalletSync() {
     isSignedIn,
   ]);
 
-  // Signed-out users should not see a cached wallet balance.
+  // Signed-out users should not see a cached wallet balance (including after
+  // play-store rehydrate, which can restore a previous session's tokens).
   useEffect(() => {
-    if (authDisabled || !isClerkLoaded) return;
+    if (authDisabled || !isClerkLoaded || isSignedIn) return;
 
-    if (!isSignedIn) {
-      setupCompletedForRef.current = null;
-      const current = usePlayStore.getState().tokens;
-      if (current !== 0) {
+    setupCompletedForRef.current = null;
+
+    const clearLocalBalance = () => {
+      if (usePlayStore.getState().tokens !== 0) {
         usePlayStore.getState().setTokenBalance(0);
       }
+    };
+
+    clearLocalBalance();
+    if (usePlayStore.persist.hasHydrated()) {
+      return;
     }
+
+    return usePlayStore.persist.onFinishHydration(() => {
+      clearLocalBalance();
+    });
   }, [authDisabled, isClerkLoaded, isSignedIn]);
 
   // Step 3: Subscribe to the wallet balance and push it into the local store.

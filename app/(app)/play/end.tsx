@@ -24,6 +24,7 @@ import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useDarkModeFlatTop, useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
+import { useDisplayTokenBalance } from '@/lib/hooks/useDisplayTokenBalance';
 import { consumeGameEntry } from '@/lib/wallet/gameEntry';
 import { HOME_SOFT_UI } from '@/themes';
 import type { GameSessionState, TeamState } from '@/features/shared';
@@ -58,7 +59,7 @@ function FinalHeader({ title, compact }: { title: string; compact: boolean }) {
   const router = useRouter();
   const { width, height } = useLandscapeDimensions();
   const { direction, t, uiLocale } = useI18n();
-  const tokens = usePlayStore((state) => state.tokens);
+  const tokens = useDisplayTokenBalance();
   const textScale = usePlayTextScale();
   const textPrimary = HOME_SOFT_UI.colors.textPrimary;
   const tiny = height < 500;

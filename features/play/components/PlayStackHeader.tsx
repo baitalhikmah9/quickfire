@@ -10,7 +10,7 @@ import { HubTokenChip } from '@/components/HubTokenChip';
 import { SPACING } from '@/constants';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
-import { usePlayStore } from '@/store/play';
+import { useDisplayTokenBalance } from '@/lib/hooks/useDisplayTokenBalance';
 
 function formatTokens(n: number, locale: string) {
   return n.toLocaleString(locale, { maximumFractionDigits: 0 });
@@ -49,7 +49,7 @@ export function PlayStackHeader({
 }: PlayStackHeaderProps) {
   const router = useRouter();
   const { direction, t, uiLocale } = useI18n();
-  const tokens = usePlayStore((s) => s.tokens);
+  const tokens = useDisplayTokenBalance();
   const rowDir = getRowDirection(direction);
 
   const handleBack = useCallback(() => {
