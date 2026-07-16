@@ -1,6 +1,6 @@
 {
   "name": "backfire",
-  "version": "1.0.7",
+  "version": "1.0.0",
   "description": "Competitive multiplayer trivia — pick categories, split into teams, and outscore your rivals on a shared board.",
   "main": "expo-router/entry",
   "scripts": {
