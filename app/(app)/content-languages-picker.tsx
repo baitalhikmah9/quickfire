@@ -21,14 +21,14 @@ const SELECTABLE_CONTENT_LOCALES = SUPPORTED_LOCALES.filter((locale) =>
 );
 const T = HOME_SOFT_UI;
 
-function neumorphicLift3D(shadowColor: string, tier: 'header' | 'card'): any {
-  const m = tier === 'header' ? { h: 4, op: 0.12, r: 10, el: 6 } : { h: 8, op: 0.12, r: 20, el: 10 };
+/** Flat lift — no gray strip under language cards. */
+function neumorphicLift3D(_shadowColor: string, _tier: 'header' | 'card'): any {
   return {
-    shadowColor,
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: m.op,
-    shadowRadius: m.r,
-    elevation: m.el,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   };
 }
 
@@ -257,10 +257,10 @@ export default function ContentLanguagesPickerScreen() {
 
 const styles = StyleSheet.create({
   plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   body: {
     flex: 1,

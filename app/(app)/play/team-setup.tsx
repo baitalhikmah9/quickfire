@@ -783,16 +783,16 @@ function makeThemedStyles(paletteId: string) {
       backgroundColor: 'rgba(0,0,0,0.03)',
       color: T.textPrimary,
     },
-    // Navy fill + white label (stable across themes — do not invert with textPrimary).
+    // Theme-adaptive surface fill + primary label (light in light mode, dark in dark mode).
     addPlayerAction: {
-      backgroundColor: COLORS.text,
-      borderColor: COLORS.text,
+      backgroundColor: T.surface,
+      borderColor: paletteId === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(51,51,51,0.14)',
     },
     removePlayerAction: {
       backgroundColor: 'rgba(0,0,0,0.03)',
       borderColor: 'rgba(51,51,51,0.14)',
     },
-    addPlayerActionText: { color: '#FFFFFF' },
+    addPlayerActionText: { color: T.textPrimary },
     removePlayerActionText: { color: T.textMuted },
     linkText: { color: T.textPrimary },
     centerCard: {
@@ -1101,10 +1101,10 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   addPlayerAction: {
-    // Navy slate (#0F172A) — same fill in light and dark so dark mode is never white-on-dark-text.
-    backgroundColor: COLORS.text,
+    // Base light-mode surface; themedStyles overrides per palette.
+    backgroundColor: T.surface,
     borderWidth: 1,
-    borderColor: COLORS.text,
+    borderColor: 'rgba(51,51,51,0.14)',
   },
   removePlayerAction: {
     backgroundColor: 'rgba(0,0,0,0.03)',
@@ -1114,7 +1114,7 @@ const styles = StyleSheet.create({
   addPlayerActionText: {
     fontSize: FONT_SIZES.xs,
     fontFamily: FONTS.uiSemibold,
-    color: '#FFFFFF',
+    color: T.textPrimary,
   },
   removePlayerActionText: {
     fontSize: FONT_SIZES.xs,

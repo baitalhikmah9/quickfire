@@ -67,11 +67,11 @@ export const PillCollapsibleSection = memo(function PillCollapsibleSection({
   const darkModeFlatTop = useDarkModeFlatTop();
   const { face, depth } = pillPalette(tone);
   const pillShadow: ViewStyle = {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   };
 
   const toggleExpanded = useCallback(() => {
@@ -228,11 +228,11 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.xl,
     borderWidth: 3,
     overflow: 'hidden',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   bodyInner: {
     padding: SPACING.lg,

@@ -27,13 +27,13 @@ interface CategoryCardProps {
     style?: ViewStyle;
 }
 
-const getCardShadow = (isSelected: boolean) => {
+const getCardShadow = (_isSelected: boolean) => {
     return {
-        shadowColor: 'rgba(51, 51, 51, 0.15)',
-        shadowOffset: { width: 0, height: isSelected ? 2 : 5 },
-        shadowOpacity: 1,
+        shadowColor: 'transparent',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0,
         shadowRadius: 0,
-        elevation: isSelected ? 2 : 5,
+        elevation: 0,
     };
 };
 
@@ -70,19 +70,15 @@ export function CategoryCard({
                             ? [{ scale: 0.98 }, { translateY: isActive ? 2 : 0 }] 
                             : [{ scale: 1 }, { translateY: 0 }],
                         
-                        // Raised surface treatment
-                        borderTopWidth: isActive || surfaceColors.isDark ? (isActive ? 2 : 0) : 2,
-                        borderTopColor: isActive
-                          ? accentColor
-                          : surfaceColors.isDark
-                            ? 'transparent'
-                            : 'rgba(255, 255, 255, 0.78)',
-                        borderBottomWidth: isActive ? 2.5 : 4,
-                        borderBottomColor: isActive ? accentColor : 'rgba(0, 0, 0, 0.1)',
+                        // Selection ring only — no light-mode bevel lips / gray strips
+                        borderTopWidth: isActive ? 2.5 : 0,
+                        borderTopColor: isActive ? accentColor : 'transparent',
+                        borderBottomWidth: isActive ? 2.5 : 0,
+                        borderBottomColor: isActive ? accentColor : 'transparent',
                         borderLeftWidth: isActive ? 2.5 : 0,
                         borderRightWidth: isActive ? 2.5 : 0,
                         borderColor: isActive ? accentColor : 'transparent',
-                        
+
                         ...getCardShadow(isActive),
                     },
                     !isActive && darkModeFlatTop,

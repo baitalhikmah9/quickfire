@@ -17,23 +17,14 @@ interface StepSplitTeamsProps {
   onStart: () => void;
 }
 
-/** Raised plastic tile shadow tier. */
-function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill' | 'card'): any {
-  const m =
-    tier === 'hero'
-      ? { h: 10, r: 0, el: 12 }
-      : tier === 'header'
-      ? { h: 6, r: 0, el: 8 }
-      : tier === 'card'
-      ? { h: 8, r: 0, el: 10 }
-      : { h: 4, r: 0, el: 4 };
-
+/** Flat lift — no hard gray strip under split-teams cards. */
+function neumorphicLift3D(_shadowColor: string, _tier: 'hero' | 'header' | 'pill' | 'card'): any {
   return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: 1,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
     shadowRadius: 0,
-    elevation: m.el,
+    elevation: 0,
   };
 }
 
@@ -133,10 +124,10 @@ export function StepSplitTeams({
 
 const styles = StyleSheet.create({
   plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   root: { flex: 1 },
   columns: {

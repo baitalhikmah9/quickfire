@@ -35,15 +35,13 @@ const CARD_W = 110;
 /** Height is determined by 0.85 aspect ratio: height = width / 0.85 */
 const CARD_H = Math.floor(CARD_W / 0.85);
 
-/** 
- * Sophisticated footer shadow for a "floating" effect 
- */
+/** Flat footer — no gray strip / floating hard lift. */
 const getFooterShadow = () => ({
-    shadowColor: 'rgba(15, 23, 42, 0.15)',
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    elevation: 20,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
 });
 
 export function StepCategories({
@@ -175,17 +173,17 @@ export function StepCategories({
               opacity: canNext ? (pressed ? 0.94 : 1) : 1,
               transform: canNext && pressed ? [{ scale: 0.98 }, { translateY: 2 }] : [{ scale: 1 }, { translateY: 0 }],
               
-              // Raised style alignment for primary button
-              borderTopWidth: 2,
-              borderTopColor: canNext ? 'rgba(255, 255, 255, 0.25)' : 'transparent',
-              borderBottomWidth: pressed ? 0 : 4,
-              borderBottomColor: canNext ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.05)',
-              
-              shadowColor: 'rgba(51, 51, 51, 0.15)',
-              shadowOffset: { width: 0, height: pressed ? 1 : 4 },
-              shadowOpacity: 1,
+              // Flat face — no bevel lips / gray strip under the control
+              borderTopWidth: 0,
+              borderTopColor: 'transparent',
+              borderBottomWidth: 0,
+              borderBottomColor: 'transparent',
+
+              shadowColor: 'transparent',
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0,
               shadowRadius: 0,
-              elevation: pressed ? 1 : 4,
+              elevation: 0,
             },
             darkModeFlatTop,
           ]}

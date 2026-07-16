@@ -85,8 +85,8 @@ export function ThemedAlertHost() {
             darkModeFlatTop,
             {
               backgroundColor: surface,
-              borderTopWidth: isDark ? 0 : 2,
-              borderTopColor: isDark ? 'transparent' : 'rgba(255, 255, 255, 0.78)',
+              borderTopWidth: 0,
+              borderTopColor: 'transparent',
             },
           ]}
         >
@@ -153,8 +153,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: SPACING.lg,
     gap: SPACING.md,
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
-    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   title: {
     fontFamily: FONTS.uiBold,

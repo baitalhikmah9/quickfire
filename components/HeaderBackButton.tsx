@@ -23,11 +23,11 @@ export type HeaderBackButtonProps = {
 };
 
 const BACK_PILL_SHADOW = {
-  shadowColor: '#0F172A',
-  shadowOffset: { width: 0, height: 5 },
-  shadowOpacity: 0.1,
-  shadowRadius: 11,
-  elevation: 5,
+  shadowColor: 'transparent',
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0,
+  shadowRadius: 0,
+  elevation: 0,
 } as const;
 
 /**
@@ -108,10 +108,10 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.button,
     borderWidth: 0,
     backgroundColor: T.surface,
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   backLabel: {
     fontFamily: FONTS.uiSemibold,

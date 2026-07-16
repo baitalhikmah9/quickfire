@@ -41,21 +41,14 @@ function getMockQuestions(count: number): QuestionCard[] {
   return questions;
 }
 
-/** Blocky plastic shadow tier. */
-function neumorphicLift3D(tier: 'pill' | 'card' | 'panel'): any {
-  const m =
-    tier === 'panel'
-      ? { h: 10, el: 12 }
-      : tier === 'card'
-      ? { h: 8, el: 10 }
-      : { h: 6, el: 8 };
-
+/** Flat lift — no hard gray strip under game cards/panels. */
+function neumorphicLift3D(_tier: 'pill' | 'card' | 'panel'): any {
   return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: 1,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
     shadowRadius: 0,
-    elevation: m.el,
+    elevation: 0,
   };
 }
 
@@ -354,10 +347,10 @@ export default function GameScreen() {
 
 const styles = StyleSheet.create({
   plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   safeArea: {
     flex: 1,

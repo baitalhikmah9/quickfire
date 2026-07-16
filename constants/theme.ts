@@ -123,21 +123,21 @@ export const SPACING = {
 };
 
 /**
- * Standard raised control - docs/BRAND_GUIDELINES.md (“Standard button surface (raised)”).
- * Use for admin chrome, settings-style actions, and cards that should read as molded white on cream.
+ * Standard raised control - flat white face (no bevel lips / hard gray strip shadows).
+ * Use for admin chrome, settings-style actions, and cards on cream canvas.
  */
 export const BRAND_RAISED_SURFACE = {
   backgroundColor: '#FFFFFF',
   borderRadius: 14,
-  borderTopWidth: 2,
-  borderTopColor: 'rgba(255, 255, 255, 0.78)',
-  borderBottomWidth: 3,
-  borderBottomColor: 'rgba(0, 0, 0, 0.08)',
-  shadowColor: 'rgba(51, 51, 51, 0.15)',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 1,
+  borderTopWidth: 0,
+  borderTopColor: 'transparent',
+  borderBottomWidth: 0,
+  borderBottomColor: 'transparent',
+  shadowColor: 'transparent',
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0,
   shadowRadius: 0,
-  elevation: 4,
+  elevation: 0,
 } as const;
 
 /** Table / list chrome on warm canvas (admin, settings-style lists) */
@@ -169,21 +169,21 @@ export const BORDER_RADIUS = {
   pill: 14,
 };
 
-/** Chunkier drop shadows for a playful, lifted-card feel */
+/** Card shadows — flat by default (no gray strip under cards). Glow kept for active tiles. */
 export const SHADOWS = {
   card: {
-    shadowColor: COLORS.text,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    elevation: 8,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   modal: {
-    shadowColor: COLORS.text,
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.2,
-    shadowRadius: 36,
-    elevation: 12,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   activeTileGlow: {
     shadowColor: COLORS.secondary,
@@ -424,19 +424,19 @@ export function paletteUsesLightStatusBarContent(id: ThemePaletteId): boolean {
 }
 
 /**
- * Shared raised-surface face treatment - docs/BRAND_GUIDELINES.md “Standard button surface (raised)”.
- * Top lip + soft bottom edge so controls read as extruded on warm cream.
+ * Shared raised-surface face treatment.
+ * Flat face (no top lip / gray bottom strip); depth comes from `softSurfaceLift` only.
  */
 export const SOFT_SURFACE_FACE = {
-  borderTopWidth: 2,
-  borderTopColor: 'rgba(255, 255, 255, 0.78)',
-  borderBottomWidth: 3,
-  borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  borderTopWidth: 0,
+  borderTopColor: 'transparent',
+  borderBottomWidth: 0,
+  borderBottomColor: 'transparent',
 } as const;
 
 /**
- * Shared raised drop shadow - hard shadow (radius=0), charcoal tint.
- * Use across all raised controls, cards, buttons so depth is visually uniform.
+ * Shared card/control lift — flat (no hard gray strip under the face).
+ * Kept as a function so call sites stay stable if soft depth is reintroduced later.
  */
 export function softSurfaceLift(): Pick<ReturnType<typeof import('react-native').StyleSheet.create>, never> & {
   shadowColor: string;
@@ -446,10 +446,10 @@ export function softSurfaceLift(): Pick<ReturnType<typeof import('react-native')
   elevation: number;
 } {
   return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
     shadowRadius: 0,
-    elevation: 4,
+    elevation: 0,
   };
 }

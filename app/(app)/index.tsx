@@ -79,15 +79,14 @@ const HOME_MODES: ModeDef[] = [
   },
 ];
 
-/** docs/BRAND_GUIDELINES.md standard raised surface treatment. */
-function brandRaisedSurfaceShadow(tier: 'hero' | 'header' | 'pill'): ViewStyle {
-  const elevation = tier === 'hero' ? 4 : tier === 'header' ? 4 : 3;
+/** Flat card face — no hard gray strip / bevel lift under cards. */
+function brandRaisedSurfaceShadow(_tier: 'hero' | 'header' | 'pill'): ViewStyle {
   return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
     shadowRadius: 0,
-    elevation,
+    elevation: 0,
   };
 }
 
@@ -605,12 +604,12 @@ const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
   },
-  /** Light top lip + soft bottom edge - reads extruded on white squircles. */
+  /** Flat card face — no bevel lips / gray strips (depth via shadow only). */
   plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   plasticFaceDark: {
     borderTopWidth: 0,
@@ -847,15 +846,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
     shadowRadius: 0,
-    elevation: 4,
+    elevation: 0,
   },
   infoModalCloseText: {
     fontFamily: FONTS.uiBold,
@@ -877,30 +876,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: SPACING.sm,
     borderWidth: 1.5,
-    borderTopWidth: 2,
-    borderBottomWidth: 4,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
+    borderTopWidth: 1.5,
+    borderBottomWidth: 1.5,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
     shadowRadius: 0,
-    elevation: 4,
+    elevation: 0,
   },
   primaryRaisedButton: {
     backgroundColor: '#FF8A00',
     borderColor: '#C76400',
   },
   primaryRaisedButtonDepth: {
-    borderTopColor: 'rgba(255, 214, 163, 0.72)',
+    borderTopColor: '#C76400',
     borderBottomColor: '#C76400',
-    shadowColor: 'rgba(255, 138, 0, 0.42)',
+    shadowColor: 'transparent',
   },
   secondaryRaisedButton: {
     backgroundColor: '#FFFFFF',
     borderColor: 'rgba(51, 51, 51, 0.12)',
   },
   secondaryRaisedButtonDepth: {
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
+    borderTopColor: 'rgba(51, 51, 51, 0.12)',
+    borderBottomColor: 'rgba(51, 51, 51, 0.12)',
+    shadowColor: 'transparent',
   },
   raisedButtonText: {
     fontFamily: FONTS.uiBold,

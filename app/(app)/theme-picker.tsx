@@ -20,14 +20,14 @@ const T = HOME_SOFT_UI;
 
 const ALL_PALETTES: ThemePaletteId[] = ['dark', 'default', 'warm', 'cool', 'green', 'red'];
 
-function neumorphicLift3D(shadowColor: string, tier: 'header' | 'card'): any {
-  const m = tier === 'header' ? { h: 6, op: 1, r: 0, el: 8 } : { h: 8, op: 1, r: 0, el: 10 };
+/** Flat lift — no hard gray strip under theme cards. */
+function neumorphicLift3D(_shadowColor: string, _tier: 'header' | 'card'): any {
   return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: m.op,
-    shadowRadius: m.r,
-    elevation: m.el,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   };
 }
 
@@ -115,10 +115,10 @@ export default function ThemePickerModal() {
 
 const styles = StyleSheet.create({
   plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   header: {
     height: 72,

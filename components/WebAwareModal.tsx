@@ -8,6 +8,18 @@ export type WebAwareModalProps = {
 };
 
 /**
+ * Landscape-only apps must declare landscape on RN Modal. Phone default is portrait,
+ * which intersects empty with Info.plist landscape masks and crashes non-dev iOS.
+ */
+const NATIVE_MODAL_ORIENTATIONS = [
+  'landscape',
+  'landscape-left',
+  'landscape-right',
+  'portrait',
+  'portrait-upside-down',
+] as const;
+
+/**
  * RN `Modal` inside nested web layouts (Expo Router, SafeAreaView, etc.) can crash or fail to paint.
  * Match `WagerInfoModal` / `TopicColumnPickerModal`: unmount when closed; on web use `position: fixed`
  * instead of `Modal`; on native use `Modal` with hardware back via `onRequestClose`.
@@ -36,6 +48,7 @@ export function WebAwareModal({ visible, onRequestClose, children }: WebAwareMod
       presentationStyle="overFullScreen"
       statusBarTranslucent
       navigationBarTranslucent
+      supportedOrientations={[...NATIVE_MODAL_ORIENTATIONS]}
       onRequestClose={onRequestClose}
     >
       <View style={styles.nativeFillShell} testID="web-aware-modal-shell">

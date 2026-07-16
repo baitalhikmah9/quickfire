@@ -10,34 +10,26 @@ import { usePlayTextScale } from '@/store/display';
 
 const T = HOME_SOFT_UI.colors;
 
-/** Deeper drop shadow - reads as a raised plastic tile (tier scales with control size). */
+/** Flat lift — no gray strip under modal cards. */
 function neumorphicLift(
-  shadowColor: string,
-  tier: 'hero' | 'header' | 'pill' | 'card'
+  _shadowColor: string,
+  _tier: 'hero' | 'header' | 'pill' | 'card'
 ): ViewStyle {
-  const m =
-    tier === 'hero'
-      ? { h: 14, op: 0.35, r: 28, el: 18 }
-      : tier === 'header'
-        ? { h: 8, op: 0.28, r: 18, el: 12 }
-        : tier === 'card'
-          ? { h: 10, op: 0.22, r: 22, el: 10 }
-          : { h: 6, op: 0.25, r: 14, el: 8 };
   return {
-    shadowColor,
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: m.op,
-    shadowRadius: m.r,
-    elevation: m.el,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   };
 }
 
-/** Light top lip + soft bottom edge - reads extruded on white squircles. */
+/** Flat card face — no bevel lips / gray strips. */
 const PLASTIC_FACE: ViewStyle = {
-  borderTopWidth: 2,
-  borderTopColor: 'rgba(255, 255, 255, 0.78)',
-  borderBottomWidth: StyleSheet.hairlineWidth * 2,
-  borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  borderTopWidth: 0,
+  borderTopColor: 'transparent',
+  borderBottomWidth: 0,
+  borderBottomColor: 'transparent',
 };
 
 type WagerInfoModalProps = {

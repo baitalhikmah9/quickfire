@@ -15,21 +15,14 @@ interface LobbyBuilderProps {
   onStart: (config: GameConfig) => void;
 }
 
-/** Blocky plastic shadow tier. */
-function neumorphicLift3D(tier: 'pill' | 'card' | 'input'): any {
-  const m =
-    tier === 'input'
-      ? { h: 4, el: 4 }
-      : tier === 'card'
-      ? { h: 8, el: 10 }
-      : { h: 10, el: 12 };
-
+/** Flat lift — no hard gray strip under lobby cards/inputs. */
+function neumorphicLift3D(_tier: 'pill' | 'card' | 'input'): any {
   return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: 1,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
     shadowRadius: 0,
-    elevation: m.el,
+    elevation: 0,
   };
 }
 
@@ -142,10 +135,10 @@ export function LobbyBuilder({ mode, onStart }: LobbyBuilderProps) {
 
 const styles = StyleSheet.create({
   plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   container: {
     flex: 1,

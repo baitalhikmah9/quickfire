@@ -19,6 +19,7 @@
       "bundleIdentifier": "com.playbackfire.app",
       "infoPlist": {
         "UIStatusBarHidden": true,
+        "UIViewControllerBasedStatusBarAppearance": false,
         "ITSAppUsesNonExemptEncryption": false
       }
     },

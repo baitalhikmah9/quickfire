@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
+import { immersiveStatusBarScreenOptions } from '@/lib/navigation/statusBar';
 
 const webSafeStack: NativeStackNavigationOptions =
   Platform.OS === 'web'
@@ -20,7 +21,8 @@ const webSafeStack: NativeStackNavigationOptions =
 export const landscapeStackScreenOptions: NativeStackNavigationOptions = {
   headerShown: false,
   presentation: 'card',
-  // Keep system status bar hidden on every native-stack push (Expo Go re-shows it otherwise).
-  statusBarHidden: true,
+  // Omit statusBarHidden in Expo Go — RNScreens redboxes without VC-based status bar plist.
+  // Standalone/dev-client: keep system bar hidden on every native-stack push.
+  ...immersiveStatusBarScreenOptions(),
   ...webSafeStack,
 };

@@ -10,8 +10,8 @@ const GOOGLE_G_LOGO = require('@/assets/brand/google-g.png');
 
 const T = HOME_SOFT_UI;
 
-/** Raised plastic tile shadow - compact control (matches header squircle depth). */
-function neumorphicLift3D(shadowColor: string): {
+/** Flat control face — no gray strip under OAuth buttons. */
+function neumorphicLift3D(_shadowColor: string): {
   shadowColor: string;
   shadowOffset: { width: number; height: number };
   shadowOpacity: number;
@@ -19,11 +19,11 @@ function neumorphicLift3D(shadowColor: string): {
   elevation: number;
 } {
   return {
-    shadowColor,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   };
 }
 
@@ -155,10 +155,10 @@ export function OAuthProviderButtons({
 
 const styles = StyleSheet.create({
   plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   row: {
     flexDirection: 'row',

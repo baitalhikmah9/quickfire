@@ -242,20 +242,20 @@ describe('AppHubScreen', () => {
     expect(screen.queryByText('BackFire')).toBeNull();
   });
 
-  it('uses the brand raised surface treatment for mode choices', () => {
+  it('uses a flat card face for mode choices (no gray strip bevel or hard lift)', () => {
     render(<AppHubScreen />);
 
     expect(screen.getByTestId('home-mode-card-quickPlay')).toHaveStyle({
       backgroundColor: '#FFFFFF',
-      borderTopWidth: 2,
-      borderTopColor: 'rgba(255, 255, 255, 0.78)',
-      borderBottomWidth: 3,
-      borderBottomColor: 'rgba(0, 0, 0, 0.08)',
-      shadowColor: 'rgba(51, 51, 51, 0.15)',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 1,
+      borderTopWidth: 0,
+      borderTopColor: 'transparent',
+      borderBottomWidth: 0,
+      borderBottomColor: 'transparent',
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
       shadowRadius: 0,
-      elevation: 4,
+      elevation: 0,
     });
     expect(screen.getByTestId('home-mode-card-title-quickPlay')).toHaveStyle({
       color: '#333333',

@@ -17,6 +17,7 @@ import {
   paletteUsesLightStatusBarContent,
 } from '@/constants/theme';
 import { HOME_SOFT_UI } from '@/themes';
+import { immersiveStatusBarScreenOptions } from '@/lib/navigation/statusBar';
 
 mark('root layout module loaded');
 
@@ -26,15 +27,19 @@ void SplashScreen.hideAsync();
 /** Stable reference for static layout groups - avoids navigation descriptor churn each render. */
 const ROOT_NESTED_STACK_SCREEN_OPTIONS = {
   headerShown: false,
-  // Expo Go / native-stack can re-show the system bar per screen without this.
-  statusBarHidden: true,
+  // Standalone only — Expo Go cannot use RNScreens statusBarHidden (plist flag).
+  ...immersiveStatusBarScreenOptions(),
 } as const;
 
 function hideSystemStatusBar() {
   if (Platform.OS === 'web') return;
-  // Both APIs: expo-status-bar for Expo, RN StatusBar for native-stack / Expo Go races.
-  setStatusBarHidden(true, 'fade');
-  RNStatusBar.setHidden(true, 'fade');
+  // expo-status-bar + RN StatusBar: covers Expo Go (no VC-based bar) and standalone races.
+  try {
+    setStatusBarHidden(true, 'fade');
+    RNStatusBar.setHidden(true, 'fade');
+  } catch {
+    /* Expo Go / OS may reject; immersive UI still usable */
+  }
 }
 
 export default function RootLayout() {
@@ -57,7 +62,7 @@ export default function RootLayout() {
     () => ({
       headerShown: false,
       animation: 'fade' as const,
-      statusBarHidden: true,
+      ...immersiveStatusBarScreenOptions(),
       contentStyle: {
         flex: 1,
         backgroundColor,

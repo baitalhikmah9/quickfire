@@ -20,6 +20,7 @@ import TeamSetupScreen from '@/app/(app)/play/team-setup';
 import { COLORS } from '@/constants';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
+import { HOME_SOFT_UI } from '@/themes';
 
 const mockBack = jest.fn();
 const mockCanGoBack = jest.fn(() => false);
@@ -218,7 +219,8 @@ describe('TeamSetupScreen', () => {
     expect(addControl.props.style).not.toEqual(removeControl.props.style);
   });
 
-  it('renders Add Player as a navy filled control with light label text', () => {
+  it('renders Add Player with light surface fill and dark text in light mode', () => {
+    useThemeStore.setState({ paletteId: 'default' });
     render(<TeamSetupScreen />);
 
     const addControl = screen.getAllByLabelText('Add a team member')[0];
@@ -227,16 +229,17 @@ describe('TeamSetupScreen', () => {
       typeof styleProp === 'function' ? styleProp({ pressed: false }) : styleProp;
     const flat = StyleSheet.flatten(resolved);
 
-    // Navy / slate fill (not white surface) with light label for contrast.
-    expect(flat.backgroundColor).toBe(COLORS.text);
-    expect(flat.backgroundColor).not.toBe('#FFFFFF');
+    // Light mode: light surface control with dark label (adapts with theme).
+    expect(flat.backgroundColor).toBe(HOME_SOFT_UI.colors.surface);
+    expect(flat.backgroundColor).not.toBe(COLORS.text);
 
     const addLabel = screen.getAllByText('Add Player')[0];
     const labelFlat = StyleSheet.flatten(addLabel.props.style);
-    expect(labelFlat.color).toBe('#FFFFFF');
+    expect(labelFlat.color).toBe(HOME_SOFT_UI.colors.textPrimary);
+    expect(labelFlat.color).not.toBe('#FFFFFF');
   });
 
-  it('keeps Add Player navy with white text in dark mode', () => {
+  it('renders Add Player with dark surface fill and light text in dark mode', () => {
     useThemeStore.setState({ paletteId: 'dark' });
     render(<TeamSetupScreen />);
 
@@ -246,14 +249,15 @@ describe('TeamSetupScreen', () => {
       typeof styleProp === 'function' ? styleProp({ pressed: false }) : styleProp;
     const flat = StyleSheet.flatten(resolved);
 
-    // Must not invert to light fill + dark text when palette is dark.
-    expect(flat.backgroundColor).toBe(COLORS.text);
-    expect(flat.backgroundColor).not.toBe('#F7FAFF');
+    // Dark mode: dark surface fill with light label (not always-navy).
+    expect(flat.backgroundColor).toBe(HOME_SOFT_UI.colors.surface);
+    expect(flat.backgroundColor).not.toBe(COLORS.text);
     expect(flat.backgroundColor).not.toBe('#FFFFFF');
 
     const addLabel = screen.getAllByText('Add Player')[0];
     const labelFlat = StyleSheet.flatten(addLabel.props.style);
-    expect(labelFlat.color).toBe('#FFFFFF');
+    expect(labelFlat.color).toBe(HOME_SOFT_UI.colors.textPrimary);
+    expect(labelFlat.color).not.toBe('#FFFFFF');
   });
 
   it('uses settings-style icon-only back control (not labeled play pill)', () => {

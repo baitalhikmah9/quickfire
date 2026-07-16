@@ -1,23 +1,24 @@
 import { StyleSheet, type ViewStyle } from 'react-native';
 
+/** Flat face — no bevel lips / gray strips; depth comes from `softSurfaceLift` only. */
 export const SOFT_SURFACE_FACE: ViewStyle = {
-  borderTopWidth: 2,
-  borderTopColor: 'rgba(255, 255, 255, 0.78)',
-  borderBottomWidth: 3,
-  borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  borderTopWidth: 0,
+  borderTopColor: 'transparent',
+  borderBottomWidth: 0,
+  borderBottomColor: 'transparent',
 };
 
 /**
- * Shared raised treatment based on the categories back button reference.
- * Keep depth consistent across controls; let each component own size/radius.
+ * Shared card/control lift — flat (no hard gray strip under the face).
+ * Call sites stay stable if soft depth is reintroduced later.
  */
 export function softSurfaceLift(): ViewStyle {
   return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
     shadowRadius: 0,
-    elevation: 4,
+    elevation: 0,
   };
 }
 

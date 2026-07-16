@@ -7,14 +7,14 @@ import { useDarkModeFlatTop } from '@/lib/hooks/useTheme';
 
 const T = HOME_SOFT_UI;
 
-/** Raised shadow tier aligned with `OAuthProviderButtons` (header / card depth). */
-function cardLiftShadow(shadowColor: string) {
+/** Flat card face — no gray strip / hard lift under auth cards. */
+function cardLiftShadow(_shadowColor: string) {
   return {
-    shadowColor,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    elevation: 12,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   };
 }
 

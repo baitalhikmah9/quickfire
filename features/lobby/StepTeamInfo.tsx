@@ -22,23 +22,14 @@ interface StepTeamInfoProps {
 
 const LIFELINE_CARD_W = 168;
 
-/** Raised plastic tile shadow tier. */
-function neumorphicLift3D(shadowColor: string, tier: 'hero' | 'header' | 'pill' | 'card'): any {
-  const m =
-    tier === 'hero'
-      ? { h: 14, op: 1, r: 28, el: 18 }
-      : tier === 'header'
-      ? { h: 8, op: 0.9, r: 18, el: 12 }
-      : tier === 'card'
-      ? { h: 10, op: 0.9, r: 22, el: 14 }
-      : { h: 6, op: 0.8, r: 14, el: 8 };
-
+/** Flat lift — no hard gray strip under team-info cards. */
+function neumorphicLift3D(_shadowColor: string, _tier: 'hero' | 'header' | 'pill' | 'card'): any {
   return {
-    shadowColor,
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: m.op,
-    shadowRadius: m.r,
-    elevation: m.el,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   };
 }
 
@@ -182,10 +173,10 @@ export function StepTeamInfo({
 
 const styles = StyleSheet.create({
   plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   root: { flex: 1 },
   scroll: { flex: 1 },

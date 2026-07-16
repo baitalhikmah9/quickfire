@@ -57,9 +57,6 @@ export const HubActionCard = memo(function HubActionCard({
   const isDark = relativeLuminance(colors.background) < 0.3;
   const cardShadow = {
     ...SHADOWS.card,
-    shadowColor: accent,
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
   };
 
   /** Hub row: equal flex columns (no `fixedWidth`). Carousel: fixed width + optional stretch. */
@@ -110,11 +107,11 @@ export const HubActionCard = memo(function HubActionCard({
               };
 
     const pillShadow: ViewStyle = {
-      shadowColor: '#0F172A',
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.22,
-      shadowRadius: 20,
-      elevation: 14,
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      elevation: 0,
     };
 
     const padV = compact ? SPACING.lg : SPACING.xl;
@@ -244,7 +241,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: BORDER_RADIUS.xl,
     overflow: 'hidden',
-    elevation: 8,
+    elevation: 0,
   },
   cardBody: {
     flex: 1,

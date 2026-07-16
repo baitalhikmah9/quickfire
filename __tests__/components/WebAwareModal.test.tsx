@@ -45,4 +45,26 @@ describe('WebAwareModal', () => {
       expect(shellStyle.flex).toBe(1);
     }
   });
+
+  it('declares landscape orientations so landscape-only iOS apps do not crash on present', () => {
+    // RN Modal defaults phone supportedOrientations to portrait. Backfire is
+    // landscape-only (Info.plist); presenting a portrait-only modal yields an
+    // empty orientation intersection and crashes non-dev iOS builds.
+    if (Platform.OS === 'web') {
+      return;
+    }
+
+    render(
+      <WebAwareModal visible onRequestClose={() => {}}>
+        <Text>Open body</Text>
+      </WebAwareModal>
+    );
+
+    const modal = screen.UNSAFE_queryByType(Modal);
+    expect(modal).not.toBeNull();
+    const orientations = modal?.props.supportedOrientations as string[] | undefined;
+    expect(orientations).toEqual(
+      expect.arrayContaining(['landscape', 'landscape-left', 'landscape-right'])
+    );
+  });
 });

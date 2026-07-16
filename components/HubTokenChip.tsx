@@ -91,18 +91,20 @@ export function HubTokenChip({
 
   const softFaceStyle: ViewStyle = {
     backgroundColor: soft.surface,
-    borderTopWidth: isDark ? 0 : 2,
-    borderTopColor: isDark ? 'transparent' : 'rgba(255, 255, 255, 0.78)',
-    borderBottomColor: isDark ? 'rgba(0, 0, 0, 0.28)' : 'rgba(0, 0, 0, 0.08)',
+    // Flat face — no bevel lips / gray strips; depth via softSurfaceLift only
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
     shadowColor: isDark ? 'rgba(0, 0, 0, 0.36)' : 'rgba(51, 51, 51, 0.15)',
   };
 
   const shadow = {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   };
 
   if (variant === 'softUi') {

@@ -26,21 +26,14 @@ function groupByCategory(questions: QuestionCard[]): Map<string, QuestionCard[]>
   return map;
 }
 
-/** Blocky plastic shadow tier. */
-function neumorphicLift3D(tier: 'pill' | 'card' | 'cell'): any {
-  const m =
-    tier === 'card'
-      ? { h: 8, el: 10 }
-      : tier === 'cell'
-      ? { h: 4, el: 4 }
-      : { h: 6, el: 8 };
-
+/** Flat lift — no hard gray strip under board cards/cells. */
+function neumorphicLift3D(_tier: 'pill' | 'card' | 'cell'): any {
   return {
-    shadowColor: 'rgba(51, 51, 51, 0.15)',
-    shadowOffset: { width: 0, height: m.h },
-    shadowOpacity: 1,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
     shadowRadius: 0,
-    elevation: m.el,
+    elevation: 0,
   };
 }
 
@@ -202,10 +195,10 @@ export function Board({ questions, onSelectQuestion, selectedQuestionId }: Board
 
 const styles = StyleSheet.create({
   plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   container: {
     flex: 1,

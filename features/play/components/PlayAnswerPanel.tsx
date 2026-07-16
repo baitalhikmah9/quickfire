@@ -41,7 +41,7 @@ function neumorphicLift(
   };
 }
 
-/** Light top lip + soft bottom edge - reads extruded on white squircles. */
+/** Flat card face — no bevel lips / gray strips (SOFT_SURFACE_FACE is flat). */
 const PLASTIC_FACE: ViewStyle = {
   ...SOFT_SURFACE_FACE,
 };
@@ -900,7 +900,9 @@ export function PlayAnswerPanel({
           embedded ? styles.shellEmbedded : null,
           scrollChain && styles.shellScroll,
           {
-            backgroundColor: colors.background,
+            // When embedded on the question canvas, stay transparent so cream/canvas shows through
+            // (palette `background` is pure white and reads as a mismatched slab).
+            backgroundColor: scrollChain ? 'transparent' : colors.background,
             paddingLeft: Math.max(SPACING.md, insets.left),
             paddingRight: Math.max(SPACING.md, insets.right),
           },
@@ -1104,7 +1106,9 @@ export function PlayAnswerPanel({
         style={[
           styles.embeddedRoot,
           scrollChain && styles.embeddedRootScroll,
-          { backgroundColor: colors.background },
+          {
+            backgroundColor: scrollChain ? 'transparent' : colors.background,
+          },
         ]}
       >
         {answerBody}
@@ -1113,7 +1117,7 @@ export function PlayAnswerPanel({
             style={[
               styles.embeddedWagerFooter,
               {
-                backgroundColor: colors.background,
+                backgroundColor: scrollChain ? 'transparent' : colors.background,
                 borderTopColor: colors.border,
                 paddingLeft: Math.max(SPACING.md, insets.left),
                 paddingRight: Math.max(SPACING.md, insets.right),
@@ -1364,11 +1368,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     ...SOFT_SURFACE_FACE,
     ...softSurfaceLift(),
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.18,
-    shadowRadius: 28,
-    elevation: 12,
     borderWidth: 2,
     borderColor: 'rgba(0, 123, 255, 0.12)',
     overflow: 'hidden',

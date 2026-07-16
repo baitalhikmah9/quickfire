@@ -154,10 +154,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
   },
   plasticFace: {
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.78)',
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   submitText: {
     fontFamily: FONTS.uiBold,
