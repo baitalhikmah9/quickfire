@@ -675,7 +675,10 @@ export default function TeamSetupScreen() {
       <View style={styles.cardsViewportSlot}>{teamSetupBody}</View>
 
       {showFloatingContinue && (
-        <View style={[styles.floatingButtonWrap, tightContinueStrip && styles.floatingButtonWrapTight]}>
+        <View
+          testID="team-setup-continue-strip"
+          style={[styles.floatingButtonWrap, tightContinueStrip && styles.floatingButtonWrapTight]}
+        >
           <Button
             title={t('common.continue').toUpperCase()}
             onPress={() => router.push('/play/categories')}
@@ -1208,8 +1211,11 @@ const styles = StyleSheet.create({
   },
   floatingButtonWrapTight: {
     paddingTop: SPACING.xs,
-    /** Phone / narrow - keep CTA off the bottom edge and home indicator. */
-    paddingBottom: SPACING.md,
+    /**
+     * Phone / narrow: PlayScaffold SafeAreaView already applies the home-indicator
+     * inset. Extra paddingBottom here double-stacked (~32pt cream under Continue).
+     */
+    paddingBottom: 0,
   },
   footerInner: {
     width: '100%',

@@ -252,11 +252,19 @@ export default function StoreScreen() {
 
       setBuyingKey(bundle.productKey);
       try {
-        await purchase(catalogProduct);
-        showThemedAlert(
-          'Purchase Complete',
-          `Your ${formatTokens(bundle.tokensGranted)} tokens will appear in your balance shortly.`
-        );
+        const outcome = await purchase(catalogProduct);
+        if (outcome.granted) {
+          const tokens = outcome.tokensGranted || bundle.tokensGranted;
+          showThemedAlert(
+            'Purchase Complete',
+            `${formatTokens(tokens)} tokens have been added to your balance.`
+          );
+        } else {
+          showThemedAlert(
+            'Purchase Complete',
+            `Your ${formatTokens(bundle.tokensGranted)} tokens will appear in your balance shortly.`
+          );
+        }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : '';
         if (message.toLowerCase().includes('cancelled')) {
@@ -379,53 +387,52 @@ export default function StoreScreen() {
       style={[styles.safeArea, { backgroundColor: canvas }]}
     >
       <ScreenContent fullWidth style={styles.viewport}>
-        {/* One frame owns outer gutter + max width so header controls and cards share edges. */}
+        {/*
+          Equal paddingTop/paddingBottom + space-between:
+          outer pad above STORE matches pad below redeem; free height splits evenly
+          between header↔cards and cards↔redeem.
+        */}
         <View style={[styles.contentFrame, { maxWidth: hubMaxWidth }]}>
-        {/* ── Header ─────────────────────────────────────── */}
-        <View style={styles.header}>
-          <View style={styles.headerSide}>
-            <Pressable
-              onPress={handleBack}
-              accessibilityRole="button"
-              accessibilityLabel={t('common.back')}
-              style={({ pressed }) => [
-                styles.backButton,
-                SOFT_SURFACE_FACE,
-                darkModeFlatTop,
-                softSurfaceLift(),
-                { backgroundColor: surface },
-                {
-                  opacity: pressed ? 0.9 : 1,
-                  transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
-                },
-              ]}
-            >
-              <Ionicons
-                name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'}
-                size={22}
-                color={textPrimary}
+          {/* ── Header ─────────────────────────────────────── */}
+          <View style={styles.header}>
+            <View style={styles.headerSide}>
+              <Pressable
+                onPress={handleBack}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.back')}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  SOFT_SURFACE_FACE,
+                  darkModeFlatTop,
+                  softSurfaceLift(),
+                  { backgroundColor: surface },
+                  {
+                    opacity: pressed ? 0.9 : 1,
+                    transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={direction === 'rtl' ? 'chevron-forward' : 'chevron-back'}
+                  size={22}
+                  color={textPrimary}
+                />
+              </Pressable>
+            </View>
+            {/* Absolute center so STORE lines up with the middle (30) token card. */}
+            <View style={styles.headerCenter} pointerEvents="none">
+              <Text style={[styles.title, { color: textPrimary }]}>STORE</Text>
+            </View>
+            <View style={[styles.headerSide, styles.headerSideRight]}>
+              <HubTokenChip
+                label={t('common.tokens')}
+                value={formattedDisplayTokens}
+                rowDirection={rowDir}
+                variant="softUi"
+                accessibilityLabel={`${t('common.tokens')}: ${formattedDisplayTokens}`}
               />
-            </Pressable>
+            </View>
           </View>
-          <View style={styles.headerCenter}>
-            <Text style={[styles.title, { color: textPrimary }]}>STORE</Text>
-          </View>
-          <View style={[styles.headerSide, styles.headerSideRight]}>
-            <HubTokenChip
-              label={t('common.tokens')}
-              value={formattedDisplayTokens}
-              rowDirection={rowDir}
-              variant="softUi"
-              accessibilityLabel={`${t('common.tokens')}: ${formattedDisplayTokens}`}
-            />
-          </View>
-        </View>
-
-        <View
-          style={styles.pageContent}
-        >
-          {/* Equal flex spacers center the store body under the header. */}
-          <View style={styles.pageSpacer} />
 
           <View
             style={[
@@ -489,67 +496,64 @@ export default function StoreScreen() {
             <Text style={[styles.tokenBalanceHint, { color: textMuted }]}>
               {t('store.typicalGameTokensHint')}
             </Text>
-
-            {/* ── Promo redemption ───────────────────────── */}
-            <View style={styles.redeemSection}>
-              <Text style={[styles.redeemTitle, isCompactViewport && styles.redeemTitleCompact, { color: textPrimary }]}>REDEEM CODE</Text>
-              <View
-                style={[
-                  styles.redeemCard,
-                  SOFT_SURFACE_FACE,
-                  darkModeFlatTop,
-                  { backgroundColor: surface },
-                  softSurfaceLift(),
-                ]}
-              >
-                <TextInput
-                  value={voucherCode}
-                  onChangeText={handleVoucherChange}
-                  placeholder="Enter code here..."
-                  placeholderTextColor={textMuted}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  style={[
-                    styles.redeemInput,
-                    isCompactViewport && styles.redeemInputCompact,
-                    {
-                      color: textPrimary,
-                      backgroundColor: redeemFieldBackground,
-                      borderColor: promoError ? '#D32F2F' : redeemFieldBorder,
-                      borderWidth: promoError ? 1.5 : 1,
-                    },
-                  ]}
-                />
-                <Pressable
-                  onPress={applyVoucher}
-                  disabled={isRedeeming}
-                  style={({ pressed }) => [
-                    styles.applyButton,
-                    isCompactViewport && styles.applyButtonCompact,
-                    SOFT_SURFACE_FACE,
-                    darkModeFlatTop,
-                    softSurfaceLift(),
-                    {
-                      backgroundColor: applyButtonBackground,
-                      opacity: isRedeeming ? 0.65 : pressed ? 0.92 : 1,
-                      transform: pressed && !isRedeeming ? [{ scale: 0.98 }] : [{ scale: 1 }],
-                    },
-                  ]}
-                >
-                  {isRedeeming ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.applyButtonText}>APPLY CODE</Text>
-                  )}
-                </Pressable>
-              </View>
-              {promoError ? <Text style={styles.promoErrorText}>{promoError}</Text> : null}
-              {promoSuccess ? <Text style={styles.promoSuccessText}>{promoSuccess}</Text> : null}
-            </View>
           </View>
 
-          <View style={styles.pageSpacer} />
-        </View>
+          {/* ── Promo redemption ───────────────────────── */}
+          <View style={styles.redeemSection}>
+            <Text style={[styles.redeemTitle, isCompactViewport && styles.redeemTitleCompact, { color: textPrimary }]}>REDEEM CODE</Text>
+            <View
+              style={[
+                styles.redeemCard,
+                SOFT_SURFACE_FACE,
+                darkModeFlatTop,
+                { backgroundColor: surface },
+                softSurfaceLift(),
+              ]}
+            >
+              <TextInput
+                value={voucherCode}
+                onChangeText={handleVoucherChange}
+                placeholder="Enter code here..."
+                placeholderTextColor={textMuted}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                style={[
+                  styles.redeemInput,
+                  isCompactViewport && styles.redeemInputCompact,
+                  {
+                    color: textPrimary,
+                    backgroundColor: redeemFieldBackground,
+                    borderColor: promoError ? '#D32F2F' : redeemFieldBorder,
+                    borderWidth: promoError ? 1.5 : 1,
+                  },
+                ]}
+              />
+              <Pressable
+                onPress={applyVoucher}
+                disabled={isRedeeming}
+                style={({ pressed }) => [
+                  styles.applyButton,
+                  isCompactViewport && styles.applyButtonCompact,
+                  SOFT_SURFACE_FACE,
+                  darkModeFlatTop,
+                  softSurfaceLift(),
+                  {
+                    backgroundColor: applyButtonBackground,
+                    opacity: isRedeeming ? 0.65 : pressed ? 0.92 : 1,
+                    transform: pressed && !isRedeeming ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                  },
+                ]}
+              >
+                {isRedeeming ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.applyButtonText}>APPLY CODE</Text>
+                )}
+              </Pressable>
+            </View>
+            {promoError ? <Text style={styles.promoErrorText}>{promoError}</Text> : null}
+            {promoSuccess ? <Text style={styles.promoSuccessText}>{promoSuccess}</Text> : null}
+          </View>
         </View>
       </ScreenContent>
     </SafeAreaView>
@@ -565,7 +569,11 @@ const styles = StyleSheet.create({
   viewport: {
     flex: 1,
   },
-  /** Shared outer gutter + max width - header controls and store cards share the same edges as home. */
+  /**
+   * Shared outer gutter + max width. Equal paddingTop/paddingBottom match chrome so
+   * space above STORE equals space below redeem. space-between splits free height
+   * evenly between header↔cards and cards↔redeem.
+   */
   contentFrame: {
     flex: 1,
     width: '100%',
@@ -574,17 +582,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 0,
     paddingHorizontal: LAYOUT.screenGutter,
-  },
-  // Fill remaining height under header; equal pageSpacers center storeBody.
-  pageContent: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 0,
-    alignItems: 'stretch',
-  },
-  pageSpacer: {
-    flex: 1,
-    minHeight: 0,
+    paddingTop: getStandardChromeTopPadding(Platform.OS === 'web'),
+    paddingBottom: getStandardChromeTopPadding(Platform.OS === 'web'),
+    justifyContent: 'space-between',
   },
   storeBody: {
     width: '100%',
@@ -603,11 +603,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     minHeight: Platform.OS === 'web' ? 64 : 56,
-    paddingTop: getStandardChromeTopPadding(Platform.OS === 'web'),
-    paddingBottom: SPACING.xs,
   },
   headerSide: {
     // Grow with content (token chip) — fixed width was clipping larger balances.
+    zIndex: 2,
     minWidth: 44,
     flexShrink: 0,
     alignItems: 'flex-start',
@@ -616,9 +615,14 @@ const styles = StyleSheet.create({
   headerSideRight: {
     alignItems: 'flex-end',
   },
+  // True geometric center of the frame — aligns with the middle (30) token card.
   headerCenter: {
-    flex: 1,
-    minWidth: 0,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    zIndex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

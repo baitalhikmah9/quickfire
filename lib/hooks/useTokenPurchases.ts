@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import {
   getStoreProducts,
   isPurchaseCancelledError,
@@ -11,6 +13,7 @@ import {
   type RevenueCatSessionState,
   type StoreProductInfo,
 } from '@/lib/payments/revenueCat';
+import { usePlayStore } from '@/store/play';
 
 export interface TokenCatalogProduct {
   productKey: string;
@@ -18,6 +21,13 @@ export interface TokenCatalogProduct {
   iosProductId: string;
   androidProductId: string;
   sortOrder: number;
+}
+
+export interface TokenPurchaseOutcome extends PurchaseResult {
+  granted: boolean;
+  pending: boolean;
+  tokensGranted: number;
+  balance: number | null;
 }
 
 interface UseTokenPurchasesOptions {
@@ -29,8 +39,11 @@ interface UseTokenPurchasesOptions {
  * Fetches native store prices and initiates purchases.
  *
  * RevenueCat is configured and identified globally via `useRevenueCatSync`.
+ * After a successful Test Store purchase, grants tokens via Convex immediately.
  */
 export function useTokenPurchases({ catalog, enabled }: UseTokenPurchasesOptions) {
+  const syncConsumablePurchase = useMutation(api.payments.syncConsumablePurchase);
+  const setTokenBalance = usePlayStore((state) => state.setTokenBalance);
   const [session, setSession] = useState<RevenueCatSessionState>({
     appUserId: null,
     ready: false,
@@ -88,7 +101,7 @@ export function useTokenPurchases({ catalog, enabled }: UseTokenPurchasesOptions
   }, [enabled, platformProductIds, session.appUserId, session.error, session.ready]);
 
   const purchase = useCallback(
-    async (catalogProduct: TokenCatalogProduct): Promise<PurchaseResult> => {
+    async (catalogProduct: TokenCatalogProduct): Promise<TokenPurchaseOutcome> => {
       if (!enabled) throw new Error('Purchases are not enabled.');
       if (!isRevenueCatSupported())
         throw new Error('Purchases are only available in the iOS and Android app.');
@@ -113,7 +126,44 @@ export function useTokenPurchases({ catalog, enabled }: UseTokenPurchasesOptions
       setIsPurchasing(true);
       setError(null);
       try {
-        return await purchaseStoreProduct(product);
+        const purchaseResult = await purchaseStoreProduct(product);
+        const transactionId =
+          purchaseResult.transactionId?.trim() ||
+          // Deterministic fallback so Test Store grants still work when RC omits an id.
+          `rc:${purchaseResult.store}:${session.appUserId}:${product.identifier}:${Date.now()}`;
+
+        try {
+          const sync = await syncConsumablePurchase({
+            purchaserAccountId: session.appUserId,
+            productId: product.identifier,
+            transactionId,
+            store: purchaseResult.store,
+          });
+
+          if (typeof sync.balance === 'number') {
+            setTokenBalance(sync.balance);
+          }
+
+          return {
+            ...purchaseResult,
+            transactionId,
+            granted: sync.granted,
+            pending: sync.pending,
+            tokensGranted: sync.tokensGranted,
+            balance: sync.balance,
+          };
+        } catch (syncError) {
+          // Purchase succeeded in RC; wallet grant failed (e.g. webhook-only store).
+          console.warn('[purchases] syncConsumablePurchase failed', syncError);
+          return {
+            ...purchaseResult,
+            transactionId,
+            granted: false,
+            pending: true,
+            tokensGranted: 0,
+            balance: null,
+          };
+        }
       } catch (cause: unknown) {
         if (isPurchaseCancelledError(cause)) {
           throw new Error('Purchase cancelled.');
@@ -123,7 +173,14 @@ export function useTokenPurchases({ catalog, enabled }: UseTokenPurchasesOptions
         setIsPurchasing(false);
       }
     },
-    [enabled, products, session.appUserId, session.ready]
+    [
+      enabled,
+      products,
+      session.appUserId,
+      session.ready,
+      setTokenBalance,
+      syncConsumablePurchase,
+    ]
   );
 
   const combinedError = error ?? session.error;

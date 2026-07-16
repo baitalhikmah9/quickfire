@@ -8,6 +8,7 @@ import {
   normalizeRevenueCatStore,
 } from './lib/paymentWebhook';
 import { mergePurchaserAccountIntoTarget } from './lib/purchaserAccountMerge';
+import { canClientSyncConsumablePurchase } from './lib/clientPurchaseSync';
 import { grantConsumablePurchase } from './lib/grantConsumablePurchase';
 import {
   DEFAULT_TOKEN_PRODUCTS,
@@ -234,10 +235,73 @@ export const syncConsumablePurchase = mutation({
       v.literal('test_store')
     ),
   },
-  handler: async (ctx) => {
-    await requireUser(ctx);
-    // Kept for older app builds. Only the authenticated RevenueCat webhook may grant tokens.
-    return { granted: false, pending: true };
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+
+    // Production store grants stay webhook-only (anti-forgery).
+    // Test Store has no reliable Play/App receipt path in debug APKs, so we
+    // grant immediately after a successful RevenueCat Test Store purchase.
+    if (!canClientSyncConsumablePurchase(args.store)) {
+      return { granted: false as const, pending: true as const, tokensGranted: 0, balance: null };
+    }
+
+    if (!args.transactionId.trim() || !args.productId.trim()) {
+      throw new Error('missing_purchase_fields');
+    }
+
+    const purchaserAccount = await getPurchaserAccountByAppUserId(ctx, args.purchaserAccountId);
+    if (!purchaserAccount) {
+      throw new Error('purchaser_account_not_found');
+    }
+
+    const canonical = await ensureCanonicalPurchaserAccountForUser(ctx, user);
+    const ownsAccount =
+      purchaserAccount.appUserId === canonical?.appUserId ||
+      purchaserAccount.linkedUserId === user._id ||
+      (purchaserAccount.state === 'merged' &&
+        purchaserAccount.mergedIntoId === canonical?.appUserId);
+
+    if (!ownsAccount) {
+      throw new Error('purchaser_account_mismatch');
+    }
+
+    const grantPurchaserAccountId =
+      purchaserAccount.state === 'merged' && purchaserAccount.mergedIntoId
+        ? purchaserAccount.mergedIntoId
+        : purchaserAccount.appUserId === canonical?.appUserId
+          ? purchaserAccount.appUserId
+          : (canonical?.appUserId ?? purchaserAccount.appUserId);
+
+    const products = await listTokenProducts(ctx);
+    const product = findTokenProductByStoreProductId(products, args.store, args.productId);
+    if (!product) {
+      throw new Error('invalid_product');
+    }
+
+    const result = await grantConsumablePurchase(ctx, {
+      products,
+      purchaserAccountId: grantPurchaserAccountId,
+      linkedUserId: user._id,
+      store: args.store,
+      productId: args.productId,
+      transactionId: args.transactionId,
+      revenueCatEventId: `client_sync:${args.store}:${args.transactionId}`,
+      purchasedAt: Date.now(),
+      rawEvent: {
+        source: 'client_sync',
+        store: args.store,
+        productId: args.productId,
+        transactionId: args.transactionId,
+        purchaserAccountId: args.purchaserAccountId,
+      },
+    });
+
+    return {
+      granted: result.granted,
+      pending: false as const,
+      tokensGranted: result.tokensGranted,
+      balance: result.balance,
+    };
   },
 });
 
@@ -393,7 +457,8 @@ export const processRevenueCatWebhook = internalMutation({
       return await markWebhook('ignored', 'unsupported_store');
     }
 
-    if (type === 'NON_RENEWING_PURCHASE') {
+    // Consumables: NON_RENEWING_PURCHASE (common) or INITIAL_PURCHASE (some Test Store paths).
+    if (type === 'NON_RENEWING_PURCHASE' || type === 'INITIAL_PURCHASE') {
       const transactionId = asString(event.transaction_id);
       const productId = asString(event.product_id);
 

@@ -1,6 +1,8 @@
 import Constants from 'expo-constants';
 import { NativeModules, Platform } from 'react-native';
 
+import { REVENUECAT_TEST_STORE_API_KEY } from '@/lib/payments/revenueCatConfig';
+
 export interface StoreProductInfo {
   identifier: string;
   title?: string;
@@ -87,7 +89,43 @@ function getExtraString(key: string): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
+function envFlagEnabled(value: string | undefined): boolean {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === '1' || normalized === 'true' || normalized === 'yes';
+}
+
+/**
+ * Prefer RevenueCat Test Store unless production explicitly opts in.
+ *
+ * Why default-to-test: standalone debug APKs embed JS with NODE_ENV=production
+ * (export:embed --dev false), so they would otherwise bake .env.production
+ * App Store / Play keys. Metro (__DEV__), EAS development/preview, and local
+ * debug APKs should always hit Test Store.
+ *
+ * Production store keys are used only when:
+ * - EXPO_PUBLIC_REVENUECAT_USE_PRODUCTION_STORE=1 (EAS production / release), and
+ * - not __DEV__ / Constants.debugMode, and
+ * - not EXPO_PUBLIC_REVENUECAT_USE_TEST_STORE=1
+ */
+export function shouldUseRevenueCatTestStore(): boolean {
+  if (typeof __DEV__ !== 'undefined' && __DEV__) return true;
+  if (Constants.debugMode === true) return true;
+  if (envFlagEnabled(process.env.EXPO_PUBLIC_REVENUECAT_USE_TEST_STORE)) return true;
+
+  // Explicit production opt-in required for appl_ / goog_ store keys.
+  if (envFlagEnabled(process.env.EXPO_PUBLIC_REVENUECAT_USE_PRODUCTION_STORE)) {
+    return false;
+  }
+
+  return true;
+}
+
 export function getRevenueCatApiKey(): string | null {
+  if (shouldUseRevenueCatTestStore()) {
+    return REVENUECAT_TEST_STORE_API_KEY;
+  }
+
   const iosKey =
     process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? getExtraString('revenueCatIosApiKey');
   const androidKey =
@@ -383,11 +421,14 @@ export async function purchaseStoreProduct(
 
   const transaction = asRecord(result?.transaction);
   const transactionId =
-    typeof transaction?.transactionIdentifier === 'string'
-      ? transaction.transactionIdentifier
-      : typeof result?.transactionIdentifier === 'string'
-        ? (result.transactionIdentifier as string)
-        : null;
+    (typeof transaction?.transactionIdentifier === 'string' && transaction.transactionIdentifier) ||
+    (typeof transaction?.transactionId === 'string' && transaction.transactionId) ||
+    (typeof result?.transactionIdentifier === 'string' && result.transactionIdentifier) ||
+    (typeof result?.transactionId === 'string' && (result.transactionId as string)) ||
+    // RevenueCat Test Store sometimes only returns product + timestamp fields.
+    (typeof transaction?.purchaseDate === 'string' &&
+      `${product.identifier}:${transaction.purchaseDate}`) ||
+    null;
 
   return {
     productIdentifier: product.identifier,

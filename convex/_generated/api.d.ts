@@ -16,6 +16,7 @@ import type * as http from "../http.js";
 import type * as lib_adminSignInRateLimit from "../lib/adminSignInRateLimit.js";
 import type * as lib_adminValidation from "../lib/adminValidation.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_clientPurchaseSync from "../lib/clientPurchaseSync.js";
 import type * as lib_contentRules from "../lib/contentRules.js";
 import type * as lib_ensureWallet from "../lib/ensureWallet.js";
 import type * as lib_grantConsumablePurchase from "../lib/grantConsumablePurchase.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   "lib/adminSignInRateLimit": typeof lib_adminSignInRateLimit;
   "lib/adminValidation": typeof lib_adminValidation;
   "lib/auth": typeof lib_auth;
+  "lib/clientPurchaseSync": typeof lib_clientPurchaseSync;
   "lib/contentRules": typeof lib_contentRules;
   "lib/ensureWallet": typeof lib_ensureWallet;
   "lib/grantConsumablePurchase": typeof lib_grantConsumablePurchase;

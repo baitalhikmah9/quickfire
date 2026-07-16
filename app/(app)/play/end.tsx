@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import {
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -21,6 +22,11 @@ import {
 } from '@/constants';
 import { PlayScaffold } from '@/features/play/components/PlayScaffold';
 import { SOFT_SURFACE_STYLES } from '@/features/play/styles/softSurface';
+import {
+  getWinnerActionLabelSize,
+  getWinnerPromoLayout,
+  getWinnerPromoQrSize,
+} from '@/features/play/winnerPromoLayout';
 import { useI18n } from '@/lib/i18n/useI18n';
 import { useDarkModeFlatTop, useTheme } from '@/lib/hooks/useTheme';
 import { usePlayStore } from '@/store/play';
@@ -235,7 +241,7 @@ function PromoCard({ platform, url, source, compact, width }: {
   const textMuted = HOME_SOFT_UI.colors.textMuted;
   const labelSize = (compact ? 11 : 15) * textScale;
   const urlSize = (compact ? 8 : 12) * textScale;
-  const qrSize = Math.max(56, width - (compact ? 14 : 20));
+  const qrSize = getWinnerPromoQrSize(width, compact, Platform.OS);
 
   return (
     <View
@@ -289,10 +295,15 @@ export default function PlayEndScreen() {
   const { t } = useI18n();
   const { width, height } = useLandscapeDimensions();
   const textScale = usePlayTextScale();
+  const promoLayout = getWinnerPromoLayout({
+    windowWidth: width,
+    windowHeight: height,
+    platform: Platform.OS,
+  });
   // Android phones reserve meaningful landscape space for system navigation.
-  const compact = height < 800;
+  const compact = promoLayout.compact;
   // Phone landscape: viewport is very short, shrink everything harder so nothing clips.
-  const tiny = height < 500;
+  const tiny = promoLayout.tiny;
   const {
     session,
     resetSession,
@@ -334,13 +345,15 @@ export default function PlayEndScreen() {
   }
 
   // QR tiles share vertical room with scoreboard + slogan + tall actions.
-  const promoWidth = Math.min(
-    compact ? 150 : 240,
-    Math.max(compact ? 96 : 130, width * (compact ? 0.14 : 0.16)),
-    Math.max(72, height * (tiny ? 0.24 : compact ? 0.28 : 0.34)),
-  );
-  const promoGap = Math.min(36, Math.max(10, width * 0.025));
-  const actionLabelSize = Math.round((tiny ? 14 : compact ? 15 : 17) * textScale);
+  // iOS phone landscape uses a larger share so codes fill the flex promo band.
+  const promoWidth = promoLayout.promoWidth;
+  const promoGap = promoLayout.promoGap;
+  const actionLabelSize = getWinnerActionLabelSize({
+    platform: Platform.OS,
+    compact,
+    tiny,
+    textScale,
+  });
   const handleHome = () => {
     void consumeCurrentEntry().then(() => {
       resetSession();

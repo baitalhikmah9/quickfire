@@ -98,6 +98,26 @@ export function getBoardBodyHeight(input: {
   );
 }
 
+/**
+ * Bottom content pad for the board topic grid.
+ *
+ * Play board uses `safeAreaEdges={['bottom']}`, so SafeAreaView already clears
+ * the home indicator. Re-adding `bottomInset` here double-stacks cream under the
+ * grid on iOS (~insets.bottom + spacingSm). Web and Android keep their prior pad.
+ */
+export function getBoardGridBottomPadding(input: {
+  platform: string;
+  bottomInset: number;
+  spacingSm: number;
+  spacingXs: number;
+}): number {
+  if (input.platform === 'web' || input.platform === 'ios') {
+    return Math.max(0, input.spacingSm);
+  }
+  // Android: still reserve max(inset, xs) + sm (gesture/nav bars vary by device).
+  return Math.max(Math.max(0, input.bottomInset), Math.max(0, input.spacingXs)) + Math.max(0, input.spacingSm);
+}
+
 export type BoardVerticalLayoutInput = {
   viewportHeight: number;
   /**

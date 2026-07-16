@@ -101,6 +101,10 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
 
+jest.mock('@clerk/clerk-expo', () => ({
+  useAuth: jest.fn(() => ({ isLoaded: true, isSignedIn: true })),
+}));
+
 describe('TeamSetupScreen', () => {
   beforeEach(async () => {
     mockBack.mockClear();
@@ -275,6 +279,23 @@ describe('TeamSetupScreen', () => {
     expect(flat.width).toBe(44);
     expect(flat.height).toBe(44);
     expect(flat.borderRadius).toBe(14);
+  });
+
+  it('keeps the phone continue strip flush to the safe-area bottom (no double pad)', () => {
+    // iOS landscape team setup: PlayScaffold SafeAreaView already clears the home
+    // indicator. Extra paddingBottom on the floating strip stacked a ~32pt cream gap.
+    mockUseWindowDimensions.mockReturnValue({
+      width: 874,
+      height: 402,
+      scale: 3,
+      fontScale: 1,
+    });
+
+    render(<TeamSetupScreen />);
+
+    const strip = screen.getByTestId('team-setup-continue-strip');
+    const flat = StyleSheet.flatten(strip.props.style);
+    expect(flat.paddingBottom).toBe(0);
   });
 
   it('returns to quick-play topic length when going back during quick play', () => {

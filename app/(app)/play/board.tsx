@@ -20,6 +20,7 @@ import {
 import {
   computeBoardVerticalLayout,
   getBoardBodyHeight,
+  getBoardGridBottomPadding,
   getBoardTopicCellBox,
   getBoardTopicGridAlignment,
 } from '@/features/play/boardLayout';
@@ -498,12 +499,15 @@ export default function PlayBoardScreen() {
     () => computeTopicFit(boardLayoutWidth, metrics, gridColumnCount, width),
     [boardLayoutWidth, metrics, gridColumnCount, width]
   );
-  // Top matches question chrome→content gap; bottom still clears home indicator.
+  // Top matches question chrome→content gap. Bottom pad must not re-add
+  // SafeAreaView's home-indicator inset (iOS double-stacked ~50pt cream).
   const gridTopPadding = SPACING.xs;
-  const gridBottomPadding =
-    Platform.OS === 'web'
-      ? SPACING.sm
-      : Math.max(insets.bottom, SPACING.xs) + SPACING.sm;
+  const gridBottomPadding = getBoardGridBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+    spacingSm: SPACING.sm,
+    spacingXs: SPACING.xs,
+  });
   const gridVerticalPadding = gridTopPadding + gridBottomPadding;
   const maxQuestionRows = Math.max(1, ...grouped.map((column) => column.rows.length));
   /** Matches topicCenterBlock gap so pill rail targets image + title stack. */

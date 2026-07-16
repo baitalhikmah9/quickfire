@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { canClientSyncConsumablePurchase } from '@/convex/lib/clientPurchaseSync';
 import {
   buildPurchaseGrantIdempotencyKey,
   buildPurchaseReversalIdempotencyKey,
@@ -9,6 +10,12 @@ import {
 } from '@/convex/lib/paymentWebhook';
 
 describe('paymentWebhook helpers', () => {
+  it('allows client-side consumable grants only for the RevenueCat Test Store', () => {
+    expect(canClientSyncConsumablePurchase('test_store')).toBe(true);
+    expect(canClientSyncConsumablePurchase('app_store')).toBe(false);
+    expect(canClientSyncConsumablePurchase('play_store')).toBe(false);
+  });
+
   it('normalizes RevenueCat identity aliases without duplicates', () => {
     expect(
       normalizeRevenueCatAliases({

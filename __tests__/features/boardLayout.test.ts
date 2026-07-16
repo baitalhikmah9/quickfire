@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   computeBoardVerticalLayout,
   getBoardBodyHeight,
+  getBoardGridBottomPadding,
   getBoardGridRowSpacerCount,
   getBoardGridVerticalInsets,
   getBoardTopicCellBox,
@@ -93,6 +94,43 @@ describe('board topic grid alignment', () => {
         headerReserve: 108,
       })
     ).toBeGreaterThan(400);
+  });
+
+  it('does not double-stack home-indicator inset into iOS grid bottom padding', () => {
+    // SafeAreaView already applies bottom inset on the board scaffold.
+    expect(
+      getBoardGridBottomPadding({
+        platform: 'ios',
+        bottomInset: 21,
+        spacingSm: 8,
+        spacingXs: 4,
+      })
+    ).toBe(8);
+    expect(
+      getBoardGridBottomPadding({
+        platform: 'web',
+        bottomInset: 0,
+        spacingSm: 8,
+        spacingXs: 4,
+      })
+    ).toBe(8);
+    // Android keeps prior behavior (max(inset, xs) + sm).
+    expect(
+      getBoardGridBottomPadding({
+        platform: 'android',
+        bottomInset: 16,
+        spacingSm: 8,
+        spacingXs: 4,
+      })
+    ).toBe(24);
+    expect(
+      getBoardGridBottomPadding({
+        platform: 'android',
+        bottomInset: 0,
+        spacingSm: 8,
+        spacingXs: 4,
+      })
+    ).toBe(12); // max(0, xs) + sm — prior native formula
   });
 
   it('keeps only edge padding when stacked rows already fill the viewport', () => {
