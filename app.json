@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "requireFullScreen": true,
       "usesAppleSignIn": true,
-      "buildNumber": "2",
+      "buildNumber": "3",
       "bundleIdentifier": "com.playbackfire.app",
       "infoPlist": {
         "UIStatusBarHidden": true,
@@ -29,7 +29,7 @@
       "hidden": true
     },
     "android": {
-      "versionCode": 9,
+      "versionCode": 10,
       "package": "com.playbackfire.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
