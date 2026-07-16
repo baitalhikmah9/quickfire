@@ -53,7 +53,9 @@
       "env": {
         "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsucGxheWJhY2tmaXJlLmNvbSQ",
         "EXPO_PUBLIC_CONVEX_URL": "https://energized-hummingbird-439.eu-west-1.convex.cloud",
-        "CLERK_JWT_ISSUER_DOMAIN": "https://clerk.playbackfire.com"
+        "CLERK_JWT_ISSUER_DOMAIN": "https://clerk.playbackfire.com",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_bSQefSmHRbeHpzYnVFwRJkrisYA",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_ZLgnlMQiUBMBuPcXxAcFknOYcsg"
       }
     }
   },
