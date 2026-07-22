@@ -148,6 +148,7 @@ export default function RootLayout() {
             <Stack.Screen name="how-to-play" />
             <Stack.Screen name="terms" />
             <Stack.Screen name="privacy" />
+            <Stack.Screen name="delete-account" />
             <Stack.Screen name="(auth)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
             <Stack.Screen name="(app)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />
             <Stack.Screen name="(admin)" options={ROOT_NESTED_STACK_SCREEN_OPTIONS} />

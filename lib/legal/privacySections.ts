@@ -60,6 +60,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
     heading: 'Your choices and rights',
     paragraphs: [
       'Depending on where you live, you may have rights to access, correct, delete, or export personal information, or to object to or restrict certain processing. You can manage some profile details through your identity provider or Clerk where applicable. You may also contact us via the developer channels listed on the storefront where you obtained Backfire. We will respond consistent with applicable law.',
+      'To delete your Backfire account: open Settings while signed in and use Delete Account, or follow the web instructions at /delete-account (also available if you no longer have the app).',
     ],
   },
   {

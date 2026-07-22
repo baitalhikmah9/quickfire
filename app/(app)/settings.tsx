@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Platform,
   View,
@@ -13,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, useClerk, useUser } from '@clerk/clerk-expo';
+import { useAction } from 'convex/react';
 import {
   HEADER,
   SPACING,
@@ -39,6 +41,8 @@ import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { ScreenContent } from '@/components/ScreenContent';
 import { HubTokenChip } from '@/components/HubTokenChip';
 import { WebAwareModal } from '@/components/WebAwareModal';
+import { api } from '@/convex/_generated/api';
+import { logOutRevenueCat } from '@/lib/payments/revenueCat';
 import { useLocaleStore } from '@/store/locale';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
@@ -62,6 +66,7 @@ export default function SettingsScreen() {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const deleteAccount = useAction(api.users.deleteAccount);
   const authDisabled = isAuthDisabled();
   const router = useRouter();
   const paletteId = useThemeStore((s) => s.paletteId);
@@ -70,6 +75,9 @@ export default function SettingsScreen() {
   const setPlayDisplayMode = useDisplayStore((s) => s.setPlayDisplayMode);
   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
   const [isContentLanguagesModalVisible, setContentLanguagesModalVisible] = useState(false);
+  const [isDeleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
   const { direction, getLocaleName, t, uiLocale } = useI18n();
   const setUiLocale = useLocaleStore((state) => state.setUiLocale);
   const contentLocales = useLocaleStore((state) => state.contentLocales);
@@ -119,6 +127,40 @@ export default function SettingsScreen() {
     }
 
     setContentLocales([...selectedContentLocaleValues, locale]);
+  };
+
+  const openDeleteAccountModal = () => {
+    setDeleteAccountError(null);
+    setDeleteAccountModalVisible(true);
+  };
+
+  const closeDeleteAccountModal = () => {
+    if (isDeletingAccount) return;
+    setDeleteAccountModalVisible(false);
+    setDeleteAccountError(null);
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (isDeletingAccount) return;
+
+    setIsDeletingAccount(true);
+    setDeleteAccountError(null);
+
+    try {
+      await deleteAccount({});
+      await logOutRevenueCat();
+      await signOut?.();
+      setDeleteAccountModalVisible(false);
+      router.replace('/(app)');
+    } catch (cause) {
+      const message =
+        cause instanceof Error && cause.message.trim()
+          ? cause.message
+          : t('settings.deleteAccountFailed');
+      setDeleteAccountError(message);
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   return (
@@ -455,8 +497,8 @@ export default function SettingsScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={t('common.signOut')}
                     style={({ pressed }) => [
-                      styles.prefRowLast,
-                      { flexDirection: rowDir },
+                      styles.prefRow,
+                      { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
                       pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
                     ]}
                     onPress={() => {
@@ -476,6 +518,30 @@ export default function SettingsScreen() {
                       </View>
                     </View>
                   </Pressable>
+                  <Pressable
+                    testID="settings-delete-account-button"
+                    accessibilityRole="button"
+                    accessibilityLabel={t('settings.deleteAccount')}
+                    style={({ pressed }) => [
+                      styles.prefRowLast,
+                      { flexDirection: rowDir },
+                      pressed && { backgroundColor: 'rgba(0,0,0,0.03)' },
+                    ]}
+                    onPress={openDeleteAccountModal}
+                  >
+                    <View style={[styles.prefMain, { flexDirection: rowDir }]}>
+                      <Ionicons name="trash-outline" size={18} color="#DC2626" />
+                      <View style={styles.prefTextBlock}>
+                        <Text
+                          style={[styles.prefLabel, { color: '#DC2626' }]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {t('settings.deleteAccount')}
+                        </Text>
+                      </View>
+                    </View>
+                  </Pressable>
                 </View>
               ) : !authDisabled ? (
                 <View style={styles.publicAuthInSettings}>
@@ -490,6 +556,94 @@ export default function SettingsScreen() {
         </ScrollView>
         </View>
       </ScreenContent>
+
+      <WebAwareModal
+        visible={isDeleteAccountModalVisible}
+        onRequestClose={closeDeleteAccountModal}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.deleteAccountCancel')}
+            style={styles.modalBackdrop}
+            onPress={closeDeleteAccountModal}
+            disabled={isDeletingAccount}
+          />
+          <View
+            testID="settings-delete-account-modal"
+            style={[
+              styles.deleteAccountModalCard,
+              SOFT_SURFACE_FACE,
+              softSurfaceLift(),
+              { backgroundColor: surface },
+            ]}
+          >
+            <Text style={[styles.themeModalTitle, { color: textPrimary }]}>
+              {t('settings.deleteAccountTitle')}
+            </Text>
+            <Text style={[styles.deleteAccountBody, { color: textMuted }]}>
+              {t('settings.deleteAccountBody')}
+            </Text>
+            {deleteAccountError ? (
+              <Text testID="settings-delete-account-error" style={styles.deleteAccountError}>
+                {deleteAccountError}
+              </Text>
+            ) : null}
+            {isDeletingAccount ? (
+              <View
+                testID="settings-delete-account-loading"
+                style={[styles.deleteAccountLoadingRow, { flexDirection: rowDir }]}
+              >
+                <ActivityIndicator color={textPrimary} />
+                <Text style={[styles.deleteAccountLoadingText, { color: textMuted }]}>
+                  {t('settings.deleteAccountInProgress')}
+                </Text>
+              </View>
+            ) : null}
+            <View style={[styles.deleteAccountActions, { flexDirection: rowDir }]}>
+              <Pressable
+                testID="settings-delete-account-cancel"
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.deleteAccountCancel')}
+                disabled={isDeletingAccount}
+                onPress={closeDeleteAccountModal}
+                style={({ pressed }) => [
+                  styles.deleteAccountSecondaryButton,
+                  SOFT_SURFACE_FACE,
+                  softSurfaceLift(),
+                  {
+                    backgroundColor: surface,
+                    opacity: isDeletingAccount ? 0.5 : pressed ? 0.9 : 1,
+                  },
+                ]}
+              >
+                <Text style={[styles.deleteAccountSecondaryLabel, { color: textPrimary }]}>
+                  {t('settings.deleteAccountCancel')}
+                </Text>
+              </Pressable>
+              <Pressable
+                testID="settings-delete-account-confirm"
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.deleteAccountConfirm')}
+                disabled={isDeletingAccount}
+                onPress={() => {
+                  void confirmDeleteAccount();
+                }}
+                style={({ pressed }) => [
+                  styles.deleteAccountDangerButton,
+                  {
+                    opacity: isDeletingAccount ? 0.55 : pressed ? 0.9 : 1,
+                  },
+                ]}
+              >
+                <Text style={styles.deleteAccountDangerLabel}>
+                  {t('settings.deleteAccountConfirm')}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </WebAwareModal>
 
       {SHOW_LANGUAGE_SETTINGS_UI ? (
       <>
@@ -959,6 +1113,65 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  deleteAccountModalCard: {
+    width: '100%',
+    maxWidth: 440,
+    borderRadius: 32,
+    padding: SPACING.xl,
+    gap: SPACING.md,
+    zIndex: 2,
+  },
+  deleteAccountBody: {
+    fontFamily: FONTS.ui,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  deleteAccountError: {
+    fontFamily: FONTS.ui,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#DC2626',
+  },
+  deleteAccountLoadingRow: {
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  deleteAccountLoadingText: {
+    fontFamily: FONTS.ui,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  deleteAccountActions: {
+    marginTop: SPACING.sm,
+    gap: SPACING.sm,
+    flexWrap: 'wrap',
+  },
+  deleteAccountSecondaryButton: {
+    flexGrow: 1,
+    minHeight: 48,
+    borderRadius: 14,
+    paddingHorizontal: SPACING.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteAccountSecondaryLabel: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 14,
+  },
+  deleteAccountDangerButton: {
+    flexGrow: 1,
+    minHeight: 48,
+    borderRadius: 14,
+    paddingHorizontal: SPACING.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC2626',
+  },
+  deleteAccountDangerLabel: {
+    fontFamily: FONTS.uiBold,
+    fontSize: 14,
+    color: '#FFFFFF',
   },
   themePaletteGrid: {
     flexDirection: 'row',

@@ -3,11 +3,14 @@ import Constants from 'expo-constants';
 import { NativeModules, Platform } from 'react-native';
 
 import {
+  clearRevenueCatSessionState,
   configureRevenueCatOnce,
   getPaymentStoreForPurchase,
   getRevenueCatApiKey,
+  getRevenueCatSession,
   hasActiveEntitlement,
   isPurchaseCancelledError,
+  logOutRevenueCat,
   normalizeCustomerInfo,
   shouldUseRevenueCatTestStore,
 } from '@/lib/payments/revenueCat';
@@ -155,5 +158,31 @@ describe('revenueCat helpers', () => {
 
     expect(shouldUseRevenueCatTestStore()).toBe(true);
     expect(getRevenueCatApiKey()).toBe(REVENUECAT_TEST_STORE_API_KEY);
+  });
+
+  it('clears local session state without requiring the native SDK', () => {
+    clearRevenueCatSessionState();
+    expect(getRevenueCatSession()).toEqual({
+      appUserId: null,
+      ready: false,
+      error: null,
+    });
+  });
+
+  it('logOutRevenueCat clears session state even when Purchases is unavailable', async () => {
+    const nativeModules = NativeModules as Record<string, unknown>;
+    const originalNative = nativeModules.RNPurchases;
+    nativeModules.RNPurchases = undefined;
+
+    try {
+      await expect(logOutRevenueCat()).resolves.toBeUndefined();
+      expect(getRevenueCatSession()).toEqual({
+        appUserId: null,
+        ready: false,
+        error: null,
+      });
+    } finally {
+      nativeModules.RNPurchases = originalNative;
+    }
   });
 });

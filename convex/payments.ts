@@ -19,6 +19,7 @@ import {
   ensureCanonicalPurchaserAccountForUser,
   getPurchaserAccountByAppUserId,
   isMergeableGuestPurchaserAccount,
+  isPurchaserAccountUsable,
   shouldRebindInstallationToCanonical,
 } from './lib/purchaserAccounts';
 import type { Id } from './_generated/dataModel';
@@ -64,11 +65,18 @@ async function findMatchingPurchaserAccount(
   for (const appUserId of appUserIds) {
     const purchaserAccount = await getPurchaserAccountByAppUserId(ctx, appUserId);
     if (purchaserAccount) {
+      // Deleted accounts keep purchase history but must never receive new grants.
+      if (!isPurchaserAccountUsable(purchaserAccount) && purchaserAccount.state !== 'merged') {
+        continue;
+      }
       if (purchaserAccount.state === 'merged' && purchaserAccount.mergedIntoId) {
-        return (
+        const target =
           (await getPurchaserAccountByAppUserId(ctx, purchaserAccount.mergedIntoId)) ??
-          purchaserAccount
-        );
+          purchaserAccount;
+        if (!isPurchaserAccountUsable(target)) {
+          continue;
+        }
+        return target;
       }
       return purchaserAccount;
     }
@@ -140,6 +148,11 @@ export const ensurePurchaserAccount = mutation({
     if (installationPurchaserAccount?.state === 'merged' && installationPurchaserAccount.mergedIntoId) {
       installationPurchaserAccount =
         await getPurchaserAccountByAppUserId(ctx, installationPurchaserAccount.mergedIntoId);
+    }
+
+    // Unlinked/deleted purchaser accounts cannot be reclaimed via device binding.
+    if (installationPurchaserAccount && !isPurchaserAccountUsable(installationPurchaserAccount)) {
+      installationPurchaserAccount = null;
     }
 
     const canonicalPurchaserAccount = user

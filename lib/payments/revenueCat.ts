@@ -352,7 +352,30 @@ export async function establishRevenueCatSession(appUserId: string): Promise<voi
 
 export function clearRevenueCatSessionState(): void {
   loggedInAppUserId = null;
+  loginPromise = null;
+  pendingLoginAppUserId = null;
   notifySessionListeners();
+}
+
+/**
+ * Log out of RevenueCat (native SDK) and clear local session state.
+ * Safe to call when Purchases is unavailable; backend unlink remains authoritative.
+ */
+export async function logOutRevenueCat(): Promise<void> {
+  try {
+    if (isRevenueCatSupported() && NativeModules.RNPurchases && getRevenueCatApiKey()) {
+      await configureRevenueCatOnce();
+      const module = await loadPurchasesModule();
+      const Purchases = getPurchases(module);
+      if (typeof Purchases.logOut === 'function' && loggedInAppUserId) {
+        await (Purchases.logOut as Function)();
+      }
+    }
+  } catch {
+    // Local logout is best-effort; Convex marks purchaser accounts deleted.
+  } finally {
+    clearRevenueCatSessionState();
+  }
 }
 
 export async function getStoreProducts(productIds: string[]): Promise<StoreProductInfo[]> {

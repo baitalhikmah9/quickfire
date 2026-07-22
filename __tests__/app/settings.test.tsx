@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Platform, StyleSheet } from 'react-native';
 
 import SettingsScreen from '@/app/(app)/settings';
@@ -9,7 +9,10 @@ import { useDisplayStore } from '@/store/display';
 
 const mockBack = jest.fn();
 const mockPush = jest.fn();
-const mockSignOut = jest.fn();
+const mockReplace = jest.fn();
+const mockSignOut = jest.fn(async () => undefined);
+const mockDeleteAccount = jest.fn(async () => ({ ok: true }));
+const mockLogOutRevenueCat = jest.fn(async () => undefined);
 const mockIsAuthDisabled = jest.fn(() => false);
 const mockUseAuth = jest.fn(() => ({ isLoaded: true, isSignedIn: true }));
 const mockUseUser = jest.fn(() => ({
@@ -19,6 +22,8 @@ const mockUseUser = jest.fn(() => ({
     firstName: 'Pilot',
     imageUrl: null,
     username: 'pilot',
+    fullName: 'Pilot',
+    primaryEmailAddress: { emailAddress: 'pilot@example.com' },
   },
 }));
 const mockUseClerk = jest.fn(() => ({ signOut: mockSignOut }));
@@ -28,6 +33,8 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({
     back: mockBack,
     push: mockPush,
+    replace: mockReplace,
+    canGoBack: () => false,
   }),
 }));
 
@@ -35,6 +42,17 @@ jest.mock('@clerk/clerk-expo', () => ({
   useAuth: () => mockUseAuth(),
   useClerk: () => mockUseClerk(),
   useUser: () => mockUseUser(),
+}));
+
+jest.mock('convex/react', () => ({
+  useQuery: jest.fn(() => undefined),
+  useMutation: jest.fn(() => jest.fn(async () => ({ ok: true }))),
+  useAction: jest.fn(() => mockDeleteAccount),
+  useConvexAuth: jest.fn(() => ({ isAuthenticated: true, isLoading: false })),
+}));
+
+jest.mock('@/lib/payments/revenueCat', () => ({
+  logOutRevenueCat: () => mockLogOutRevenueCat(),
 }));
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -138,6 +156,15 @@ jest.mock('@/lib/i18n/useI18n', () => ({
         'settings.palette.green': 'Green',
         'settings.palette.red': 'Red',
         'settings.palette.dark': 'Dark',
+        'settings.deleteAccount': 'Delete Account',
+        'settings.deleteAccountTitle': 'Delete your account?',
+        'settings.deleteAccountBody':
+          'This permanently deletes your account. Unused tokens are forfeited. Store purchases are not refunded. Gameplay and payment records are kept in anonymized form for analytics and accounting. You cannot undo this.',
+        'settings.deleteAccountConfirm': 'Delete permanently',
+        'settings.deleteAccountCancel': 'Keep account',
+        'settings.deleteAccountInProgress': 'Deleting account…',
+        'settings.deleteAccountFailed':
+          'We could not finish deleting your account. Your personal data may already be cleared — try again.',
         'auth.signUp.signIn': 'Sign in',
         'profile.guest.createAccount': 'CREATE ACCOUNT',
       };
@@ -151,7 +178,11 @@ describe('SettingsScreen', () => {
   beforeEach(() => {
     mockBack.mockClear();
     mockPush.mockClear();
+    mockReplace.mockClear();
     mockSignOut.mockClear();
+    mockDeleteAccount.mockReset();
+    mockDeleteAccount.mockImplementation(async () => ({ ok: true }));
+    mockLogOutRevenueCat.mockClear();
     mockIsAuthDisabled.mockReturnValue(false);
     mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: true });
     mockUseClerk.mockReturnValue({ signOut: mockSignOut });
@@ -164,6 +195,8 @@ describe('SettingsScreen', () => {
         firstName: 'Pilot',
         imageUrl: null,
         username: 'pilot',
+        fullName: 'Pilot',
+        primaryEmailAddress: { emailAddress: 'pilot@example.com' },
       },
     });
   });
@@ -274,5 +307,100 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('Theme selection')).toBeTruthy();
     expect(screen.getByText('App Language')).toBeTruthy();
     expect(screen.queryByText('Sign Out')).toBeNull();
+  });
+
+  it('shows delete account only when signed in', () => {
+    const { rerender } = render(<SettingsScreen />);
+    expect(screen.getByTestId('settings-delete-account-button')).toBeTruthy();
+
+    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
+    mockUseUser.mockReturnValue({ user: null } as any);
+    rerender(<SettingsScreen />);
+    expect(screen.queryByTestId('settings-delete-account-button')).toBeNull();
+  });
+
+  it('opens a warning on first delete-account tap without deleting yet', () => {
+    render(<SettingsScreen />);
+
+    fireEvent.press(screen.getByTestId('settings-delete-account-button'));
+
+    expect(screen.getByTestId('settings-delete-account-modal')).toBeTruthy();
+    expect(screen.getByText('Delete your account?')).toBeTruthy();
+    expect(mockDeleteAccount).not.toHaveBeenCalled();
+    expect(mockSignOut).not.toHaveBeenCalled();
+  });
+
+  it('deletes only after the second confirm tap and signs the user out', async () => {
+    render(<SettingsScreen />);
+
+    fireEvent.press(screen.getByTestId('settings-delete-account-button'));
+    fireEvent.press(screen.getByTestId('settings-delete-account-confirm'));
+
+    await waitFor(() => {
+      expect(mockDeleteAccount).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(mockLogOutRevenueCat).toHaveBeenCalledTimes(1);
+      expect(mockSignOut).toHaveBeenCalledTimes(1);
+      expect(mockReplace).toHaveBeenCalledWith('/(app)');
+    });
+  });
+
+  it('keeps the modal open with a retry path when deletion fails', async () => {
+    mockDeleteAccount.mockImplementationOnce(async () => {
+      throw new Error('Clerk user deletion failed (500)');
+    });
+
+    render(<SettingsScreen />);
+
+    fireEvent.press(screen.getByTestId('settings-delete-account-button'));
+    fireEvent.press(screen.getByTestId('settings-delete-account-confirm'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('settings-delete-account-error')).toHaveTextContent(
+        'Clerk user deletion failed (500)'
+      );
+    });
+    expect(screen.getByTestId('settings-delete-account-modal')).toBeTruthy();
+    expect(mockSignOut).not.toHaveBeenCalled();
+
+    mockDeleteAccount.mockImplementationOnce(async () => ({ ok: true }));
+    fireEvent.press(screen.getByTestId('settings-delete-account-confirm'));
+
+    await waitFor(() => {
+      expect(mockDeleteAccount).toHaveBeenCalledTimes(2);
+      expect(mockSignOut).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('disables confirm while deletion is in progress to prevent duplicate submits', async () => {
+    let resolveDelete: ((value: { ok: true }) => void) | undefined;
+    mockDeleteAccount.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveDelete = resolve;
+        })
+    );
+
+    render(<SettingsScreen />);
+
+    fireEvent.press(screen.getByTestId('settings-delete-account-button'));
+    fireEvent.press(screen.getByTestId('settings-delete-account-confirm'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('settings-delete-account-loading')).toBeTruthy();
+    });
+
+    // Second press while in flight should not start another request.
+    fireEvent.press(screen.getByTestId('settings-delete-account-confirm'));
+    expect(mockDeleteAccount).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveDelete?.({ ok: true });
+    });
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -1,13 +1,24 @@
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
+import {
+  isPurchaserAccountReclaimable,
+  isPurchaserAccountUsable,
+  PURCHASER_STATE_ACTIVE,
+} from './accountDeletion';
 
 type ReaderCtx = QueryCtx | MutationCtx;
+
+export { isPurchaserAccountReclaimable, isPurchaserAccountUsable };
 
 /** Pure guest wallet: not identified and not already linked to a user. */
 export function isPureGuestPurchaserAccount(account: {
   kind: string;
   linkedUserId?: Id<'users'>;
+  state?: string;
 }): boolean {
+  if (account.state && !isPurchaserAccountUsable(account as { state: string })) {
+    return false;
+  }
   return account.kind === 'guest' && !account.linkedUserId;
 }
 
@@ -39,9 +50,13 @@ export function isMergeableGuestPurchaserAccount(
   source: {
     kind: string;
     linkedUserId?: Id<'users'>;
+    state?: string;
   },
   currentUserId: Id<'users'>
 ): boolean {
+  if (source.state && !isPurchaserAccountReclaimable(source as { state: string })) {
+    return false;
+  }
   if (source.kind !== 'guest') {
     return false;
   }
@@ -81,7 +96,8 @@ export async function ensureCanonicalPurchaserAccountForUser(
 ) {
   const existing = await getCanonicalPurchaserAccountForUser(ctx, user);
 
-  if (existing && existing.state !== 'merged') {
+  // Never reclaim deleted/merged purchaser accounts — mint a fresh one instead.
+  if (existing && isPurchaserAccountUsable(existing)) {
     if (user.canonicalPurchaserAccountId !== existing.appUserId) {
       await ctx.db.patch(user._id, { canonicalPurchaserAccountId: existing.appUserId });
     }
@@ -95,7 +111,7 @@ export async function ensureCanonicalPurchaserAccountForUser(
     appUserId,
     kind: 'identified',
     linkedUserId: user._id,
-    state: 'active',
+    state: PURCHASER_STATE_ACTIVE,
     createdAt: now,
     linkedAt: now,
     lastSeenAt: now,

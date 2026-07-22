@@ -13,6 +13,12 @@ export async function getCurrentUser(
     .withIndex('by_clerk_id', (q) => q.eq('clerkId', identity.subject))
     .unique();
 
+  // Mid-deletion users keep a Clerk session until finalize; treat as signed out
+  // for normal product paths so they cannot keep earning/spending tokens.
+  if (user && typeof user.deletionPendingAt === 'number') {
+    return null;
+  }
+
   return user;
 }
 

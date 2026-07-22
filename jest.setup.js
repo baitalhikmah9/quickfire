@@ -17,9 +17,12 @@ const mockConvexMutation = jest.fn(async (args) => {
   return { ok: true };
 });
 
+const mockConvexAction = jest.fn(async () => ({ ok: true }));
+
 jest.mock('convex/react', () => ({
   useQuery: jest.fn(() => undefined),
   useMutation: jest.fn(() => mockConvexMutation),
+  useAction: jest.fn(() => mockConvexAction),
   useConvexAuth: jest.fn(() => ({ isAuthenticated: true, isLoading: false })),
 }));
 

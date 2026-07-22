@@ -84,6 +84,15 @@ const enBase = {
   'settings.palette.green': 'Green',
   'settings.palette.red': 'Red',
   'settings.palette.dark': 'Dark',
+  'settings.deleteAccount': 'Delete Account',
+  'settings.deleteAccountTitle': 'Delete your account?',
+  'settings.deleteAccountBody':
+    'This permanently deletes your account. Unused tokens are forfeited. Store purchases are not refunded. Gameplay and payment records are kept in anonymized form for analytics and accounting. You cannot undo this.',
+  'settings.deleteAccountConfirm': 'Delete permanently',
+  'settings.deleteAccountCancel': 'Keep account',
+  'settings.deleteAccountInProgress': 'Deleting account…',
+  'settings.deleteAccountFailed':
+    'We could not finish deleting your account. Your personal data may already be cleared — try again.',
 
   'auth.signIn.heroTitle': 'Welcome Back',
   'auth.signIn.heroSubtitle': 'Sign in to continue your trivia journey',
@@ -148,6 +157,7 @@ const enBase = {
 
   'legal.termsTitle': 'Terms of Service',
   'legal.privacyTitle': 'Privacy Policy',
+  'legal.deleteAccountTitle': 'Delete Account',
   'legal.lastUpdated': 'Last updated: {date}',
 
   'hub.play': 'Play',

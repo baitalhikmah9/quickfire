@@ -10,6 +10,8 @@ export default defineSchema({
     lastActiveAt: v.number(),
     role: v.optional(v.string()),
     canonicalPurchaserAccountId: v.optional(v.string()),
+    /** Set when account deletion starts; user row is removed after Clerk delete. */
+    deletionPendingAt: v.optional(v.number()),
   }).index('by_clerk_id', ['clerkId']),
 
   purchaser_accounts: defineTable({
