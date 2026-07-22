@@ -24,7 +24,7 @@ describe('category sections', () => {
 
   it('finds every requested topic in the shipped question data', () => {
     const sections = groupCategoriesBySection(getPlayableCategories());
-    expect(sections.map((section) => section.categories.length)).toEqual([19, 14, 30, 8, 9]);
+    expect(sections.map((section) => section.categories.length)).toEqual([20, 14, 28, 8, 9]);
     expect(sections.flatMap((section) => section.categories).map((category) => category.title)).not.toContain('Guess the Flag');
   });
 

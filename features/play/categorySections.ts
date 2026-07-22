@@ -10,10 +10,11 @@ export interface CategorySection {
 
 const TOPICS: Record<CategorySectionId, string[]> = {
   general: [
-    'Corporations', 'Countries and Capitals', 'Famous Firsts', 'Famous Quotes',
-    'General Knowledge', 'Geography', 'Guess the Decade', 'Initials', 'Invented Where?', 'Match the Nickname', 'National Icons',
-    'Odd One Out', 'Science', 'Trump Quotes', 'UK', 'USA', 'What Happened Next?',
-    'What’s the Connection?', 'Which Country?',
+    'Corporations', 'Countries and Capitals', 'Famous Firsts',
+    'General Knowledge', 'Geography', 'Guess the Decade', 'In between:', 'Initials',
+    'Invented Where?', 'Match the Nickname', 'National Icons',
+    'Odd One Out', 'Science', 'Trump Quotes', 'Two Truths and a Lie', 'UK', 'USA',
+    'What year?', 'What’s the Connection?', 'Which Country?',
   ],
   history: [
     '19th Century', '19th Century Europe', '20th Century', '21st Century',
@@ -21,9 +22,9 @@ const TOPICS: Record<CategorySectionId, string[]> = {
     'Modern Middle East', 'Talab-ul Ilm', 'UK History', 'US History', 'WW1', 'WW2',
   ],
   popCulture: [
-    'Attack on Titan', 'Avatar: The Last Airbender', 'Before They Were Famous',
+    'Attack on Titan', 'Avatar: The Last Airbender',
     'Breaking Bad', 'DC Extended Universe', 'Dexter', 'Disney', 'Dragon Ball',
-    'Ertugrul', 'Fast and Furious', 'Friends', 'Game of Thrones', 'Halo',
+    'Fast and Furious', 'Friends', 'Game of Thrones', 'Halo',
     'Harry Potter', 'How I Met Your Mother', 'James Bond', 'Kuruluş: Osman',
     'Marvel', 'Naruto', 'One Piece', 'Peaky Blinders', 'Pirates of the Caribbean',
     'Pokémon', 'Prison Break', 'SpongeBob SquarePants', 'Star Wars',
