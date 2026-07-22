@@ -144,3 +144,45 @@ export const seedTokenProducts = internalMutation({
     }
   },
 });
+
+/**
+ * One-shot: set every wallet balance to a fixed amount.
+ * Usage: npx convex run seed:resetAllWalletBalances '{"balance":120}'
+ */
+export const resetAllWalletBalances = internalMutation({
+  args: {
+    balance: v.number(),
+  },
+  handler: async (ctx, args) => {
+    if (!Number.isFinite(args.balance) || args.balance < 0) {
+      throw new Error('invalid_balance');
+    }
+
+    const wallets = await ctx.db.query('wallets').collect();
+    const now = Date.now();
+    let updated = 0;
+
+    for (const wallet of wallets) {
+      const delta = args.balance - wallet.balance;
+      if (delta === 0) {
+        continue;
+      }
+
+      await ctx.db.insert('wallet_transactions', {
+        walletId: wallet._id,
+        type: 'admin_adjustment',
+        amount: delta,
+        createdAt: now,
+        status: 'posted',
+        source: 'admin',
+        metadata: {
+          reason: `bulk_reset_to_${args.balance}`,
+        },
+      });
+      await ctx.db.patch(wallet._id, { balance: args.balance });
+      updated += 1;
+    }
+
+    return { total: wallets.length, updated, balance: args.balance };
+  },
+});
