@@ -340,7 +340,7 @@ export default function AppHubScreen() {
                     ]}
                   >
                     <Image
-                      source={require('../../assets/QF Settings button.png')}
+                      source={require('../../assets/qf-settings-button.png')}
                       style={styles.settingsImage}
                       resizeMode="contain"
                     />

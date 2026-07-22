@@ -182,7 +182,7 @@ const CategoryCard = memo(function CategoryCard({
   onToggle,
 }: CategoryCardProps) {
   const imageSource = getCategoryPictureSource(category.id);
-  const useLightListSurface = Platform.OS === 'android';
+  const isAndroid = Platform.OS === 'android';
   const darkModeFlatTop = useDarkModeFlatTop();
 
   return (
@@ -190,6 +190,7 @@ const CategoryCard = memo(function CategoryCard({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={`Select ${category.title}`}
+      accessibilityState={{ selected, disabled }}
       onPress={() => onToggle(category.slug)}
       style={({ pressed }) => [
         styles.topicCard,
@@ -197,16 +198,24 @@ const CategoryCard = memo(function CategoryCard({
           width: cardW,
           height: cardH,
           backgroundColor: surface,
-          opacity: disabled ? 0.35 : pressed ? 0.94 : 1,
-          transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+          // Keep border width constant so select/deselect never reflows image bounds
+          // (Android expo-image blanks when parent layout thrashing or opacity changes).
+          borderColor: selected ? selectedBorder : 'transparent',
+          // Android: never set opacity on an ancestor of expo-image — it blanks the bitmap.
+          // Use scale for press, and a dim overlay for disabled (below).
+          ...(isAndroid
+            ? { opacity: 1 }
+            : { opacity: disabled ? 0.35 : pressed ? 0.94 : 1 }),
+          transform: pressed && !disabled ? [{ scale: 0.98 }] : [{ scale: 1 }],
         },
         SOFT_SURFACE_STYLES.face,
         darkModeFlatTop,
-        !useLightListSurface && SOFT_SURFACE_STYLES.raised,
-        selected && [styles.topicCardSelected, { borderColor: selectedBorder }],
+        !isAndroid && SOFT_SURFACE_STYLES.raised,
       ]}
     >
       <View
+        // Android can collapse/detach image views during parent re-layout; keep the host.
+        collapsable={isAndroid ? false : undefined}
         style={[
           styles.cardImageArea,
           { height: imageAreaH, backgroundColor: topicImageMatte ?? surface },
@@ -215,12 +224,13 @@ const CategoryCard = memo(function CategoryCard({
         {imageSource ? (
           <Image
             source={imageSource}
-            recyclingKey={category.slug}
+            // recyclingKey is for remote URL reuse; local require() + Android recycling
+            // has blanked bitmaps on select re-renders. Keep on non-Android only.
+            recyclingKey={isAndroid ? undefined : category.slug}
+            cachePolicy="memory-disk"
             style={styles.cardImage as ImageStyle}
             contentFit={topicImageContentFit}
-            transition={
-              Platform.OS === 'android' ? ANDROID_LIST_IMAGE_TRANSITION : WEB_LIST_IMAGE_TRANSITION
-            }
+            transition={isAndroid ? ANDROID_LIST_IMAGE_TRANSITION : WEB_LIST_IMAGE_TRANSITION}
           />
         ) : (
           <Text
@@ -265,6 +275,13 @@ const CategoryCard = memo(function CategoryCard({
         <View style={styles.selectedBadge}>
           <Ionicons name="checkmark" size={12} color="#FFFFFF" />
         </View>
+      ) : null}
+
+      {isAndroid && disabled ? (
+        <View
+          pointerEvents="none"
+          style={[styles.disabledDim, { backgroundColor: surface }]}
+        />
       ) : null}
     </Pressable>
   );
@@ -1164,8 +1181,7 @@ const styles = StyleSheet.create({
   topicCard: {
     borderRadius: 14,
     overflow: 'hidden',
-  },
-  topicCardSelected: {
+    // Always reserve selection ring space so toggling never reflows art bounds.
     borderWidth: 1.5,
   },
   cardImageArea: {
@@ -1214,6 +1230,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
+  },
+  // Android-only dim when at topic cap — avoid parent opacity blanking expo-image.
+  disabledDim: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.65,
+    zIndex: 3,
   },
   // ── Floating action panel ────────────────────────────────────────────
   floatingPanel: {

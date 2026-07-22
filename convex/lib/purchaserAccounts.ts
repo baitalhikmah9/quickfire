@@ -1,7 +1,55 @@
-import type { Doc } from '../_generated/dataModel';
+import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
 
 type ReaderCtx = QueryCtx | MutationCtx;
+
+/** Pure guest wallet: not identified and not already linked to a user. */
+export function isPureGuestPurchaserAccount(account: {
+  kind: string;
+  linkedUserId?: Id<'users'>;
+}): boolean {
+  return account.kind === 'guest' && !account.linkedUserId;
+}
+
+/**
+ * When a signed-in user lands on a device bound to another account, keep the
+ * installation account only if it is a pure guest (merge candidate). Otherwise
+ * rebind the device to the user's canonical account so tokens stay per-profile.
+ */
+export function shouldRebindInstallationToCanonical(
+  installation: {
+    appUserId: string;
+    kind: string;
+    linkedUserId?: Id<'users'>;
+  },
+  canonical: { appUserId: string }
+): boolean {
+  return (
+    installation.appUserId !== canonical.appUserId &&
+    !isPureGuestPurchaserAccount(installation)
+  );
+}
+
+/**
+ * Only pure or self-linked guest wallets may be merged into the current user.
+ * Never drain another user's identified account because it was last used on
+ * this device.
+ */
+export function isMergeableGuestPurchaserAccount(
+  source: {
+    kind: string;
+    linkedUserId?: Id<'users'>;
+  },
+  currentUserId: Id<'users'>
+): boolean {
+  if (source.kind !== 'guest') {
+    return false;
+  }
+  if (source.linkedUserId && source.linkedUserId !== currentUserId) {
+    return false;
+  }
+  return true;
+}
 
 export async function getPurchaserAccountByAppUserId(
   ctx: ReaderCtx,

@@ -24,7 +24,7 @@ import type { SupportedLocale } from '@/lib/i18n/config';
 import type { TranslationKey } from '@/lib/i18n/messages/en';
 
 const WAGER_SECTION_ART = require('@/assets/wager.png');
-const HOT_SEAT_SECTION_ART = require('@/assets/hot seat.png');
+const HOT_SEAT_SECTION_ART = require('@/assets/hot-seat.png');
 
 const MODE_ROWS: { labelKey: TranslationKey; bodyKey: TranslationKey }[] = [
   { labelKey: 'play.mode.classic', bodyKey: 'play.mode.classicCopy' },

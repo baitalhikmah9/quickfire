@@ -18,6 +18,8 @@ import { getCurrentUser, requireUser } from './lib/auth';
 import {
   ensureCanonicalPurchaserAccountForUser,
   getPurchaserAccountByAppUserId,
+  isMergeableGuestPurchaserAccount,
+  shouldRebindInstallationToCanonical,
 } from './lib/purchaserAccounts';
 import type { Id } from './_generated/dataModel';
 
@@ -143,6 +145,20 @@ export const ensurePurchaserAccount = mutation({
     const canonicalPurchaserAccount = user
       ? await ensureCanonicalPurchaserAccountForUser(ctx, user)
       : null;
+
+    // A signed-in user must never inherit another user's identified account.
+    // Only keep the installation account when it is a real guest wallet
+    // (candidate for guest→user merge). Otherwise rebind to canonical.
+    if (
+      canonicalPurchaserAccount &&
+      installationPurchaserAccount &&
+      shouldRebindInstallationToCanonical(
+        installationPurchaserAccount,
+        canonicalPurchaserAccount
+      )
+    ) {
+      installationPurchaserAccount = canonicalPurchaserAccount;
+    }
 
     if (!installationPurchaserAccount) {
       if (canonicalPurchaserAccount && !installation) {
@@ -348,6 +364,12 @@ export const linkGuestToCurrentUser = mutation({
         canonicalPurchaserAccountId: canonicalPurchaserAccount.appUserId,
         mergeResult: { transferredAmount: 0, alreadyMerged: true },
       };
+    }
+
+    // Only guest wallets may be merged into a user. Never drain another
+    // user's identified account just because it was last used on this device.
+    if (!isMergeableGuestPurchaserAccount(sourcePurchaserAccount, user._id)) {
+      throw new Error('Source purchaser account is not a mergeable guest account');
     }
 
     const mergeResult = await mergePurchaserAccountIntoTarget(ctx, {
