@@ -1,8 +1,10 @@
 import React from 'react';
+import { afterEach } from '@jest/globals';
 import { StyleSheet } from 'react-native';
 import { render, screen } from '@testing-library/react-native';
 import type { GameConfig, GameSessionState, TeamState } from '@/features/shared';
 import { PlayMatchTopBar } from '@/features/play/components/PlayMatchTopBar';
+import { useThemeStore } from '@/store/theme';
 
 function makeTeams(names: string[]): TeamState[] {
   return names.map((name, index) => ({
@@ -50,6 +52,38 @@ function createRumbleSession(teamNames: string[]): GameSessionState {
 }
 
 describe('PlayMatchTopBar rumble score cards', () => {
+  afterEach(() => {
+    useThemeStore.setState({ paletteId: 'default' });
+  });
+
+  it('uses the theme accent for the active team indicator', () => {
+    const session = createRumbleSession(['Alpha', 'Beta']);
+    const { unmount } = render(
+      <PlayMatchTopBar
+        session={session}
+        onLogoPress={jest.fn()}
+        showTeamScores={false}
+        scorePillsNextToLogo
+      />
+    );
+
+    expect(StyleSheet.flatten(screen.getByTestId('logo-score-pill-team_2').props.style).borderColor).toBe('#FF6B00');
+    unmount();
+
+    useThemeStore.setState({ paletteId: 'dark' });
+    const darkRender = render(
+      <PlayMatchTopBar
+        session={session}
+        onLogoPress={jest.fn()}
+        showTeamScores={false}
+        scorePillsNextToLogo
+      />
+    );
+
+    expect(StyleSheet.flatten(screen.getByTestId('logo-score-pill-team_2').props.style).borderColor).toBe('#06B6D4');
+    darkRender.unmount();
+  });
+
   it('keeps the active card face while adding the turn outline', () => {
     const session = createRumbleSession(['Alpha', 'Beta']);
 

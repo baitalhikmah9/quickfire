@@ -15,12 +15,6 @@ import { usePlayTextScale } from '@/store/display';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
 
-/** BackFire flame palette for the active-turn glow: hot red-orange core, ember warmth. */
-const FIRE = {
-  flame: '#FF5A1F', // ring - hot flame orange-red
-  glow: '#FF3D00', // halo - deeper fire red for the burn
-};
-
 const WAGER_HEADER_ART = require('@/assets/wager.webp');
 const HOT_SEAT_HEADER_ART = require('@/assets/hot-seat.webp');
 
@@ -208,7 +202,8 @@ export function PlayMatchTopBar({
             styles.headerScoreCard,
             {
               backgroundColor: isActive ? surfaceColors.activeTurnFace : surfaceColors.controlBackground,
-              borderColor: isActive ? FIRE.flame : surfaceColors.hairlineBorder,
+              borderColor: isActive ? surfaceColors.activeTurnAccent : surfaceColors.hairlineBorder,
+              shadowColor: isActive ? surfaceColors.activeTurnAccent : 'transparent',
               gap: Math.round(scoreMetrics.cardGap * compactMul),
               paddingLeft: Math.round(scoreMetrics.cardPaddingLeft * compactMul),
               paddingRight: Math.round(scoreMetrics.cardPaddingRight * compactMul),
@@ -255,7 +250,7 @@ export function PlayMatchTopBar({
                     : useCompactScore
                       ? surfaceColors.controlBackground
                       : surfaceColors.subtleFill,
-                  borderColor: isActive ? FIRE.flame : surfaceColors.hairlineBorder,
+                  borderColor: isActive ? surfaceColors.activeTurnAccent : surfaceColors.hairlineBorder,
                   minWidth: Math.round(scoreMetrics.badgeMinWidth * compactMul),
                   paddingHorizontal: Math.round(scoreMetrics.badgePadH * compactMul),
                   paddingVertical: useCompactScore
@@ -266,7 +261,6 @@ export function PlayMatchTopBar({
                     ? Math.round(scoreMetrics.minHeight * 0.72 * compactMul)
                     : undefined,
                 },
-                isActive && styles.headerScoreBadgeActive,
               ]}
             >
               <Text
@@ -291,7 +285,7 @@ export function PlayMatchTopBar({
                     width: avatarSize,
                     height: avatarSize,
                     borderRadius: avatarSize / 2,
-                    borderColor: isActive ? FIRE.flame : surfaceColors.hairlineBorder,
+                    borderColor: isActive ? surfaceColors.activeTurnAccent : surfaceColors.hairlineBorder,
                     backgroundColor: isActive
                       ? surfaceColors.activeTurnNestedFill
                       : 'rgba(255, 179, 71, 0.16)',
@@ -347,7 +341,8 @@ export function PlayMatchTopBar({
           styles.logoScorePill,
           {
             backgroundColor: surfaceColors.controlBackground,
-            borderColor: isActive ? FIRE.flame : surfaceColors.hairlineBorder,
+            borderColor: isActive ? surfaceColors.activeTurnAccent : surfaceColors.hairlineBorder,
+            shadowColor: isActive ? surfaceColors.activeTurnAccent : 'transparent',
             minWidth: m.minWidth > 0 ? m.minWidth : undefined,
             maxWidth: m.maxWidth >= 9999 ? undefined : m.maxWidth,
             minHeight: m.minHeight,
@@ -650,10 +645,9 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 0,
   },
-  /** Fire glow - BackFire flame ember: red-orange ring + hot halo, warm ember-lit face. */
+  /** Theme accent ring and halo for the active team. */
   logoScorePillActive: {
     borderWidth: 2,
-    shadowColor: FIRE.glow,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.85,
     shadowRadius: 14,
@@ -724,7 +718,6 @@ const styles = StyleSheet.create({
   },
   headerScoreCardActive: {
     borderWidth: 2,
-    shadowColor: FIRE.glow,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.85,
     shadowRadius: 16,
@@ -757,10 +750,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerScoreBadgeActive: {
-    borderColor: FIRE.flame,
-  },
-
   headerScoreValue: {
     fontFamily: FONTS.displayBold,
     fontVariant: ['tabular-nums'],

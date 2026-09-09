@@ -53,6 +53,7 @@ import { scaleFont, useResponsivePlayFontSizes } from '@/utils/responsiveTypogra
 import { usePlayTextScale } from '@/store/display';
 
 const T = HOME_SOFT_UI;
+const CATEGORY_CARD_ASPECT_RATIO = 1.62;
 
 /** Topic art is a portrait tile: same width as the layout cap, extra height for the illustration.
  * Dynamic ratio - tighter on small screens to prevent clipping in native landscape. */
@@ -123,37 +124,18 @@ function chunkColumns<T>(items: T[], chunkSize: number): T[][] {
   return out;
 }
 
-function getGridColumnCount(mode: string, categoryCount: number): number {
-  if (mode === 'quickPlay' && categoryCount === 4) return 2;
+function getGridColumnCount(categoryCount: number): number {
+  if (categoryCount === 4) return 2;
   if (categoryCount <= 2) return Math.max(1, categoryCount);
   return 3;
-}
-
-/** Keeps each topic column wide enough for rails + art + gaps - drops from 3→2→1 cols on narrow widths. */
-function clampGridColumns(
-  preferredCols: number,
-  innerWidth: number,
-  gridGap: number,
-  categoryCount: number
-): number {
-  if (categoryCount <= 0) return 1;
-  const usableRow = Math.max(0, innerWidth);
-  /** Minimum space per topic cell before we reduce column count - must fit long category titles without abandoning the intended 3x2 board too early. */
-  const MIN_CELL = 176;
-  let cols = Math.min(preferredCols, categoryCount);
-  while (cols > 1) {
-    const cell = (usableRow - gridGap * (cols - 1)) / cols;
-    if (cell >= MIN_CELL) break;
-    cols -= 1;
-  }
-  return Math.max(1, cols);
 }
 
 function computeTopicFit(
   innerWidth: number,
   m: BoardMetrics,
   cols: number,
-  _screenWidth: number
+  _screenWidth: number,
+  maxCellWidth = Number.POSITIVE_INFINITY
 ): {
   cellWidth: number;
   groupWidth: number;
@@ -166,16 +148,19 @@ function computeTopicFit(
 } {
   const usableRow = Math.max(0, innerWidth);
   const safeCols = Math.max(1, cols);
-  const cellWidth = Math.max(1, (usableRow - m.gridGap * (safeCols - 1)) / safeCols);
-  // Rails + art fill the cell so the board spans the full row width.
-  const railWidth = getBoardRailWidth(cellWidth);
-  const artGap = cellWidth < 200 ? 5 : cellWidth < 320 ? 6 : 8;
+  const cellWidth = Math.max(
+    1,
+    Math.min((usableRow - m.gridGap * (safeCols - 1)) / safeCols, maxCellWidth)
+  );
+  const cardContentWidth = Math.max(1, cellWidth - m.cardInset * 2 - 4);
+  const railWidth = getBoardRailWidth(cardContentWidth);
+  const artGap = cardContentWidth < 200 ? 5 : cardContentWidth < 320 ? 6 : 8;
   const horizontalChrome = railWidth * 2 + artGap * 2;
-  const centerWidth = Math.max(48, Math.floor(cellWidth - horizontalChrome));
+  const centerWidth = Math.max(48, Math.floor(cardContentWidth - horizontalChrome));
   const groupWidth = horizontalChrome + centerWidth;
   // Art uses the full center band so columns grow with the screen.
   const topicImageSize = Math.max(48, centerWidth);
-  const titleWidth = Math.min(Math.max(centerWidth, 120), cellWidth);
+  const titleWidth = centerWidth;
   const lineHeight = Math.round(m.topicTitleFont * 1.12);
   // Two-line budget - phone-like density; avoids a tall empty title slab under art.
   const titleHeight = Math.max(Math.round(lineHeight * 2.15), Math.round(m.topicTitleFont * 2.2));
@@ -252,6 +237,7 @@ type BoardMetrics = {
   /** Bottom inset so brand raised-tile shadow (y=4) is not clipped by parent overflow. */
   pointRailClipBleed: number;
   topicTitleFont: number;
+  cardInset: number;
 };
 
 function getBoardMetrics(screenHeight: number, screenWidth: number): BoardMetrics {
@@ -272,8 +258,9 @@ function getBoardMetrics(screenHeight: number, screenWidth: number): BoardMetric
     topicImageSize: tight ? 86 : micro ? 96 : compact ? 118 : tall ? 184 : roomy ? 166 : 148,
     topicArtGap: tight ? 5 : micro ? 6 : compact ? 10 : roomy ? 16 : 14,
     pointRailGap: tight ? 5 : micro ? 6 : compact ? 10 : roomy ? 14 : 12,
-    pointRailClipBleed: tight ? 3 : micro ? 5 : 8,
+    pointRailClipBleed: 0,
     topicTitleFont: tight ? 11 : micro ? 11 : compact ? 13 : roomy ? 16 : 14,
+    cardInset: tight ? 5 : micro ? 6 : compact ? 7 : 9,
   };
 }
 
@@ -460,28 +447,45 @@ export default function PlayBoardScreen() {
   const bodyPadRight = topicPad.paddingRight;
   const boardLayoutWidth = topicPad.contentWidth;
   const centeredContentMaxWidth = boardLayoutWidth;
-  const preferredGridCols = useMemo(
-    () => getGridColumnCount(session?.mode ?? 'classic', grouped.length),
-    [session?.mode, grouped.length]
+  const gridColumnCount = useMemo(
+    () => getGridColumnCount(grouped.length),
+    [grouped.length]
   );
-  const gridColumnCount = useMemo(() => {
-    if (grouped.length === 0) return preferredGridCols;
-    if (isWebBoard && grouped.length >= 6) {
-      return Math.min(3, grouped.length);
-    }
-    return clampGridColumns(preferredGridCols, boardLayoutWidth, metrics.gridGap, grouped.length);
-  }, [preferredGridCols, boardLayoutWidth, isWebBoard, metrics.gridGap, grouped.length]);
   const gridRows = useMemo(() => chunkColumns(grouped, gridColumnCount), [grouped, gridColumnCount]);
-  const topicFit = useMemo(
-    () => computeTopicFit(boardLayoutWidth, metrics, gridColumnCount, width),
-    [boardLayoutWidth, metrics, gridColumnCount, width]
-  );
-  // Equal cream above first topic row and below last row (header chrome uses the same value).
-  // SafeAreaView already clears the home indicator — do not re-add bottomInset here.
+  // Equal canvas above the first topic row and below the last row.
   const gridEdgePadding = SPACING.md;
   const gridTopPadding = gridEdgePadding;
   const gridBottomPadding = gridEdgePadding;
-  const gridVerticalPadding = gridTopPadding + gridBottomPadding;
+  const matchHeaderReserve = gridEdgePadding + (height < 420 ? 52 : 64);
+  const boardBodyHeight = getBoardBodyHeight({
+    windowHeight: height,
+    bottomInset: Math.max(insets.bottom, 0),
+    headerReserve: matchHeaderReserve,
+  });
+  const layoutViewportHeight = gridViewport.height || boardBodyHeight;
+  const estimatedRowGap =
+    gridRows.length > 1
+      ? Math.max(metrics.gridGap, Math.round(metrics.gridGap * 5.1), 16)
+      : 0;
+  const maxCardHeight = Math.max(
+    1,
+    (layoutViewportHeight - gridTopPadding - gridBottomPadding - estimatedRowGap * Math.max(0, gridRows.length - 1)) /
+      Math.max(1, gridRows.length)
+  );
+  const topicFit = useMemo(
+    () =>
+      computeTopicFit(
+        boardLayoutWidth,
+        metrics,
+        gridColumnCount,
+        width,
+        maxCardHeight * CATEGORY_CARD_ASPECT_RATIO
+      ),
+    [boardLayoutWidth, gridColumnCount, maxCardHeight, metrics, width]
+  );
+  const cardVerticalChrome = metrics.cardInset * 2 + 8;
+  const gridVerticalPadding =
+    gridTopPadding + gridBottomPadding + cardVerticalChrome * Math.max(1, gridRows.length);
   const maxQuestionRows = Math.max(1, ...grouped.map((column) => column.rows.length));
   /** Matches topicCenterBlock gap so pill rail targets image + title stack. */
   const topicCenterBlockGap = 2;
@@ -501,7 +505,7 @@ export default function PlayBoardScreen() {
     centerBlockGap: topicCenterBlockGap,
     topicArtHeightRatio,
   });
-  const maxRowContentHeight = Math.max(
+  const geometryRowCap = Math.max(
     squareRowCap,
     maxRowHeightForFixedRailTiles({
       cellWidth: topicFit.cellWidth,
@@ -509,24 +513,13 @@ export default function PlayBoardScreen() {
       artGap: topicFit.artGap,
       titleHeight: topicFit.titleHeight,
       centerBlockGap: topicCenterBlockGap,
-      // Allow tall fill so single-row boards cover most of the body.
       maxArtAspect: 2.6,
     })
   );
-  /**
-   * Fixed body height under the match header. Prefer window math over onLayout:
-   * the edge-to-edge scaffold often measures content height only, which zeros out
-   * free-space centering and leaves 3-topic boards stuck under the header.
-   * Reserve must match real chrome: equal edge pad + score pill row (not question-screen ~108).
-   */
-  const matchHeaderReserve = gridEdgePadding + (height < 420 ? 52 : 64);
-  const boardBodyHeight = getBoardBodyHeight({
-    windowHeight: height,
-    bottomInset: Math.max(insets.bottom, 0),
-    headerReserve: matchHeaderReserve,
-  });
-  /** Use the scaffold's actual body height when it is smaller than the window estimate. */
-  const layoutViewportHeight = gridViewport.height || boardBodyHeight;
+  const maxRowContentHeight = Math.min(
+    geometryRowCap,
+    Math.max(1, topicFit.cellWidth / CATEGORY_CARD_ASPECT_RATIO - cardVerticalChrome)
+  );
   const verticalLayout = useMemo(
     () =>
       computeBoardVerticalLayout({
@@ -558,12 +551,12 @@ export default function PlayBoardScreen() {
       topicFit.topicImageSize,
     ]
   );
-  const fittedBoardRowHeight = verticalLayout.boardRowHeight;
+  const fittedBoardRowHeight = verticalLayout.boardRowHeight + cardVerticalChrome;
   const topicRowGap = verticalLayout.topicRowGap;
   // Multi-row boards fill from the top with equal edge pads; single-row still Y-centers.
   const topicGridAlignment = getBoardTopicGridAlignment({ gridRowCount: gridRows.length });
   const topicCellBox = getBoardTopicCellBox(topicFit.cellWidth, fittedBoardRowHeight);
-  /** 100/200/300 control box — full rail width, height from vertical fill. */
+  /** 100/200/300 control box. Full rail width, height from vertical fill. */
   const pointTileBox = getBoardPointTileBox({
     pillHeight: verticalLayout.pointPillHeight,
     railWidth: topicFit.railWidth,
@@ -646,7 +639,6 @@ export default function PlayBoardScreen() {
 
   const renderTile = (column: CategoryColumn, question: QuestionCard) => {
     const used = session.usedQuestionIds.has(question.id) || question.used;
-    const textMuted = T.colors.textMuted;
     const isFlashing = randomPick?.phase === 'flashing' && randomPick.flashingId === question.id;
     const isLocked = randomPick?.phase === 'locked' && randomPick.question.id === question.id;
     const isGreenHighlight = isFlashing || isLocked;
@@ -656,11 +648,14 @@ export default function PlayBoardScreen() {
         testID={isLocked ? 'board-random-pick-locked' : isFlashing ? 'board-random-pick-flashing' : undefined}
         style={({ pressed }) => [
           styles.topicPointTile,
-          SOFT_SURFACE_FACE,
-          darkModeFlatTop,
-          softSurfaceLift(),
           {
-            backgroundColor: isGreenHighlight ? RANDOM_FLASH_GREEN : surfaceColors.tileBackground,
+            backgroundColor: isGreenHighlight
+              ? RANDOM_FLASH_GREEN
+              : used
+                ? surfaceColors.boardSpentBackground
+                : surfaceColors.boardTileBackground,
+            borderColor: surfaceColors.boardTileBorder,
+            borderWidth: used ? 0 : 1,
             width: pointTileWidth,
             height: pointTileHeight,
             minHeight: 0,
@@ -668,7 +663,7 @@ export default function PlayBoardScreen() {
             borderRadius: pointTileRadius,
             paddingVertical: 0,
             paddingHorizontal: 0,
-            opacity: used ? 0.72 : pressed && !randomPickActive ? 0.9 : 1,
+            opacity: pressed && !randomPickActive ? 0.9 : 1,
             transform: pressed && !randomPickActive ? [{ scale: 0.97 }] : [{ scale: 1 }],
           },
           isLocked && styles.topicPointTileLocked,
@@ -713,9 +708,12 @@ export default function PlayBoardScreen() {
                   Math.max(6, Math.min(pointTileWidth, pointTileHeight) * 0.42)
                 ) * 1.1
               ),
-              color: isGreenHighlight ? RANDOM_FLASH_GREEN_TEXT : used ? textMuted : T.colors.textPrimary,
-              textDecorationLine: used ? 'line-through' : 'none',
-              opacity: used && !isGreenHighlight ? 0.55 : 1,
+              color: isGreenHighlight
+                ? RANDOM_FLASH_GREEN_TEXT
+                : used
+                  ? surfaceColors.boardSpentText
+                  : surfaceColors.boardTileText,
+              opacity: used && !isGreenHighlight ? 0.4 : 1,
             },
             Platform.OS === 'web' ? ({ whiteSpace: 'nowrap' } as any) : null,
           ]}
@@ -750,8 +748,23 @@ export default function PlayBoardScreen() {
 
     return (
       <View key={column.categoryId} style={[styles.categoryGridCell, topicCellBox]}>
-        <View style={[styles.categoryBlock, { width: topicGroupWidth }]}>
-          <View style={[styles.topicArtRow, { columnGap: topicFit.artGap }]}>
+        <View
+          testID={`board-category-card-${column.categoryId}`}
+          style={[
+            styles.categoryBlock,
+            {
+              width: topicFit.cellWidth,
+              height: fittedBoardRowHeight,
+              padding: metrics.cardInset,
+              backgroundColor: surfaceColors.boardCardBackground,
+              borderColor: surfaceColors.boardAccent,
+              shadowOpacity: surfaceColors.isDark ? 0.4 : 0.06,
+              shadowRadius: surfaceColors.isDark ? 40 : 35,
+              elevation: surfaceColors.isDark ? 8 : 4,
+            },
+          ]}
+        >
+          <View style={[styles.topicArtRow, { width: topicGroupWidth, columnGap: topicFit.artGap }]}>
           <View
             style={[
               styles.topicPointRail,
@@ -769,7 +782,16 @@ export default function PlayBoardScreen() {
             ))}
           </View>
 
-          <View style={[styles.topicCenterBlock, { gap: topicCenterBlockGap }]}>
+          <View
+            style={[
+              styles.topicCenterBlock,
+              {
+                width: topicArtWidth,
+                gap: topicCenterBlockGap,
+                backgroundColor: surfaceColors.boardInnerFrame,
+              },
+            ]}
+          >
             <Pressable
               style={({ pressed }) => [
                 styles.topicImageFrame,
@@ -777,13 +799,10 @@ export default function PlayBoardScreen() {
                 {
                   width: imgW,
                   height: imgH,
-                  backgroundColor: surfaceColors.topicImageMatte ?? surfaceColors.imageFrameBackground,
+                  backgroundColor: surfaceColors.boardInnerFrame,
                   opacity: pressed ? 0.96 : 1,
                   transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
                 },
-                PLASTIC_FACE,
-                darkModeFlatTop,
-                neumorphicLift3D('card'),
               ]}
               onPress={() => {
                 if (randomPick) {
@@ -867,7 +886,8 @@ export default function PlayBoardScreen() {
                 ]}
                 numberOfLines={2}
                 adjustsFontSizeToFit
-                minimumFontScale={0.55}
+                minimumFontScale={0.35}
+                ellipsizeMode="clip"
               >
                 {column.categoryName.toUpperCase()}
               </Text>
@@ -909,12 +929,12 @@ export default function PlayBoardScreen() {
   );
 
   return (
-    <View style={[styles.rootContainer, { backgroundColor: T.colors.canvas }]}>
+    <View style={[styles.rootContainer, { backgroundColor: surfaceColors.boardCanvas }]}>
       {/* Immersive match board: hide system status bar (time / battery / icons) to free vertical space. */}
       <StatusBar hidden />
       <PlayScaffold
         title={t('play.questionBoardTitle')}
-        backgroundColor={T.colors.canvas}
+        backgroundColor={surfaceColors.boardCanvas}
         customHeader={boardHeader}
         onBack={leaveMatch}
         showHud={false}
@@ -930,7 +950,7 @@ export default function PlayBoardScreen() {
         /** Top edge skipped while status bar is hidden; keep bottom for home-indicator clearance. */
         safeAreaEdges={['bottom']}
         chromeColumnStyle={{
-          // Match grid edge pad — do not use question-screen chromeTopPad (~24 web).
+          // Match grid edge pad. Do not use question-screen chromeTopPad (~24 web).
           paddingTop: gridEdgePadding,
           paddingBottom: 0,
         }}
@@ -969,7 +989,7 @@ export default function PlayBoardScreen() {
           style={[
             styles.gridScroll,
             {
-              backgroundColor: T.colors.canvas,
+              backgroundColor: surfaceColors.boardCanvas,
               // Give Android a definite body height so the topic block can center reliably.
               flexGrow: 0,
               flexShrink: 1,
@@ -1347,6 +1367,14 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     minWidth: 0,
     maxWidth: '100%',
+    borderTopWidth: 6,
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderRadius: 22,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowRadius: 35,
   },
   /** Illustration + category title - stacked between side rails. */
   topicCenterBlock: {
@@ -1357,6 +1385,8 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     minWidth: 0,
     minHeight: 0,
+    borderRadius: 14,
+    overflow: 'hidden',
   },
   /** Rails + illustration - side rails fixed width; center flexes horizontally. */
   topicArtRow: {
@@ -1387,11 +1417,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   topicPointTileLocked: {
-    shadowColor: RANDOM_FLASH_GREEN,
-    shadowOpacity: 0.55,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
+    borderColor: RANDOM_FLASH_GREEN,
+    borderWidth: 2,
   },
   topicPointTileText: {
     fontFamily: FONTS.displayBold,
@@ -1402,13 +1429,13 @@ const styles = StyleSheet.create({
   },
   topicImageFrame: {
     flexShrink: 0,
-    borderRadius: 20,
+    borderRadius: 0,
     overflow: 'hidden',
     alignSelf: 'center',
     flexGrow: 0,
   },
   topicImageFrameTight: {
-    borderRadius: 16,
+    borderRadius: 0,
   },
   topicImageInner: {
     flex: 1,

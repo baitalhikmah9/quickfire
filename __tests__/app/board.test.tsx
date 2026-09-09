@@ -139,6 +139,33 @@ describe('PlayBoardScreen', () => {
     expect(nameStyle.color).not.toBe('#333333');
   });
 
+  it('renders each topic as one bordered card with flat active and spent keys', () => {
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'classic',
+        usedQuestionIds: new Set(['q-1']),
+      }),
+    });
+
+    render(<PlayBoardScreen />);
+
+    const cardStyle = StyleSheet.flatten(
+      screen.getByTestId('board-category-card-cat_science').props.style
+    );
+    expect(cardStyle.backgroundColor).toBe('#FFFFFF');
+    expect(cardStyle.borderColor).toBe('#FF6B00');
+    expect(cardStyle.borderTopWidth).toBe(6);
+    expect(cardStyle.borderLeftWidth).toBe(2);
+
+    const spentStyle = StyleSheet.flatten(screen.getByLabelText('Review 200 point question').props.style);
+    const activeStyle = StyleSheet.flatten(screen.getByLabelText('200 points').props.style);
+    expect(spentStyle.backgroundColor).toBe('#E5E7EB');
+    expect(spentStyle.borderWidth).toBe(0);
+    expect(activeStyle.backgroundColor).toBe('#F9FAFB');
+    expect(activeStyle.borderColor).toBe('#D1D5DB');
+    expect(activeStyle.borderWidth).toBe(1);
+  });
+
   it('opens a match menu from the Backfire logo with Settings and Exit Game', () => {
     usePlayStore.setState({
       session: createSession({ mode: 'classic' }),

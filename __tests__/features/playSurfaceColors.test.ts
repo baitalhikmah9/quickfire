@@ -64,10 +64,16 @@ describe('getPlaySurfaceColors', () => {
     expect(colors.hoverSurface).not.toBe('#FDFCFA');
     expect(colors.bootScrim).not.toContain('240, 235, 227');
     expect(colors.activeTurnFace).not.toBe('#FFF3EC');
-    // Opaque dark face — rgba faces punch a mid-card strip under ± controls on Android.
-    expect(colors.activeTurnFace).toBe('#5E281B');
+    expect(colors.activeTurnFace).toBe('#163749');
     expect(colors.activeTurnNestedFill).toBe(colors.activeTurnFace);
-    expect(colors.activeTurnOnFace).toBe('#E8420C');
+    expect(colors.activeTurnOnFace).toBe('#06B6D4');
+    expect(colors.activeTurnAccent).toBe('#06B6D4');
+    expect(colors.boardCanvas).toBe('#0F172A');
+    expect(colors.boardCardBackground).toBe('#1E293B');
+    expect(colors.boardInnerFrame).toBe('#0B1120');
+    expect(colors.boardTileBackground).toBe('#334155');
+    expect(colors.boardTileBorder).toBe('#475569');
+    expect(colors.boardSpentBackground).toBe('#475569');
   });
 
   it('keeps the warm light-mode active-turn face (not solid brand orange)', () => {
@@ -75,7 +81,14 @@ describe('getPlaySurfaceColors', () => {
 
     expect(colors.isDark).toBe(false);
     expect(colors.activeTurnFace).toBe('#FFF3EC');
-    expect(colors.activeTurnOnFace).toBe('#E8420C');
+    expect(colors.activeTurnOnFace).toBe('#FF6B00');
     expect(colors.activeTurnNestedFill).toBe(colors.activeTurnFace);
+    expect(colors.activeTurnAccent).toBe('#FF6B00');
+    expect(colors.boardCanvas).toBe('#F5F5F0');
+    expect(colors.boardCardBackground).toBe('#FFFFFF');
+    expect(colors.boardInnerFrame).toBe('#FFF7F0');
+    expect(colors.boardTileBackground).toBe('#F9FAFB');
+    expect(colors.boardTileBorder).toBe('#D1D5DB');
+    expect(colors.boardSpentBackground).toBe('#E5E7EB');
   });
 });

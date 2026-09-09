@@ -36,7 +36,9 @@ export function getContentWritingDirection(
   locale: SupportedLocale,
   content?: string | null
 ): TextStyle['writingDirection'] {
-  if (containsArabicScript(content) && !usesArabicScriptFont(locale)) {
+  const firstLetter = content?.match(/\p{L}/u)?.[0];
+
+  if (containsArabicScript(firstLetter) && !usesArabicScriptFont(locale)) {
     return 'rtl';
   }
 

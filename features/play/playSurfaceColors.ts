@@ -8,12 +8,22 @@ export function getPlaySurfaceColors() {
   const isDark = relativeLuminance(T.canvas) < 0.3;
   // Neutral gray matte so letterboxed topic art still reads as a card.
   const topicMatte = '#777777';
+  const activeTurnAccent = isDark ? '#06B6D4' : '#FF6B00';
   return {
     canvas: T.canvas,
     surface: T.surface,
     textPrimary: T.textPrimary,
     textMuted: T.textMuted,
     tileBackground: T.surface,
+    boardCanvas: isDark ? '#0F172A' : '#F5F5F0',
+    boardCardBackground: isDark ? '#1E293B' : '#FFFFFF',
+    boardInnerFrame: isDark ? '#0B1120' : '#FFF7F0',
+    boardAccent: activeTurnAccent,
+    boardTileBackground: isDark ? '#334155' : '#F9FAFB',
+    boardTileBorder: isDark ? '#475569' : '#D1D5DB',
+    boardTileText: isDark ? '#F8FAFC' : '#111827',
+    boardSpentBackground: isDark ? '#475569' : '#E5E7EB',
+    boardSpentText: isDark ? '#F8FAFC' : '#111827',
     imageFrameBackground: isDark ? 'rgba(255, 255, 255, 0.08)' : topicMatte,
     imagePadding: isDark ? 2 : 6,
     isDark,
@@ -46,20 +56,13 @@ export function getPlaySurfaceColors() {
     hoverSurface: isDark ? 'rgba(255, 255, 255, 0.06)' : '#FDFCFA',
     /** Full-screen boot / letterbox scrim. */
     bootScrim: isDark ? 'rgba(7, 17, 31, 0.92)' : 'rgba(240, 235, 227, 0.92)',
-    /**
-     * Active-turn score pill face (ember warmth in both themes).
-     * Opaque only — semi-transparent faces punch dark strips through nested
-     * ± controls on Android when composited over the canvas.
-     * Dark solid ≈ prior rgba(255,90,31,0.22) over navy surface.
-     */
-    activeTurnFace: isDark ? '#5E281B' : '#FFF3EC',
-    /** Type on activeTurnFace — ember red for contrast on the warm tint. */
-    activeTurnOnFace: '#E8420C',
-    /**
-     * Nested ± / badge faces on the active card.
-     * Must match activeTurnFace so the orange reads continuous end-to-end.
-     */
-    activeTurnNestedFill: isDark ? '#5E281B' : '#FFF3EC',
+    /** Opaque accent-tinted score pill face for the active team. */
+    activeTurnFace: isDark ? '#163749' : '#FFF3EC',
+    /** Theme-matched active-turn accent and foreground. */
+    activeTurnAccent,
+    activeTurnOnFace: activeTurnAccent,
+    /** Nested ± / badge faces match the active card. */
+    activeTurnNestedFill: isDark ? '#163749' : '#FFF3EC',
     /** Award-tile “neither” dashed outline. */
     dashedBorder: isDark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(51, 51, 51, 0.22)',
   };
