@@ -96,11 +96,13 @@ describe('PlayMatchTopBar rumble score cards', () => {
       />
     );
 
-    const activeStyle = StyleSheet.flatten(screen.getByTestId('logo-score-pill-team_1').props.style);
-    const inactiveStyle = StyleSheet.flatten(screen.getByTestId('logo-score-pill-team_2').props.style);
+    const activeStyle = StyleSheet.flatten(screen.getByTestId('logo-score-pill-team_2').props.style);
+    const inactiveStyle = StyleSheet.flatten(screen.getByTestId('logo-score-pill-team_1').props.style);
 
     expect(activeStyle.backgroundColor).toBe(inactiveStyle.backgroundColor);
     expect(activeStyle.borderColor).not.toBe(inactiveStyle.borderColor);
+    expect(activeStyle.shadowOpacity).toBe(0);
+    expect(activeStyle.elevation).toBe(0);
     expect(StyleSheet.flatten(screen.getByText('Alpha').props.style).color).toBe(
       StyleSheet.flatten(screen.getByText('Beta').props.style).color
     );
@@ -184,7 +186,7 @@ describe('PlayMatchTopBar rumble score cards', () => {
   // SAFETY: Test fixture / double boundary cast justified by controlled test setup.
   it('shows every team name for two and four rumble teams as well', () => {
     for (const names of [
-      ['Red Rockets', 'Blue Bombers'],
+      ['Pirates of the Caribbean', 'Blue Bombers'],
       ['One', 'Two', 'Three', 'Four Long Name'],
     ]) {
       const session = createRumbleSession(names);
@@ -203,6 +205,7 @@ describe('PlayMatchTopBar rumble score cards', () => {
         expect(style.maxWidth).not.toBe(56);
         expect(style.maxWidth).not.toBe(88);
         expect(nameNode.props.adjustsFontSizeToFit).toBe(true);
+        expect(nameNode.props.minimumFontScale).toBeLessThanOrEqual(0.5);
       }
 
       // Scores always shrink-to-fit so digits are never mid-number clipped.

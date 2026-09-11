@@ -65,6 +65,7 @@ describe('QuestionReportModal', () => {
     expect(screen.getByText('Factually incorrect')).toBeTruthy();
     expect(screen.getByText('Ambiguous / multiple correct answers')).toBeTruthy();
     expect(screen.getByText('Inappropriate / unsuitable content')).toBeTruthy();
+    expect(screen.getByText('Bad / unfun question')).toBeTruthy();
     expect(screen.getByText('Question')).toBeTruthy();
     expect(screen.getByText('Answer')).toBeTruthy();
     expect(screen.getByText('Both')).toBeTruthy();
@@ -74,7 +75,12 @@ describe('QuestionReportModal', () => {
     ).toBe(2);
     expect(screen.queryByTestId('question-report-other-input')).toBeNull();
 
-    fireEvent.press(screen.getByText('Factually incorrect'));
+    const factualReason = screen.getByText('Factually incorrect');
+    const unselectedColor = StyleSheet.flatten(factualReason.props.style).color;
+    fireEvent.press(factualReason);
+    expect(StyleSheet.flatten(screen.getByText('Factually incorrect').props.style).color).not.toBe(
+      unselectedColor
+    );
     fireEvent.press(screen.getByText('Other'));
     expect(screen.getByTestId('question-report-other-input')).toBeTruthy();
     fireEvent.changeText(

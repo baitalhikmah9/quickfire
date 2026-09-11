@@ -63,6 +63,18 @@ function getTopicArtHeightRatio(screenHeight: number): number {
   return 1.18;
 }
 
+export function getWebCategoryTitleFontSize(
+  title: string,
+  width: number,
+  maximum: number
+): number {
+  const characters = Math.max(1, [...title.trim()].length);
+  return Math.max(
+    8,
+    Math.min(maximum, Math.floor((Math.max(1, width) - 4) / (characters * 0.68)))
+  );
+}
+
 interface BoardRow {
   pointValue: number;
   left: QuestionCard;
@@ -737,12 +749,16 @@ export default function PlayBoardScreen() {
     const imgH = Math.max(1, Math.round(verticalLayout.topicImageHeight));
     const imgW = Math.max(1, topicArtWidth);
     const artSide = Math.min(imgW, imgH);
-    // Shared starting size from layout; long names shrink via adjustsFontSizeToFit
-    // so nothing is ellipsized/cut off within the two-line title band.
-    const titleFontSize = Math.min(
+    // Native shrinks within two lines. React Native Web does not reliably honor
+    // adjustsFontSizeToFit, so web gets a conservative one-line size estimate.
+    const maximumTitleFontSize = Math.min(
       metrics.topicTitleFont,
       Math.max(11, Math.floor(titleHeight / 2.35))
     );
+    const titleFontSize =
+      Platform.OS === 'web'
+        ? getWebCategoryTitleFontSize(column.categoryName, topicTitleWidth, maximumTitleFontSize)
+        : maximumTitleFontSize;
 
     const railHeight = imgH + topicCenterBlockGap + titleHeight;
 
@@ -884,7 +900,7 @@ export default function PlayBoardScreen() {
                     ? ({ wordBreak: 'break-word', overflowWrap: 'anywhere' } as any)
                     : null,
                 ]}
-                numberOfLines={2}
+                numberOfLines={Platform.OS === 'web' ? 1 : 2}
                 adjustsFontSizeToFit
                 minimumFontScale={0.35}
                 ellipsizeMode="clip"

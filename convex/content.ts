@@ -217,6 +217,7 @@ const REPORT_REASONS = new Set([
   'outdated',
   'broken',
   'inappropriate',
+  'bad_unfun',
   'other',
 ]);
 

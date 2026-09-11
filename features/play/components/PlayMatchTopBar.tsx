@@ -323,7 +323,7 @@ export function PlayMatchTopBar({
     /** Six equal pills leave little room, so prefer score digits over name width. */
     const ultraDense = teamCount >= 6;
     // With many equal-width pills, shrink the name before ellipsizing so labels stay readable.
-    const nameMinFontScale = ultraDense ? 0.5 : teamCount >= 4 ? 0.65 : 0.75;
+    const nameMinFontScale = ultraDense ? 0.42 : 0.5;
     // Score must never clip: allow aggressive shrink for multi-digit totals on 6-team boards.
     const scoreMinFontScale = ultraDense ? 0.42 : multiTeamDensePills ? 0.55 : 0.7;
 
@@ -342,7 +342,6 @@ export function PlayMatchTopBar({
           {
             backgroundColor: surfaceColors.controlBackground,
             borderColor: isActive ? surfaceColors.activeTurnAccent : surfaceColors.hairlineBorder,
-            shadowColor: isActive ? surfaceColors.activeTurnAccent : 'transparent',
             minWidth: m.minWidth > 0 ? m.minWidth : undefined,
             maxWidth: m.maxWidth >= 9999 ? undefined : m.maxWidth,
             minHeight: m.minHeight,
@@ -645,13 +644,9 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 0,
   },
-  /** Theme accent ring and halo for the active team. */
+  /** Theme accent ring for the active team. */
   logoScorePillActive: {
     borderWidth: 2,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.85,
-    shadowRadius: 14,
-    elevation: 4,
   },
   logoScoreAdjust: {
     alignItems: 'center',

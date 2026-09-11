@@ -42,6 +42,7 @@ const REASON_LABELS: Record<QuestionReportReason, TranslationKey> = {
   outdated: 'play.report.reason.outdated',
   broken: 'play.report.reason.broken',
   inappropriate: 'play.report.reason.inappropriate',
+  bad_unfun: 'play.report.reason.badUnfun',
   other: 'play.report.reason.other',
 };
 
@@ -217,7 +218,7 @@ export function QuestionReportModal({
                             style={[
                               styles.choiceTileText,
                               {
-                                color: surfaceColors.textPrimary,
+                                color: selected ? REPORT_ICON : surfaceColors.textPrimary,
                                 fontSize: textSize(13),
                                 lineHeight: textSize(16),
                               },
@@ -311,7 +312,7 @@ export function QuestionReportModal({
                       style={[
                         styles.locationChoiceText,
                         {
-                          color: surfaceColors.textPrimary,
+                          color: selected ? REPORT_ICON : surfaceColors.textPrimary,
                           fontSize: textSize(13),
                           lineHeight: textSize(16),
                         },
@@ -369,7 +370,7 @@ export function QuestionReportControl({
   offsetRight: number;
   offsetBottom: number;
 }) {
-  const { t } = useI18n();
+  const { t, getTextStyle } = useI18n();
   const [open, setOpen] = useState(false);
   const submitReport = useMutation(api.content.submitQuestionReport);
   const submitting = useRef(false);
@@ -389,6 +390,12 @@ export function QuestionReportControl({
           ]}
         >
           <Ionicons name="warning" size={18} color={REPORT_ICON} />
+          <Text
+            style={[styles.reportButtonText, getTextStyle(undefined, 'bodySemibold', 'center')]}
+            numberOfLines={1}
+          >
+            {t('play.report.button')}
+          </Text>
         </Pressable>
       </View>
       <QuestionReportModal
@@ -501,16 +508,23 @@ const styles = StyleSheet.create({
     zIndex: 32,
   },
   reportButton: {
-    width: 44,
-    height: 44,
+    minHeight: 44,
     borderRadius: 16,
     backgroundColor: REPORT_BUTTON_BG,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     shadowColor: 'rgba(51, 51, 51, 0.22)',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 6,
+  },
+  reportButtonText: {
+    color: REPORT_ICON,
+    fontFamily: FONTS.uiSemibold,
+    fontSize: 12,
   },
 });

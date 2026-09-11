@@ -43,6 +43,7 @@ describe('question report draft', () => {
       'outdated',
       'broken',
       'inappropriate',
+      'bad_unfun',
       'other',
     ]);
   });

@@ -491,10 +491,17 @@ describe('PlayQuestionScreen', () => {
       }),
     });
 
-    render(<PlayQuestionScreen />);
+    const { rerender } = render(<PlayQuestionScreen />);
 
     expect(screen.getByTestId('question-answer-next-turn-dock')).toBeTruthy();
     expect(screen.getByText('NEXT TURN')).toBeTruthy();
+
+    act(() => useThemeStore.setState({ paletteId: 'dark' }));
+    rerender(<PlayQuestionScreen />);
+
+    expect(screen.getByTestId('question-answer-next-turn-text')).toHaveStyle({
+      color: PALETTES.dark.textOnBackground,
+    });
   });
 
   it('keeps the active wager multiplier visible through the question and answer states', () => {
@@ -577,6 +584,7 @@ describe('PlayQuestionScreen', () => {
 
     render(<PlayQuestionScreen />);
     expect(screen.getByTestId('question-report-button')).toBeTruthy();
+    expect(screen.getByText('Report question/answer')).toBeTruthy();
     expect(screen.queryByTestId('question-report-modal')).toBeNull();
 
     fireEvent.press(screen.getByTestId('question-report-button'));

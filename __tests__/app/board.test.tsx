@@ -4,7 +4,7 @@ import { AccessibilityInfo, StyleSheet } from 'react-native';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type { GameConfig, GameSessionState, QuestionCard } from '@/features/shared';
 
-import PlayBoardScreen from '@/app/(app)/play/board';
+import PlayBoardScreen, { getWebCategoryTitleFontSize } from '@/app/(app)/play/board';
 import { PALETTES } from '@/constants/theme';
 import { getPlaySurfaceColors } from '@/features/play/playSurfaceColors';
 import { usePlayStore } from '@/store/play';
@@ -98,6 +98,11 @@ function createSession(overrides: Partial<GameSessionState> = {}): GameSessionSt
 }
 
 describe('PlayBoardScreen', () => {
+  it('shrinks long web category titles to fit their full width', () => {
+    expect(getWebCategoryTitleFontSize('Pirates of the Caribbean', 300, 28)).toBeLessThan(28);
+    expect(getWebCategoryTitleFontSize('SpongeBob', 300, 28)).toBe(28);
+  });
+
   beforeEach(() => {
     useThemeStore.setState({ paletteId: 'default' });
     usePlayStore.setState({ session: null, tokens: 5, rapidFire: null });

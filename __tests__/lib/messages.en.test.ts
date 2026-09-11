@@ -41,7 +41,7 @@ const SETTINGS_UI_KEYS = [
 describe('English mode copy', () => {
   it('uses the finalized home mode descriptions', () => {
     expect(en['play.mode.classicCopy']).toBe('Six topics and wagers on the full board.');
-    expect(en['play.mode.quickCopy']).toBe('Pick 1–5 topics for a faster match with wagers.');
+    expect(en['play.mode.quickCopy']).toBe('Pick 1 to 5 topics for a faster match with wagers.');
     expect(en['play.mode.randomCopy']).toBe('The app draws each question for you. Wagers stay off.');
     expect(en['play.mode.rumbleCopy']).toBe(
       '2, 3, 4, or 6 teams. Each question assigns two teams who answer in turn.'

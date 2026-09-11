@@ -844,6 +844,7 @@ export default function PlayQuestionScreen() {
                       borderRadius: Math.round(BORDER_RADIUS.button * questionViewportScale),
                       paddingHorizontal: Math.round(SPACING.lg * questionViewportScale),
                       paddingVertical: Math.round(SPACING.md * questionViewportScale),
+                      backgroundColor: surfaceColors.surface,
                       opacity: pressed ? 0.94 : 1,
                       transform: [{ scale: pressed ? 0.98 : 1 }],
                     },
@@ -851,12 +852,14 @@ export default function PlayQuestionScreen() {
                   ]}
                 >
                   <Text
+                    testID="question-answer-next-turn-text"
                     style={[
                       styles.answerNextTurnText,
                       {
                         fontSize: Math.round(14 * questionViewportScale),
                         lineHeight: Math.round(18 * questionViewportScale),
                         letterSpacing: 1.2 * questionViewportScale,
+                        color: surfaceColors.textPrimary,
                       },
                     ]}
                     numberOfLines={1}
@@ -1351,7 +1354,6 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     maxWidth: 320,
     borderRadius: BORDER_RADIUS.button,
-    backgroundColor: T.surface,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: SPACING.lg,
@@ -1361,7 +1363,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.uiBold,
     fontSize: 14,
     letterSpacing: 1.2,
-    color: T.textPrimary,
     textAlign: 'center',
   },
   revealPromptBlock: {

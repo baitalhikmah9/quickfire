@@ -9,6 +9,7 @@ export const QUESTION_REPORT_REASONS = [
   'outdated',
   'broken',
   'inappropriate',
+  'bad_unfun',
   'other',
 ] as const;
 
