@@ -16,9 +16,9 @@ describe('walletLedger', () => {
     expect(isStarterGrantDuplicate(keys, 'starter:user_b')).toBe(false);
   });
 
-  it('applies the 100-token starter grant once', () => {
-    expect(STARTER_GRANT_AMOUNT).toBe(100);
-    expect(applyStarterGrantToBalance(0, false)).toEqual({ granted: true, balance: 100 });
+  it('applies the 10-token starter grant once', () => {
+    expect(STARTER_GRANT_AMOUNT).toBe(10);
+    expect(applyStarterGrantToBalance(0, false)).toEqual({ granted: true, balance: 10 });
     expect(applyStarterGrantToBalance(100, true)).toEqual({ granted: false, balance: 100 });
   });
 

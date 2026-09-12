@@ -4,7 +4,7 @@
 
 export type ReservationStatus = 'reserved' | 'consumed' | 'refunded';
 
-export const STARTER_GRANT_AMOUNT = 100;
+export const STARTER_GRANT_AMOUNT = 10;
 
 export function isStarterGrantDuplicate(existingIdempotencyKeys: Set<string>, key: string): boolean {
   return existingIdempotencyKeys.has(key);
