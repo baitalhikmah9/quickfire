@@ -26,6 +26,7 @@ import {
 import { ScreenContent } from '@/components/ScreenContent';
 import { GameHeader } from '@/components/GameHeader';
 import { HubTokenChip } from '@/components/HubTokenChip';
+import { OutboundPlatformLinks } from '@/components/OutboundPlatformLinks';
 import { WebAwareModal } from '@/components/WebAwareModal';
 import { getRowDirection } from '@/lib/i18n/direction';
 import { useI18n } from '@/lib/i18n/useI18n';
@@ -524,6 +525,7 @@ export default function AppHubScreen() {
                 ))}
               </View>
             </View>
+            <OutboundPlatformLinks color={textMuted} style={styles.outboundLinks} />
           </View>
           </View>
         </ScreenContent>
@@ -696,6 +698,12 @@ const styles = StyleSheet.create({
     zIndex: 0,
     // Contain mode tiles so they cannot paint over header chrome.
     overflow: 'hidden',
+  },
+  outboundLinks: {
+    flexGrow: 0,
+    flexShrink: 0,
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
 
   settingsImageButton: {

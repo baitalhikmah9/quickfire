@@ -88,6 +88,14 @@ describe('AppHubScreen', () => {
     expect(router.push).toHaveBeenCalledWith('/(app)/settings');
   });
 
+  it('shows a calm playbackfire.com outbound link on native', () => {
+    render(<AppHubScreen />);
+
+    expect(screen.getByTestId('outbound-platform-links-native')).toBeTruthy();
+    expect(screen.getByTestId('outbound-website-link')).toHaveTextContent('playbackfire.com');
+    expect(screen.queryByTestId('outbound-platform-links-web')).toBeNull();
+  });
+
   it('prompts to continue or start new when a session is already in progress', () => {
     usePlayStore.getState().ensureDraft();
     const current = usePlayStore.getState().session;

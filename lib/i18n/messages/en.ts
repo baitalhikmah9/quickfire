@@ -94,6 +94,12 @@ const enBase = {
   'settings.deleteAccountFailed':
     'We could not finish deleting your account. Your personal data may already be cleared. Try again.',
 
+  'outbound.appStore': 'App Store',
+  'outbound.googlePlay': 'Google Play',
+  'outbound.appStoreA11y': 'Download Backfire on the App Store',
+  'outbound.googlePlayA11y': 'Download Backfire on Google Play',
+  'outbound.websiteA11y': 'Open playbackfire.com',
+
   'auth.signIn.heroTitle': 'Welcome Back',
   'auth.signIn.heroSubtitle': 'Sign in to continue your trivia journey',
   'auth.signIn.submit': 'Sign in',

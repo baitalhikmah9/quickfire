@@ -39,6 +39,7 @@ import { isAuthDisabled } from '@/lib/authMode';
 import { PublicAuthEntry } from '@/components/PublicAuthEntry';
 import { ScreenContent } from '@/components/ScreenContent';
 import { HubTokenChip } from '@/components/HubTokenChip';
+import { OutboundPlatformLinks } from '@/components/OutboundPlatformLinks';
 import { WebAwareModal } from '@/components/WebAwareModal';
 import { api } from '@/convex/_generated/api';
 import { logOutRevenueCat } from '@/lib/payments/revenueCat';
@@ -585,6 +586,8 @@ export default function SettingsScreen() {
                   />
                 </View>
               ) : null}
+
+              <OutboundPlatformLinks color={textMuted} style={styles.outboundLinks} />
             </View>
           </View>
         </ScrollView>
@@ -1001,6 +1004,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.md,
+  },
+  outboundLinks: {
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.sm,
   },
   publicAuthInSettings: {
     alignItems: 'center',

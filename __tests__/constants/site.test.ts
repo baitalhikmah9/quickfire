@@ -1,8 +1,12 @@
 import {
+  APP_STORE_URL,
+  PLAY_STORE_URL,
+  PUBLIC_SITE_HOST_LABEL,
   canonicalUrlForPath,
   DEFAULT_PAGE_TITLE,
   DEFAULT_PUBLIC_SITE_ORIGIN,
   getPublicSiteOrigin,
+  getPublicSiteUrl,
   pageTitleForPath,
 } from '@/constants/site';
 
@@ -21,6 +25,10 @@ describe('site SEO helpers', () => {
     delete process.env.EXPO_PUBLIC_SITE_ORIGIN;
     expect(getPublicSiteOrigin()).toBe(DEFAULT_PUBLIC_SITE_ORIGIN);
     expect(DEFAULT_PUBLIC_SITE_ORIGIN).toBe('https://playbackfire.com');
+    expect(getPublicSiteUrl()).toBe('https://playbackfire.com');
+    expect(PUBLIC_SITE_HOST_LABEL).toBe('playbackfire.com');
+    expect(APP_STORE_URL).toContain('id6790765031');
+    expect(PLAY_STORE_URL).toContain('com.playbackfire.app');
   });
 
   it('trims EXPO_PUBLIC_SITE_ORIGIN and strips trailing slash', () => {

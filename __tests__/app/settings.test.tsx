@@ -60,6 +60,13 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('Privacy Policy')).toBeTruthy();
   });
 
+  it('shows a calm playbackfire.com outbound link below settings content on native', () => {
+    render(<SettingsScreen />);
+
+    expect(screen.getByTestId('outbound-platform-links-native')).toBeTruthy();
+    expect(screen.getByTestId('outbound-website-link')).toHaveTextContent('playbackfire.com');
+  });
+
   it('navigates to terms and privacy pages from legal rows', () => {
     render(<SettingsScreen />);
 

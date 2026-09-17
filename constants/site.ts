@@ -5,6 +5,16 @@
 export const DEFAULT_PUBLIC_SITE_ORIGIN = 'https://playbackfire.com';
 export const DEFAULT_PAGE_TITLE = 'Backfire | Competitive Trivia';
 
+/** Display label for the public site (native footer link). */
+export const PUBLIC_SITE_HOST_LABEL = 'playbackfire.com';
+
+/** App Store Connect Apple ID from eas.json submit.production.ios.ascAppId. */
+export const APP_STORE_URL = 'https://apps.apple.com/app/id6790765031';
+
+/** Google Play listing for the production package. */
+export const PLAY_STORE_URL =
+  'https://play.google.com/store/apps/details?id=com.playbackfire.app';
+
 const PAGE_TITLES: Record<string, string> = {
   '/how-to-play': 'How to Play',
   '/terms': 'Terms of Service',
@@ -60,6 +70,11 @@ export function getPublicSiteOrigin(): string {
     return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
   }
   return DEFAULT_PUBLIC_SITE_ORIGIN;
+}
+
+/** Absolute public homepage URL (native outbound link target). */
+export function getPublicSiteUrl(): string {
+  return getPublicSiteOrigin();
 }
 
 /** Builds an absolute canonical URL for the current path (web SEO). */
