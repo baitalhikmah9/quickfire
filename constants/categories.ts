@@ -40,7 +40,7 @@ const RAW_CATEGORIES: { id: string; name: string }[] = [
   { id: 'gen3', name: "Science" },
   { id: 'gen4', name: "UK" },
   { id: 'gen5', name: "USA" },
-  { id: 'gen6', name: "Countries and Capitals" },
+  { id: 'gen6', name: "Capital Cities" },
   { id: 'gen7', name: "Famous Firsts" },
   { id: 'gen9', name: "General Knowledge" },
   { id: 'h1', name: "19th Century" },

@@ -5,6 +5,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "dev": "expo start --localhost",
     "android": "expo run:android",
     "android:standalone": "EAS_BUILD_PROFILE=local-standalone node scripts/patch-standalone-debug-bundle.mjs && expo run:android --no-bundler",
     "ios": "expo run:ios",

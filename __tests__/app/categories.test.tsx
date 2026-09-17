@@ -222,7 +222,7 @@ describe('CategorySelectionScreen', () => {
     expect(Number.isFinite(cardStyle.width)).toBe(true);
     expect(cardStyle.width).toBeGreaterThan(0);
     expect(fullRows?.length).toBeGreaterThan(0);
-    const longerTitleNode = screen.getByText('COUNTRIES AND CAPITALS');
+    const longerTitleNode = screen.getByText('CAPITAL CITIES');
     const titleStyle = StyleSheet.flatten(titleNode.props.style);
     const longerTitleStyle = StyleSheet.flatten(longerTitleNode.props.style);
     const labelStyle = StyleSheet.flatten(screen.getByTestId(`topic-label-${category!.slug}`).props.style);

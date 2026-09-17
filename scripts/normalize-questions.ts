@@ -55,7 +55,9 @@ function slugify(name: string): string {
 const DISABLED_THEME_GROUPS = new Set<string>();
 
 /** Keep stable slugs when display titles change (avoids seed/DB collisions). */
-const SLUG_BY_THEME_GROUP: Record<string, string> = {};
+const SLUG_BY_THEME_GROUP: Record<string, string> = {
+  gen6: 'countries-and-capitals',
+};
 
 function main() {
   const inputPath = path.join(

@@ -10,7 +10,7 @@ export interface CategorySection {
 
 const TOPICS = {
   general: [
-    'Corporations', 'Countries and Capitals', 'Famous Firsts',
+    'Corporations', 'Capital Cities', 'Famous Firsts',
     'General Knowledge', 'Geography', 'Guess the Decade', 'In between:', 'Initials',
     'Invented Where?', 'Match the Nickname', 'National Icons',
     'Odd One Out', 'Science', 'Trump Quotes', 'Two Truths and a Lie', 'UK', 'USA',
