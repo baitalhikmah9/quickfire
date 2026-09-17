@@ -80,6 +80,7 @@ export default function PromoModeDropdown({
 const styles = StyleSheet.create({
   trigger: {
     borderWidth: 1,
+    borderStyle: 'solid',
     borderColor: BRAND_ADMIN_TABLE.inputBorder,
     borderRadius: 12,
     paddingVertical: 10,

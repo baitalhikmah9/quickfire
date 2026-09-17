@@ -83,6 +83,59 @@ export const saveCompletedSession = mutation({
   },
 });
 
+const MAX_TOPIC_SLUGS = 12;
+const MAX_SLUG_LEN = 80;
+
+/**
+ * Records locked-in topics when a board starts.
+ * Idempotent on clientSessionId so double-taps / retries do not double-count.
+ */
+export const recordTopicSelection = mutation({
+  args: {
+    clientSessionId: v.string(),
+    mode: v.string(),
+    categorySlugs: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+
+    const clientSessionId = args.clientSessionId.trim().slice(0, 120);
+    if (!clientSessionId) {
+      return { ok: false as const, error: 'invalid_session' };
+    }
+
+    const existing = await ctx.db
+      .query('topic_selections')
+      .withIndex('by_client_session', (q) => q.eq('clientSessionId', clientSessionId))
+      .unique();
+    if (existing) {
+      return { ok: true as const, duplicate: true, id: existing._id };
+    }
+
+    const categorySlugs = [
+      ...new Set(
+        args.categorySlugs
+          .map((slug) => slug.trim().slice(0, MAX_SLUG_LEN))
+          .filter((slug) => slug.length > 0)
+      ),
+    ].slice(0, MAX_TOPIC_SLUGS);
+
+    if (categorySlugs.length === 0) {
+      return { ok: false as const, error: 'no_topics' };
+    }
+
+    const id = await ctx.db.insert('topic_selections', {
+      clientSessionId,
+      userId: user._id,
+      mode: args.mode.trim().slice(0, 40) || 'unknown',
+      categorySlugs,
+      selectedAt: Date.now(),
+    });
+
+    return { ok: true as const, duplicate: false, id };
+  },
+});
+
 export const listRecentSessions = query({
   args: {
     limit: v.optional(v.number()),

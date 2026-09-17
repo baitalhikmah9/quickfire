@@ -35,6 +35,10 @@ describe('breadcrumbsForAdminPath', () => {
       { label: 'Dashboard', href: '/admin' },
       { label: 'Promo Codes' },
     ]);
+    expect(breadcrumbsForAdminPath('/admin/topics')).toEqual([
+      { label: 'Dashboard', href: '/admin' },
+      { label: 'Topics' },
+    ]);
     expect(breadcrumbsForAdminPath('/admin/purchases/purchase_1')).toEqual([
       { label: 'Dashboard', href: '/admin' },
       { label: 'Purchases', href: '/admin/purchases' },

@@ -11,6 +11,7 @@ import WalletsScreen from '@/app/(admin)/wallets';
 import TransactionsScreen, { exclusiveNextDay, parseDateInput } from '@/app/(admin)/transactions';
 import PurchasesScreen from '@/app/(admin)/purchases';
 import AuditScreen from '@/app/(admin)/audit';
+import TopicsScreen, { sinceMsForWindow } from '@/app/(admin)/topics';
 import AdminRouteIndexScreen from '@/app/admin';
 import AdminSignInScreen from '@/app/admin/sign-in';
 import AdminSignOutScreen from '@/app/(admin)/sign-out';
@@ -1194,5 +1195,49 @@ describe('AuditScreen', () => {
     fireEvent.press(screen.getByText('Previous'));
     const afterPrevious = calls[calls.length - 1][1] as { cursor?: number };
     expect(afterPrevious.cursor).toBeUndefined();
+  });
+});
+
+describe('TopicsScreen', () => {
+  beforeEach(() => {
+    mockUseQuery.mockReturnValue({
+      boardCount: 2,
+      pickCount: 3,
+      topics: [
+        { slug: 'nba', selectionCount: 2, boardSharePct: 100, pickSharePct: 66.7 },
+        { slug: 'marvel', selectionCount: 1, boardSharePct: 50, pickSharePct: 33.3 },
+      ],
+    });
+  });
+
+  it('renders topic popularity rows from the admin query', () => {
+    render(<TopicsScreen />);
+    expect(screen.getByText('Topic popularity')).toBeTruthy();
+    expect(screen.getByText('boards')).toBeTruthy();
+    expect(screen.getByText('picks')).toBeTruthy();
+    expect(screen.getByText('never chosen')).toBeTruthy();
+    expect(screen.getAllByText('2').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('3').length).toBeGreaterThan(0);
+    expect(screen.getByText('Times chosen')).toBeTruthy();
+    expect(screen.getByText('% of boards')).toBeTruthy();
+    expect(screen.getByText('% of picks')).toBeTruthy();
+    expect(screen.getByText('nba')).toBeTruthy();
+    expect(screen.getByText('marvel')).toBeTruthy();
+  });
+
+  it('memoizes sinceMs for the default window filter', () => {
+    mockUseQuery.mockClear();
+    const { rerender } = render(<TopicsScreen />);
+    rerender(<TopicsScreen />);
+    const sinceValues = mockUseQuery.mock.calls
+      .map((call) => (call[1] as { sinceMs?: number } | undefined)?.sinceMs)
+      .filter((value): value is number => typeof value === 'number');
+    expect(sinceValues.length).toBeGreaterThan(0);
+    expect(new Set(sinceValues).size).toBe(1);
+  });
+
+  it('sinceMsForWindow returns undefined for all-time', () => {
+    expect(sinceMsForWindow('all', 1_000_000)).toBeUndefined();
+    expect(sinceMsForWindow('30', 1_000_000)).toBe(1_000_000 - 30 * 24 * 60 * 60 * 1000);
   });
 });

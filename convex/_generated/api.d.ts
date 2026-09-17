@@ -35,6 +35,7 @@ import type * as lib_purchaserAccountMerge from "../lib/purchaserAccountMerge.js
 import type * as lib_purchaserAccounts from "../lib/purchaserAccounts.js";
 import type * as lib_referralRules from "../lib/referralRules.js";
 import type * as lib_revenueCatApiV2 from "../lib/revenueCatApiV2.js";
+import type * as lib_topicPopularity from "../lib/topicPopularity.js";
 import type * as lib_walletLedger from "../lib/walletLedger.js";
 import type * as lib_walletTransactionTypes from "../lib/walletTransactionTypes.js";
 import type * as payments from "../payments.js";
@@ -79,6 +80,7 @@ declare const fullApi: ApiFromModules<{
   "lib/purchaserAccounts": typeof lib_purchaserAccounts;
   "lib/referralRules": typeof lib_referralRules;
   "lib/revenueCatApiV2": typeof lib_revenueCatApiV2;
+  "lib/topicPopularity": typeof lib_topicPopularity;
   "lib/walletLedger": typeof lib_walletLedger;
   "lib/walletTransactionTypes": typeof lib_walletTransactionTypes;
   payments: typeof payments;

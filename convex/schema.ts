@@ -125,6 +125,17 @@ export default defineSchema({
     .index('by_started', ['startedAt'])
     .index('by_client_session', ['clientSessionId']),
 
+  /** One row per locked-in board start: which topics were chosen. */
+  topic_selections: defineTable({
+    clientSessionId: v.string(),
+    userId: v.id('users'),
+    mode: v.string(),
+    categorySlugs: v.array(v.string()),
+    selectedAt: v.number(),
+  })
+    .index('by_client_session', ['clientSessionId'])
+    .index('by_selected_at', ['selectedAt']),
+
   game_participants: defineTable({
     sessionId: v.id('game_sessions'),
     teamId: v.string(),

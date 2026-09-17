@@ -326,6 +326,7 @@ export default function CategorySelectionScreen() {
   const reserveGameEntryMutation = useMutation(api.wallet.reserveGameEntry);
   const consumeEntryMutation = useMutation(api.wallet.consumeEntry);
   const refundEntryMutation = useMutation(api.wallet.refundEntry);
+  const recordTopicSelectionMutation = useMutation(api.sessions.recordTopicSelection);
 
   useLayoutEffect(() => {
     ensureDraft();
@@ -474,7 +475,7 @@ export default function CategorySelectionScreen() {
     )
   );
   // Size type from width first, then size the label bar to fit two full lines.
-  // (Previously the bar was a fixed ~22% of the card and clipped "Countries and Capitals".)
+  // (Previously the bar was a fixed ~22% of the card and clipped "Capital Cities".)
   const topicTitleSize = Math.max(
     5,
     Math.min(
@@ -972,6 +973,17 @@ export default function CategorySelectionScreen() {
                   return;
                 }
               }
+
+              // Fire-and-forget product analytics: locked-in topics at board start.
+              if (!authDisabled && isLoaded && isSignedIn) {
+                const locked = usePlayStore.getState().session;
+                void recordTopicSelectionMutation({
+                  clientSessionId: locked?.id ?? session.id,
+                  mode: locked?.mode ?? session.mode,
+                  categorySlugs: locked?.selectedCategoryIds ?? session.selectedCategoryIds,
+                }).catch(() => {});
+              }
+
               commitEntryCharge();
               setEntryReservationId(null);
               router.replace('/(app)/play/board');

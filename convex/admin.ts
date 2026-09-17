@@ -36,6 +36,7 @@ import {
   validateWalletAdjustment,
 } from './lib/adminValidation';
 import { REFERRAL_REWARD_TOKENS } from './lib/referralRules';
+import { aggregateTopicPopularity } from './lib/topicPopularity';
 
 export const listPurchases = query({
   args: {
@@ -1196,6 +1197,29 @@ export const listQuestionReports = query({
       items,
       nextCursor: hasMore && last ? last.createdAt : undefined,
     };
+  },
+});
+
+/**
+ * Aggregated topic lock-in counts for product decisions.
+ * ponytail: full window scan is fine at current scale; counters table if this slows.
+ */
+export const getTopicPopularity = query({
+  args: {
+    sinceMs: v.optional(v.number()),
+    mode: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const sinceMs = Math.max(0, args.sinceMs ?? 0);
+    const rows = await ctx.db
+      .query('topic_selections')
+      .withIndex('by_selected_at', (q) => q.gte('selectedAt', sinceMs))
+      .collect();
+    return aggregateTopicPopularity(rows, {
+      sinceMs,
+      mode: args.mode?.trim() || undefined,
+    });
   },
 });
 
