@@ -18,6 +18,7 @@ export default function AdminStandaloneLayout() {
       <Stack.Screen name="transactions" />
       <Stack.Screen name="purchases" />
       <Stack.Screen name="promo-codes" />
+      <Stack.Screen name="referrals" />
       <Stack.Screen name="wallets" />
       <Stack.Screen name="audit" />
       <Stack.Screen name="affiliate" />

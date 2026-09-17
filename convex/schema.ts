@@ -10,9 +10,19 @@ export default defineSchema({
     lastActiveAt: v.number(),
     role: v.optional(v.string()),
     canonicalPurchaserAccountId: v.optional(v.string()),
+    /** Unique friend-invite code (Give one, get one). */
+    referralCode: v.optional(v.string()),
+    /** Set once when this account successfully applies someone else's referral code. */
+    referredByUserId: v.optional(v.id('users')),
+    referralAppliedAt: v.optional(v.number()),
+    /** How many other accounts successfully applied this user's invite code. */
+    successfulReferralCount: v.optional(v.number()),
     /** Set when account deletion starts; user row is removed after Clerk delete. */
     deletionPendingAt: v.optional(v.number()),
-  }).index('by_clerk_id', ['clerkId']),
+  })
+    .index('by_clerk_id', ['clerkId'])
+    .index('by_referral_code', ['referralCode'])
+    .index('by_referred_by', ['referredByUserId']),
 
   purchaser_accounts: defineTable({
     appUserId: v.string(),

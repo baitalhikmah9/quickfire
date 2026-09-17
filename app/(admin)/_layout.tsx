@@ -82,6 +82,7 @@ const NAV_GROUPS: NavGroupDef[] = [
       { label: 'Transactions', href: '/admin/transactions', icon: 'receipt-outline' },
       { label: 'Purchases', href: '/admin/purchases', icon: 'cart-outline' },
       { label: 'Promo Codes', href: '/admin/promo-codes', icon: 'pricetags-outline' },
+      { label: 'Referrals', href: '/admin/referrals', icon: 'people-outline' },
       { label: 'Wallets', href: '/admin/wallets', icon: 'wallet-outline' },
     ],
   },
@@ -688,6 +689,7 @@ export default function AdminLayout() {
         <Stack.Screen name="purchases" />
         <Stack.Screen name="purchases/[purchaseId]" />
         <Stack.Screen name="promo-codes" />
+        <Stack.Screen name="referrals" />
         <Stack.Screen name="wallets" />
         <Stack.Screen name="audit" />
         <Stack.Screen name="affiliate" />

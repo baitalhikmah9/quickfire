@@ -575,7 +575,7 @@ describe('validateCreatePromoCodeArgs schedule', () => {
 describe('wallet transaction source and type constants', () => {
   it('exposes canonical source values used by the ledger', () => {
     expect(WALLET_TRANSACTION_SOURCES).toEqual(
-      expect.arrayContaining(['purchase', 'gameplay', 'system', 'admin', 'promo'])
+      expect.arrayContaining(['purchase', 'gameplay', 'system', 'admin', 'promo', 'referral'])
     );
     expect(WALLET_TRANSACTION_SOURCES).not.toEqual(
       expect.arrayContaining(['store', 'game'])
@@ -598,6 +598,8 @@ describe('wallet transaction source and type constants', () => {
         'game_entry_reserve',
         'game_entry_adjust',
         'promo_redemption',
+        'referral_invitee_grant',
+        'referral_inviter_grant',
         'account_merge_debit',
         'account_merge_credit',
         'account_deletion_forfeit',

@@ -15,6 +15,7 @@ export const WALLET_TRANSACTION_SOURCES = [
   'system',
   'admin',
   'promo',
+  'referral',
   'account_deletion',
 ] as const;
 
@@ -26,6 +27,7 @@ export const WALLET_TRANSACTION_SOURCE_LABELS = {
   system: 'System',
   admin: 'Admin',
   promo: 'Promo',
+  referral: 'Referral',
   account_deletion: 'Account Deletion',
 } as const satisfies Record<WalletTransactionSource, string>;
 
@@ -37,6 +39,8 @@ export const WALLET_TRANSACTION_TYPES = [
   'game_entry_reserve',
   'game_entry_adjust',
   'promo_redemption',
+  'referral_invitee_grant',
+  'referral_inviter_grant',
   'account_merge_debit',
   'account_merge_credit',
   'account_deletion_forfeit',

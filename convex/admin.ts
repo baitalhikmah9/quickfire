@@ -35,6 +35,7 @@ import {
   validateCreatePromoCodeArgs,
   validateWalletAdjustment,
 } from './lib/adminValidation';
+import { REFERRAL_REWARD_TOKENS } from './lib/referralRules';
 
 export const listPurchases = query({
   args: {
@@ -961,6 +962,173 @@ export const listTransactions = query({
     });
 
     return { items: mapped, nextCursor };
+  },
+});
+
+// ───────────────────────────────────────────────
+// Friend referrals (Give one, get one)
+// ───────────────────────────────────────────────
+
+export const listReferrals = query({
+  args: {
+    query: v.optional(v.string()),
+    cursor: v.optional(v.number()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const limit = Math.min(args.limit ?? 50, 100);
+    const q = args.query?.trim().toLowerCase();
+
+    const userById = new Map<string, Doc<'users'>>();
+    const walletById = new Map<string, Doc<'wallets'>>();
+
+    const loadUsers = async (ids: Id<'users'>[]) => {
+      const missing = ids.filter((id) => !userById.has(id));
+      const rows = await Promise.all(missing.map((id) => ctx.db.get(id)));
+      missing.forEach((id, index) => {
+        const row = rows[index];
+        if (row) userById.set(id, row);
+      });
+    };
+
+    const enrichBatch = async (rows: Doc<'wallet_transactions'>[]) => {
+      const walletIds = [...new Set(rows.map((row) => row.walletId))].filter(
+        (id) => !walletById.has(id)
+      );
+      const wallets = await Promise.all(walletIds.map((id) => ctx.db.get(id)));
+      walletIds.forEach((id, index) => {
+        const wallet = wallets[index];
+        if (wallet) walletById.set(id, wallet);
+      });
+
+      const userIds: Id<'users'>[] = [];
+      for (const wallet of wallets) {
+        if (wallet?.userId) userIds.push(wallet.userId);
+      }
+      for (const row of rows) {
+        const meta = row.metadata as { inviterUserId?: Id<'users'> } | undefined;
+        if (meta?.inviterUserId) userIds.push(meta.inviterUserId);
+      }
+      await loadUsers([...new Set(userIds)]);
+    };
+
+    const fetchBatch = (upperBound: number | undefined) =>
+      ctx.db
+        .query('wallet_transactions')
+        .withIndex('by_created', (range) => {
+          const bound = upperBound ?? args.cursor;
+          if (bound !== undefined) return range.lt('createdAt', bound);
+          return range;
+        })
+        .order('desc')
+        .take(SCAN_BATCH);
+
+    const { items, nextCursor } = await scanIndexPage(
+      fetchBatch,
+      (transaction) => transaction.createdAt,
+      (transaction) => {
+        if (transaction.type !== 'referral_invitee_grant') return false;
+        if (!q) return true;
+
+        const wallet = walletById.get(transaction.walletId);
+        const invitee = wallet?.userId ? userById.get(wallet.userId) : undefined;
+        const meta = transaction.metadata as
+          | { inviterUserId?: Id<'users'>; code?: string }
+          | undefined;
+        const inviter = meta?.inviterUserId ? userById.get(meta.inviterUserId) : undefined;
+        const haystack = [
+          invitee?.email?.toLowerCase(),
+          invitee?.name?.toLowerCase(),
+          inviter?.email?.toLowerCase(),
+          inviter?.name?.toLowerCase(),
+          inviter?.referralCode?.toLowerCase(),
+          meta?.code?.toLowerCase(),
+          wallet?.purchaserAccountId?.toLowerCase(),
+        ]
+          .filter((value): value is string => Boolean(value))
+          .join(' ');
+        return haystack.includes(q);
+      },
+      limit,
+      q ? enrichBatch : undefined
+    );
+
+    await enrichBatch(items);
+
+    const events = items.map((transaction) => {
+      const wallet = walletById.get(transaction.walletId);
+      const invitee = wallet?.userId ? userById.get(wallet.userId) : undefined;
+      const meta = transaction.metadata as
+        | { inviterUserId?: Id<'users'>; code?: string }
+        | undefined;
+      const inviter = meta?.inviterUserId ? userById.get(meta.inviterUserId) : undefined;
+      return {
+        transactionId: transaction._id,
+        createdAt: transaction.createdAt,
+        tokensGranted: transaction.amount,
+        code: meta?.code ?? inviter?.referralCode ?? null,
+        invitee: invitee
+          ? {
+              userId: invitee._id,
+              email: invitee.email ?? null,
+              name: invitee.name ?? null,
+              walletId: wallet?._id ?? null,
+            }
+          : null,
+        inviter: inviter
+          ? {
+              userId: inviter._id,
+              email: inviter.email ?? null,
+              name: inviter.name ?? null,
+              referralCode: inviter.referralCode ?? null,
+              successfulReferralCount: inviter.successfulReferralCount ?? 0,
+            }
+          : meta?.inviterUserId
+            ? {
+                userId: meta.inviterUserId,
+                email: null,
+                name: null,
+                referralCode: meta.code ?? null,
+                successfulReferralCount: 0,
+              }
+            : null,
+      };
+    });
+
+    // Snapshot of outbound leaders (full user scan; admin-only, small product scale).
+    const allUsers = await ctx.db.query('users').collect();
+    const topReferrers = allUsers
+      .filter((user) => (user.successfulReferralCount ?? 0) > 0)
+      .sort(
+        (a, b) => (b.successfulReferralCount ?? 0) - (a.successfulReferralCount ?? 0)
+      )
+      .slice(0, 25)
+      .map((user) => ({
+        userId: user._id,
+        email: user.email ?? null,
+        name: user.name ?? null,
+        referralCode: user.referralCode ?? null,
+        successfulReferralCount: user.successfulReferralCount ?? 0,
+      }));
+
+    const totalSuccessfulReferrals = allUsers.filter(
+      (user) => user.referredByUserId != null
+    ).length;
+    const totalReferrers = allUsers.filter(
+      (user) => (user.successfulReferralCount ?? 0) > 0
+    ).length;
+
+    return {
+      items: events,
+      nextCursor,
+      stats: {
+        totalSuccessfulReferrals,
+        totalReferrers,
+        rewardTokens: REFERRAL_REWARD_TOKENS,
+      },
+      topReferrers,
+    };
   },
 });
 

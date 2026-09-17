@@ -42,6 +42,7 @@ import { useTokenPurchases } from '@/lib/hooks/useTokenPurchases';
 import { resolveDisplayTokenBalance } from '@/lib/wallet/displayTokenBalance';
 import { HOME_SOFT_UI } from '@/themes';
 import { getWebViewportScale } from '@/lib/layout/webViewportScale';
+import { ReferralModal } from '@/components/ReferralModal';
 
 const T = HOME_SOFT_UI;
 
@@ -239,6 +240,7 @@ export default function StoreScreen() {
 
   // Promo redemption + discount validation (unified single coupon box).
   const applyPromoCode = useMutation(api.promo.applyPromoCode);
+  const [referralOpen, setReferralOpen] = useState(false);
 
   // Display token balance: signed-out users always see 0.
   const displayTokens = resolveDisplayTokenBalance({
@@ -634,6 +636,41 @@ export default function StoreScreen() {
             >
               {t('store.typicalGameTokensHint')}
             </Text>
+
+            {(isSignedIn || authDisabled) && (
+              <Pressable
+                onPress={() => setReferralOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel={t('store.referral.cta')}
+                testID="store-referral-cta"
+                style={({ pressed }) => [
+                  styles.referralCta,
+                  {
+                    opacity: pressed ? 0.75 : 1,
+                    paddingVertical: Math.round(SPACING.xs * viewportScale),
+                    gap: Math.round(6 * viewportScale),
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="gift-outline"
+                  size={Math.round(14 * viewportScale)}
+                  color={textMuted}
+                />
+                <Text
+                  style={[
+                    styles.referralCtaText,
+                    {
+                      color: textMuted,
+                      fontSize: Math.round(12 * viewportScale),
+                      letterSpacing: 0.4 * viewportScale,
+                    },
+                  ]}
+                >
+                  {t('store.referral.cta')}
+                </Text>
+              </Pressable>
+            )}
           </View>
 
           {/* Web: single coupon box. Native (iOS + Android): external site CTA. */}
@@ -754,6 +791,7 @@ export default function StoreScreen() {
           ) : null}
         </View>
       </ScreenContent>
+      <ReferralModal visible={referralOpen} onClose={() => setReferralOpen(false)} />
     </SafeAreaView>
   );
 }
@@ -847,6 +885,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
     textAlign: 'center',
+  },
+  referralCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+  },
+  referralCtaText: {
+    fontFamily: FONTS.uiSemibold,
+    textTransform: 'uppercase',
   },
 
   // ── Status banner ─────────────────────────────────────────────────────

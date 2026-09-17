@@ -13,6 +13,7 @@ export type ConvexDoc = {
 };
 
 type EqClause = [field: string, value: unknown];
+type BoundClause = { field: string; op: 'lt' | 'lte' | 'gt' | 'gte'; value: unknown };
 
 type QueryResult = {
   unique: () => Promise<ConvexDoc | null>;
@@ -57,15 +58,39 @@ export function createConvexTestDb(initial: TableData = {}) {
     return tables[table];
   }
 
-  function buildQuery(table: string, eqs: EqClause[]): QueryResult {
-    const matched = () => rowsOf(table).filter((doc) => matchesEqs(doc, eqs));
+  function matchesBounds(doc: ConvexDoc, bounds: BoundClause[]): boolean {
+    return bounds.every(({ field, op, value }) => {
+      const left = doc[field];
+      if (typeof left !== 'number' || typeof value !== 'number') return true;
+      if (op === 'lt') return left < value;
+      if (op === 'lte') return left <= value;
+      if (op === 'gt') return left > value;
+      return left >= value;
+    });
+  }
+
+  function buildQuery(table: string, eqs: EqClause[], bounds: BoundClause[] = []): QueryResult {
+    const matched = (direction: 'asc' | 'desc' = 'asc') => {
+      const rows = rowsOf(table).filter(
+        (doc) => matchesEqs(doc, eqs) && matchesBounds(doc, bounds)
+      );
+      if (bounds.some((b) => b.field === 'createdAt' || b.field === 'purchasedAt')) {
+        const field = bounds.find((b) => b.field === 'createdAt' || b.field === 'purchasedAt')!.field;
+        rows.sort((a, b) => {
+          const av = typeof a[field] === 'number' ? (a[field] as number) : 0;
+          const bv = typeof b[field] === 'number' ? (b[field] as number) : 0;
+          return direction === 'desc' ? bv - av : av - bv;
+        });
+      }
+      return rows;
+    };
     return {
       unique: async () => matched()[0] ?? null,
       collect: async () => matched(),
       take: async (n: number) => matched().slice(0, n),
-      order: () => ({
-        take: async (n: number) => matched().slice(0, n),
-        collect: async () => matched(),
+      order: (direction: 'asc' | 'desc' = 'asc') => ({
+        take: async (n: number) => matched(direction).slice(0, n),
+        collect: async () => matched(direction),
       }),
     };
   }
@@ -104,17 +129,40 @@ export function createConvexTestDb(initial: TableData = {}) {
     query: jest.fn((table: string) => ({
       withIndex: (
         _index: string,
-        rangeFn?: (q: { eq: (field: string, value: unknown) => { eq: typeof q.eq } }) => void
+        rangeFn?: (q: {
+          eq: (field: string, value: unknown) => unknown;
+          lt: (field: string, value: unknown) => unknown;
+          lte: (field: string, value: unknown) => unknown;
+          gt: (field: string, value: unknown) => unknown;
+          gte: (field: string, value: unknown) => unknown;
+        }) => void
       ) => {
         const eqs: EqClause[] = [];
+        const bounds: BoundClause[] = [];
         const q = {
           eq(field: string, value: unknown) {
             eqs.push([field, value]);
             return q;
           },
+          lt(field: string, value: unknown) {
+            bounds.push({ field, op: 'lt', value });
+            return q;
+          },
+          lte(field: string, value: unknown) {
+            bounds.push({ field, op: 'lte', value });
+            return q;
+          },
+          gt(field: string, value: unknown) {
+            bounds.push({ field, op: 'gt', value });
+            return q;
+          },
+          gte(field: string, value: unknown) {
+            bounds.push({ field, op: 'gte', value });
+            return q;
+          },
         };
         rangeFn?.(q);
-        return buildQuery(table, eqs);
+        return buildQuery(table, eqs, bounds);
       },
       filter: () => buildQuery(table, []),
       collect: async () => rowsOf(table),

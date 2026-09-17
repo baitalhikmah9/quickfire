@@ -65,6 +65,7 @@ const ROUTE_LABELS: Record<string, string> = {
   transactions: 'Transactions',
   purchases: 'Purchases',
   'promo-codes': 'Promo Codes',
+  referrals: 'Referrals',
   wallets: 'Wallets',
   audit: 'Audit Log',
   affiliate: 'My coupon',
