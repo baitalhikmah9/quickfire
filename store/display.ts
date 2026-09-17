@@ -3,10 +3,24 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 
-export type PlayDisplayMode = 'tv' | 'mobile';
+export type PlayDisplayMode = 'tv' | 'laptop' | 'mobile';
 
 const DISPLAY_MODE_STORAGE_KEY = 'backfire-play-display-mode';
-export const PLAY_TEXT_SCALE = { tv: 0.75, mobile: 1 } as const satisfies Record<PlayDisplayMode, number>;
+export const PLAY_DISPLAY_MODES = ['tv', 'laptop', 'mobile'] as const satisfies readonly PlayDisplayMode[];
+/** Small / medium / large game text (TV, laptop, phone). */
+export const PLAY_TEXT_SCALE = { tv: 0.8, laptop: 1, mobile: 1.22 } as const satisfies Record<
+  PlayDisplayMode,
+  number
+>;
+
+export function nextPlayDisplayMode(mode: PlayDisplayMode): PlayDisplayMode {
+  const index = PLAY_DISPLAY_MODES.indexOf(mode);
+  return PLAY_DISPLAY_MODES[(index + 1) % PLAY_DISPLAY_MODES.length] ?? 'laptop';
+}
+
+function isPlayDisplayMode(value: string | null): value is PlayDisplayMode {
+  return value === 'tv' || value === 'laptop' || value === 'mobile';
+}
 
 async function getStoredMode(): Promise<string | null> {
   if (Platform.OS === 'web' && globalThis.localStorage) {
@@ -30,7 +44,8 @@ interface DisplayStore {
 }
 
 export const useDisplayStore = create<DisplayStore>((set) => ({
-  playDisplayMode: 'tv',
+  // laptop = 1.0: leave automatic viewport scaling alone until the user overrides.
+  playDisplayMode: 'laptop',
   setPlayDisplayMode: (playDisplayMode) => {
     set({ playDisplayMode });
     void setStoredMode(playDisplayMode).catch(() => {});
@@ -38,9 +53,9 @@ export const useDisplayStore = create<DisplayStore>((set) => ({
   hydrate: async () => {
     try {
       const mode = await getStoredMode();
-      if (mode === 'tv' || mode === 'mobile') set({ playDisplayMode: mode });
+      if (isPlayDisplayMode(mode)) set({ playDisplayMode: mode });
     } catch {
-      // Keep TV mode as the default when storage is unavailable.
+      // Keep laptop (neutral) when storage is unavailable.
     }
   },
 }));

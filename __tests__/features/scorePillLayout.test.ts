@@ -32,9 +32,11 @@ describe('getMatchScorePillMetrics', () => {
 
   it('respects play text scale on fonts', () => {
     const normal = getMatchScorePillMetrics({ width: 800, height: 400, teamCount: 2, textScale: 1 });
-    const tv = getMatchScorePillMetrics({ width: 800, height: 400, teamCount: 2, textScale: 0.75 });
+    const tv = getMatchScorePillMetrics({ width: 800, height: 400, teamCount: 2, textScale: 0.8 });
+    const phone = getMatchScorePillMetrics({ width: 800, height: 400, teamCount: 2, textScale: 1.22 });
 
     expect(tv.scoreFont).toBeLessThan(normal.scoreFont);
+    expect(normal.scoreFont).toBeLessThan(phone.scoreFont);
     expect(tv.minHeight).toBe(normal.minHeight); // chrome size unchanged by text scale
   });
 });

@@ -33,7 +33,7 @@ describe('SettingsScreen', () => {
     __setConvexAction(async () => mockDeleteAccount());
     __setFeatureFlags({ SHOW_LANGUAGE_SETTINGS_UI: true });
     useThemeStore.setState({ paletteId: 'default' });
-    useDisplayStore.setState({ playDisplayMode: 'tv' });
+    useDisplayStore.setState({ playDisplayMode: 'laptop' });
   });
 
   afterEach(() => {
@@ -98,13 +98,24 @@ describe('SettingsScreen', () => {
     expect(useThemeStore.getState().paletteId).toBe('default');
   });
 
-  it('defaults game text to TV size and toggles to mobile size', () => {
+  it('defaults game text to laptop (neutral) and cycles laptop → phone → TV', () => {
     render(<SettingsScreen />);
 
-    expect(screen.getByText('TV mode (smaller)')).toBeTruthy();
+    expect(screen.getByText('Laptop mode (medium)')).toBeTruthy();
+    expect(screen.getByTestId('settings-display-mode-dots')).toBeTruthy();
+    expect(useDisplayStore.getState().playDisplayMode).toBe('laptop');
+
     fireEvent.press(screen.getByTestId('settings-display-mode-toggle'));
     expect(useDisplayStore.getState().playDisplayMode).toBe('mobile');
-    expect(screen.getByText('Mobile mode (larger)')).toBeTruthy();
+    expect(screen.getByText('Phone mode (large)')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('settings-display-mode-toggle'));
+    expect(useDisplayStore.getState().playDisplayMode).toBe('tv');
+    expect(screen.getByText('TV mode (small)')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('settings-display-mode-toggle'));
+    expect(useDisplayStore.getState().playDisplayMode).toBe('laptop');
+    expect(screen.getByText('Laptop mode (medium)')).toBeTruthy();
   });
 
   // SAFETY: Test fixture / double boundary cast justified by controlled test setup.

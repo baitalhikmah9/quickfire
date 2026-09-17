@@ -825,8 +825,9 @@ export function PlayAnswerPanel({
           styles.answerText,
           {
             color: T.textPrimary,
-            fontSize: Math.max(28, layoutDensity.answerFontSize * 1.25),
-            lineHeight: Math.max(34, layoutDensity.answerLineHeight * 1.25),
+            // Density already includes playTextScale; hard floors used to cancel TV/phone sizing.
+            fontSize: Math.max(12, Math.round(layoutDensity.answerFontSize * 1.25)),
+            lineHeight: Math.max(16, Math.round(layoutDensity.answerLineHeight * 1.25)),
             marginTop: layoutDensity.answerEyebrowMarginBottom,
           },
           questionTextStyle('displayBold', 'center', currentQuestion.answer),
@@ -897,13 +898,13 @@ export function PlayAnswerPanel({
           {
             color: colors.textOnBackground,
             fontSize: Math.max(
-              17,
+              10,
               Math.round(
                 layoutDensity.answerFontSize * (scrollChain ? 0.95 : 1.2) * answerCardOnlyScale
               )
             ),
             lineHeight: Math.max(
-              22,
+              14,
               Math.round(
                 layoutDensity.answerLineHeight * (scrollChain ? 0.95 : 1.2) * answerCardOnlyScale
               )

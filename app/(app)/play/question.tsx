@@ -125,16 +125,19 @@ const UNREVEALED_QA_DISPLAY_SCALE = 0.8;
 
 function scaleUpQuestionEmphasis(
   phase: { fontSize: number; lineHeight: number },
-  viewportScale = 1
+  viewportScale = 1,
+  textScale = 1
 ): { fontSize: number; lineHeight: number } {
   const scale = UNREVEALED_QUESTION_TYPE_SCALE * UNREVEALED_QA_DISPLAY_SCALE;
+  // Cap tracks play text size so large mode can grow past medium (floors still fit via adjustsFontSizeToFit).
+  const capScale = viewportScale * textScale;
   return {
     fontSize: Math.min(
-      Math.round(46 * UNREVEALED_QA_DISPLAY_SCALE * viewportScale),
+      Math.round(46 * UNREVEALED_QA_DISPLAY_SCALE * capScale),
       Math.round(phase.fontSize * scale)
     ),
     lineHeight: Math.min(
-      Math.round(60 * UNREVEALED_QA_DISPLAY_SCALE * viewportScale),
+      Math.round(60 * UNREVEALED_QA_DISPLAY_SCALE * capScale),
       Math.round(phase.lineHeight * scale)
     ),
   };
@@ -365,8 +368,8 @@ export default function PlayQuestionScreen() {
   }, [promptText, promptLayoutWidth, questionPromptSizing, questionViewportScale, viewportShortSide]);
 
   const unrevealedActiveQuestionTypography = useMemo(
-    () => scaleUpQuestionEmphasis(compactQuestionPhaseTypography, questionViewportScale),
-    [compactQuestionPhaseTypography, questionViewportScale]
+    () => scaleUpQuestionEmphasis(compactQuestionPhaseTypography, questionViewportScale, playTextScale),
+    [compactQuestionPhaseTypography, playTextScale, questionViewportScale]
   );
 
   const isAnswerPhase = session?.step === 'answer';

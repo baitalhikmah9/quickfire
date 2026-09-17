@@ -46,7 +46,12 @@ import { logOutRevenueCat } from '@/lib/payments/revenueCat';
 import { useLocaleStore } from '@/store/locale';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
-import { useDisplayStore } from '@/store/display';
+import {
+  PLAY_DISPLAY_MODES,
+  nextPlayDisplayMode,
+  useDisplayStore,
+  type PlayDisplayMode,
+} from '@/store/display';
 import { useDisplayTokenBalance } from '@/lib/hooks/useDisplayTokenBalance';
 import { HOME_SOFT_UI } from '@/themes';
 import { getWebViewportScale } from '@/lib/layout/webViewportScale';
@@ -355,12 +360,12 @@ export default function SettingsScreen() {
                   </View>
                 </Pressable>
 
-                {/* Game text size */}
+                {/* Game text size: cycles small, medium, large */}
                 <Pressable
                   testID="settings-display-mode-toggle"
                   accessibilityRole="button"
                   accessibilityLabel={t('settings.displayModeTitle')}
-                  onPress={() => setPlayDisplayMode(playDisplayMode === 'tv' ? 'mobile' : 'tv')}
+                  onPress={() => setPlayDisplayMode(nextPlayDisplayMode(playDisplayMode))}
                   style={({ pressed }) => [
                     styles.prefRow,
                     { flexDirection: rowDir, borderBottomColor: 'rgba(0,0,0,0.06)' },
@@ -369,7 +374,13 @@ export default function SettingsScreen() {
                 >
                   <View style={[styles.prefMain, { flexDirection: rowDir }]}>
                     <Ionicons
-                      name={playDisplayMode === 'tv' ? 'tv-outline' : 'phone-portrait-outline'}
+                      name={
+                        playDisplayMode === 'tv'
+                          ? 'tv-outline'
+                          : playDisplayMode === 'laptop'
+                            ? 'laptop-outline'
+                            : 'phone-portrait-outline'
+                      }
                       size={18}
                       color={textPrimary}
                     />
@@ -378,8 +389,32 @@ export default function SettingsScreen() {
                         {t('settings.displayModeTitle')}
                       </Text>
                       <Text style={[styles.prefMeta, { color: textMuted }]} numberOfLines={1}>
-                        {t(playDisplayMode === 'tv' ? 'settings.displayMode.tv' : 'settings.displayMode.mobile')}
+                        {t(`settings.displayMode.${playDisplayMode}`)}
                       </Text>
+                    </View>
+                    <View
+                      testID="settings-display-mode-dots"
+                      style={[styles.sizeDots, { flexDirection: rowDir }]}
+                      pointerEvents="none"
+                    >
+                      {PLAY_DISPLAY_MODES.map((mode: PlayDisplayMode) => {
+                        const active = playDisplayMode === mode;
+                        return (
+                          <View
+                            key={mode}
+                            testID={`settings-display-mode-dot-${mode}`}
+                            style={[
+                              styles.sizeDot,
+                              active
+                                ? { backgroundColor: textPrimary, borderColor: textPrimary }
+                                : {
+                                    backgroundColor: 'transparent',
+                                    borderColor: textMuted,
+                                  },
+                            ]}
+                          />
+                        );
+                      })}
                     </View>
                   </View>
                 </Pressable>
@@ -1107,6 +1142,17 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     marginTop: 2,
     opacity: 0.75,
+  },
+  sizeDots: {
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 2,
+  },
+  sizeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.5,
   },
   modalRoot: {
     // Absolute fill (not flex-only) so web fixed shells always dim the full viewport.
