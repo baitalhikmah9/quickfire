@@ -262,7 +262,13 @@ graph TB
 │   └── types/
 │
 ├── scripts/
-│   └── normalize-questions.ts    # Normalize questions.json → convex/seed/
+│   ├── import-questions-from-csv.ts # constants/source-questions.csv → constants/questions.json (keeps UserID)
+│   ├── merge-picture-topics.ts   # Adds picture topics (flags, jerseys) to questions.json
+│   ├── build-legacy-question-keys.ts # Freezes the pre-q<UserID> key snapshot (convex/seed/legacyQuestionKeys.ts)
+│   ├── normalize-questions.ts    # Normalize questions.json → convex/seed/ (keys q<UserID>, questionCount)
+│   ├── check-translations.ts     # Verify constants/translations/questions-long.csv.gz against the English seed
+│   ├── push-seed-to-convex.ts    # Seed categories, English questions and the translation pack
+│   └── lib/                      # csv.ts (parser), questionsLong.ts (translation pack reader)
 │
 ├── patches/
 │   └── expo-modules-core@55.0.22.patch
@@ -499,8 +505,11 @@ overtimeCheck -> completed
 
 **Gotchas**:
 - `identity.subject` is Clerk user ID, not Convex `_id`
-- Categories seeded by slug (skips if exists)
+- Categories seeded by slug (skips if exists); `questionCount` is written at seed time and read by `listPlayableCategories` (no per-query counting)
 - Questions with invalid `categorySlug` silently skipped
+- Question identity is `canonicalKey = q<UserID>` (the spreadsheet's permanent ID, `features/play/canonicalKey.ts`), the same in every locale; `device_question_history` keys on it
+- Rows seeded under the old position keys are retired by `seed:push`. The pairs come from the frozen `convex/seed/legacyQuestionKeys.ts` snapshot (`scripts/build-legacy-question-keys.ts`, generated `questions.json@1992d4d` -> `@6291744`), never from current source data, so a later reorder, rename or addition cannot move an old key onto another question. `seed:retireLegacyQuestionKeys` flips the legacy row to `retired` (never deletes, so `_id` references stay valid) only when the replacement exists, is `active` and sits in the same category; `seed:remapLegacyQuestionHistory` moves device history onto the new keys in bounded pages that verify the same guards and leave a record untouched when it cannot. Both take a required `expectedMapVersion` that the handler checks before touching data, so a deployment running another snapshot refuses the call. Each call is atomic, the migration as a whole is not, so both copies can be playable until it finishes; unexpected skips or an incomplete walk print `Legacy key migration INCOMPLETE` and exit non-zero, and an interrupted walk resumes with `--legacy-checkpoint='<token>'`, a validated base64url token carrying the target selector, frozen map version, mode and last confirmed cursor
+- Content queries read only the caller's locale chain through `by_category_locale_status`; 17 locales are seeded but a player pays for at most three
 - Must set `CLERK_JWT_ISSUER_DOMAIN` in Convex dashboard
 
 ---
@@ -563,7 +572,7 @@ overtimeCheck -> completed
 **Gotchas**:
 - **CRITICAL**: `legacy.ts` COLORS has DIFFERENT values than `theme.ts`
 - `FONT_SIZES` is backward compat alias to `TYPE_SCALE`
-- `questions.json` has duplicate IDs (e.g., `q_15` appears twice)
+- `questions.json` group IDs (`q_15`) are not question IDs; each question carries `userId`, and `q<userId>` is its key
 
 ---
 
@@ -805,7 +814,7 @@ sequenceDiagram
 
 ### Critical Issues
 1. **Theme Inconsistency**: `legacy.ts` has different color values than `theme.ts`
-2. **Question ID Collisions**: Duplicate IDs in `questions.json` (e.g., `q_15`)
+2. **Question identity**: `q<UserID>` from the spreadsheet; never derive keys from position (position keys shifted on every re-import and corrupted device history)
 3. **Forgot Password**: Not wired to Clerk (TODO comment in code)
 4. **Admin sign-in rate limited**: `adminSignInRateLimit.ts` must be deployed for production admin access
 
@@ -958,7 +967,10 @@ bun run test:coverage # Coverage report
 
 # Database
 npx convex dev       # Start Convex dev
+bun run seed:import    # CSV → questions.json → convex/seed (run after editing constants/source-questions.csv)
 bun run seed:normalize # Normalize questions
+bun run seed:translations:check # Translation pack vs English seed (must pass before seed:push)
+bun run seed:push      # Categories, English questions, legacy key migration, then all translation locales (--skip-translations, --locales=ar,fr, --prod, --skip-legacy-migration, --legacy-checkpoint='<token>'); --dry-run-legacy-migration reports the migration only and never deploys, seeds or writes, so the migration functions must already be deployed (code only: npx convex dev --once, or npx convex deploy -y for prod), and a dry run against a catalog without seeded replacements reports them as missing
 
 # Assets
 bun run topics:transparent # Generate transparency topic images
