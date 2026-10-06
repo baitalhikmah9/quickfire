@@ -39,16 +39,16 @@ describe('resolveQuestionVariants', () => {
     const card = bundledQuestion();
     const variants = resolveQuestionVariants(card, { primary: null, secondary: null });
 
-    expect(variants.primary).toEqual({
+    expect(variants.english).toEqual({
       locale: 'en',
       prompt: card.prompt,
       answer: card.answer,
       fellBackToEnglish: false,
     });
-    expect(variants.secondary).toBeNull();
+    expect(variants.translations).toEqual([]);
   });
 
-  it('picks both languages for the same canonical key', () => {
+  it('keeps English first and stacks both selected translations beneath it', () => {
     const card = bundledQuestion();
     registerQuestionTranslations('ja', {
       [card.canonicalKey]: { prompt: ' 日本語の問題 ', answer: '答え' },
@@ -60,71 +60,121 @@ describe('resolveQuestionVariants', () => {
 
     const variants = resolveQuestionVariants(card, { primary: 'ja', secondary: 'ar' });
 
-    expect(variants.primary).toEqual({
-      locale: 'ja',
-      prompt: '日本語の問題',
-      answer: '答え',
+    expect(variants.english).toEqual({
+      locale: 'en',
+      prompt: card.prompt,
+      answer: card.answer,
       fellBackToEnglish: false,
     });
-    expect(variants.secondary).toEqual({
-      locale: 'ar',
-      prompt: 'سؤال عربي',
-      answer: 'جواب',
-      fellBackToEnglish: false,
-    });
+    expect(variants.translations).toEqual([
+      {
+        locale: 'ja',
+        prompt: '日本語の問題',
+        answer: '答え',
+        fellBackToEnglish: false,
+      },
+      {
+        locale: 'ar',
+        prompt: 'سؤال عربي',
+        answer: 'جواب',
+        fellBackToEnglish: false,
+      },
+    ]);
   });
 
-  it('falls back to English per slot when a variant is missing', () => {
+  it('omits missing translations instead of duplicating English', () => {
     const card = bundledQuestion();
     registerQuestionTranslations('de', {
       [card.canonicalKey]: { prompt: 'Deutsche Frage', answer: 'Antwort' },
     });
 
     const secondaryMissing = resolveQuestionVariants(card, { primary: 'de', secondary: 'sw' });
-    expect(secondaryMissing.primary.locale).toBe('de');
-    expect(secondaryMissing.secondary).toEqual({
-      locale: 'en',
-      prompt: card.prompt,
-      answer: card.answer,
-      fellBackToEnglish: true,
-    });
+    expect(secondaryMissing.english).toMatchObject({ locale: 'en', prompt: card.prompt });
+    expect(secondaryMissing.translations).toEqual([
+      {
+        locale: 'de',
+        prompt: 'Deutsche Frage',
+        answer: 'Antwort',
+        fellBackToEnglish: false,
+      },
+    ]);
 
     const primaryMissing = resolveQuestionVariants(card, { primary: 'sw', secondary: 'de' });
-    expect(primaryMissing.primary).toMatchObject({ locale: 'en', fellBackToEnglish: true });
-    expect(primaryMissing.secondary).toMatchObject({ locale: 'de', prompt: 'Deutsche Frage' });
+    expect(primaryMissing.english).toMatchObject({ locale: 'en', prompt: card.prompt });
+    expect(primaryMissing.translations).toEqual([
+      {
+        locale: 'de',
+        prompt: 'Deutsche Frage',
+        answer: 'Antwort',
+        fellBackToEnglish: false,
+      },
+    ]);
   });
 
-  it('shows one block when both slots would fall back to the same English text', () => {
+  it('shows English alone when both selected languages are missing', () => {
     const card = bundledQuestion();
     const variants = resolveQuestionVariants(card, { primary: 'ko', secondary: 'tr' });
 
-    expect(variants.primary).toMatchObject({ locale: 'en', fellBackToEnglish: true });
-    expect(variants.secondary).toBeNull();
+    expect(variants.english).toMatchObject({ locale: 'en', prompt: card.prompt });
+    expect(variants.translations).toEqual([]);
   });
 
-  it('uses the card text when the key is not in the bundle', () => {
+  it('uses the card text as English when the key is not in the bundle', () => {
     const variants = resolveQuestionVariants(REMOTE_CARD, { primary: 'fr', secondary: null });
 
-    expect(variants.primary).toEqual({
+    expect(variants.english).toEqual({
       locale: 'en',
       prompt: 'Remote English prompt',
       answer: 'Remote answer',
-      fellBackToEnglish: true,
+      fellBackToEnglish: false,
     });
+    expect(variants.translations).toEqual([]);
   });
 
-  it('keeps a card that already arrived in the requested locale', () => {
+  it('resolves English from the bundled catalog even when the card carries translated text', () => {
+    const card = bundledQuestion();
+    const variants = resolveQuestionVariants(
+      { ...card, locale: 'it', prompt: 'Domanda', answer: 'Risposta' },
+      { primary: 'it', secondary: null }
+    );
+
+    expect(variants.english).toEqual({
+      locale: 'en',
+      prompt: card.prompt,
+      answer: card.answer,
+      fellBackToEnglish: false,
+    });
+    // Card locale matches the selected language, so it counts as that translation.
+    expect(variants.translations).toEqual([
+      {
+        locale: 'it',
+        prompt: 'Domanda',
+        answer: 'Risposta',
+        fellBackToEnglish: false,
+      },
+    ]);
+  });
+
+  it('keeps a remote card that already arrived in the requested locale as a translation', () => {
     const variants = resolveQuestionVariants(
       { ...REMOTE_CARD, locale: 'it', prompt: 'Domanda', answer: 'Risposta' },
       { primary: 'it', secondary: null }
     );
 
-    expect(variants.primary).toEqual({
-      locale: 'it',
+    expect(variants.english).toMatchObject({
+      locale: 'en',
       prompt: 'Domanda',
       answer: 'Risposta',
-      fellBackToEnglish: false,
+      fellBackToEnglish: true,
     });
+    expect(variants.translations).toEqual([
+      {
+        locale: 'it',
+        prompt: 'Domanda',
+        answer: 'Risposta',
+        fellBackToEnglish: false,
+      },
+    ]);
   });
 });
 

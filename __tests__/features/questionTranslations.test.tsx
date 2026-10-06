@@ -70,18 +70,21 @@ function Probe({ card, id = 'a' }: { card: QuestionCard; id?: string }) {
   const variants = useQuestionVariants(card);
   return (
     <>
-      <Text testID={`${id}-primary-prompt`}>{variants?.primary.prompt ?? ''}</Text>
-      <Text testID={`${id}-primary-answer`}>{variants?.primary.answer ?? ''}</Text>
-      <Text testID={`${id}-primary-locale`}>{variants?.primary.locale ?? ''}</Text>
-      <Text testID={`${id}-secondary-prompt`}>{variants?.secondary?.prompt ?? ''}</Text>
-      <Text testID={`${id}-secondary-locale`}>{variants?.secondary?.locale ?? ''}</Text>
+      <Text testID={`${id}-english-prompt`}>{variants?.english.prompt ?? ''}</Text>
+      <Text testID={`${id}-english-answer`}>{variants?.english.answer ?? ''}</Text>
+      <Text testID={`${id}-english-locale`}>{variants?.english.locale ?? ''}</Text>
+      <Text testID={`${id}-translation-0-prompt`}>{variants?.translations[0]?.prompt ?? ''}</Text>
+      <Text testID={`${id}-translation-0-answer`}>{variants?.translations[0]?.answer ?? ''}</Text>
+      <Text testID={`${id}-translation-0-locale`}>{variants?.translations[0]?.locale ?? ''}</Text>
+      <Text testID={`${id}-translation-1-prompt`}>{variants?.translations[1]?.prompt ?? ''}</Text>
+      <Text testID={`${id}-translation-1-locale`}>{variants?.translations[1]?.locale ?? ''}</Text>
     </>
   );
 }
 
 /**
  * Two simultaneous consumers of the same card, like question.tsx + PlayAnswerPanel.tsx.
- * Both must leave English once the shared cache fills.
+ * Both must keep English and pick up translations together once the shared cache fills.
  */
 function DualProbe({ card }: { card: QuestionCard }) {
   return (
@@ -132,7 +135,7 @@ afterEach(() => {
 });
 
 describe('useQuestionVariants with Convex translations', () => {
-  it('updates both simultaneous consumers when the shared cache fills', async () => {
+  it('keeps English on both consumers and updates translations together when the cache fills', async () => {
     const card = bundledCard();
     const { ja } = rowsFor(card.canonicalKey);
     setLocales('ja', null);
@@ -141,18 +144,22 @@ describe('useQuestionVariants with Convex translations', () => {
 
     render(<DualProbe card={card} />);
 
-    expect(screen.getByTestId('question-primary-prompt')).toHaveTextContent(card.prompt);
-    expect(screen.getByTestId('answer-primary-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('question-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('answer-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('question-translation-0-prompt')).toHaveTextContent('');
+    expect(screen.getByTestId('answer-translation-0-prompt')).toHaveTextContent('');
 
     request.resolve([ja]);
     await settle(request.promise);
 
     await waitFor(() => {
-      expect(screen.getByTestId('question-primary-locale')).toHaveTextContent('ja');
-      expect(screen.getByTestId('answer-primary-locale')).toHaveTextContent('ja');
+      expect(screen.getByTestId('question-translation-0-locale')).toHaveTextContent('ja');
+      expect(screen.getByTestId('answer-translation-0-locale')).toHaveTextContent('ja');
     });
-    expect(screen.getByTestId('question-primary-prompt')).toHaveTextContent('日本語の質問');
-    expect(screen.getByTestId('answer-primary-prompt')).toHaveTextContent('日本語の質問');
+    expect(screen.getByTestId('question-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('answer-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('question-translation-0-prompt')).toHaveTextContent('日本語の質問');
+    expect(screen.getByTestId('answer-translation-0-prompt')).toHaveTextContent('日本語の質問');
   });
 
   it('re-resolves a second consumer from cache filled by the first', async () => {
@@ -166,20 +173,21 @@ describe('useQuestionVariants with Convex translations', () => {
     request.resolve([ja]);
     await settle(request.promise);
     await waitFor(() =>
-      expect(screen.getByTestId('question-primary-locale')).toHaveTextContent('ja')
+      expect(screen.getByTestId('question-translation-0-locale')).toHaveTextContent('ja')
     );
     first.unmount();
 
     // New mount after the registry is already warm, like opening the answer panel later.
     render(<Probe card={card} id="answer" />);
 
-    expect(screen.getByTestId('answer-primary-prompt')).toHaveTextContent('日本語の質問');
-    expect(screen.getByTestId('answer-primary-locale')).toHaveTextContent('ja');
+    expect(screen.getByTestId('answer-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('answer-translation-0-prompt')).toHaveTextContent('日本語の質問');
+    expect(screen.getByTestId('answer-translation-0-locale')).toHaveTextContent('ja');
     // First consumer already filled the cache; second must not issue another query.
     expect(clientQueryMock().mock.calls.length).toBe(1);
   });
 
-  it('shows English first, then both fetched languages after the response lands', async () => {
+  it('shows English first before and after both fetched languages land', async () => {
     const card = bundledCard();
     const { ja, ar } = rowsFor(card.canonicalKey);
     setLocales('ja', 'ar');
@@ -188,20 +196,24 @@ describe('useQuestionVariants with Convex translations', () => {
 
     render(<Probe card={card} />);
 
-    expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent(card.prompt);
-    expect(screen.getByTestId('a-primary-locale')).toHaveTextContent('en');
-    expect(screen.getByTestId('a-secondary-prompt')).toHaveTextContent('');
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('a-english-locale')).toHaveTextContent('en');
+    expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('');
+    expect(screen.getByTestId('a-translation-1-prompt')).toHaveTextContent('');
 
     request.resolve([ja, ar]);
     await settle(request.promise);
 
     await waitFor(() =>
-      expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent('日本語の質問')
+      expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('日本語の質問')
     );
-    expect(screen.getByTestId('a-primary-answer')).toHaveTextContent('日本語の答え');
-    expect(screen.getByTestId('a-primary-locale')).toHaveTextContent('ja');
-    expect(screen.getByTestId('a-secondary-prompt')).toHaveTextContent('سؤال عربي');
-    expect(screen.getByTestId('a-secondary-locale')).toHaveTextContent('ar');
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('a-english-answer')).toHaveTextContent(card.answer);
+    expect(screen.getByTestId('a-english-locale')).toHaveTextContent('en');
+    expect(screen.getByTestId('a-translation-0-answer')).toHaveTextContent('日本語の答え');
+    expect(screen.getByTestId('a-translation-0-locale')).toHaveTextContent('ja');
+    expect(screen.getByTestId('a-translation-1-prompt')).toHaveTextContent('سؤال عربي');
+    expect(screen.getByTestId('a-translation-1-locale')).toHaveTextContent('ar');
 
     expect(clientQueryMock()).toHaveBeenCalledTimes(1);
     expect(clientQueryMock().mock.calls[0]?.[1]).toEqual({
@@ -220,9 +232,10 @@ describe('useQuestionVariants with Convex translations', () => {
     request.reject(new Error('Could not find function content:getQuestionTranslationVariants'));
     await settle(request.promise);
 
-    expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent(card.prompt);
-    expect(screen.getByTestId('a-primary-answer')).toHaveTextContent(card.answer);
-    expect(screen.getByTestId('a-primary-locale')).toHaveTextContent('en');
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('a-english-answer')).toHaveTextContent(card.answer);
+    expect(screen.getByTestId('a-english-locale')).toHaveTextContent('en');
+    expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('');
   });
 
   it('keeps text fetched earlier when a later question fails', async () => {
@@ -236,8 +249,9 @@ describe('useQuestionVariants with Convex translations', () => {
     first.resolve([ja]);
     await settle(first.promise);
     await waitFor(() =>
-      expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent('日本語の質問')
+      expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('日本語の質問')
     );
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent(card.prompt);
 
     const failing = deferred<VariantRow[]>();
     __setConvexClientQuery(() => failing.promise);
@@ -245,12 +259,14 @@ describe('useQuestionVariants with Convex translations', () => {
     failing.reject(new Error('offline'));
     await settle(failing.promise);
 
-    expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent('Remote English prompt');
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent('Remote English prompt');
+    expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('');
 
     view.rerender(<Probe card={card} />);
     await waitFor(() =>
-      expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent('日本語の質問')
+      expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('日本語の質問')
     );
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent(card.prompt);
   });
 
   it('ignores a late response for a language the player already replaced', async () => {
@@ -275,12 +291,15 @@ describe('useQuestionVariants with Convex translations', () => {
     requests[0]!.resolve([ja]);
     await settle(requests[0]!.promise);
 
-    expect(screen.getByTestId('a-primary-locale')).toHaveTextContent('en');
+    // Stale ja must not appear under the current de selection.
+    expect(screen.getByTestId('a-english-locale')).toHaveTextContent('en');
+    expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('');
 
     requests[1]!.resolve([de]);
     await settle(requests[1]!.promise);
-    await waitFor(() => expect(screen.getByTestId('a-primary-locale')).toHaveTextContent('de'));
-    expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent('Deutsche Frage');
+    await waitFor(() => expect(screen.getByTestId('a-translation-0-locale')).toHaveTextContent('de'));
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('Deutsche Frage');
   });
 
   it('ignores a late response after the current/bonus card changes', async () => {
@@ -310,14 +329,16 @@ describe('useQuestionVariants with Convex translations', () => {
     // Older board response arrives after the bonus card is current.
     requests[0]!.resolve([boardJa]);
     await settle(requests[0]!.promise);
-    expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent('Bonus English prompt');
-    expect(screen.getByTestId('a-primary-locale')).toHaveTextContent('en');
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent('Bonus English prompt');
+    expect(screen.getByTestId('a-english-locale')).toHaveTextContent('en');
+    expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('');
 
     requests[1]!.resolve([bonusJa]);
     await settle(requests[1]!.promise);
     await waitFor(() =>
-      expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent('日本語の質問')
+      expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('日本語の質問')
     );
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent('Bonus English prompt');
   });
 
   it('cancels a pending request when auth drops and keeps English on screen', async () => {
@@ -339,11 +360,12 @@ describe('useQuestionVariants with Convex translations', () => {
     request.resolve([ja]);
     await settle(request.promise);
 
-    expect(screen.getByTestId('a-primary-locale')).toHaveTextContent('en');
-    expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('a-english-locale')).toHaveTextContent('en');
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('');
   });
 
-  it('falls back to English in the slot whose language has no row', async () => {
+  it('omits a missing language instead of duplicating English', async () => {
     const card = bundledCard();
     const { ja } = rowsFor(card.canonicalKey);
     setLocales('ja', 'ar');
@@ -354,9 +376,11 @@ describe('useQuestionVariants with Convex translations', () => {
     request.resolve([ja]);
     await settle(request.promise);
 
-    await waitFor(() => expect(screen.getByTestId('a-primary-locale')).toHaveTextContent('ja'));
-    expect(screen.getByTestId('a-secondary-locale')).toHaveTextContent('en');
-    expect(screen.getByTestId('a-secondary-prompt')).toHaveTextContent(card.prompt);
+    await waitFor(() => expect(screen.getByTestId('a-translation-0-locale')).toHaveTextContent('ja'));
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('日本語の質問');
+    expect(screen.getByTestId('a-translation-1-prompt')).toHaveTextContent('');
+    expect(screen.getByTestId('a-translation-1-locale')).toHaveTextContent('');
   });
 
   it('ignores blank or whitespace-only translations instead of replacing English', async () => {
@@ -379,10 +403,11 @@ describe('useQuestionVariants with Convex translations', () => {
     await settle(request.promise);
 
     await waitFor(() =>
-      expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent('日本語の質問')
+      expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('日本語の質問')
     );
-    expect(screen.getByTestId('a-secondary-locale')).toHaveTextContent('en');
-    expect(screen.getByTestId('a-secondary-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('a-translation-1-prompt')).toHaveTextContent('');
+    expect(screen.getByTestId('a-translation-1-locale')).toHaveTextContent('');
 
     // Direct apply path: pure blanks never enter the registry.
     clearQuestionTranslations();
@@ -404,7 +429,7 @@ describe('useQuestionVariants with Convex translations', () => {
     const view = render(<Probe card={card} />);
     request.resolve([ja]);
     await settle(request.promise);
-    await waitFor(() => expect(screen.getByTestId('a-primary-locale')).toHaveTextContent('ja'));
+    await waitFor(() => expect(screen.getByTestId('a-translation-0-locale')).toHaveTextContent('ja'));
 
     view.rerender(<Probe card={card} />);
     view.rerender(<Probe card={{ ...card, id: `${card.id}:right` }} />);
@@ -420,8 +445,9 @@ describe('useQuestionVariants with Convex translations', () => {
     render(<Probe card={card} />);
 
     expect(clientQueryMock()).not.toHaveBeenCalled();
-    expect(screen.getByTestId('a-primary-prompt')).toHaveTextContent(card.prompt);
-    expect(screen.getByTestId('a-secondary-prompt')).toHaveTextContent('');
+    expect(screen.getByTestId('a-english-prompt')).toHaveTextContent(card.prompt);
+    expect(screen.getByTestId('a-translation-0-prompt')).toHaveTextContent('');
+    expect(screen.getByTestId('a-translation-1-prompt')).toHaveTextContent('');
   });
 
   it('loads dual consumers from real server-handler output of a synthetic CSV fixture', async () => {
@@ -507,10 +533,17 @@ describe('useQuestionVariants with Convex translations', () => {
     await settle(request.promise);
 
     await waitFor(() => {
-      expect(screen.getByTestId('question-primary-prompt')).toHaveTextContent('日本語 十');
-      expect(screen.getByTestId('answer-primary-prompt')).toHaveTextContent('日本語 十');
-      expect(screen.getByTestId('question-secondary-prompt')).toHaveTextContent('عشرة');
-      expect(screen.getByTestId('answer-secondary-prompt')).toHaveTextContent('عشرة');
+      // Bundled English wins over the card's synthetic "English ten" text.
+      expect(screen.getByTestId('question-english-prompt')).toHaveTextContent(
+        'Which small pug summoned by Kakashi helps track targets by scent?'
+      );
+      expect(screen.getByTestId('answer-english-prompt')).toHaveTextContent(
+        'Which small pug summoned by Kakashi helps track targets by scent?'
+      );
+      expect(screen.getByTestId('question-translation-0-prompt')).toHaveTextContent('日本語 十');
+      expect(screen.getByTestId('answer-translation-0-prompt')).toHaveTextContent('日本語 十');
+      expect(screen.getByTestId('question-translation-1-prompt')).toHaveTextContent('عشرة');
+      expect(screen.getByTestId('answer-translation-1-prompt')).toHaveTextContent('عشرة');
     });
   });
 });

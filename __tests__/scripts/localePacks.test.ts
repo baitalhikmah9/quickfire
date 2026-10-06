@@ -75,7 +75,10 @@ describe('packs from the committed translation pack', () => {
       { primary: 'ja', secondary: 'ar' }
     );
 
-    expect(variants.primary).toMatchObject({ locale: 'ja', prompt: packs.ja!.q1!.prompt });
-    expect(variants.secondary).toMatchObject({ locale: 'ar', answer: packs.ar!.q1!.answer });
+    expect(variants.english).toMatchObject({ locale: 'en' });
+    expect(variants.translations).toEqual([
+      expect.objectContaining({ locale: 'ja', prompt: packs.ja!.q1!.prompt }),
+      expect.objectContaining({ locale: 'ar', answer: packs.ar!.q1!.answer }),
+    ]);
   });
 });
