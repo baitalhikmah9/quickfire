@@ -2,6 +2,11 @@ import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import type { Doc } from './_generated/dataModel';
 import { requireUser } from './lib/auth';
+import {
+  assertTranslationRequestWithinBounds,
+  boundedCanonicalKeys,
+  boundedContentLocales,
+} from './lib/contentLocales';
 import { buildCanonicalPool, selectUnaskedWithFallback } from './lib/contentRules';
 
 /** Unique locales to read, in priority order, always ending with English. */
@@ -296,5 +301,66 @@ export const submitQuestionReport = mutation({
       sessionId: args.sessionId?.slice(0, 200),
       createdAt: now,
     });
+  },
+});
+
+/**
+ * Translated prompt and answer text for the stable `q<UserID>` keys the caller is about to show.
+ *
+ * English is played from the bundled catalog, so this never returns English rows: a caller asking
+ * for `en` (or for a locale the server does not know) gets nothing back and falls back to the
+ * bundle. One exact lookup per key and locale through `by_canonical_locale`, so there is no
+ * catalog scan and no whole-locale pack load. Only `active` rows are returned, and only the text:
+ * ids, points, categories and picture keys always come from the English catalog the client holds.
+ *
+ * Input is bounded here rather than trusted: an oversized request is refused, and the keys and
+ * locales that remain are filtered to `q<UserID>` keys and to the allowlist, so one call can
+ * never read or return another locale's content or a whole catalog.
+ */
+export const getQuestionTranslationVariants = query({
+  args: {
+    canonicalKeys: v.array(v.string()),
+    locales: v.array(v.string()),
+  },
+  returns: v.array(
+    v.object({
+      canonicalKey: v.string(),
+      locale: v.string(),
+      prompt: v.string(),
+      answer: v.string(),
+    })
+  ),
+  handler: async (ctx, args) => {
+    await requireUser(ctx);
+    assertTranslationRequestWithinBounds(args);
+
+    const locales = boundedContentLocales(args.locales);
+    const canonicalKeys = boundedCanonicalKeys(args.canonicalKeys);
+    const variants: {
+      canonicalKey: string;
+      locale: string;
+      prompt: string;
+      answer: string;
+    }[] = [];
+
+    for (const locale of locales) {
+      for (const canonicalKey of canonicalKeys) {
+        const row = await ctx.db
+          .query('questions')
+          .withIndex('by_canonical_locale', (q) =>
+            q.eq('canonicalKey', canonicalKey).eq('locale', locale)
+          )
+          .unique();
+        if (!row || row.status !== 'active') continue;
+        variants.push({
+          canonicalKey: row.canonicalKey,
+          locale: row.locale,
+          prompt: row.prompt,
+          answer: row.answer,
+        });
+      }
+    }
+
+    return variants;
   },
 });
