@@ -21,7 +21,7 @@ Android store binaries are produced **locally with Gradle** on this machine. The
 | --- | --- |
 | Package | `com.playbackfire.app` |
 | Production command | `bun run build:android:prod` (loads `.env.production`, runs a local production AAB via Gradle) |
-| Gradle / SDK | `GRADLE_USER_HOME=$HOME/.gradle`; Android SDK on the Seagate volume (`ANDROID_HOME` / `ANDROID_SDK_ROOT`) |
+| Android SDK | Requires a local Android SDK with `ANDROID_HOME` / `ANDROID_SDK_ROOT` set for Gradle builds |
 
 Do not run cloud EAS / Expo remote builds.
 
