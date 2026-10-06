@@ -15,6 +15,11 @@ import { router } from '../doubles/expoRouter';
 const mockSignOut = jest.fn(async () => undefined);
 const mockDeleteAccount = jest.fn(async () => ({ ok: true }));
 
+/** Real production module, not the Jest double mapped over `@/constants/featureFlags`. */
+const shippedFeatureFlags = jest.requireActual<
+  typeof import('../../constants/featureFlags')
+>('../../constants/featureFlags');
+
 describe('SettingsScreen', () => {
   beforeEach(() => {
     mockSignOut.mockClear();
@@ -36,7 +41,12 @@ describe('SettingsScreen', () => {
   });
 
   it('includes theme, app language, and up-to-two language settings with the shipped flag default', () => {
-    // Do not force SHOW_LANGUAGE_SETTINGS_UI: the double defaults to the shipped true value.
+    // Bind the double to the real constant so a false production revert fails this test.
+    expect(shippedFeatureFlags.SHOW_LANGUAGE_SETTINGS_UI).toBe(true);
+    __setFeatureFlags({
+      SHOW_LANGUAGE_SETTINGS_UI: shippedFeatureFlags.SHOW_LANGUAGE_SETTINGS_UI,
+    });
+
     render(<SettingsScreen />);
 
     expect(screen.getByText('Theme selection')).toBeTruthy();
