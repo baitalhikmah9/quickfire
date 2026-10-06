@@ -296,7 +296,7 @@ export function PlayAnswerPanel({
   const { direction, getTextStyle, t } = useI18n();
   const playTextScale = usePlayTextScale();
   const session = usePlayStore((state) => state.session);
-  /** Primary (and optional secondary) content-language text for the chosen question. */
+  /** English first, then each selected content-language translation for the chosen question. */
   const questionVariants = useQuestionVariants(session?.currentQuestion);
   const resetSession = usePlayStore((state) => state.resetSession);
   const refundEntryMutation = useMutation(api.wallet.refundEntry);
@@ -443,18 +443,18 @@ export function PlayAnswerPanel({
   }
 
   const currentQuestion = session.currentQuestion;
-  const primaryVariant = questionVariants?.primary ?? {
-    locale: currentQuestion.locale,
+  const englishVariant = questionVariants?.english ?? {
+    locale: 'en' as const,
     prompt: currentQuestion.prompt,
     answer: currentQuestion.answer,
     fellBackToEnglish: false,
   };
-  const secondaryVariant = questionVariants?.secondary ?? null;
+  const translationVariants = questionVariants?.translations ?? [];
   const questionTextStyle = (
     role: 'body' | 'bodyMedium' | 'bodySemibold' | 'bodyBold' | 'display' | 'displayBold',
     edge: 'start' | 'center' | 'end',
     content?: string
-  ) => getTextStyle(primaryVariant.locale, role, edge, content);
+  ) => getTextStyle(englishVariant.locale, role, edge, content);
   const wager = session.wager;
   const isTimedOut = session.timedOutQuestionId === currentQuestion.id;
   const showPostScoreActions = !wager && session.phase === 'scoring';
@@ -837,6 +837,7 @@ export function PlayAnswerPanel({
         </Text>
       </View>
       <Text
+        accessibilityLanguage="en"
         style={[
           styles.answerText,
           {
@@ -846,26 +847,27 @@ export function PlayAnswerPanel({
             lineHeight: wagerAnswerLineHeight,
             marginTop: layoutDensity.answerEyebrowMarginBottom,
           },
-          questionTextStyle('displayBold', 'center', primaryVariant.answer),
+          questionTextStyle('displayBold', 'center', englishVariant.answer),
         ]}
         maxFontSizeMultiplier={1.25}
         numberOfLines={6}
         adjustsFontSizeToFit
         minimumFontScale={0.5}
       >
-        {primaryVariant.answer}
+        {englishVariant.answer}
       </Text>
-      {secondaryVariant ? (
+      {translationVariants.map((variant) => (
         <SecondaryLanguageText
-          testID="answer-secondary-answer"
-          variant={secondaryVariant}
+          key={variant.locale}
+          testID={`answer-translation-${variant.locale}-answer`}
+          variant={variant}
           field="answer"
           primaryFontSize={wagerAnswerFontSize}
           primaryLineHeight={wagerAnswerLineHeight}
           color={T.textPrimary}
           marginTop={SPACING.xs}
         />
-      ) : null}
+      ))}
     </>
   );
 
@@ -928,6 +930,7 @@ export function PlayAnswerPanel({
         {t('play.correctAnswer').toUpperCase()}
       </Text>
       <Text
+        accessibilityLanguage="en"
         style={[
           styles.referenceAnswerMain,
           {
@@ -939,26 +942,27 @@ export function PlayAnswerPanel({
               Math.round(SPACING.md * combinedCardLayoutScale * answerCardOnlyScale)
             ),
           },
-          questionTextStyle('displayBold', 'center', primaryVariant.answer),
+          questionTextStyle('displayBold', 'center', englishVariant.answer),
         ]}
         maxFontSizeMultiplier={1.25}
         numberOfLines={4}
         adjustsFontSizeToFit
         minimumFontScale={0.5}
       >
-        {primaryVariant.answer}
+        {englishVariant.answer}
       </Text>
-      {secondaryVariant ? (
+      {translationVariants.map((variant) => (
         <SecondaryLanguageText
-          testID="answer-secondary-answer"
-          variant={secondaryVariant}
+          key={variant.locale}
+          testID={`answer-translation-${variant.locale}-answer`}
+          variant={variant}
           field="answer"
           primaryFontSize={combinedAnswerFontSize}
           primaryLineHeight={combinedAnswerLineHeight}
           color={colors.textOnBackground}
           marginTop={SPACING.xs}
         />
-      ) : null}
+      ))}
     </>
   );
 
@@ -1030,24 +1034,26 @@ export function PlayAnswerPanel({
                   </View>
 
                   <Text
+                    accessibilityLanguage="en"
                     style={[
                       styles.questionPromptText,
                       { color: colors.textOnBackground },
-                      questionTextStyle('displayBold', 'center', primaryVariant.prompt),
+                      questionTextStyle('displayBold', 'center', englishVariant.prompt),
                     ]}
                   >
-                    {primaryVariant.prompt}
+                    {englishVariant.prompt}
                   </Text>
-                  {secondaryVariant ? (
+                  {translationVariants.map((variant) => (
                     <SecondaryLanguageText
-                      testID="answer-secondary-prompt"
-                      variant={secondaryVariant}
+                      key={variant.locale}
+                      testID={`answer-translation-${variant.locale}-prompt`}
+                      variant={variant}
                       field="prompt"
                       primaryFontSize={QUESTION_PROMPT_FONT_SIZE}
                       primaryLineHeight={QUESTION_PROMPT_LINE_HEIGHT}
                       color={colors.textOnBackground}
                     />
-                  ) : null}
+                  ))}
                 </>
               ) : null}
 

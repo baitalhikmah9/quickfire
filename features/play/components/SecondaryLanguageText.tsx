@@ -6,9 +6,9 @@ import type { QuestionVariant } from '@/features/play/data';
 export const SECONDARY_LANGUAGE_SCALE = 0.62;
 
 /**
- * The second content language for the same question, shown beneath the primary text.
+ * One selected-language translation for the same question, shown beneath the English text.
  * Direction, alignment and font come from the variant's own locale, so an Arabic or Urdu
- * secondary renders right-to-left under a left-to-right primary (and the reverse).
+ * block renders right-to-left under left-to-right English (and the reverse for LTR locales).
  */
 export function SecondaryLanguageText({
   variant,

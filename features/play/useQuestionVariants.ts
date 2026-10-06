@@ -79,13 +79,13 @@ export function useQuestionTranslations(
 }
 
 /**
- * The on-screen variants of the current question: primary content language, plus the secondary
- * one beneath it when the player has picked two. Selection is by `canonicalKey`, so both
- * languages always show the same question.
+ * The on-screen variants of the current question: English always first, plus each selected
+ * content language that has a real translation beneath it. Selection is by `canonicalKey`, so
+ * every block shows the same question.
  *
- * Text already cached for a slot is shown immediately; slots still missing fall back to English
- * until a successful fetch lands (or forever, on offline/error/missing rows). The shared
- * translations version re-resolves every consumer when any mount fills the cache.
+ * English comes from the bundled catalog immediately. Cached translations appear as soon as they
+ * land; missing languages are omitted (no duplicate English blocks). The shared translations
+ * version re-resolves every consumer when any mount fills the cache.
  */
 export function useQuestionVariants(
   question: QuestionCard | null | undefined

@@ -198,82 +198,110 @@ export interface QuestionVariant {
   locale: ContentLocale;
   prompt: string;
   answer: string;
-  /** True when the requested language had no variant and English is shown in its place. */
+  /**
+   * Always false for on-screen blocks under the English-plus-translations layout.
+   * Missing selected languages are omitted entirely instead of duplicating English.
+   */
   fellBackToEnglish: boolean;
 }
 
+/**
+ * On-screen text for one question: English always first, then each selected content language
+ * that has a real translation. Missing translations are omitted so English is never shown twice.
+ */
 export interface QuestionVariants {
-  primary: QuestionVariant;
-  /** Present only when a secondary content language is set and differs from what primary shows. */
-  secondary: QuestionVariant | null;
+  /** Always English. Prefer the bundled canonical row even when the card text is translated. */
+  english: QuestionVariant;
+  /** Selected content languages with real translations, in selection order (at most two). */
+  translations: QuestionVariant[];
 }
 
 type VariantSource = Pick<QuestionCard, 'canonicalKey' | 'prompt' | 'answer' | 'locale'>;
 
-function variantForLocale(question: VariantSource, locale: ContentLocale): QuestionVariant {
-  if (locale !== 'en') {
-    const translated = QUESTION_TRANSLATIONS[locale]?.[question.canonicalKey];
-    if (translated) {
-      return {
-        locale,
-        prompt: translated.prompt.trim(),
-        answer: translated.answer.trim(),
-        fellBackToEnglish: false,
-      };
-    }
+/**
+ * English text for the question screen. Prefer the bundled catalog by canonical key so a card that
+ * already carries translated prompt/answer still shows English first.
+ */
+function resolveEnglishVariant(question: VariantSource): QuestionVariant {
+  const bundled = getEnglishQuestion(question.canonicalKey);
+  if (bundled) {
+    return {
+      locale: 'en',
+      prompt: bundled.text.trim(),
+      answer: bundled.answer.trim(),
+      fellBackToEnglish: false,
+    };
   }
 
-  if (question.locale === locale) {
+  // Remote / unbundled cards: use the card when it is already English.
+  if (question.locale === 'en') {
     return {
-      locale,
+      locale: 'en',
       prompt: question.prompt.trim(),
       answer: question.answer.trim(),
       fellBackToEnglish: false,
     };
   }
 
-  const english = getEnglishQuestion(question.canonicalKey);
-  if (english) {
-    return {
-      locale: 'en',
-      prompt: english.text.trim(),
-      answer: english.answer.trim(),
-      fellBackToEnglish: locale !== 'en',
-    };
-  }
-
-  // Not in the bundle (for example a question served by Convex): show the card as it came.
+  // No English source available - still provide a first block so the UI never goes blank.
   return {
-    locale: question.locale,
+    locale: 'en',
     prompt: question.prompt.trim(),
     answer: question.answer.trim(),
-    fellBackToEnglish: question.locale === 'en' && locale !== 'en',
+    fellBackToEnglish: true,
   };
 }
 
 /**
- * Resolve the chosen question (by canonical key) into the variants to show on screen: the primary
- * content language, and the secondary one beneath it when set. Each slot falls back to English on
- * its own when its language has no variant. With no content language set, primary is English.
- * The secondary slot is dropped when it would repeat exactly what primary shows (for example both
- * fell back to English), so the screen never shows the same text twice.
+ * Real translation for one selected content language, or null when missing.
+ * Null means "omit this block" - English stays visible without a duplicate English fallback.
+ */
+function resolveTranslationVariant(
+  question: VariantSource,
+  locale: NonEnglishContentLocale
+): QuestionVariant | null {
+  const translated = QUESTION_TRANSLATIONS[locale]?.[question.canonicalKey];
+  if (translated) {
+    const prompt = translated.prompt.trim();
+    const answer = translated.answer.trim();
+    if (prompt && answer) {
+      return { locale, prompt, answer, fellBackToEnglish: false };
+    }
+  }
+
+  // Card already arrived in this locale (for example a remote/Convex-served row).
+  if (question.locale === locale) {
+    const prompt = question.prompt.trim();
+    const answer = question.answer.trim();
+    if (prompt && answer) {
+      return { locale, prompt, answer, fellBackToEnglish: false };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Resolve the chosen question into the on-screen language blocks: English first, then each
+ * selected content language that has a real translation. Selection is by `canonicalKey`.
+ * Missing translations are omitted (not replaced with a second English block).
  */
 export function resolveQuestionVariants(
   question: VariantSource,
   contentLocales: ContentLocalePriority
 ): QuestionVariants {
-  const primary = variantForLocale(question, contentLocales.primary ?? 'en');
-  if (!contentLocales.secondary || contentLocales.secondary === contentLocales.primary) {
-    return { primary, secondary: null };
+  const english = resolveEnglishVariant(question);
+  const translations: QuestionVariant[] = [];
+  const seen = new Set<NonEnglishContentLocale>();
+
+  for (const locale of [contentLocales.primary, contentLocales.secondary]) {
+    if (!locale || seen.has(locale)) continue;
+    seen.add(locale);
+    const variant = resolveTranslationVariant(question, locale);
+    if (variant) translations.push(variant);
   }
 
-  const secondary = variantForLocale(question, contentLocales.secondary);
-  const repeatsPrimary =
-    secondary.locale === primary.locale &&
-    secondary.prompt === primary.prompt &&
-    secondary.answer === primary.answer;
-
-  return { primary, secondary: repeatsPrimary ? null : secondary };
+  return { english, translations };
 }
 
 export function getPlayableCategories(

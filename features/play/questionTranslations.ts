@@ -13,8 +13,8 @@
  * through `useSyncExternalStore`, so one successful write re-resolves every mount.
  *
  * Nothing here retries, expires or persists: a failed request is simply not remembered, so the
- * next mount may try again. Cached hits stay in the registry for the process; missing slots still
- * fall back to English when resolved.
+ * next mount may try again. Cached hits stay in the registry for the process; missing languages
+ * are omitted from the translation blocks so English stays visible without duplicates.
  */
 
 import { registerQuestionTranslations, type QuestionTranslationPack } from '@/features/play/data';

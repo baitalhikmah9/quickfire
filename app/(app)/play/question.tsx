@@ -348,9 +348,9 @@ export default function PlayQuestionScreen() {
     return Math.max(SPACING.md, Math.min(SPACING.xl, Math.round(short * 0.042)));
   }, [windowWidth, windowHeight]);
 
-  /** Primary (and optional secondary) content-language text for the chosen question. */
+  /** English first, then each selected content-language translation for the chosen question. */
   const questionVariants = useQuestionVariants(session?.currentQuestion);
-  const promptText = questionVariants?.primary.prompt ?? '';
+  const promptText = questionVariants?.english.prompt ?? '';
 
   /**
    * Base sizing for the prompt in the answer/reveal flow (and shared caps).
@@ -405,30 +405,37 @@ export default function PlayQuestionScreen() {
   }
 
   const q = session.currentQuestion;
-  const primaryVariant = questionVariants?.primary ?? {
-    locale: q.locale,
+  const englishVariant = questionVariants?.english ?? {
+    locale: 'en' as const,
     prompt: q.prompt,
     answer: q.answer,
     fellBackToEnglish: false,
   };
-  const secondaryVariant = questionVariants?.secondary ?? null;
-  const secondaryPrompt = secondaryVariant ? (
-    <SecondaryLanguageText
-      testID="question-secondary-prompt"
-      variant={secondaryVariant}
-      field="prompt"
-      primaryFontSize={unrevealedActiveQuestionTypography.fontSize}
-      primaryLineHeight={unrevealedActiveQuestionTypography.lineHeight}
-      color={T.textPrimary}
-      maxWidth={promptLayoutWidth}
-    />
-  ) : null;
+  const translationVariants = questionVariants?.translations ?? [];
+  const translationPrompts =
+    translationVariants.length > 0 ? (
+      <>
+        {translationVariants.map((variant) => (
+          <SecondaryLanguageText
+            key={variant.locale}
+            testID={`question-translation-${variant.locale}-prompt`}
+            variant={variant}
+            field="prompt"
+            primaryFontSize={unrevealedActiveQuestionTypography.fontSize}
+            primaryLineHeight={unrevealedActiveQuestionTypography.lineHeight}
+            color={T.textPrimary}
+            maxWidth={promptLayoutWidth}
+          />
+        ))}
+      </>
+    ) : null;
   const questionBoxPrompt = (
     <Text
-      testID="question-primary-prompt"
+      testID="question-english-prompt"
+      accessibilityLanguage="en"
       style={[
         styles.questionText,
-        getTextStyle(primaryVariant.locale, 'display', 'center', primaryVariant.prompt),
+        getTextStyle(englishVariant.locale, 'display', 'center', englishVariant.prompt),
         {
           color: T.textPrimary,
           fontSize: unrevealedActiveQuestionTypography.fontSize,
@@ -448,7 +455,7 @@ export default function PlayQuestionScreen() {
             maxFontSizeMultiplier: 1.2,
           })}
     >
-      {primaryVariant.prompt}
+      {englishVariant.prompt}
     </Text>
   );
   const promptImageSource =
@@ -673,10 +680,11 @@ export default function PlayQuestionScreen() {
         />
       ) : null}
       <Text
-        testID="question-primary-prompt"
+        testID="question-english-prompt"
+        accessibilityLanguage="en"
         style={[
           styles.questionTextReveal,
-          getTextStyle(primaryVariant.locale, 'display', 'center', primaryVariant.prompt),
+          getTextStyle(englishVariant.locale, 'display', 'center', englishVariant.prompt),
           {
             color: T.textPrimary,
             fontSize: unrevealedActiveQuestionTypography.fontSize,
@@ -696,9 +704,9 @@ export default function PlayQuestionScreen() {
               maxFontSizeMultiplier: 1.2,
             })}
       >
-        {primaryVariant.prompt}
+        {englishVariant.prompt}
       </Text>
-      {secondaryPrompt}
+      {translationPrompts}
     </View>
   );
 
@@ -1034,10 +1042,10 @@ export default function PlayQuestionScreen() {
                     contentFit="contain"
                   />
                 ) : null}
-                {secondaryPrompt ? (
+                {translationPrompts ? (
                   <View style={styles.bilingualPromptStack}>
                     {questionBoxPrompt}
-                    {secondaryPrompt}
+                    {translationPrompts}
                   </View>
                 ) : (
                   questionBoxPrompt
