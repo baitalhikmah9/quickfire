@@ -35,6 +35,17 @@ let mutationImpl: MutationFn = defaultMutation;
 let actionImpl: ActionFn = defaultAction;
 let queryResult: QueryResult = undefined;
 let authState = { isAuthenticated: true, isLoading: false };
+let clientQueryImpl: (
+  ref?: FunctionRef,
+  args?: Record<string, JsonValue>
+) => Promise<JsonValue> = async () => null;
+
+/** Stable singleton, like the real client, so effect deps do not churn between renders. */
+const convexClient = {
+  query: jest.fn((ref?: FunctionRef, args?: Record<string, JsonValue>) =>
+    clientQueryImpl(ref, args)
+  ),
+};
 
 const useMutationMock = jest.fn(() => mutationImpl);
 const useActionMock = jest.fn(() => actionImpl);
@@ -57,6 +68,10 @@ export function useConvexAuth() {
   return useConvexAuthMock();
 }
 
+export function useConvex() {
+  return convexClient;
+}
+
 export function ConvexProvider({ children }: { children?: React.ReactNode }) {
   return children ?? null;
 }
@@ -77,12 +92,19 @@ export function __setConvexAuthState(next: { isAuthenticated: boolean; isLoading
   authState = next;
 }
 
+export function __setConvexClientQuery(
+  next: (ref?: FunctionRef, args?: Record<string, JsonValue>) => Promise<JsonValue>
+): void {
+  clientQueryImpl = next;
+}
+
 export function __getConvexMocks() {
   return {
     useMutationMock,
     useActionMock,
     useQueryMock,
     useConvexAuthMock,
+    clientQueryMock: convexClient.query,
   };
 }
 
@@ -91,6 +113,8 @@ export function __resetConvexReactDouble(): void {
   actionImpl = defaultAction;
   queryResult = undefined;
   authState = { isAuthenticated: true, isLoading: false };
+  clientQueryImpl = async () => null;
+  convexClient.query.mockClear();
   useMutationMock.mockClear();
   useActionMock.mockClear();
   useQueryMock.mockClear();

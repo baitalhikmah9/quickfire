@@ -2,7 +2,11 @@ import { mark } from '@/lib/startupTiming';
 import rawQuestions from '@/constants/questions.json';
 import { groupRumbleQuestionsByValueBucket, normalizeRumbleTopicCount } from '@/features/play/rumble';
 import type { CategoryOption, GameMode, QuestionCard } from '@/features/shared';
-import type { SupportedLocale } from '@/lib/i18n/config';
+import type {
+  ContentLocale,
+  ContentLocalePriority,
+  NonEnglishContentLocale,
+} from '@/lib/i18n/config';
 import { questionCanonicalKey } from '@/features/play/canonicalKey';
 import { normalizeQuickPlayTopicCount } from '@/features/play/tokenCosts';
 
@@ -22,7 +26,11 @@ interface SourceGroup {
   points: number;
 }
 
-type LocalizedQuestion = Pick<QuestionCard, 'prompt' | 'answer'>;
+/** One translated question variant, as stored in `constants/translations/<locale>.json`. */
+export type LocalizedQuestion = Pick<QuestionCard, 'prompt' | 'answer'>;
+
+/** A per-locale pack: canonical key (`q<UserID>`) to translated prompt and answer. */
+export type QuestionTranslationPack = Record<string, LocalizedQuestion>;
 
 function getGroupSignature(group: SourceGroup) {
   const entries = group.questionAndanswer
@@ -48,10 +56,46 @@ mark('play data module evaluating (questions.json already parsed)');
 // SAFETY: constants/questions.json is authored to the SourceGroup schema and validated by import tooling.
 const QUESTION_GROUPS = dedupeQuestionGroups(rawQuestions as SourceGroup[]);
 mark('questions deduped');
-const CATEGORY_TRANSLATIONS: Partial<Record<SupportedLocale, Record<string, string>>> = {};
-const QUESTION_TRANSLATIONS: Partial<
-  Record<SupportedLocale, Record<string, LocalizedQuestion>>
-> = {};
+const CATEGORY_TRANSLATIONS: Partial<Record<ContentLocale, Record<string, string>>> = {};
+/**
+ * Translated question variants by content locale, keyed by canonical key. English is not stored
+ * here: it always comes from the bundled `questions.json`. Packs are generated per locale by
+ * `scripts/build-locale-packs.ts` into `constants/translations/<locale>.json` (gitignored) and
+ * handed to `registerQuestionTranslations`; loading them at runtime is a separate change.
+ */
+const QUESTION_TRANSLATIONS: Partial<Record<NonEnglishContentLocale, QuestionTranslationPack>> = {};
+
+let englishByCanonicalKey: Map<string, SourceQA> | null = null;
+
+/** Bundled English question for a canonical key (built once, on first use). */
+function getEnglishQuestion(canonicalKey: string): SourceQA | undefined {
+  if (!englishByCanonicalKey) {
+    englishByCanonicalKey = new Map();
+    for (const group of QUESTION_GROUPS) {
+      const slug = slugify(group.name);
+      group.questionAndanswer.forEach((qa, index) => {
+        const key = getCanonicalKey(group, slug, index);
+        if (!englishByCanonicalKey!.has(key)) englishByCanonicalKey!.set(key, qa);
+      });
+    }
+  }
+  return englishByCanonicalKey.get(canonicalKey);
+}
+
+/** Add (or replace) the translated variants for one content locale. */
+export function registerQuestionTranslations(
+  locale: NonEnglishContentLocale,
+  pack: QuestionTranslationPack
+): void {
+  QUESTION_TRANSLATIONS[locale] = { ...QUESTION_TRANSLATIONS[locale], ...pack };
+}
+
+/** Test helper: drop every registered translation pack. */
+export function clearQuestionTranslations(): void {
+  for (const locale of Object.keys(QUESTION_TRANSLATIONS)) {
+    delete QUESTION_TRANSLATIONS[locale as NonEnglishContentLocale];
+  }
+}
 
 function slugify(name: string): string {
   return name
@@ -84,7 +128,7 @@ function getCanonicalKey(group: SourceGroup, slug: string, index: number) {
 function resolveCategoryTranslation(
   slug: string,
   englishTitle: string,
-  localeChain: SupportedLocale[]
+  localeChain: ContentLocale[]
 ) {
   for (const locale of localeChain) {
     const translatedTitle = CATEGORY_TRANSLATIONS[locale]?.[slug];
@@ -116,10 +160,11 @@ function resolveCategoryTranslation(
 function resolveQuestionTranslation(
   canonicalKey: string,
   englishQuestion: SourceQA,
-  localeChain: SupportedLocale[]
+  localeChain: ContentLocale[]
 ) {
   for (const locale of localeChain) {
-    const translatedQuestion = QUESTION_TRANSLATIONS[locale]?.[canonicalKey];
+    const translatedQuestion =
+      locale === 'en' ? undefined : QUESTION_TRANSLATIONS[locale]?.[canonicalKey];
 
     if (translatedQuestion) {
       return {
@@ -148,8 +193,119 @@ function resolveQuestionTranslation(
   };
 }
 
+/** One language's text for a question, as shown on the question and answer views. */
+export interface QuestionVariant {
+  locale: ContentLocale;
+  prompt: string;
+  answer: string;
+  /**
+   * Always false for on-screen blocks under the English-plus-translations layout.
+   * Missing selected languages are omitted entirely instead of duplicating English.
+   */
+  fellBackToEnglish: boolean;
+}
+
+/**
+ * On-screen text for one question: English always first, then each selected content language
+ * that has a real translation. Missing translations are omitted so English is never shown twice.
+ */
+export interface QuestionVariants {
+  /** Always English. Prefer the bundled canonical row even when the card text is translated. */
+  english: QuestionVariant;
+  /** Selected content languages with real translations, in selection order (at most two). */
+  translations: QuestionVariant[];
+}
+
+type VariantSource = Pick<QuestionCard, 'canonicalKey' | 'prompt' | 'answer' | 'locale'>;
+
+/**
+ * English text for the question screen. Prefer the bundled catalog by canonical key so a card that
+ * already carries translated prompt/answer still shows English first.
+ */
+function resolveEnglishVariant(question: VariantSource): QuestionVariant {
+  const bundled = getEnglishQuestion(question.canonicalKey);
+  if (bundled) {
+    return {
+      locale: 'en',
+      prompt: bundled.text.trim(),
+      answer: bundled.answer.trim(),
+      fellBackToEnglish: false,
+    };
+  }
+
+  // Remote / unbundled cards: use the card when it is already English.
+  if (question.locale === 'en') {
+    return {
+      locale: 'en',
+      prompt: question.prompt.trim(),
+      answer: question.answer.trim(),
+      fellBackToEnglish: false,
+    };
+  }
+
+  // No English source available - still provide a first block so the UI never goes blank.
+  return {
+    locale: 'en',
+    prompt: question.prompt.trim(),
+    answer: question.answer.trim(),
+    fellBackToEnglish: true,
+  };
+}
+
+/**
+ * Real translation for one selected content language, or null when missing.
+ * Null means "omit this block" - English stays visible without a duplicate English fallback.
+ */
+function resolveTranslationVariant(
+  question: VariantSource,
+  locale: NonEnglishContentLocale
+): QuestionVariant | null {
+  const translated = QUESTION_TRANSLATIONS[locale]?.[question.canonicalKey];
+  if (translated) {
+    const prompt = translated.prompt.trim();
+    const answer = translated.answer.trim();
+    if (prompt && answer) {
+      return { locale, prompt, answer, fellBackToEnglish: false };
+    }
+  }
+
+  // Card already arrived in this locale (for example a remote/Convex-served row).
+  if (question.locale === locale) {
+    const prompt = question.prompt.trim();
+    const answer = question.answer.trim();
+    if (prompt && answer) {
+      return { locale, prompt, answer, fellBackToEnglish: false };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Resolve the chosen question into the on-screen language blocks: English first, then each
+ * selected content language that has a real translation. Selection is by `canonicalKey`.
+ * Missing translations are omitted (not replaced with a second English block).
+ */
+export function resolveQuestionVariants(
+  question: VariantSource,
+  contentLocales: ContentLocalePriority
+): QuestionVariants {
+  const english = resolveEnglishVariant(question);
+  const translations: QuestionVariant[] = [];
+  const seen = new Set<NonEnglishContentLocale>();
+
+  for (const locale of [contentLocales.primary, contentLocales.secondary]) {
+    if (!locale || seen.has(locale)) continue;
+    seen.add(locale);
+    const variant = resolveTranslationVariant(question, locale);
+    if (variant) translations.push(variant);
+  }
+
+  return { english, translations };
+}
+
 export function getPlayableCategories(
-  localeChain: SupportedLocale[] = ['en']
+  localeChain: ContentLocale[] = ['en']
 ): CategoryOption[] {
   const grouped = new Map<string, CategoryOption>();
 
@@ -196,7 +352,7 @@ function pickGroupsForBoard(categoryGroups: SourceGroup[]): SourceGroup[] {
 
 export function buildBoard(
   categorySlugs: string[],
-  localeChain: SupportedLocale[] = ['en'],
+  localeChain: ContentLocale[] = ['en'],
   askedCanonicalKeys: ReadonlySet<string> = new Set()
 ): QuestionCard[] {
   const board: QuestionCard[] = [];
@@ -250,7 +406,7 @@ export function buildBoard(
 export function getBonusQuestion(
   categorySlugs: string[],
   usedQuestionIds: Set<string>,
-  localeChain: SupportedLocale[] = ['en'],
+  localeChain: ContentLocale[] = ['en'],
   askedCanonicalKeys: ReadonlySet<string> = new Set()
 ): QuestionCard | null {
   const candidates: QuestionCard[] = [];

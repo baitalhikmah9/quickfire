@@ -5,7 +5,8 @@
  */
 
 export let SHOW_HOT_SEAT_UI = false;
-export let SHOW_LANGUAGE_SETTINGS_UI = false;
+/** Mirrors the shipped default in `constants/featureFlags.ts`. */
+export let SHOW_LANGUAGE_SETTINGS_UI = true;
 export let SHOW_HOME_MODE_INFO_UI = false;
 
 export function __setFeatureFlags(next: {
@@ -24,6 +25,6 @@ export function __setFeatureFlags(next: {
 
 export function __resetFeatureFlagsDouble(): void {
   SHOW_HOT_SEAT_UI = false;
-  SHOW_LANGUAGE_SETTINGS_UI = false;
+  SHOW_LANGUAGE_SETTINGS_UI = true;
   SHOW_HOME_MODE_INFO_UI = false;
 }

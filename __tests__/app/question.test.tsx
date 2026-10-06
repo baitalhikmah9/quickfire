@@ -11,7 +11,13 @@ import PlayQuestionScreen, {
 import { PALETTES } from '@/constants/theme';
 import { usePlayStore } from '@/store/play';
 import { useThemeStore } from '@/store/theme';
+import { useLocaleStore } from '@/store/locale';
+import {
+  clearQuestionTranslations,
+  registerQuestionTranslations,
+} from '@/features/play/data';
 import { router } from '../doubles/expoRouter';
+import { __setI18nLocaleAwareTextStyle } from '../doubles/useI18n';
 
 function createQuestion(
   overrides: Partial<QuestionCard> & Pick<QuestionCard, 'id' | 'canonicalKey'>
@@ -589,5 +595,118 @@ describe('PlayQuestionScreen', () => {
 
     fireEvent.press(screen.getByTestId('question-report-button'));
     expect(screen.getByTestId('question-report-modal')).toBeTruthy();
+  });
+});
+
+describe('PlayQuestionScreen with two content languages', () => {
+  const KEY = 'q900001';
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    __setI18nLocaleAwareTextStyle(true);
+    registerQuestionTranslations('ja', {
+      [KEY]: { prompt: '日本の首都はどこですか？', answer: '東京' },
+    });
+    registerQuestionTranslations('ar', {
+      [KEY]: { prompt: 'ما هي عاصمة اليابان؟', answer: 'طوكيو' },
+    });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+    clearQuestionTranslations();
+    act(() => {
+      useLocaleStore.setState({ contentLocales: { primary: null, secondary: null } });
+      usePlayStore.setState({ session: null });
+    });
+  });
+
+  function showQuestion(overrides: Partial<GameSessionState> = {}) {
+    const question = createQuestion({
+      id: 'q-bilingual',
+      canonicalKey: KEY,
+      prompt: 'What is the capital of Japan?',
+      answer: 'Tokyo',
+    });
+    usePlayStore.setState({
+      session: createSession({
+        mode: 'classic',
+        currentQuestion: question,
+        board: [question],
+        ...overrides,
+      }),
+    });
+  }
+
+  it('keeps English first with both selected translations beneath it, each with its own direction', () => {
+    act(() => {
+      useLocaleStore.setState({ contentLocales: { primary: 'ja', secondary: 'ar' } });
+    });
+    showQuestion();
+
+    render(<PlayQuestionScreen />);
+
+    const english = screen.getByTestId('question-english-prompt');
+    const ja = screen.getByTestId('question-translation-ja-prompt');
+    const ar = screen.getByTestId('question-translation-ar-prompt');
+    expect(english).toHaveTextContent('What is the capital of Japan?');
+    expect(english).toHaveStyle({ writingDirection: 'ltr' });
+    expect(ja).toHaveTextContent('日本の首都はどこですか？');
+    expect(ja).toHaveStyle({ writingDirection: 'ltr' });
+    expect(ar).toHaveTextContent('ما هي عاصمة اليابان؟');
+    expect(ar).toHaveStyle({ writingDirection: 'rtl' });
+  });
+
+  it('shows English answer first with both translations beneath once revealed', () => {
+    act(() => {
+      useLocaleStore.setState({ contentLocales: { primary: 'ar', secondary: 'ja' } });
+    });
+    showQuestion({ step: 'answer', phase: 'answerLock' });
+
+    render(<PlayQuestionScreen />);
+
+    expect(screen.getByText('Tokyo')).toBeTruthy();
+    expect(screen.getByTestId('answer-translation-ar-answer')).toHaveTextContent('طوكيو');
+    expect(screen.getByTestId('answer-translation-ar-answer')).toHaveStyle({ writingDirection: 'rtl' });
+    expect(screen.getByTestId('answer-translation-ja-answer')).toHaveTextContent('東京');
+    expect(screen.getByTestId('answer-translation-ja-answer')).toHaveStyle({ writingDirection: 'ltr' });
+  });
+
+  it('keeps English visible and omits a missing translation instead of duplicating English', () => {
+    act(() => {
+      useLocaleStore.setState({ contentLocales: { primary: 'ar', secondary: 'sw' } });
+    });
+    showQuestion();
+
+    render(<PlayQuestionScreen />);
+
+    expect(screen.getByTestId('question-english-prompt')).toHaveTextContent(
+      'What is the capital of Japan?'
+    );
+    expect(screen.getByTestId('question-translation-ar-prompt')).toHaveTextContent(
+      'ما هي عاصمة اليابان؟'
+    );
+    expect(screen.queryByTestId('question-translation-sw-prompt')).toBeNull();
+    // Only one English block - the missing Swahili slot is omitted.
+    expect(screen.getAllByText('What is the capital of Japan?')).toHaveLength(1);
+  });
+
+  it('keeps English with a single translation when only one language is set', () => {
+    act(() => {
+      useLocaleStore.setState({ contentLocales: { primary: 'ja', secondary: null } });
+    });
+    showQuestion();
+
+    render(<PlayQuestionScreen />);
+
+    expect(screen.getByTestId('question-english-prompt')).toHaveTextContent(
+      'What is the capital of Japan?'
+    );
+    expect(screen.getByTestId('question-translation-ja-prompt')).toHaveTextContent(
+      '日本の首都はどこですか？'
+    );
+    expect(screen.queryByTestId('question-translation-ar-prompt')).toBeNull();
   });
 });

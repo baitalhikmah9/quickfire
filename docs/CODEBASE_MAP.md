@@ -268,7 +268,8 @@ graph TB
 │   ├── normalize-questions.ts    # Normalize questions.json → convex/seed/ (keys q<UserID>, questionCount)
 │   ├── check-translations.ts     # Verify constants/translations/questions-long.csv.gz against the English seed
 │   ├── push-seed-to-convex.ts    # Seed categories, English questions and the translation pack
-│   └── lib/                      # csv.ts (parser), questionsLong.ts (translation pack reader)
+│   ├── build-locale-packs.ts     # Translation pack → constants/translations/<locale>.json (gitignored build output)
+│   └── lib/                      # csv.ts (parser), questionsLong.ts (translation pack reader), localePacks.ts
 │
 ├── patches/
 │   └── expo-modules-core@55.0.22.patch
@@ -509,7 +510,7 @@ overtimeCheck -> completed
 - Questions with invalid `categorySlug` silently skipped
 - Question identity is `canonicalKey = q<UserID>` (the spreadsheet's permanent ID, `features/play/canonicalKey.ts`), the same in every locale; `device_question_history` keys on it
 - Rows seeded under the old position keys are retired by `seed:push`. The pairs come from the frozen `convex/seed/legacyQuestionKeys.ts` snapshot (`scripts/build-legacy-question-keys.ts`, generated `questions.json@1992d4d` -> `@6291744`), never from current source data, so a later reorder, rename or addition cannot move an old key onto another question. `seed:retireLegacyQuestionKeys` flips the legacy row to `retired` (never deletes, so `_id` references stay valid) only when the replacement exists, is `active` and sits in the same category; `seed:remapLegacyQuestionHistory` moves device history onto the new keys in bounded pages that verify the same guards and leave a record untouched when it cannot. Both take a required `expectedMapVersion` that the handler checks before touching data, so a deployment running another snapshot refuses the call. Each call is atomic, the migration as a whole is not, so both copies can be playable until it finishes; unexpected skips or an incomplete walk print `Legacy key migration INCOMPLETE` and exit non-zero, and an interrupted walk resumes with `--legacy-checkpoint='<token>'`, a validated base64url token carrying the target selector, frozen map version, mode and last confirmed cursor
-- Content queries read only the caller's locale chain through `by_category_locale_status`; 17 locales are seeded but a player pays for at most three
+- Content queries read only the caller's locale chain through `by_category_locale_status`; 17 locales are seeded but a player pays for at most three (two content languages plus English)
 - Must set `CLERK_JWT_ISSUER_DOMAIN` in Convex dashboard
 
 ---
@@ -691,7 +692,9 @@ overtimeCheck -> completed
 | `useI18n.ts` | i18n hook |
 | `messages/` | Translation catalogs |
 
-**Supported locales**: en, es, fr, pt-BR, ar, bn, hi, id, ru, ur, zh-Hans
+**Supported locales** (UI, `SUPPORTED_LOCALES`): en, es, fr, pt-BR, ar, bn, hi, id, ru, ur, zh-Hans
+
+**Content locales** (`CONTENT_LOCALES`, independent of the UI list): zh-Hans, es, ar, hi, fr, pt-BR, ur, bn, id, ru, ja, ko, sw, de, pt-PT, it, tr. Players pick up to two (`MAX_CONTENT_LOCALES`): primary and secondary. The question is chosen by `canonicalKey`; the question and answer views always show English first, then each selected content language that has a real translation beneath it (`resolveQuestionVariants` in `features/play/data.ts`, `useQuestionVariants`, `SecondaryLanguageText`). Missing translations are omitted so English is never duplicated; each block takes its own direction, font and accessibility language from its locale. English is resolved from the bundled `questions.json` by canonical key (even when the card already carries translated text) and stays offline/playable. Non-English text is loaded during authenticated play through `api.content.getQuestionTranslationVariants` (exact `by_canonical_locale` lookups, `active` only, prompt/answer only; max 2 locales and 48 keys, derived from a maximal board of 36 keys plus one bonus). `useQuestionVariants` (mounted on both the question screen and the answer panel) issues a one-shot `useConvex().query` in an effect, catches failures so the play UI stays up, and writes non-empty hits into `QUESTION_TRANSLATIONS` via `registerQuestionTranslations`. A shared cache version notifies every mounted consumer when text lands, so question and answer panels update together. Cached hits stay for the process; missing languages simply leave English alone (offline, missing row, blank/whitespace translation, auth skip, missing function, or rejected query). A late response cannot land on the wrong language or question. Release prereq: deploy the query and seed the `q`-key translation rows before shipping non-English content variants. Pack JSON under `constants/translations/` remains a seed/build artifact only and is not the runtime path.
 
 ---
 

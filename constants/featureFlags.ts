@@ -8,7 +8,7 @@ export const SHOW_HOT_SEAT_UI = false;
  * When false, App Language and Trivia Languages rows/modals are omitted from Settings.
  * Picker screens and locale store logic remain in the codebase.
  */
-export const SHOW_LANGUAGE_SETTINGS_UI = false;
+export const SHOW_LANGUAGE_SETTINGS_UI = true;
 
 /**
  * When false, home mode tiles omit the information ("i") button and explanation modal entry.

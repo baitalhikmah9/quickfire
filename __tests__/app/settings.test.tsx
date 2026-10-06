@@ -1,5 +1,5 @@
 import React from 'react';
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Platform, StyleSheet } from 'react-native';
 
@@ -14,6 +14,11 @@ import { router } from '../doubles/expoRouter';
 
 const mockSignOut = jest.fn(async () => undefined);
 const mockDeleteAccount = jest.fn(async () => ({ ok: true }));
+
+/** Real production module, not the Jest double mapped over `@/constants/featureFlags`. */
+const shippedFeatureFlags = jest.requireActual<
+  typeof import('../../constants/featureFlags')
+>('../../constants/featureFlags');
 
 describe('SettingsScreen', () => {
   beforeEach(() => {
@@ -31,25 +36,35 @@ describe('SettingsScreen', () => {
       primaryEmailAddress: { emailAddress: 'pilot@example.com' },
     });
     __setConvexAction(async () => mockDeleteAccount());
-    __setFeatureFlags({ SHOW_LANGUAGE_SETTINGS_UI: true });
     useThemeStore.setState({ paletteId: 'default' });
     useDisplayStore.setState({ playDisplayMode: 'laptop' });
   });
 
-  afterEach(() => {
-    __setFeatureFlags({ SHOW_LANGUAGE_SETTINGS_UI: false });
-  });
+  it('includes theme, app language, and up-to-two language settings with the shipped flag default', () => {
+    // Bind the double to the real constant so a false production revert fails this test.
+    expect(shippedFeatureFlags.SHOW_LANGUAGE_SETTINGS_UI).toBe(true);
+    __setFeatureFlags({
+      SHOW_LANGUAGE_SETTINGS_UI: shippedFeatureFlags.SHOW_LANGUAGE_SETTINGS_UI,
+    });
 
-  it('includes theme, app language, and up-to-three language settings', () => {
     render(<SettingsScreen />);
 
     expect(screen.getByText('Theme selection')).toBeTruthy();
     expect(screen.getByText('App Language')).toBeTruthy();
-    expect(screen.getByText('Languages (up to 3)')).toBeTruthy();
+    expect(screen.getByText('Languages (up to 2)')).toBeTruthy();
     expect(screen.getByText('No trivia languages selected')).toBeTruthy();
     expect(screen.queryByText('WIN RATE')).toBeNull();
     expect(screen.queryByText('BEST STREAK')).toBeNull();
     expect(screen.queryByText('ACCURACY')).toBeNull();
+  });
+
+  it('hides app and trivia language rows when the language settings flag is off', () => {
+    __setFeatureFlags({ SHOW_LANGUAGE_SETTINGS_UI: false });
+    render(<SettingsScreen />);
+
+    expect(screen.getByText('Theme selection')).toBeTruthy();
+    expect(screen.queryByText('App Language')).toBeNull();
+    expect(screen.queryByText('Languages (up to 2)')).toBeNull();
   });
 
   it('shows legal section with links to terms and privacy', () => {
@@ -133,10 +148,10 @@ describe('SettingsScreen', () => {
   it('opens trivia language choices inline as a modal instead of navigating away', () => {
     render(<SettingsScreen />);
 
-    fireEvent.press(screen.getByText('Languages (up to 3)'));
+    fireEvent.press(screen.getByText('Languages (up to 2)'));
 
     expect(router.push).not.toHaveBeenCalled();
-    expect(screen.getByText('Pick up to 3 preferred trivia languages. English is always the fallback.')).toBeTruthy();
+    expect(screen.getByText('Pick up to 2 trivia languages to show together. English is always the fallback.')).toBeTruthy();
     expect(screen.getByText('Languages')).toBeTruthy();
   });
 
