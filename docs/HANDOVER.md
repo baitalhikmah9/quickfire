@@ -114,7 +114,6 @@ DNS points web/admin to Vercel and `clerk.playbackfire.com` to Clerk.
 | Spreadsheet id | `13sCvR45Gzar8uUrZk9DT2LLqv4PK-JxSsb2Egz-prxU` |
 | Tabs | `Trivia Database`, `Mikhail` |
 | Account | `mikhailspeaks@gmail.com` |
-| Agent skill | `.agents/skills/backfire-question-sheet/` |
 
 ## Environment map (no secrets)
 

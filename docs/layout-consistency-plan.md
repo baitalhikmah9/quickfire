@@ -1,6 +1,6 @@
 # Layout Consistency — Findings & Migration Plan
 
-Audit date: 2026-07-08. Full subagent reports: `.pi-subagents/artifacts/43f2c386_scout_{0,1,2}_output.md`.
+Audit date: 2026-07-08.
 
 ## Root Cause
 
